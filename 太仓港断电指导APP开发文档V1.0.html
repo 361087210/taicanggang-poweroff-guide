@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>太仓港商品车断电指导 APP V1.1 开发文档</title>
+<style>
+:root{--primary:#1e40af;--secondary:#3b82f6;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0}
+.container{max-width:900px;margin:0 auto;padding:20px}
+h1{font-size:28px;color:var(--primary);text-align:center;margin:30px 0 10px;border-bottom:3px solid var(--primary);padding-bottom:10px}
+h2{font-size:22px;color:var(--primary);margin:30px 0 15px;padding-left:12px;border-left:4px solid var(--secondary)}
+h3{font-size:18px;color:#334155;margin:25px 0 10px}
+h4{font-size:16px;color:#475569;margin:20px 0 8px}
+p{margin:8px 0}
+table{width:100%;border-collapse:collapse;margin:15px 0;font-size:14px;background:var(--card)}
+th{background:var(--primary);color:#fff;padding:10px 12px;text-align:left}
+td{padding:8px 12px;border:1px solid var(--border)}
+tr:nth-child(even){background:#f1f5f9}
+.card{background:var(--card);border-radius:12px;padding:20px;margin:15px 0;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid var(--border)}
+.code-block{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:16px;margin:10px 0;font-family:'Consolas','Courier New',monospace;font-size:13px;overflow-x:auto;white-space:pre}
+.code-block .kw{color:#60a5fa}
+.code-block .str{color:#4ade80}
+.code-block .cmt{color:#94a3b8}
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;margin:0 2px}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-amber{background:#fef3c7;color:#92400e}
+ul,ol{margin:8px 0 8px 25px}
+li{margin:4px 0}
+.cover{text-align:center;padding:60px 20px;background:linear-gradient(135deg,#1e3a5f,#1e40af);color:#fff;border-radius:0 0 20px 20px;margin-bottom:30px}
+.cover h1{color:#fff;border:none}
+.cover p{color:rgba(255,255,255,.8)}
+.cover .version{font-size:48px;font-weight:800;margin:20px 0}
+.toc{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin:20px 0}
+.toc ol{margin-left:20px}
+.toc a{color:var(--secondary);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.section{margin:30px 0}
+.info-box{background:#eff6ff;border-left:4px solid var(--secondary);padding:12px 16px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14px}
+.warn-box{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14px}
+.pass{color:#16a34a;font-weight:700}
+.fail{color:#dc2626;font-weight:700}
+@media print{body{background:#fff}.card{box-shadow:none;border:1px solid #ccc}.cover{border-radius:0}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- 封面 -->
+<div class="cover">
+<div class="version">V1.1</div>
+<h1>太仓港商品车断电指导 APP</h1>
+<p>软件开发文档（第一版）</p>
+<p style="margin-top:15px">2026年8月20日</p>
+</div>
+
+<!-- 目录 -->
+<div class="toc">
+<h3>文档目录</h3>
+<ol>
+<li><a href="#ch1">项目概述</a></li>
+<li><a href="#ch2">系统架构</a></li>
+<li><a href="#ch3">用户与权限系统</a></li>
+<li><a href="#ch4">车型管理模块</a></li>
+<li><a href="#ch5">数据同步与飞书接口</a></li>
+<li><a href="#ch6">功能测试报告</a></li>
+<li><a href="#ch7">技术栈与依赖</a></li>
+<li><a href="#ch8">安卓打包与部署</a></li>
+<li><a href="#ch9">数据结构定义</a></li>
+<li><a href="#ch10">API接口说明</a></li>
+<li><a href="#ch11">已知限制与后续规划</a></li>
+</ol>
+</div>
+
+<!-- 第一章 -->
+<div class="section" id="ch1">
+<h2>1. 项目概述</h2>
+<div class="card">
+<h3>1.1 项目背景</h3>
+<p>太仓港作为国内重要商品车滚装港口，每日处理大量商品车的断电操作。为规范操作流程、提升作业效率，开发本应用，为现场作业人员提供断电位置查询、操作步骤指导、照片参考等一站式服务。</p>
+
+<h3>1.2 版本信息</h3>
+<table>
+<tr><th>项目</th><th>说明</th></tr>
+<tr><td>应用名称</td><td>太仓港商品车断电指导</td></tr>
+<tr><td>版本号</td><td>V1.1（第一版更新）</td></tr>
+<tr><td>发布日期</td><td>2026年8月20日</td></tr>
+<tr><td>开发框架</td><td>HTML5 + Cordova（Android WebView 混合应用）</td></tr>
+<tr><td>目标平台</td><td>Android 8.0+（API 27+）</td></tr>
+<tr><td>包名</td><td>com.tcg.poweroff</td></tr>
+<tr><td>APK大小</td><td>约14.6 MB</td></tr>
+<tr><td>车辆数据</td><td>73款车型，覆盖10个品牌</td></tr>
+<tr><td>图片资源</td><td>112张车型关联照片</td></tr>
+</table>
+
+<h3>1.3 V1.1 更新内容</h3>
+<div class="info-box">
+<strong>本次更新（V1.1）修复以下问题：</strong>
+<ul>
+<li>修复首次打开时长组账号处于登录状态的问题，确保所有账号默认退出登录</li>
+<li>修复同步日志显示硬编码默认数据的问题，首次使用显示"暂无同步记录"</li>
+<li>修复同步状态默认显示"已同步"的问题，改为首次显示"未同步"</li>
+<li>新增6项首次打开状态验证测试（共34项），覆盖登录表单为空、登录前页面不可见、无同步日志、无飞书配置等</li>
+</ul>
+</div>
+
+<h3>1.4 核心功能</h3>
+<ul>
+<li><strong>用户系统</strong>：组长/组员角色分离，注册审核流程，密码管理</li>
+<li><strong>车型管理</strong>：73款车型断电指导，缩略图预览，树形/平铺视图</li>
+<li><strong>数据同步</strong>：飞书云端接口，组长上传/组员拉取</li>
+<li><strong>操作指导</strong>：断电位置、操作步骤、钥匙处理、照片参考</li>
+<li><strong>数据导出</strong>：支持Word/PDF/Excel单车型导出</li>
+</ul>
+</div>
+</div>
+
+<!-- 第二章 -->
+<div class="section" id="ch2">
+<h2>2. 系统架构</h2>
+<div class="card">
+<h3>2.1 技术架构</h3>
+<p>本应用采用 <strong>WebView 混合应用架构</strong>，通过 Cordova 将 HTML5 应用打包为 Android 原生安装包。</p>
+
+<div class="code-block">
+<span class="cmt">架构层次</span>
+┌─────────────────────────────────┐
+│        Android APK (Cordova)       │  <span class="cmt">// 原生壳</span>
+│  ┌───────────────────────────┐  │
+│  │      WebView (Chrome)      │  │  <span class="cmt">// 渲染层</span>
+│  │  ┌─────────────────────┐  │  │
+│  │  │   HTML5/CSS3/JS    │  │  │  <span class="cmt">// 业务逻辑层</span>
+│  │  │  Tailwind CSS      │  │  │  <span class="cmt">// UI 框架</span>
+│  │  │  localStorage       │  │  │  <span class="cmt">// 本地数据持久化</span>
+│  │  └─────────────────────┘  │  │
+│  └───────────────────────────┘  │
+│  ┌───────────────────────────┐  │
+│  │  飞书 API (HTTPS)         │  │  <span class="cmt">// 云端同步</span>
+│  └───────────────────────────┘  │
+└─────────────────────────────────┘</div>
+
+<h3>2.2 文件结构</h3>
+<div class="code-block">
+<span class="cmt">项目文件结构</span>
+e:\车辆断电指导应用开发\
+├── demo.html              <span class="cmt"># 主应用代码（HTML+CSS+JS 单文件）</span>
+├── vehicle_images/        <span class="cmt"># 车辆照片目录（112张）</span>
+├── vehicles_data.js       <span class="cmt"># 车辆数据 JS 数组</span>
+├── tcg_app/               <span class="cmt"># Cordova 项目目录</span>
+│   ├── www/               <span class="cmt"># Web 资源（打包进 APK）</span>
+│   │   ├── index.html     <span class="cmt"># = demo.html 副本</span>
+│   │   └── vehicle_images/
+│   ├── platforms/android/  <span class="cmt"># Android 原生工程</span>
+│   ├── config.xml         <span class="cmt"># Cordova 配置</span>
+│   └── package.json
+├── 太仓港断电指导V1.0.apk  <span class="cmt"># 最终安装包</span>
+├── test_full_v3.py        <span class="cmt"># 自动化测试脚本</span>
+└── 太仓港断电指导APP开发文档V1.0.html <span class="cmt"># 本文档</span></div>
+
+<h3>3.3 页面流转</h3>
+<div class="code-block">
+登录 → 车型列表（首页）
+         ├── 车型详情
+         ├── 编辑/新增车辆（组长）
+         └── 数据页面
+              └── 同步中心 → 飞书配置
+我的页面
+  ├── 组员管理（组长）
+  ├── 修改密码
+  ├── 数据同步
+  └── 退出登录</div>
+</div>
+</div>
+
+<!-- 第三章 -->
+<div class="section" id="ch3">
+<h2>3. 用户与权限系统</h2>
+<div class="card">
+<h3>3.1 角色定义</h3>
+<table>
+<tr><th>角色</th><th>标识</th><th>权限</th><th>登录方式</th></tr>
+<tr><td>组长</td><td>手机号 17602554481</td><td>增删改查所有数据、审核注册、重置组员密码、上传飞书同步</td><td>注册即生效（首次需注册）</td></tr>
+<tr><td>组员</td><td>其他手机号</td><td>仅查看数据、从飞书获取同步数据</td><td>注册后需组长审核通过</td></tr>
+</table>
+
+<h3>3.2 核心代码</h3>
+<div class="code-block">
+<span class="cmt">// 用户数据结构</span>
+{
+  id: <span class="kw">number</span>,        <span class="cmt">// 唯一ID</span>
+  name: <span class="kw">string</span>,      <span class="cmt">// 姓名</span>
+  phone: <span class="kw">string</span>,     <span class="cmt">// 手机号（11位）</span>
+  password: <span class="kw">string</span>,  <span class="cmt">// 密码（≥6位）</span>
+  role: <span class="kw">'admin'</span>|<span class="kw">'user'</span>, <span class="cmt">// 角色</span>
+  status: <span class="kw">'active'</span>|<span class="kw">'pending'</span>|<span class="kw">'rejected'</span>,
+  created: <span class="kw">string</span>     <span class="cmt">// 创建日期</span>
+}
+
+<span class="cmt">// 权限判定函数</span>
+<span class="kw">function</span> isLeader() {
+  <span class="kw">return</span> state.currentUser && state.currentUser.role === <span class="str">'admin'</span>;
+}
+<span class="kw">function</span> canEdit() {
+  <span class="kw">return</span> isLeader();
+}
+
+<span class="cmt">// 注册流程</span>
+<span class="kw">function</span> doRegister() {
+  <span class="kw">const</span> isLeader = phone === LEADER_PHONE;
+  <span class="kw">const</span> newUser = {
+    role: isLeader ? <span class="str">'admin'</span> : <span class="str">'user'</span>,
+    status: isLeader ? <span class="str">'active'</span> : <span class="str">'pending'</span>
+  };
+}</div>
+
+<h3>3.3 功能说明</h3>
+<table>
+<tr><th>功能</th><th>组长</th><th>组员</th><th>说明</th></tr>
+<tr><td>登录</td><td><span class="badge badge-green">支持</span></td><td><span class="badge badge-green">支持</span></td><td>组员需审核通过后方可登录</td></tr>
+<tr><td>注册</td><td><span class="badge badge-green">自动激活</span></td><td><span class="badge badge-amber">待审核</span></td><td>组长手机号注册即激活</td></tr>
+<tr><td>查看车型</td><td><span class="badge badge-green">支持</span></td><td><span class="badge badge-green">支持</span></td><td>所有用户可查看</td></tr>
+<tr><td>新增/编辑车辆</td><td><span class="badge badge-green">支持</span></td><td><span class="badge badge-red">禁止</span></td><td>通过 canEdit() 控制</td></tr>
+<tr><td>删除车辆</td><td><span class="badge badge-green">支持</span></td><td><span class="badge badge-red">禁止</span></td><td>详情页条件渲染</td></tr>
+<tr><td>审核注册</td><td><span class="badge badge-green">支持</span></td><td><span class="badge badge-red">禁止</span></td><td>组员管理菜单仅组长可见</td></tr>
+<tr><td>重置组员密码</td><td><span class="badge badge-green">支持</span></td><td><span class="badge badge-red">禁止</span></td><td>默认重置为 123456</td></tr>
+<tr><td>飞书上传同步</td><td><span class="badge badge-green">支持</span></td><td><span class="badge badge-red">禁止</span></td><td>组长可上传数据至飞书</td></tr>
+<tr><td>飞书拉取数据</td><td><span class="badge badge-green">支持</span></td><td><span class="badge badge-green">支持</span></td><td>所有用户可从飞书获取</td></tr>
+<tr><td>忘记密码</td><td><span class="badge badge-green">支持</span></td><td><span class="badge badge-green">支持</span></td><td>通过手机号重置</td></tr>
+<tr><td>修改密码</td><td><span class="badge badge-green">支持</span></td><td><span class="badge badge-green">支持</span></td><td>需输入原密码</td></tr>
+</table>
+</div>
+</div>
+
+<!-- 第四章 -->
+<div class="section" id="ch4">
+<h2>4. 车型管理模块</h2>
+<div class="card">
+<h3>4.1 车辆数据结构</h3>
+<div class="code-block">
+<span class="cmt">// 车辆对象</span>
+{
+  id: <span class="kw">number</span>,            <span class="cmt">// 车辆ID</span>
+  brand: <span class="kw">string</span>,        <span class="cmt">// 品牌（如：比亚迪）</span>
+  series: <span class="kw">string</span>,       <span class="cmt">// 车系（如：海豚）</span>
+  config: <span class="kw">string</span>,        <span class="cmt">// 配置（如：低配）</span>
+  display: <span class="kw">string</span>,       <span class="cmt">// 显示名称</span>
+  powerType: <span class="kw">string</span>,     <span class="cmt">// 动力类型（纯电/燃油/混动）</span>
+  position: <span class="kw">string</span>,      <span class="cmt">// 断电位置描述</span>
+  steps: <span class="kw">string[]</span>,       <span class="cmt">// 断电步骤数组</span>
+  keyFrame: <span class="kw">string[]</span>,     <span class="cmt">// 框架钥匙处理</span>
+  keyContainer: <span class="kw">string[]</span>, <span class="cmt">// 集装箱钥匙处理</span>
+  photos: <span class="kw">number</span>,        <span class="cmt">// 照片数量</span>
+  photoPaths: <span class="kw">string[]</span>,   <span class="cmt">// 照片路径数组</span>
+  remarks: <span class="kw">string</span>,        <span class="cmt">// 备注信息</span>
+  pinyin: <span class="kw">string</span>         <span class="cmt">// 拼音（用于搜索）</span>
+}</div>
+
+<h3>4.2 缩略图显示逻辑</h3>
+<p>车型列表中，凡车辆详情有照片的（<code>photoPaths.length > 0</code>），在列表卡片中显示第一张照片作为缩略图。无照片的车型仅显示文字信息。</p>
+<div class="code-block">
+<span class="kw">const</span> hasPhoto = v.photoPaths && v.photoPaths.length > 0;
+<span class="kw">const</span> thumbHtml = hasPhoto
+  ? <span class="str">`&lt;img src="${v.photoPaths[0]}" class="w-full h-full object-cover"&gt;`</span>
+  : <span class="str">''</span>;</div>
+
+<h3>4.3 最近查看记录</h3>
+<ul>
+<li><strong>初始化</strong>：<code>recentVehicles: []</code>（空数组，首次使用无记录）</li>
+<li><strong>记录规则</strong>：查看车辆详情时自动添加，最多保留5条</li>
+<li><strong>显示条件</strong>：无搜索/筛选时显示，有筛选条件时隐藏</li>
+</ul>
+
+<h3>4.4 品牌覆盖</h3>
+<table>
+<tr><th>品牌</th><th>车型数</th><th>品牌</th><th>车型数</th></tr>
+<tr><td>上汽</td><td>~10</td><td>比亚迪</td><td>~8</td></tr>
+<tr><td>长安</td><td>~7</td><td>吉利</td><td>~6</td></tr>
+<tr><td>奇瑞</td><td>~5</td><td>东南</td><td>~5</td></tr>
+<tr><td>长城</td><td>~5</td><td>特斯拉</td><td>~4</td></tr>
+<tr><td>蔚来</td><td>~4</td><td>小鹏</td><td>~4</td></tr>
+<tr><td>理想</td><td>~3</td><td>其他</td><td>~12</td></tr>
+</table>
+<p style="color:var(--muted);font-size:13px">注：以上为概数，总车型73辆，覆盖10个品牌</p>
+</div>
+</div>
+
+<!-- 第五章 -->
+<div class="section" id="ch5">
+<h2>5. 数据同步与飞书接口</h2>
+<div class="card">
+<h3>5.1 同步架构</h3>
+<div class="info-box">
+<strong>同步方向</strong>：组长 → 飞书云端 → 组员<br>
+<strong>同步内容</strong>：全部73条车型数据（含断电位置、步骤、钥匙处理、照片路径、备注）<br>
+<strong>触发方式</strong>：手动触发（上传/拉取），可配置定时同步间隔
+</div>
+
+<h3>5.2 飞书配置</h3>
+<table>
+<tr><th>配置项</th><th>字段ID</th><th>说明</th></tr>
+<tr><td>App ID</td><td>feishu-appid</td><td>飞书应用唯一标识</td></tr>
+<tr><td>App Secret</td><td>feishu-secret</td><td>飞书应用密钥</td></tr>
+<tr><td>同步文件夹 Token</td><td>feishu-folder</td><td>飞书云空间文件夹Token</td></tr>
+<tr><td>同步间隔（分钟）</td><td>feishu-interval</td><td>定时同步间隔，默认30分钟</td></tr>
+</table>
+
+<h3>5.3 同步数据格式</h3>
+<div class="code-block">
+{
+  <span class="str">"version"</span>: <span class="str">"v3.0"</span>,
+  <span class="str">"timestamp"</span>: <span class="str">"2026-08-20T10:00:00.000Z"</span>,
+  <span class="str">"uploadedBy"</span>: <span class="str">"组长"</span>,
+  <span class="str">"vehicleCount"</span>: 73,
+  <span class="str">"vehicles"</span>: [
+    {
+      id: 1, brand: <span class="str">"比亚迪"</span>, series: <span class="str">"海豚"</span>,
+      config: <span class="str">"低配"</span>, display: <span class="str">"比亚迪海豚(低配)"</span>,
+      powerType: <span class="str">"纯电"</span>, position: <span class="str">"..."</span>,
+      steps: [...], keyFrame: [...], keyContainer: [...],
+      remarks: <span class="str">"..."</span>, photos: 4,
+      photoPaths: [<span class="str">"vehicle_images/xxx.jpg"</span>, ...]
+    }
+  ]
+}</div>
+
+<h3>5.4 同步操作</h3>
+<table>
+<tr><th>操作</th><th>权限</th><th>说明</th></tr>
+<tr><td>上传数据至飞书</td><td>仅组长</td><td>将本地73条车型数据打包上传到飞书云端</td></tr>
+<tr><td>从飞书获取数据</td><td>所有用户</td><td>从飞书云端拉取最新数据并覆盖本地</td></tr>
+<tr><td>手动拉取飞书数据</td><td>所有用户</td><td>强制从飞书获取，用于组员更新</td></tr>
+</table>
+
+<h3>5.5 同步日志</h3>
+<p>系统记录所有同步操作日志，存储在 <code>localStorage</code> 的 <code>sync_log</code> 键中，包含操作类型、时间戳和结果状态。</p>
+</div>
+</div>
+
+<!-- 第六章 -->
+<div class="section" id="ch6">
+<h2>6. 功能测试报告</h2>
+<div class="card">
+<h3>6.1 测试环境</h3>
+<table>
+<tr><th>项目</th><th>说明</th></tr>
+<tr><td>测试框架</td><td>Playwright 1.62.0（Chromium Headless）</td></tr>
+<tr><td>测试脚本</td><td>test_full_v3.py</td></tr>
+<tr><td>测试日期</td><td>2026年8月20日</td></tr>
+<tr><td>视口尺寸</td><td>412 × 870（模拟手机端）</td></tr>
+</table>
+
+<h3>6.2 测试结果</h3>
+<div class="info-box">
+<strong>总结果：34/34 项全部通过</strong> <span class="pass">✅</span>
+</div>
+
+<table>
+<tr><th>#</th><th>测试项</th><th>结果</th><th>详情</th></tr>
+<tr><td>1</td><td>登录界面显示</td><td class="pass">✅</td><td>首次打开显示登录页</td></tr>
+<tr><td>2</td><td>登录表单为空</td><td class="pass">✅</td><td>手机号/密码输入框为空</td></tr>
+<tr><td>3</td><td>无组长凭据显示</td><td class="pass">✅</td><td>手机号/密码未明文显示</td></tr>
+<tr><td>4</td><td>注册链接存在</td><td class="pass">✅</td><td>注册账号按钮可见</td></tr>
+<tr><td>5</td><td>忘记密码链接</td><td class="pass">✅</td><td>忘记密码按钮可见</td></tr>
+<tr><td>6</td><td>车型页未显示</td><td class="pass">✅</td><td>登录前不可见</td></tr>
+<tr><td>7</td><td>数据页未显示</td><td class="pass">✅</td><td>登录前不可见</td></tr>
+<tr><td>8</td><td>我的页未显示</td><td class="pass">✅</td><td>登录前不可见</td></tr>
+<tr><td>9</td><td>无同步日志</td><td class="pass">✅</td><td>首次使用无日志</td></tr>
+<tr><td>10</td><td>无飞书配置</td><td class="pass">✅</td><td>首次使用无配置</td></tr>
+<tr><td>11</td><td>组长登录成功</td><td class="pass">✅</td><td>进入车型页面</td></tr>
+<tr><td>12</td><td>车辆数据完整</td><td class="pass">✅</td><td>显示"共73条"</td></tr>
+<tr><td>13</td><td>组长可见添加按钮</td><td class="pass">✅</td><td>FAB按钮显示</td></tr>
+<tr><td>14</td><td>缩略图显示</td><td class="pass">✅</td><td>找到65张缩略图</td></tr>
+<tr><td>15</td><td>首次无查看记录</td><td class="pass">✅</td><td>记录内容为空</td></tr>
+<tr><td>16</td><td>查看后有记录</td><td class="pass">✅</td><td>产生最近查看记录</td></tr>
+<tr><td>17</td><td>注册页面显示</td><td class="pass">✅</td><td>注册表单可见</td></tr>
+<tr><td>18</td><td>注册提交成功</td><td class="pass">✅</td><td>返回登录页</td></tr>
+<tr><td>19</td><td>待审核无法登录</td><td class="pass">✅</td><td>仍在登录页</td></tr>
+<tr><td>20</td><td>用户信息正确</td><td class="pass">✅</td><td>显示"组长"</td></tr>
+<tr><td>21</td><td>组员管理页面</td><td class="pass">✅</td><td>已显示</td></tr>
+<tr><td>22</td><td>待审核记录显示</td><td class="pass">✅</td><td>测试组员信息可见</td></tr>
+<tr><td>23</td><td>审核通过</td><td class="pass">✅</td><td>已点击通过</td></tr>
+<tr><td>24</td><td>组员登录成功</td><td class="pass">✅</td><td>进入车型页面</td></tr>
+<tr><td>25</td><td>组员不可见添加按钮</td><td class="pass">✅</td><td>FAB隐藏</td></tr>
+<tr><td>26</td><td>组员无编辑按钮</td><td class="pass">✅</td><td>编辑按钮数量为0</td></tr>
+<tr><td>27</td><td>同步中心显示</td><td class="pass">✅</td><td>已显示</td></tr>
+<tr><td>28</td><td>飞书配置区域</td><td class="pass">✅</td><td>已显示</td></tr>
+<tr><td>29</td><td>飞书配置保存</td><td class="pass">✅</td><td>状态：飞书账号已配置 ✓</td></tr>
+<tr><td>30</td><td>上传同步完成</td><td class="pass">✅</td><td>73条车型数据已同步</td></tr>
+<tr><td>31</td><td>密码页显示当前账号</td><td class="pass">✅</td><td>账号：17602554481</td></tr>
+<tr><td>32</td><td>忘记密码页面</td><td class="pass">✅</td><td>已显示</td></tr>
+<tr><td>33</td><td>密码重置成功</td><td class="pass">✅</td><td>返回登录页</td></tr>
+<tr><td>34</td><td>新密码登录成功</td><td class="pass">✅</td><td>进入车型页面</td></tr>
+</table>
+</div>
+</div>
+
+<!-- 第七章 -->
+<div class="section" id="ch7">
+<h2>7. 技术栈与依赖</h2>
+<div class="card">
+<h3>7.1 前端技术</h3>
+<table>
+<tr><th>技术</th><th>版本</th><th>用途</th></tr>
+<tr><td>HTML5</td><td>-</td><td>页面结构</td></tr>
+<tr><td>CSS3 / Tailwind CSS</td><td>3.x (CDN)</td><td>样式框架</td></tr>
+<tr><td>JavaScript (ES6+)</td><td>-</td><td>业务逻辑</td></tr>
+<tr><td>localStorage API</td><td>-</td><td>本地数据持久化</td></tr>
+<tr><td>Fetch API</td><td>-</td><td>飞书API调用（预留）</td></tr>
+</table>
+
+<h3>7.2 构建工具链</h3>
+<table>
+<tr><th>工具</th><th>版本</th><th>用途</th></tr>
+<tr><td>Cordova</td><td>13.0.0</td><td>混合应用打包框架</td></tr>
+<tr><td>cordova-android</td><td>15.1.0</td><td>Android平台支持</td></tr>
+<tr><td>JDK</td><td>17.0.13 (Microsoft Temurin)</td><td>Java编译环境</td></tr>
+<tr><td>Gradle</td><td>8.11.1</td><td>Android构建工具</td></tr>
+<tr><td>Android SDK</td><td>API 36</td><td>Android编译SDK</td></tr>
+<tr><td>Build Tools</td><td>36.0.0</td><td>Android构建工具</td></tr>
+<tr><td>Playwright</td><td>1.62.0</td><td>自动化测试</td></tr>
+<tr><td>Python</td><td>3.10.11</td><td>测试脚本运行环境</td></tr>
+</table>
+
+<h3>7.3 Cordova 配置</h3>
+<div class="code-block">
+<span class="cmt">&lt;!-- config.xml 核心配置 --&gt;</span>
+&lt;widget id=<span class="str">"com.tcg.poweroff"</span> version=<span class="str">"1.0.0"</span>&gt;
+  &lt;name&gt;太仓港断电指导&lt;/name&gt;
+  &lt;description&gt;太仓港商品车断电操作指导应用&lt;/description&gt;
+  &lt;author&gt;TCG Development Team&lt;/author&gt;
+  &lt;content src=<span class="str">"index.html"</span> /&gt;
+  &lt;access origin=<span class="str">"*"</span> /&gt;
+  &lt;preference name=<span class="str">"android-minSdkVersion"</span> value=<span class="str">"27"</span> /&gt;
+&lt;/widget&gt;</div>
+</div>
+</div>
+
+<!-- 第八章 -->
+<div class="section" id="ch8">
+<h2>8. 安卓打包与部署</h2>
+<div class="card">
+<h3>8.1 打包流程</h3>
+<ol>
+<li>将 demo.html 复制为 tcg_app/www/index.html</li>
+<li>将 vehicle_images/ 复制到 tcg_app/www/vehicle_images/</li>
+<li>创建 Cordova 项目：cordova create tcg_app com.tcg.poweroff</li>
+<li>添加 Android 平台：cordova platform add android</li>
+<li>配置环境变量：JAVA_HOME, ANDROID_HOME, GRADLE_HOME</li>
+<li>在 gradle.properties 中添加 android.overridePathCheck=true（路径含中文）</li>
+<li>执行 Gradle 构建：gradle cdvBuildDebug</li>
+<li>获取 APK：platforms/android/app/build/outputs/apk/debug/app-debug.apk</li>
+<li>重命名为：太仓港断电指导V1.0.apk</li>
+</ol>
+
+<h3>8.2 环境变量配置</h3>
+<div class="code-block">
+JAVA_HOME=C:\jdk17\jdk-17.0.13+11
+ANDROID_HOME=C:\Android\Sdk
+ANDROID_SDK_ROOT=C:\Android\Sdk
+GRADLE_HOME=C:\gradle\gradle-8.11.1
+PATH=%JAVA_HOME%\bin;%ANDROID_HOME%\cmdline-tools\latest\bin;%GRADLE_HOME%\bin;%PATH%</div>
+
+<h3>8.3 重新构建命令</h3>
+<div class="code-block">
+cd e:\车辆断电指导应用开发\tcg_app\platforms\android
+gradle cdvBuildDebug -b build.gradle --no-daemon</div>
+
+<h3>8.4 安装说明</h3>
+<ul>
+<li>将 <code>太仓港断电指导V1.0.apk</code> 传输到 Android 手机</li>
+<li>在手机上允许"安装未知来源应用"</li>
+<li>点击安装，安装完成后打开应用</li>
+<li>首次使用需注册账号：组长手机号 17602554481 注册即生效</li>
+<li>组员手机号注册后需等待组长审核</li>
+</ul>
+</div>
+</div>
+
+<!-- 第九章 -->
+<div class="section" id="ch9">
+<h2>9. 数据结构定义</h2>
+<div class="card">
+<h3>9.1 localStorage 键值</h3>
+<table>
+<tr><th>键名</th><th>类型</th><th>说明</th></tr>
+<tr><td>tcg_users</td><td>JSON数组</td><td>所有注册用户数据</td></tr>
+<tr><td>feishu_config</td><td>JSON对象</td><td>飞书API配置（App ID, Secret, Folder, Interval）</td></tr>
+<tr><td>feishu_sync_data</td><td>JSON对象</td><td>最近一次同步的数据快照</td></tr>
+<tr><td>sync_log</td><td>JSON数组</td><td>同步操作日志</td></tr>
+</table>
+
+<h3>9.2 内置数据</h3>
+<table>
+<tr><th>变量名</th><th>类型</th><th>说明</th></tr>
+<tr><td>VEHICLES</td><td>Array&lt;Object&gt;</td><td>73条车型断电指导数据</td></tr>
+<tr><td>BRANDS</td><td>Array&lt;Object&gt;</td><td>10个品牌分类数据</td></tr>
+<tr><td>LEADER_PHONE</td><td>string</td><td>组长手机号 '17602554481'</td></tr>
+<tr><td>state</td><td>Object</td><td>应用全局状态</td></tr>
+</table>
+
+<h3>9.3 全局状态对象</h3>
+<div class="code-block">
+<span class="kw">let</span> state = {
+  screen: <span class="str">'login'</span>,           <span class="cmt">// 当前页面</span>
+  currentUser: <span class="kw">null</span>,          <span class="cmt">// 当前登录用户</span>
+  viewMode: <span class="str">'tree'</span>,           <span class="cmt">// 视图模式：tree/flat</span>
+  currentVehicleId: <span class="kw">null</span>,      <span class="cmt">// 当前查看车辆ID</span>
+  searchQuery: <span class="str">''</span>,            <span class="cmt">// 搜索关键词</span>
+  brandFilter: <span class="str">'all'</span>,         <span class="cmt">// 品牌筛选</span>
+  editingVehicle: <span class="kw">null</span>,       <span class="cmt">// 正在编辑的车辆</span>
+  isEditing: <span class="kw">false</span>,            <span class="cmt">// 是否编辑模式</span>
+  expandedBrands: Set,            <span class="cmt">// 展开的品牌</span>
+  recentVehicles: [],             <span class="cmt">// 最近查看记录（≤5条）</span>
+  photoZoom: 1                    <span class="cmt">// 图片查看器缩放</span>
+};</div>
+</div>
+</div>
+
+<!-- 第十章 -->
+<div class="section" id="ch10">
+<h2>10. API接口说明</h2>
+<div class="card">
+<h3>10.1 内部函数清单</h3>
+<table>
+<tr><th>函数名</th><th>权限</th><th>说明</th></tr>
+<tr><td>doLogin()</td><td>公开</td><td>用户登录</td></tr>
+<tr><td>doRegister()</td><td>公开</td><td>用户注册</td></tr>
+<tr><td>doForgotPassword()</td><td>公开</td><td>忘记密码重置</td></tr>
+<tr><td>doLogout()</td><td>已登录</td><td>退出登录</td></tr>
+<tr><td>changePassword()</td><td>已登录</td><td>修改密码</td></tr>
+<tr><td>approveMember(id)</td><td>组长</td><td>审核通过组员注册</td></tr>
+<tr><td>rejectMember(id)</td><td>组长</td><td>拒绝组员注册</td></tr>
+<tr><td>deleteMember(id)</td><td>组长</td><td>删除组员账号</td></tr>
+<tr><td>resetMemberPass(id)</td><td>组长</td><td>重置组员密码为123456</td></tr>
+<tr><td>openVehicleDetail(id)</td><td>已登录</td><td>打开车辆详情</td></tr>
+<tr><td>openEditVehicle(id)</td><td>组长</td><td>打开编辑车辆</td></tr>
+<tr><td>saveVehicle()</td><td>组长</td><td>保存车辆数据</td></tr>
+<tr><td>confirmDeleteVehicle(id)</td><td>组长</td><td>确认删除车辆</td></tr>
+<tr><td>saveFeishuConfig()</td><td>已登录</td><td>保存飞书配置</td></tr>
+<tr><td>doSyncUpload()</td><td>组长</td><td>上传数据至飞书</td></tr>
+<tr><td>doSyncDownload()</td><td>已登录</td><td>从飞书获取数据</td></tr>
+<tr><td>exportSingle(type)</td><td>已登录</td><td>导出单车型数据（word/pdf/excel）</td></tr>
+</table>
+
+<h3>10.2 飞书接口（预留）</h3>
+<div class="info-box">
+当前版本使用 localStorage 模拟飞书云端存储。实际部署时，需对接飞书开放平台API：<br>
+1. <strong>获取Token</strong>：POST https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal<br>
+2. <strong>上传文件</strong>：POST https://open.feishu.cn/open-apis/drive/v1/files/upload_form<br>
+3. <strong>下载文件</strong>：GET https://open.feishu.cn/open-apis/drive/v1/files/{file_id}
+</div>
+</div>
+</div>
+
+<!-- 第十一章 -->
+<div class="section" id="ch11">
+<h2>11. 已知限制与后续规划</h2>
+<div class="card">
+<h3>11.1 当前限制</h3>
+<table>
+<tr><th>限制项</th><th>说明</th><th>计划</th></tr>
+<tr><td>飞书同步为模拟</td><td>使用localStorage模拟云端，未实际对接飞书API</td><td>V2.0对接飞书开放平台</td></tr>
+<tr><td>数据存储为本地</td><td>用户数据和车辆数据存储在localStorage，清除浏览器数据会丢失</td><td>V2.0使用IndexedDB或后端数据库</td></tr>
+<tr><td>无推送通知</td><td>组员无法收到同步更新通知</td><td>V2.0增加推送功能</td></tr>
+<tr><td>APK为Debug版</td><td>未签名，安装时需允许未知来源</td><td>V2.0发布Release签名版</td></tr>
+<tr><td>无离线缓存</td><td>图片资源直接从本地文件系统加载</td><td>V2.0增加Service Worker缓存</td></tr>
+</table>
+
+<h3>11.2 后续版本规划</h3>
+<table>
+<tr><th>版本</th><th>计划功能</th><th>预计时间</th></tr>
+<tr><td>V1.2</td><td>修复已知Bug，优化UI交互</td><td>2026年9月</td></tr>
+<tr><td>V2.0</td><td>飞书API实际对接、后端数据库、推送通知</td><td>2026年10月</td></tr>
+<tr><td>V2.1</td><td>视频教程、批量导入导出、数据统计面板</td><td>2026年11月</td></tr>
+</table>
+</div>
+</div>
+
+<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:30px">
+<p>太仓港商品车断电指导 APP V1.1 开发文档</p>
+<p>© 2026 TCG Development Team | 2026年8月20日</p>
+</div>
+
+</div>
+</body>
+</html>
