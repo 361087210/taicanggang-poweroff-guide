@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>太仓港车辆断电指导</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+*{font-family:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
+body{margin:0;background:#1a1a2e;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;}
+
+/* Phone frame */
+.phone-frame{width:412px;height:870px;background:#0f0f1a;border-radius:48px;padding:10px;box-shadow:0 0 0 2px #2a2a3e,0 25px 80px rgba(0,0,0,.5);position:relative;overflow:hidden;flex-shrink:0;}
+.phone-screen{width:100%;height:100%;background:#f5f6fa;border-radius:40px;overflow:hidden;position:relative;}
+.phone-notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:130px;height:26px;background:#0f0f1a;border-radius:0 0 16px 16px;z-index:200;}
+
+/* Screens */
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:#f5f6fa;overflow:hidden;}
+.screen.active{display:flex;}
+.screen-slide{animation:slideIn .3s ease-out;}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+@keyframes slideUp{from{opacity:0;transform:translateY(15px);}to{opacity:1;transform:translateY(0);}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:scale(1);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.anim-up{animation:slideUp .3s ease-out both;}
+.anim-scale{animation:scaleIn .25s ease-out both;}
+.spin{animation:spin 1s linear infinite;}
+.pulse{animation:pulse 2s ease-in-out infinite;}
+
+/* Scrollbar hide */
+.scroll-y{overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.scroll-y::-webkit-scrollbar{display:none;}
+
+/* Bottom nav */
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;height:64px;background:#fff;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-around;z-index:50;}
+.nav-tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:#9ca3af;cursor:pointer;padding:4px 16px;transition:color .2s;}
+.nav-tab.active{color:#2563eb;font-weight:600;}
+.nav-tab svg{width:24px;height:24px;}
+
+/* FAB */
+.fab{position:absolute;bottom:80px;right:20px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,99,235,.45);cursor:pointer;z-index:40;transition:transform .15s;}
+.fab:active{transform:scale(.9);}
+
+/* Status badge */
+.status-pending{background:#fef3c7;color:#d97706;}
+.status-done{background:#dcfce7;color:#16a34a;}
+
+/* Power type badge */
+.pt-纯电{background:#dcfce7;color:#16a34a;}
+.pt-插混{background:#fef3c7;color:#d97706;}
+.pt-油混{background:#e0e7ff;color:#4f46e5;}
+.pt-燃油{background:#f3f4f6;color:#6b7280;}
+.pt-氢燃料{background:#fce7f3;color:#be185d;}
+.pt-混动{background:#fef3c7;color:#d97706;}
+
+/* Modal */
+.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.show{display:flex;animation:fadeIn .2s;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal-sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;max-height:80vh;overflow-y:auto;animation:slideUp .3s ease-out;}
+.modal-center{background:#fff;width:90%;max-width:360px;border-radius:16px;overflow:hidden;animation:scaleIn .25s ease-out;}
+
+/* Toast */
+.toast{position:absolute;bottom:90px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(0,0,0,.82);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:400;transition:transform .3s;white-space:nowrap;max-width:90%;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* Bottom sheet item */
+.bs-item{padding:14px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s;}
+.bs-item:active{background:#f9fafb;}
+.bs-item.selected{color:#2563eb;font-weight:600;}
+.bs-item.selected::after{content:'';width:20px;height:20px;background:#2563eb;border-radius:50%;display:flex;}
+
+/* Photo viewer */
+.photo-viewer{position:absolute;inset:0;background:#000;z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;}
+.photo-viewer.show{display:flex;}
+.photo-viewer img{max-width:100%;max-height:100%;transition:transform .2s;transform-origin:center;}
+
+/* Video player */
+.video-player{position:absolute;inset:0;background:#000;z-index:500;display:none;flex-direction:column;}
+.video-player.show{display:flex;}
+.video-player video{flex:1;width:100%;object-fit:contain;}
+
+/* Outdoor mode (high contrast) */
+.outdoor{--bg:#000;--card:#1a1a1a;--text:#fff;--text2:#ccc;--border:#333;--primary:#FFD700;--blue:#FFD700;}
+.outdoor .bg-white{background:#1a1a1a !important;}
+.outdoor .bg-gray-50,.outdoor .bg-gray-100,.outdoor .bg-gray-200{background:#2a2a2a !important;}
+.outdoor .text-gray-900,.outdoor .text-gray-800,.outdoor .text-gray-700{color:#fff !important;}
+.outdoor .text-gray-600,.outdoor .text-gray-500,.outdoor .text-gray-400{color:#ccc !important;}
+.outdoor .text-blue-600,.outdoor .text-blue-500,.outdoor .text-blue-700{color:#FFD700 !important;}
+.outdoor .border-gray-100,.outdoor .border-gray-200,.outdoor .border-gray-300{border-color:#444 !important;}
+.outdoor .bg-blue-600,.outdoor .bg-blue-500,.outdoor .bg-blue-700{background:#FFD700 !important;color:#000 !important;}
+.outdoor .bg-blue-50,.outdoor .bg-blue-100{background:#333 !important;}
+.outdoor .from-blue-600{background:linear-gradient(135deg,#FFD700,#FFA500) !important;}
+.outdoor #screen-vehicles,.outdoor #screen-data,.outdoor #screen-my,.outdoor #screen-detail,.outdoor #screen-edit,.outdoor #screen-sync,.outdoor #screen-members,.outdoor #screen-password{background:#000 !important;}
+.outdoor .bottom-nav{background:#1a1a1a !important;border-color:#333 !important;}
+.outdoor .nav-tab{color:#666;}
+.outdoor .nav-tab.active{color:#FFD700;}
+.outdoor .shadow-sm{box-shadow:none !important;border:1px solid #444 !important;}
+.outdoor .shadow{box-shadow:none !important;}
+.outdoor .pt-纯电,.outdoor .pt-插混,.outdoor .pt-油混,.outdoor .pt-燃油,.outdoor .pt-氢燃料{background:#333 !important;color:#FFD700 !important;}
+.outdoor .status-pending{background:#4a3000 !important;color:#FFD700 !important;}
+.outdoor .status-done{background:#1a3a00 !important;color:#90EE90 !important;}
+.outdoor input,.outdoor textarea,.outdoor select{background:#2a2a2a !important;color:#fff !important;border-color:#555 !important;}
+.outdoor input::placeholder,.outdoor textarea::placeholder{color:#888 !important;}
+.outdoor .fab{background:linear-gradient(135deg,#FFD700,#FFA500) !important;color:#000 !important;}
+
+/* Toggle switch */
+.toggle{width:44px;height:24px;border-radius:12px;background:#d1d5db;padding:2px;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.toggle.on{background:#2563eb;}
+.toggle .knob{width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;}
+.toggle.on .knob{transform:translateX(20px);}
+
+/* Step number circle */
+.step-circle{width:26px;height:26px;border-radius:50%;border:2px solid #2563eb;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;color:#2563eb;background:#eff6ff;}
+.step-circle.done{background:#2563eb;color:#fff;border-color:#2563eb;}
+
+/* Key handling text area - spacious */
+.key-textarea{min-height:80px;line-height:1.8;padding:12px 14px;border-radius:10px;border:1px solid #e5e7eb;font-size:14px;resize:vertical;width:100%;background:#fafafa;transition:border-color .2s;}
+.key-textarea:focus{border-color:#2563eb;background:#fff;outline:none;}
+
+/* Checkbox */
+.chk{width:20px;height:20px;border-radius:5px;border:2px solid #d1d5db;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;}
+.chk.on{background:#2563eb;border-color:#2563eb;}
+.chk.on::after{content:'';width:6px;height:10px;border:2px solid #fff;border-top:0;border-left:0;transform:rotate(45deg) translate(-1px,-1px);}
+</style>
+</head>
+<body>
+
+<div class="phone-frame" id="app-root">
+<div class="phone-notch"></div>
+<div class="phone-screen" id="phone-screen">
+
+<!-- ===== LOGIN ===== -->
+<div class="screen active" id="screen-login" style="background:linear-gradient(160deg,#1e3a5f,#1e40af 40%,#3b82f6);">
+<div class="flex-1 flex flex-col items-center justify-center px-6 scroll-y" style="overflow-y:auto;">
+<div class="w-20 h-20 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-4 anim-scale">
+<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" class="w-10 h-10"><path d="M3 17h18M5 17v-5l2-5h10l2 5v5M5 17v2h2v-2M17 17v2h2v-2M7 12h10"/><circle cx="7.5" cy="14.5" r="1.5" fill="white"/><circle cx="16.5" cy="14.5" r="1.5" fill="white"/></svg>
+</div>
+<h1 class="text-white text-2xl font-bold mb-1 anim-up">太仓港车辆断电指导</h1>
+<p class="text-white/50 text-xs mb-8 anim-up" style="animation-delay:.1s">商品车断电操作标准化指导平台</p>
+<div class="w-full bg-white rounded-3xl p-6 shadow-2xl anim-up" style="animation-delay:.2s">
+<div class="space-y-3">
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">手机号</label><input id="login-phone" type="tel" maxlength="11" placeholder="请输入手机号" class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white outline-none text-sm transition-all"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">密码</label><input id="login-pass" type="password" placeholder="请输入密码" class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white outline-none text-sm transition-all"></div>
+</div>
+<button onclick="doLogin()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-medium text-sm mt-4 active:scale-95 transition-transform">登 录</button>
+<div class="flex justify-between mt-3">
+<button onclick="showScreen('screen-register')" class="text-xs text-blue-500">注册账号</button>
+<button onclick="showScreen('screen-forgot')" class="text-xs text-gray-400">忘记密码？</button>
+</div>
+</div>
+<div class="mt-6 text-white/30 text-xs anim-up" style="animation-delay:.3s">V3.0 · 2026-08-20</div>
+</div>
+</div>
+
+<!-- ===== REGISTER SCREEN ===== -->
+<div class="screen" id="screen-register" style="background:linear-gradient(160deg,#1e3a5f,#1e40af 40%,#3b82f6);">
+<div class="flex-1 flex flex-col items-center justify-center px-6 scroll-y" style="overflow-y:auto;">
+<div class="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-4">
+<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" class="w-8 h-8"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM19 8v6M22 11h-6"/></svg>
+</div>
+<h1 class="text-white text-xl font-bold mb-1">注册账号</h1>
+<p class="text-white/50 text-xs mb-6">组员账号需组长审核通过后方可使用</p>
+<div class="w-full bg-white rounded-3xl p-6 shadow-2xl">
+<div class="space-y-3">
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">姓名</label><input id="reg-name" type="text" placeholder="请输入真实姓名" class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white outline-none text-sm"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">手机号</label><input id="reg-phone" type="tel" maxlength="11" placeholder="请输入11位手机号" class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white outline-none text-sm"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">密码</label><input id="reg-pass" type="password" placeholder="请设置6位以上密码" class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white outline-none text-sm"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">确认密码</label><input id="reg-pass2" type="password" placeholder="请再次输入密码" class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white outline-none text-sm"></div>
+</div>
+<button onclick="doRegister()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-medium text-sm mt-4 active:scale-95">提交注册</button>
+<button onclick="showScreen('screen-login')" class="w-full py-2 text-xs text-gray-400 mt-2">返回登录</button>
+</div>
+</div>
+</div>
+
+<!-- ===== FORGOT PASSWORD SCREEN ===== -->
+<div class="screen" id="screen-forgot" style="background:linear-gradient(160deg,#1e3a5f,#1e40af 40%,#3b82f6);">
+<div class="flex-1 flex flex-col items-center justify-center px-6 scroll-y" style="overflow-y:auto;">
+<div class="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center mb-4">
+<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" class="w-8 h-8"><path d="M15 7a4 4 0 11-8 0 4 4 0 018 0zM15 11v4a4 4 0 01-4 4H7a4 4 0 01-4-4v-4M9 15v6M15 15v6"/></svg>
+</div>
+<h1 class="text-white text-xl font-bold mb-1">重置密码</h1>
+<p class="text-white/50 text-xs mb-6">请联系组长重置或通过手机号验证</p>
+<div class="w-full bg-white rounded-3xl p-6 shadow-2xl">
+<div class="space-y-3">
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">手机号</label><input id="forgot-phone" type="tel" maxlength="11" placeholder="请输入注册手机号" class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white outline-none text-sm"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">新密码</label><input id="forgot-pass" type="password" placeholder="请设置新密码" class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white outline-none text-sm"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">确认密码</label><input id="forgot-pass2" type="password" placeholder="请再次输入新密码" class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white outline-none text-sm"></div>
+</div>
+<button onclick="doForgotPassword()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-medium text-sm mt-4 active:scale-95">确认重置</button>
+<button onclick="showScreen('screen-login')" class="w-full py-2 text-xs text-gray-400 mt-2">返回登录</button>
+</div>
+</div>
+</div>
+
+<!-- ===== VEHICLE LIST (车型) ===== -->
+<div class="screen" id="screen-vehicles">
+<div class="sticky top-0 z-30 bg-white shadow-sm">
+<div class="pt-12 pb-2 px-4">
+<div class="flex items-center justify-between mb-3">
+<h2 class="text-lg font-bold text-gray-900">车型手册</h2>
+<div class="flex items-center gap-2">
+<button onclick="toggleSearchMode()" class="w-8 h-8 flex items-center justify-center text-gray-400">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+</button>
+<button onclick="openSideMenu()" class="w-8 h-8 flex items-center justify-center text-gray-400">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+</button>
+</div>
+</div>
+<!-- Search bar -->
+<div class="relative mb-3">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+<input id="search-input" oninput="handleSearch()" type="text" placeholder="搜索品牌/车系/配置（支持拼音首字母）" class="w-full pl-9 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all">
+</div>
+<!-- Brand tags -->
+<div class="flex gap-2 overflow-x-auto scroll-y pb-1" id="brand-tags" style="scrollbar-width:none;-webkit-overflow-scrolling:touch;"></div>
+</div>
+<!-- View toggle -->
+<div class="flex items-center justify-between px-4 py-2 border-t border-gray-100">
+<div class="flex gap-3">
+<button onclick="setViewMode('tree')" id="btn-tree" class="text-xs font-medium text-blue-600 flex items-center gap-1">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M3 6h6M3 12h12M3 18h18M9 6v12"/></svg>
+按品牌-车系-车型分级
+</button>
+<button onclick="setViewMode('flat')" id="btn-flat" class="text-xs font-medium text-gray-400 flex items-center gap-1">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+按车型平铺
+</button>
+</div>
+<span class="text-xs text-gray-400" id="vehicle-count-label">共73条</span>
+</div>
+</div>
+<!-- Recent viewed -->
+<div class="px-4 pt-3" id="recent-section">
+<div class="text-xs text-gray-400 font-medium mb-2">最近查看</div>
+<div class="flex gap-2 overflow-x-auto scroll-y" id="recent-list" style="scrollbar-width:none;"></div>
+</div>
+<!-- Vehicle list -->
+<div class="flex-1 scroll-y px-4 pb-24" id="vehicle-list-container"></div>
+<!-- FAB -->
+<div class="fab" onclick="openEditVehicle()" id="fab-add">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-6 h-6"><path d="M12 5v14M5 12h14"/></svg>
+</div>
+</div>
+
+<!-- ===== VEHICLE DETAIL ===== -->
+<div class="screen" id="screen-detail">
+<div class="sticky top-0 z-30 bg-white shadow-sm">
+<div class="pt-12 px-4 pb-2">
+<div class="flex items-center justify-between mb-2">
+<button onclick="goBack()" class="w-8 h-8 flex items-center justify-center">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M15 18l-6-6 6-6"/></svg>
+</button>
+<span class="text-sm font-bold text-gray-900">车辆详情</span>
+<div class="flex items-center gap-1">
+<button onclick="prevVehicle()" class="px-2 py-1 text-xs text-gray-500">&lt;上一辆</button>
+<span class="text-xs text-gray-400" id="detail-index">1/73</span>
+<button onclick="nextVehicle()" class="px-2 py-1 text-xs text-gray-500">下一辆&gt;</button>
+</div>
+</div>
+</div>
+</div>
+<div class="flex-1 scroll-y pb-24" id="detail-content"></div>
+</div>
+
+<!-- ===== EDIT VEHICLE ===== -->
+<div class="screen" id="screen-edit">
+<div class="sticky top-0 z-30 bg-white shadow-sm">
+<div class="pt-12 px-4 pb-3 flex items-center justify-between">
+<h2 class="text-base font-bold" id="edit-title">添加车辆</h2>
+<div class="flex items-center gap-2">
+<button onclick="goBack()" class="text-sm text-gray-500">取消</button>
+<button onclick="saveVehicle()" class="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium">保存</button>
+</div>
+</div>
+</div>
+<div class="flex-1 scroll-y px-4 pb-24" id="edit-content"></div>
+</div>
+
+<!-- ===== DATA CENTER (数据) ===== -->
+<div class="screen" id="screen-data">
+<div class="sticky top-0 z-30 bg-white shadow-sm">
+<div class="pt-12 px-4 pb-3">
+<h2 class="text-lg font-bold">数据中心</h2>
+</div>
+</div>
+<div class="flex-1 scroll-y px-4 pb-24 space-y-4 pt-4">
+<!-- Batch export -->
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<span class="text-sm font-bold text-gray-900">批量导出</span>
+<div class="flex gap-2">
+<button onclick="toggleSelectAll()" id="btn-select-all" class="text-xs text-blue-500">全选</button>
+<button onclick="clearSelection()" class="text-xs text-gray-400">取消</button>
+</div>
+</div>
+<div class="text-xs text-gray-400 mb-2" id="selection-count">已选 0/73</div>
+<div class="space-y-1.5 max-h-60 overflow-y-auto scroll-y" id="data-vehicle-list"></div>
+<!-- Export buttons -->
+<div class="grid grid-cols-3 gap-2 mt-4">
+<button onclick="exportData('word')" class="py-2.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出Word
+</button>
+<button onclick="exportData('pdf')" class="py-2.5 bg-red-50 text-red-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出PDF
+</button>
+<button onclick="exportData('excel')" class="py-2.5 bg-green-50 text-green-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出Excel
+</button>
+<button onclick="exportData('csv')" class="py-2.5 bg-gray-50 text-gray-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出CSV
+</button>
+<button onclick="exportData('json')" class="py-2.5 bg-purple-50 text-purple-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出JSON
+</button>
+<div class="py-2.5 bg-gray-50 text-gray-400 rounded-lg text-xs text-center">更多格式</div>
+</div>
+</div>
+<!-- Data backup -->
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="flex items-center gap-2 mb-2">
+<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg>
+<span class="text-sm font-bold text-gray-900">数据备份</span>
+</div>
+<p class="text-xs text-gray-400 mb-3">生成完整数据备份文件，可通过微信、钉钉等方式分享到其他设备</p>
+<button onclick="doBackup()" class="w-full py-2.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2">分享备份</button>
+</div>
+<!-- Data sync -->
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="flex items-center gap-2 mb-2">
+<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></svg>
+<span class="text-sm font-bold text-gray-900">数据同步</span>
+</div>
+<p class="text-xs text-gray-400 mb-3">连接云端服务器或本地Wi-Fi直连，同步车辆数据与账号配置</p>
+<button onclick="showScreen('screen-sync')" class="w-full py-2.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2">进入同步中心</button>
+</div>
+</div>
+</div>
+
+<!-- ===== CLOUD SYNC ===== -->
+<div class="screen" id="screen-sync">
+<div class="sticky top-0 z-30 bg-white shadow-sm">
+<div class="pt-12 px-4 pb-3 flex items-center gap-3">
+<button onclick="showScreen('screen-data')" class="w-8 h-8 flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M15 18l-6-6 6-6"/></svg></button>
+<h2 class="text-base font-bold">云端数据同步中心</h2>
+</div>
+</div>
+<div class="flex-1 scroll-y px-4 pb-24 pt-4 space-y-4">
+<!-- Feishu account config -->
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="flex items-center gap-2 mb-3"><svg viewBox="0 0 24 24" fill="#3370ff" class="w-5 h-5"><path d="M4.3 4.3h5.4v5.4H4.3zM14.3 4.3h5.4v5.4h-5.4zM4.3 14.3h5.4v5.4H4.3zM14.3 14.3h5.4v5.4h-5.4z"/></svg><div class="text-sm font-bold text-gray-700">飞书账号接口</div></div>
+<div class="space-y-3">
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">App ID</label><input id="feishu-appid" type="text" placeholder="飞书应用 App ID" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">App Secret</label><input id="feishu-secret" type="password" placeholder="飞书应用 App Secret" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">同步文件夹 Token</label><input id="feishu-folder" type="text" placeholder="飞书云空间文件夹 Token" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+<div class="flex items-center justify-between"><div class="text-xs text-gray-400">同步间隔（分钟）</div><input id="feishu-interval" type="number" value="30" min="5" max="1440" class="w-20 px-2 py-1.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-center"></div>
+<button onclick="saveFeishuConfig()" class="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium">保存配置</button>
+<div id="feishu-status" class="text-xs text-gray-400 text-center mt-1"></div>
+</div>
+</div>
+<!-- Sync status -->
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v3.0</div></div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
+<div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">飞书云端</div><div class="text-xs font-medium text-gray-700 mt-0.5" id="sync-cloud-ver">未连接</div></div>
+</div>
+</div>
+<!-- Sync operations -->
+<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+<div class="px-4 py-3 border-b border-gray-50 text-sm font-bold text-gray-700">同步操作</div>
+<div class="bs-item" onclick="doSyncUpload()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><div><div class="text-sm text-gray-800">${canEdit()?'上传数据至飞书':'从飞书获取数据'}</div><div class="text-xs text-gray-400">${canEdit()?'组长：将本地车型数据同步到飞书云':'组员：从飞书云端获取最新数据'}</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="bs-item" onclick="doSyncDownload()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><div><div class="text-sm text-gray-800">手动拉取飞书数据</div><div class="text-xs text-gray-400">强制从飞书云端获取最新数据</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="bs-item" onclick="showToast('正在搜索局域网设备...')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg><div><div class="text-sm text-gray-800">Wi-Fi直连同步</div><div class="text-xs text-gray-400">同一局域网内设备点对点同步</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="bs-item" onclick="showToast('配置已导出')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><div><div class="text-sm text-gray-800">导出配置 — 备份本地</div><div class="text-xs text-gray-400">导出同步配置文件</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+</div>
+<!-- Sync settings -->
+<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+<div class="px-4 py-3 border-b border-gray-50 text-sm font-bold text-gray-700">同步设置</div>
+<div class="px-4 py-3 flex items-center justify-between"><div><div class="text-sm text-gray-800">自动同步</div><div class="text-xs text-gray-400 mt-0.5">APP启动时自动拉取飞书数据</div></div><div class="toggle on" onclick="toggleSwitch(this)"><div class="knob"></div></div></div>
+<div class="px-4 py-3 flex items-center justify-between border-t border-gray-50"><div><div class="text-sm text-gray-800">仅WiFi同步</div><div class="text-xs text-gray-400 mt-0.5">移动网络不同步图片视频</div></div><div class="toggle on" onclick="toggleSwitch(this)"><div class="knob"></div></div></div>
+</div>
+<!-- Local storage -->
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="text-sm font-bold text-gray-700 mb-2">本地存储目录</div>
+<div class="text-xs text-gray-400 space-y-1">
+<div>/sync_backup — 组长同步自动备份，7天自动清理</div>
+<div>/sync_log — 同步操作日志</div>
+<div class="mt-2 text-gray-300">备份与日志仅保存在本机，导出后可见</div>
+</div>
+</div>
+<!-- Sync log -->
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="text-sm font-bold text-gray-700 mb-3">同步日志</div>
+<div class="space-y-2" id="sync-log-list">
+<div class="flex items-start gap-3"><div class="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div><div class="flex-1"><div class="text-xs text-gray-800">增量同步完成 · 更新3条车型数据</div><div class="text-xs text-gray-400 mt-0.5">2026-08-19 08:30:15</div></div></div>
+<div class="flex items-start gap-3"><div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div><div class="flex-1"><div class="text-xs text-gray-800">全量同步完成 · 共73条车型数据</div><div class="text-xs text-gray-400 mt-0.5">2026-08-18 18:00:00</div></div></div>
+<div class="flex items-start gap-3"><div class="w-2 h-2 rounded-full bg-gray-300 mt-1.5 flex-shrink-0"></div><div class="flex-1"><div class="text-xs text-gray-800">新增车型: 比亚迪·唐L-EV</div><div class="text-xs text-gray-400 mt-0.5">2026-08-17 14:22:33</div></div></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ===== MY (我的) ===== -->
+<div class="screen" id="screen-my">
+<div class="sticky top-0 z-30 bg-white shadow-sm">
+<div class="pt-12 px-4 pb-3"><h2 class="text-lg font-bold">我的</h2></div>
+</div>
+<div class="flex-1 scroll-y px-4 pb-24 pt-4 space-y-4">
+<!-- User card -->
+<div class="user-card bg-gradient-to-r from-blue-700 to-blue-600 rounded-2xl p-5 text-white">
+<div class="flex items-center gap-3">
+<div class="user-avatar w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">组</div>
+<div>
+<div class="user-name font-bold text-base">组长</div>
+<div class="user-role text-white/60 text-xs mt-0.5">组长</div>
+</div>
+</div>
+</div>
+<!-- Device info -->
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="text-sm font-bold text-gray-700 mb-3">设备信息</div>
+<div class="grid grid-cols-2 gap-3 text-xs">
+<div><div class="text-gray-400">屏幕尺寸</div><div class="text-gray-700 mt-0.5">411×858</div></div>
+<div><div class="text-gray-400">像素密度</div><div class="text-gray-700 mt-0.5">2.625x</div></div>
+<div><div class="text-gray-400">平台</div><div class="text-gray-700 mt-0.5">Android</div></div>
+<div><div class="text-gray-400">设备型号</div><div class="text-gray-700 mt-0.5">23117RK66C</div></div>
+</div>
+</div>
+<!-- Settings list -->
+<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+<div class="bs-item" onclick="showScreen('screen-password')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span class="text-sm text-gray-800">修改密码</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="px-4 py-3 flex items-center justify-between border-t border-gray-50">
+<div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg><div><div class="text-sm text-gray-800">高对比度户外模式</div><div class="text-xs text-gray-400 mt-0.5">强光环境下提升可读性</div></div></div>
+<div class="toggle" id="toggle-outdoor" onclick="toggleOutdoorMode()"><div class="knob"></div></div>
+</div>
+<div class="bs-item" id="menu-members" onclick="showScreen('screen-members')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span class="text-sm text-gray-800">组员管理</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="bs-item" id="menu-sync" onclick="showScreen('screen-sync')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据同步</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="bs-item" onclick="doLogout()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="w-5 h-5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="text-sm text-red-500">退出登录</span></div></div>
+</div>
+</div>
+</div>
+
+<!-- ===== MEMBER MANAGEMENT ===== -->
+<div class="screen" id="screen-members">
+<div class="sticky top-0 z-30 bg-white shadow-sm">
+<div class="pt-12 px-4 pb-3 flex items-center gap-3"><button onclick="showScreen('screen-my')" class="w-8 h-8 flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M15 18l-6-6 6-6"/></svg></button><h2 class="text-base font-bold">组员管理</h2></div>
+</div>
+<div class="flex-1 scroll-y px-4 pb-24 pt-4 space-y-4">
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="text-sm font-bold text-gray-700 mb-3">新增组员</div>
+<div class="space-y-3">
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">姓名</label><input id="mem-name" type="text" placeholder="组员真实姓名" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">手机号</label><input id="mem-phone" type="tel" maxlength="11" placeholder="11位手机号" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">初始密码</label><input id="mem-pass" type="text" placeholder="至少6位" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+<button onclick="addMember()" class="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium">创建组员</button>
+</div>
+</div>
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="text-sm font-bold text-gray-700 mb-3">待审核注册 <span id="pending-count" class="text-xs text-orange-500 font-normal"></span></div>
+<div class="space-y-2" id="pending-list"></div>
+</div>
+<div class="bg-white rounded-2xl p-4 shadow-sm">
+<div class="text-sm font-bold text-gray-700 mb-3">现有组员</div>
+<div class="space-y-2" id="member-list"></div>
+</div>
+</div>
+</div>
+
+<!-- ===== CHANGE PASSWORD ===== -->
+<div class="screen" id="screen-password">
+<div class="sticky top-0 z-30 bg-white shadow-sm">
+<div class="pt-12 px-4 pb-3 flex items-center gap-3"><button onclick="showScreen('screen-my')" class="w-8 h-8 flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M15 18l-6-6 6-6"/></svg></button><h2 class="text-base font-bold">修改密码</h2></div>
+</div>
+<div class="flex-1 scroll-y px-4 pb-24 pt-4">
+<div class="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">当前账号</label><div id="pw-current-account" class="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-600"></div></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">原密码</label><input id="pw-old" type="password" placeholder="请输入原密码" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">新密码</label><input id="pw-new" type="password" placeholder="至少6位" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+<div><label class="text-xs text-gray-500 ml-1 mb-1 block">确认新密码</label><input id="pw-confirm" type="password" placeholder="再次输入新密码" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+<button onclick="changePassword()" class="w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-medium mt-2">确认修改</button>
+</div>
+</div>
+</div>
+
+<!-- ===== BOTTOM NAV ===== -->
+<div class="bottom-nav" id="bottom-nav">
+<div class="nav-tab active" data-tab="vehicles" onclick="showScreen('screen-vehicles')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17h18M5 17v-5l2-5h10l2 5v5M5 17v2h2v-2M17 17v2h2v-2M7 12h10"/><circle cx="7.5" cy="14.5" r="1"/><circle cx="16.5" cy="14.5" r="1"/></svg><span>车型</span></div>
+<div class="nav-tab" data-tab="data" onclick="showScreen('screen-data')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span>数据</span></div>
+<div class="nav-tab" data-tab="my" onclick="showScreen('screen-my')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>我的</span></div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== BOTTOM SHEET SELECTOR ===== -->
+<div class="modal-overlay" id="modal-selector">
+<div class="modal-sheet" id="selector-content"></div>
+</div>
+
+<!-- ===== PHOTO VIEWER ===== -->
+<div class="photo-viewer" id="photo-viewer">
+<div class="absolute top-14 right-4 z-10 flex gap-2">
+<button onclick="resetZoom()" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur text-white flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M3 2v6h6M21 22v-6h-6M3 22a16 16 0 0118-18M21 2a16 16 0 00-18 18"/></svg></button>
+</div>
+<button onclick="closePhotoViewer()" class="absolute top-14 left-4 z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur text-white flex items-center justify-center">&times;</button>
+<div id="photo-viewer-label" class="absolute top-14 left-1/2 -translate-x-1/2 z-10 text-white text-sm bg-black/40 px-3 py-1 rounded-full"></div>
+<img id="photo-viewer-img" src="" alt="" onclick="cycleZoom()">
+<div class="text-white/60 text-xs mt-2 absolute bottom-8 left-0 right-0 text-center">双指捏合缩放 · 单击关闭 · 点击图片切换缩放</div>
+</div>
+
+<!-- ===== VIDEO PLAYER ===== -->
+<div class="video-player" id="video-player">
+<div class="flex items-center justify-between px-4 pt-12 pb-3 bg-black/50">
+<button onclick="closeVideoPlayer()" class="text-white text-sm">&times; 关闭</button>
+<div class="flex items-center gap-3">
+<select id="video-speed" onchange="setVideoSpeed(this.value)" class="bg-black/50 text-white text-xs rounded px-2 py-1">
+<option value="0.5">0.5x</option>
+<option value="0.75">0.75x</option>
+<option value="1" selected>1x</option>
+<option value="1.25">1.25x</option>
+<option value="1.5">1.5x</option>
+<option value="2">2x</option>
+</select>
+<button onclick="toggleFullscreen()" class="text-white text-xs">全屏</button>
+</div>
+</div>
+<video id="video-element" controls playsinline style="width:100%;height:100%;object-fit:contain;"></video>
+</div>
+
+<!-- ===== CONFIRM DIALOG ===== -->
+<div class="modal-overlay" id="modal-confirm" style="align-items:center;">
+<div class="modal-center p-5">
+<div class="text-center">
+<div class="text-base font-bold text-gray-900 mb-2" id="confirm-title">确认</div>
+<div class="text-sm text-gray-500 mb-4" id="confirm-msg">确定执行此操作？</div>
+<div class="flex gap-3">
+<button onclick="closeModal('modal-confirm')" class="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">取消</button>
+<button onclick="confirmAction()" class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium">确认</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ===== SHARE SHEET ===== -->
+<div class="modal-overlay" id="modal-share">
+<div class="modal-sheet p-5">
+<div class="text-center mb-4">
+<div class="text-sm font-bold text-gray-900" id="share-filename">文件分享</div>
+</div>
+<div class="grid grid-cols-4 gap-3 mb-4">
+<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-xs">微信</div><span class="text-xs text-gray-500">微信</span></div>
+<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 text-xs">QQ</div><span class="text-xs text-gray-500">QQ</span></div>
+<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-xs">钉钉</div><span class="text-xs text-gray-500">钉钉</span></div>
+<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 text-xs">蓝牙</div><span class="text-xs text-gray-500">蓝牙</span></div>
+<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 text-xs">互传</div><span class="text-xs text-gray-500">小米互传</span></div>
+<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 text-xs">打印</div><span class="text-xs text-gray-500">打印</span></div>
+<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 text-xs">保存</div><span class="text-xs text-gray-500">本地</span></div>
+<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 text-xs">更多</div><span class="text-xs text-gray-500">更多</span></div>
+</div>
+<div class="text-xs text-gray-400 text-center mb-2">正在发现附近的设备，对方需要在控制中心打开互传开关。</div>
+<button onclick="closeModal('modal-share')" class="w-full py-3 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">取消</button>
+</div>
+</div>
+
+<!-- ===== SIDE MENU ===== -->
+<div class="modal-overlay" id="modal-side-menu" style="align-items:stretch;justify-content:flex-start;">
+<div style="width:280px;background:#fff;height:100%;animation:slideUp .3s ease-out;" class="flex flex-col">
+<div class="bg-gradient-to-br from-blue-700 to-blue-600 text-white p-5 pt-12">
+<div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold mb-2">1</div>
+<div class="font-bold text-base">17602554481</div>
+<div class="text-white/60 text-xs">组长</div>
+</div>
+<div class="flex-1 py-2">
+<div class="bs-item" onclick="showScreen('screen-members');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="text-sm text-gray-800">组员管理</span></div></div>
+<div class="bs-item" onclick="showScreen('screen-data');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据中心</span></div></div>
+<div class="bs-item" onclick="showScreen('screen-sync');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></svg><span class="text-sm text-gray-800">数据同步</span></div></div>
+<div class="bs-item" onclick="showScreen('screen-my');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="text-sm text-gray-800">个人中心</span></div></div>
+</div>
+<button onclick="doLogout()" class="m-4 py-2.5 bg-red-50 text-red-500 rounded-xl text-sm font-medium">退出登录</button>
+</div>
+</div>
+
+</div><!-- phone-screen -->
+</div><!-- phone-frame -->
+
+<script>
+// ===================== PINYIN MAP =====================
+const PINYIN_MAP={'比':'B','亚':'Y','迪':'D','长':'C','安':'A','上':'S','海':'H','城':'C','东':'D','风':'F','江':'J','淮':'H','吉':'J','利':'L','奇':'Q','瑞':'R','零':'L','跑':'P','广':'G','汽':'Q','名':'M','爵':'J','大':'D','通':'T','好':'H','猫':'M','哈':'H','弗':'F','深':'S','蓝':'L','悦':'Y','翔':'X','启':'Q','源':'Y','糯':'N','米':'M','极':'J','氪':'K','沃':'W','尔':'E','雷':'L','达':'D','银':'Y','河':'H','领':'L','克':'K','欧':'O','萌':'M','虎':'H','艾':'A','泽':'Z','捷':'J','途':'T','南':'N','星':'X','辰':'C','小':'X','康':'K','行':'X','度':'D','帕':'P','拉':'L','丁':'D','驱':'Q','逐':'Z','舰':'J','腾':'T','势':'S','方':'F','程':'C','豹':'B','鲨':'S','皮':'P','鱼':'Y','秦':'Q','宋':'S','唐':'T','元':'Y','汉':'H','狮':'S','豚':'T','鸥':'O','赛':'S','博':'B','斯':'S','特':'T','福':'F','神':'S','锐':'R','棋':'Q','纳':'N','箱':'X','货':'H','车':'C','海':'H','鲸':'J','兰':'L','迪':'D','氪':'K','岚':'L','图':'T','界':'J','夙':'S','知':'Z','己':'J','菱':'L','程':'C','开':'K','迈':'M','腾':'T','势':'S','E':'E','V':'V','P':'P','H':'H','I':'I','G':'G','O':'O','C':'C','S':'S','A':'A','R':'R','X':'X','U':'U','N':'N','T':'T','D':'D','M':'M','K':'K','L':'L','B':'B','Z':'Z','F':'F','J':'J','W':'W','Q':'Q','Y':'Y','0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9'};
+
+function getPinyin(str){
+  let r='';
+  for(let c of str){if(PINYIN_MAP[c])r+=PINYIN_MAP[c];else if(/[a-zA-Z0-9]/.test(c))r+=c.toUpperCase();}
+  return r;
+}
+
+// ===================== DATA =====================
+const BRANDS=[
+  {id:'byd',name:'比亚迪',en:'BYD',pinyin:'BYD',color:'#DC2626',note:''},
+  {id:'changan',name:'长安',en:'Changan',pinyin:'CA',color:'#003049',note:'新能源及混动车型无需断电池负极，车内下电后锁门即可'},
+  {id:'saic',name:'上汽',en:'SAIC',pinyin:'SQ',color:'#006d77',note:''},
+  {id:'gwm',name:'长城',en:'GWM',pinyin:'CC',color:'#e29578',note:''},
+  {id:'dongfeng',name:'东风',en:'Dongfeng',pinyin:'DF',color:'#264653',note:''},
+  {id:'jac',name:'江淮',en:'JAC',pinyin:'JH',color:'#2a9d8f',note:''},
+  {id:'geely',name:'吉利',en:'Geely',pinyin:'JL',color:'#283618',note:''},
+  {id:'chery',name:'奇瑞',en:'Chery',pinyin:'QR',color:'#bc4749',note:''},
+  {id:'soueast',name:'东南',en:'Soueast',pinyin:'DN',color:'#6a4c93',note:''},
+  {id:'leapmotor',name:'零跑',en:'Leapmotor',pinyin:'LP',color:'#52796f',note:''},
+  {id:'gac',name:'广汽',en:'GAC',pinyin:'GQ',color:'#606c38',note:''},
+];
+
+// Vehicle data - 73 entries from 太仓港商品车断电操作手册20260603版
+const VEHICLES=[
+  {id:1,brandId:'byd',brand:'比亚迪',series:'海豚',config:'低配',display:'比亚迪海豚(低配)',powerType:'纯电',size:'',position:'副驾驶底部',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.副驾驶座位往前调整，打开后排车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后排车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image1.jpeg','vehicle_images/image2.jpeg'],videos:0},
+  {id:2,brandId:'byd',brand:'比亚迪',series:'海豚',config:'高配',display:'比亚迪海豚(高配)',powerType:'纯电',size:'',position:'后排座椅腿托下方',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.打开后排车门，短按钥匙锁车键。','3.塑料撬棍撬开电池盖板，用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后排车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image1.jpeg','vehicle_images/image2.jpeg'],videos:0},
+  {id:3,brandId:'byd',brand:'比亚迪',series:'海鸥',config:'低配',display:'比亚迪海鸥(低配)',powerType:'纯电',size:'',position:'主驾驶座椅下面',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.主驾驶座位往前调整，打开后排车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后排车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image5.jpeg','vehicle_images/image6.jpeg'],videos:0},
+  {id:4,brandId:'byd',brand:'比亚迪',series:'海鸥',config:'高配(天窗)',display:'比亚迪海鸥(高配(天窗))',powerType:'纯电',size:'',position:'后排座椅腿托下方',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.打开后排车门，短按钥匙锁车键。','3.塑料撬棍撬开电池盖板，用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后排车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image8.jpeg','vehicle_images/image9.jpeg'],videos:0},
+  {id:5,brandId:'byd',brand:'比亚迪',series:'海豹',config:'海豹DM-I',display:'比亚迪海豹(海豹DM-I)',powerType:'混动',size:'',position:'后备箱左侧储物网兜盖板内',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image10.jpeg','vehicle_images/image11.jpeg'],videos:0},
+  {id:6,brandId:'byd',brand:'比亚迪',series:'海豹',config:'海豹EV',display:'比亚迪海豹(海豹EV)',powerType:'纯电',size:'',position:'后排腿托下方',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙，打开左后车门。','2.短按钥匙锁车键锁住车门，电动把手收起，撬开后排腿托下方电池盖板。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.电池盖板归位，关闭车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image13.jpeg','vehicle_images/image14.jpeg'],videos:0},
+  {id:7,brandId:'byd',brand:'比亚迪',series:'海狮',config:'海狮',display:'比亚迪海狮',powerType:'纯电',size:'',position:'主驾驶底部前端',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.主驾驶座位往后调整，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:0,photoPaths:[],videos:0},
+  {id:8,brandId:'byd',brand:'比亚迪',series:'鲨鱼皮卡（SHARK）',config:'鲨鱼皮卡（SHARK）',display:'比亚迪鲨鱼皮卡（SHARK）',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:0,photoPaths:[],videos:0},
+  {id:9,brandId:'byd',brand:'比亚迪',series:'秦',config:'秦/秦PLUS/PRO',display:'比亚迪秦(秦/秦PLUS/PRO)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:0,photoPaths:[],videos:0},
+  {id:10,brandId:'byd',brand:'比亚迪',series:'宋',config:'宋PLUS DM-I',display:'比亚迪宋(宋PLUS DM-I)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image15.jpeg','vehicle_images/image16.jpeg'],videos:0},
+  {id:11,brandId:'byd',brand:'比亚迪',series:'宋',config:'宋PRO',display:'比亚迪宋(宋PRO)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.副驾驶座位往前调整，打开后排车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后排车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:0,photoPaths:[],videos:0},
+  {id:12,brandId:'byd',brand:'比亚迪',series:'唐',config:'唐L-EV（天神之眼）',display:'比亚迪唐(唐L-EV（天神之眼）)',powerType:'纯电',size:'',position:'前机盖电池负极',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.主驾驶座位往前调整，打开后排车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后排车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image17.png','vehicle_images/image18.png'],videos:0},
+  {id:13,brandId:'byd',brand:'比亚迪',series:'唐',config:'唐EV（欧标）',display:'比亚迪唐(唐EV（欧标）)',powerType:'纯电',size:'',position:'前机盖电池负极',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，拉动前机盖开关打开前机盖，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:0,photoPaths:[],videos:0},
+  {id:14,brandId:'byd',brand:'比亚迪',series:'唐',config:'ATTO8',display:'比亚迪唐(ATTO8)',powerType:'纯电',size:'',position:'前机盖电池负极',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image21.jpeg','vehicle_images/image22.jpeg'],videos:0},
+  {id:15,brandId:'byd',brand:'比亚迪',series:'元',config:'元UP',display:'比亚迪元(元UP)',powerType:'纯电',size:'',position:'后排坐椅腿托下方',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.打开后排车门，短按钥匙锁车键，打开后排电池盖板。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.合上电池盖板，关闭后排车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:0,photoPaths:[],videos:0},
+  {id:16,brandId:'byd',brand:'比亚迪',series:'元',config:'元PRO',display:'比亚迪元(元PRO)',powerType:'纯电',size:'',position:'前机盖电池负极',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:1,photoPaths:['vehicle_images/image23.jpeg'],videos:0},
+  {id:17,brandId:'byd',brand:'比亚迪',series:'元',config:'元PLUS',display:'比亚迪元(元PLUS)',powerType:'纯电',size:'',position:'副驾驶底部',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.副驾驶座位往前调整，打开后排车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后排车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image24.jpeg','vehicle_images/image25.jpeg'],videos:0},
+  {id:18,brandId:'byd',brand:'比亚迪',series:'汉',config:'汉',display:'比亚迪汉',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:0,photoPaths:[],videos:0},
+  {id:19,brandId:'byd',brand:'比亚迪',series:'驱逐舰05（KING）',config:'驱逐舰05（KING）',display:'比亚迪驱逐舰05（KING）',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:0,photoPaths:[],videos:0},
+  {id:20,brandId:'byd',brand:'比亚迪',series:'腾势',config:'方程豹B5',display:'比亚迪腾势(方程豹B5)',powerType:'混动',size:'',position:'副驾驶底部',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.副驾驶座位往前调整，打开后排车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后排车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image26.jpeg','vehicle_images/image27.jpeg'],videos:0},
+  {id:21,brandId:'changan',brand:'长安',series:'深蓝',config:'S7/S5',display:'长安深蓝(S7/S5)',powerType:'混动',size:'',position:'屏幕下电',steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放置于车内中控台。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image28.jpeg','vehicle_images/image29.jpeg'],videos:0},
+  {id:22,brandId:'changan',brand:'长安',series:'深蓝',config:'G318',display:'长安深蓝(G318)',powerType:'混动',size:'',position:'后备箱右下方',steps:['1.打开主驾驶车门，取出车钥匙。','2.关闭车门，短按钥匙锁车键后，打开后备箱右下方盖板。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image31.jpeg','vehicle_images/image32.jpeg'],videos:0},
+  {id:23,brandId:'changan',brand:'长安',series:'悦翔',config:'CS15/CS35MAX/CS75/CS55PLUS(2025款)',display:'长安悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款))',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image34.jpeg','vehicle_images/image35.jpeg'],videos:0},
+  {id:24,brandId:'changan',brand:'长安',series:'启源',config:'CS55PLUS(2026款)',display:'长安启源(CS55PLUS(2026款))',powerType:'混动',size:'',position:'后备箱右下方',steps:['1.打开主驾驶车门，取出车钥匙。','2.关闭车门，短按钥匙锁车键后，打开后备箱右下方盖板。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image37.jpeg','vehicle_images/image38.jpeg'],videos:0},
+  {id:25,brandId:'changan',brand:'长安',series:'启源',config:'EADO PLUS',display:'长安启源(EADO PLUS)',powerType:'混动',size:'',position:'后备箱左下方',steps:['1.打开主驾驶车门，取出车钥匙。','2.关闭车门，短按钥匙锁车键后，打开后备箱右下方盖板。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image40.jpeg','vehicle_images/image41.jpeg'],videos:0},
+  {id:26,brandId:'changan',brand:'长安',series:'糯米',config:'糯米',display:'长安糯米',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image43.jpeg','vehicle_images/image44.jpeg'],videos:0},
+  {id:27,brandId:'changan',brand:'长安',series:'UNI-',config:'UNI-T',display:'长安UNI-(UNI-T)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:1,photoPaths:['vehicle_images/image45.jpeg'],videos:0},
+  {id:28,brandId:'changan',brand:'长安',series:'UNI-',config:'UNI-V',display:'长安UNI-(UNI-V)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:1,photoPaths:['vehicle_images/image45.jpeg'],videos:0},
+  {id:29,brandId:'changan',brand:'长安',series:'长安之星',config:'小货车',display:'长安长安之星(小货车)',powerType:'混动',size:'',position:'主驾驶座位下方',steps:['1.打开主驾驶车门，松开座椅卡扣抬起座椅。','2.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','3.关闭座椅扣上卡扣，确确保车窗关闭，机械钥匙锁住车门。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:1,photoPaths:['vehicle_images/image47.jpeg'],videos:0},
+  {id:30,brandId:'changan',brand:'长安',series:'皮卡',config:'HUNTER（猎手）燃油版/混动版',display:'长安皮卡(HUNTER（猎手）燃油版/混动版)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:1,photoPaths:['vehicle_images/image51.jpeg'],videos:0},
+  {id:31,brandId:'saic',brand:'上汽',series:'名爵',config:'ZS/HS/EHS(PHEV)',display:'上汽名爵(ZS/HS/EHS(PHEV))',powerType:'混动',size:'',position:'断电器熄灭后自动断电',steps:['1.打开主驾驶车门，短按断电器点亮蓝灯，再次短按断电器蓝灯熄灭，确认车窗全部关闭后，取出车钥匙。','2.关闭车门，确保车窗关闭，短按钥匙锁车键。','4.再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image52.jpeg','vehicle_images/image53.jpeg'],videos:0},
+  {id:32,brandId:'saic',brand:'上汽',series:'名爵',config:'赛博斯特',display:'上汽名爵(赛博斯特)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，打开前保险杠左前盖板，拉动拉线打开前机盖，扣回盖板，取出车钥匙。','2.关闭车门，确保车窗关闭，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'备注：机盖打开方式：拉动前保险杠左前盖板内的拉线',photos:1,photoPaths:['vehicle_images/image55.jpeg'],videos:0},
+  {id:33,brandId:'saic',brand:'上汽',series:'大通',config:'大通货车',display:'上汽大通(大通货车)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:1,photoPaths:['vehicle_images/image58.jpeg'],videos:0},
+  {id:34,brandId:'gwm',brand:'长城',series:'哈佛',config:'H6',display:'长城哈佛(H6)',powerType:'混动',size:'',position:'后备箱盖板下方',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:2,photoPaths:['vehicle_images/image60.jpeg','vehicle_images/image61.jpeg'],videos:0},
+  {id:35,brandId:'gwm',brand:'长城',series:'好猫',config:'好猫',display:'长城好猫',powerType:'纯电',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'放干燥剂',photos:1,photoPaths:['vehicle_images/image63.png'],videos:0},
+  {id:36,brandId:'dongfeng',brand:'东风',series:'风行',config:'T5EVO',display:'东风风行(T5EVO)',powerType:'纯电',size:'',position:'后备箱盖板右下方',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image65.jpeg','vehicle_images/image66.jpeg'],videos:0},
+  {id:37,brandId:'dongfeng',brand:'东风',series:'风度',config:'帕拉丁（PALADIN）',display:'东风风度(帕拉丁（PALADIN）)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image68.jpeg','vehicle_images/image69.jpeg'],videos:0},
+  {id:38,brandId:'dongfeng',brand:'东风',series:'风神',config:'风神HUGEMHD500T/MAGEMHD500T',display:'东风风神(风神HUGEMHD500T/MAGEMHD500T)',powerType:'混动',size:'',position:'后备箱右后方',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image71.jpeg','vehicle_images/image72.jpeg'],videos:0},
+  {id:39,brandId:'dongfeng',brand:'东风',series:'VIGO',config:'VIGO（纳米06海外版）/纳米06国内版',display:'东风VIGO(VIGO（纳米06海外版）/纳米06国内版)',powerType:'混动',size:'',position:'屏幕下电',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image74.jpeg','vehicle_images/image75.jpeg'],videos:0},
+  {id:40,brandId:'dongfeng',brand:'东风',series:'VIGO',config:'纳米01',display:'东风VIGO(纳米01)',powerType:'混动',size:'',position:'屏幕下电',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image76.jpeg','vehicle_images/image77.jpeg'],videos:0},
+  {id:41,brandId:'dongfeng',brand:'东风',series:'VIGO',config:'BOX',display:'东风VIGO(BOX)',powerType:'混动',size:'',position:'屏幕下电',steps:['1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image78.jpeg','vehicle_images/image79.jpeg'],videos:0},
+  {id:42,brandId:'dongfeng',brand:'东风',series:'锐棋（RICH）',config:'RICH6',display:'东风锐棋（RICH）(RICH6)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image80.jpeg','vehicle_images/image81.jpeg'],videos:0},
+  {id:43,brandId:'dongfeng',brand:'东风',series:'小康',config:'MPVC37',display:'东风小康(MPVC37)',powerType:'混动',size:'',position:'主驾驶座位下方',steps:['1.打开主驾驶车门，松开座椅卡扣抬起座椅。','2.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','3.关闭座椅扣上卡扣，确确保车窗关闭，机械钥匙锁住车门。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image83.jpeg','vehicle_images/image84.jpeg'],videos:0},
+  {id:44,brandId:'jac',brand:'江淮',series:'E-JS1/4',config:'E-JS1/4',display:'江淮E-JS1/4',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image86.jpeg','vehicle_images/image87.jpeg'],videos:0},
+  {id:45,brandId:'jac',brand:'江淮',series:'江淮皮卡',config:'T8PRO',display:'江淮江淮皮卡(T8PRO)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image89.jpeg','vehicle_images/image90.jpeg'],videos:0},
+  {id:46,brandId:'jac',brand:'江淮',series:'江淮皮卡',config:'T6',display:'江淮江淮皮卡(T6)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image92.jpeg','vehicle_images/image93.jpeg'],videos:0},
+  {id:47,brandId:'geely',brand:'吉利',series:'极氪',config:'极氪001/X/7X',display:'吉利极氪(极氪001/X/7X)',powerType:'纯电',size:'',position:'前机盖电池负极',steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image95.jpeg','vehicle_images/image96.jpeg'],videos:0},
+  {id:48,brandId:'geely',brand:'吉利',series:'沃尔沃',config:'S60',display:'吉利沃尔沃(S60)',powerType:'混动',size:'',position:'后备箱左后盖板处',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到车内中控台'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image97.jpeg','vehicle_images/image98.jpeg'],videos:0},
+  {id:49,brandId:'geely',brand:'吉利',series:'雷达（RIODARA）皮卡',config:'雷达6',display:'吉利雷达（RIODARA）皮卡(雷达6)',powerType:'混动',size:'',position:'前机盖',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image100.jpeg','vehicle_images/image101.jpeg'],videos:0},
+  {id:50,brandId:'geely',brand:'吉利',series:'银河',config:'EX5（银河E5）',display:'吉利银河(EX5（银河E5）)',powerType:'纯电',size:'',position:'屏幕下电',steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:1,photoPaths:['vehicle_images/image103.jpeg'],videos:0},
+  {id:51,brandId:'geely',brand:'吉利',series:'银河',config:'EX2（银河E2）',display:'吉利银河(EX2（银河E2）)',powerType:'纯电',size:'',position:'前机盖',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image105.jpeg','vehicle_images/image106.jpeg'],videos:0},
+  {id:52,brandId:'geely',brand:'吉利',series:'领克',config:'领克02',display:'吉利领克(领克02)',powerType:'混动',size:'',position:'屏幕下电',steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后，钥匙放置于中控台手机无线充电位置。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:1,photoPaths:['vehicle_images/image108.jpeg'],videos:0},
+  {id:53,brandId:'geely',brand:'吉利',series:'领克',config:'领克08',display:'吉利领克(领克08)',powerType:'混动',size:'',position:'屏幕下电',steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后，钥匙放置于中控台手机无线充电位置。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image110.jpeg','vehicle_images/image111.jpeg'],videos:0},
+  {id:54,brandId:'chery',brand:'奇瑞',series:'欧萌达',config:'欧萌达5',display:'奇瑞欧萌达(欧萌达5)',powerType:'混动',size:'',position:'后备箱盖板下方',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image112.jpeg','vehicle_images/image113.jpeg'],videos:0},
+  {id:55,brandId:'chery',brand:'奇瑞',series:'瑞虎',config:'瑞虎7PRO',display:'奇瑞瑞虎(瑞虎7PRO)',powerType:'混动',size:'',position:'前机盖',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:1,photoPaths:['vehicle_images/image115.jpeg'],videos:0},
+  {id:56,brandId:'chery',brand:'奇瑞',series:'瑞虎',config:'瑞虎7 CSH/PLUGIN HYBRID',display:'奇瑞瑞虎(瑞虎7 CSH/PLUGIN HYBRID)',powerType:'混动',size:'',position:'后备箱泡沫板底部',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image117.jpeg','vehicle_images/image118.jpeg'],videos:0},
+  {id:57,brandId:'chery',brand:'奇瑞',series:'瑞虎',config:'瑞虎8 CSH',display:'奇瑞瑞虎(瑞虎8 CSH)',powerType:'混动',size:'',position:'后备箱电池负极',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image120.jpeg','vehicle_images/image121.jpeg'],videos:0},
+  {id:58,brandId:'chery',brand:'奇瑞',series:'艾瑞泽',config:'艾瑞泽5PRO',display:'奇瑞艾瑞泽(艾瑞泽5PRO)',powerType:'混动',size:'',position:'前机盖',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:1,photoPaths:['vehicle_images/image123.jpeg'],videos:0},
+  {id:59,brandId:'chery',brand:'奇瑞',series:'皮卡',config:'RELY（瑞麟）R8',display:'奇瑞皮卡(RELY（瑞麟）R8)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image125.jpeg','vehicle_images/image126.jpeg'],videos:0},
+  {id:60,brandId:'chery',brand:'奇瑞',series:'捷途JETOUR',config:'X50',display:'奇瑞捷途JETOUR(X50)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image128.jpeg','vehicle_images/image129.jpeg'],videos:0},
+  {id:61,brandId:'chery',brand:'奇瑞',series:'捷途JETOUR',config:'X70',display:'奇瑞捷途JETOUR(X70)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image131.jpeg','vehicle_images/image132.jpeg'],videos:0},
+  {id:62,brandId:'chery',brand:'奇瑞',series:'捷途JETOUR',config:'DASHENG',display:'奇瑞捷途JETOUR(DASHENG)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，机械钥匙锁车。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image133.jpeg','vehicle_images/image134.jpeg'],videos:0},
+  {id:63,brandId:'chery',brand:'奇瑞',series:'捷途JETOUR',config:'T1 I-DM',display:'奇瑞捷途JETOUR(T1 I-DM)',powerType:'混动',size:'',position:'后备箱电池负极',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image136.jpeg','vehicle_images/image137.jpeg'],videos:0},
+  {id:64,brandId:'chery',brand:'奇瑞',series:'捷途JETOUR',config:'T2 I-DM',display:'奇瑞捷途JETOUR(T2 I-DM)',powerType:'混动',size:'',position:'后备箱电池负极',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image139.jpeg','vehicle_images/image140.jpeg'],videos:0},
+  {id:65,brandId:'chery',brand:'奇瑞',series:'捷途JETOUR',config:'T2 XWD',display:'奇瑞捷途JETOUR(T2 XWD)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，机械钥匙锁住车门。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image139.jpeg','vehicle_images/image142.jpeg'],videos:0},
+  {id:66,brandId:'chery',brand:'奇瑞',series:'捷途JETOUR',config:'G700-GAIA',display:'奇瑞捷途JETOUR(G700-GAIA)',powerType:'混动',size:'',position:'后备箱右后方',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image143.jpeg','vehicle_images/image144.jpeg'],videos:0},
+  {id:67,brandId:'chery',brand:'奇瑞',series:'东南SOUEAST',config:'S06DM',display:'奇瑞东南SOUEAST(S06DM)',powerType:'混动',size:'',position:'后备箱电池负极',steps:['1.打开车门，先放倒后排座椅，确保四个车窗关闭，取出车钥匙。','2.短按主驾驶锁车键锁住车门，在车内移动到后备箱位置。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.打开主驾驶车门，机械钥匙锁住车门，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image145.jpeg','vehicle_images/image146.jpeg'],videos:0},
+  {id:68,brandId:'chery',brand:'奇瑞',series:'东南SOUEAST',config:'S07',display:'奇瑞东南SOUEAST(S07)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，机械钥匙锁住车门。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image148.jpeg','vehicle_images/image149.jpeg'],videos:0},
+  {id:69,brandId:'chery',brand:'奇瑞',series:'东南SOUEAST',config:'S08DM',display:'奇瑞东南SOUEAST(S08DM)',powerType:'混动',size:'',position:'后备箱电池负极',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image151.jpeg','vehicle_images/image152.jpeg'],videos:0},
+  {id:70,brandId:'chery',brand:'奇瑞',series:'东南SOUEAST',config:'S09-AWD',display:'奇瑞东南SOUEAST(S09-AWD)',powerType:'混动',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image154.jpeg','vehicle_images/image155.jpeg'],videos:0},
+  {id:71,brandId:'leapmotor',brand:'零跑',series:'零跑',config:'零跑B10',display:'零跑零跑(零跑B10)',powerType:'纯电',size:'',position:'前机盖电池负极',steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到车内中控台'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image157.png','vehicle_images/image158.png'],videos:0},
+  {id:72,brandId:'leapmotor',brand:'零跑',series:'零跑',config:'零跑C10',display:'零跑零跑(零跑C10)',powerType:'纯电',size:'',position:'后备箱盖板下方',steps:['1.打开车门，确保四个车窗关闭，取出车钥匙。','2.先长按后备箱键打开后备箱，然后卡片钥匙放到主驾驶后视镜钥匙感应区锁车门。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭后备箱，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image157.png','vehicle_images/image158.png'],videos:0},
+  {id:73,brandId:'gac',brand:'广汽',series:'AION（埃安）',config:'AION-V/AION-UT',display:'广汽AION（埃安）(AION-V/AION-UT)',powerType:'纯电',size:'',position:'前机盖电池负极',steps:['1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。','2.关闭车门，短按钥匙锁车键。','3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。','4.关闭前机盖，再次拉动车门确保关闭。'],keyFrame:['1.所有车辆钥匙数量，绑扎及框架检查完。','2.确认断电无误后放到铅封袋内封好袋口。','3.放入钥匙盒关好，封好铅封。'],keyContainer:['1.车辆钥匙数量及绑扎检查完。','2.确认断电无误后放置于车内中控台。'],remarks:'',photos:2,photoPaths:['vehicle_images/image160.jpeg','vehicle_images/image161.jpeg'],videos:0},
+];
+
+// ===================== USER SYSTEM =====================
+const LEADER_PHONE='17602554481';
+function loadUsers(){
+  let users=JSON.parse(localStorage.getItem('tcg_users')||'null');
+  if(!users){
+    users=[{id:1,name:'组长',phone:LEADER_PHONE,password:'123456',role:'admin',status:'active',created:'2026/08-20'}];
+    localStorage.setItem('tcg_users',JSON.stringify(users));
+  }
+  return users;
+}
+function saveUsers(users){localStorage.setItem('tcg_users',JSON.stringify(users));}
+let USERS=loadUsers();
+
+// Add pinyin to each vehicle
+VEHICLES.forEach(v=>{v.pinyin=getPinyin(v.display);});
+
+// ===================== STATE =====================
+let state={screen:'login',currentUser:null,viewMode:'tree',currentVehicleId:null,currentVehicleIndex:0,searchQuery:'',brandFilter:'all',selectedVehicles:new Set(),editingVehicle:null,isEditing:false,outdoorMode:false,expandedBrands:new Set(['saic']),recentVehicles:[],photoZoom:1};
+let confirmCallback=null;
+
+// ===================== NAVIGATION =====================
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active','screen-slide');
+  // Update bottom nav
+  const tab=id.replace('screen-','');
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  const navMap={'vehicles':0,'data':1,'my':2};
+  if(navMap[tab]!==undefined){document.querySelectorAll('.nav-tab')[navMap[tab]].classList.add('active');}
+  state.screen=id;
+  if(id==='screen-vehicles')renderVehicleList();
+  if(id==='screen-data')renderDataList();
+  if(id==='screen-my')renderMemberList();
+  // Show/hide bottom nav
+  const showNav=['screen-vehicles','screen-data','screen-my'].includes(id);
+  document.getElementById('bottom-nav').style.display=showNav?'flex':'none';
+  // Show/hide FAB
+  document.getElementById('fab-add').style.display=(id==='screen-vehicles'&&canEdit())?'flex':'none';
+  if(id==='screen-my'){
+    updateMyInfo();
+    const memMenu=document.getElementById('menu-members');
+    if(memMenu)memMenu.style.display=canEdit()?'flex':'none';
+  }
+  if(id==='screen-password'){
+    const acct=document.getElementById('pw-current-account');
+    if(acct&&state.currentUser)acct.textContent=state.currentUser.phone;
+  }
+}
+
+function goBack(){
+  if(state.screen==='screen-detail')showScreen('screen-vehicles');
+  else if(state.screen==='screen-edit')showScreen(state.isEditing?'screen-detail':'screen-vehicles');
+  else if(state.screen==='screen-register'||state.screen==='screen-forgot')showScreen('screen-login');
+  else if(state.screen==='screen-members'||state.screen==='screen-password'||state.screen==='screen-sync')showScreen('screen-my');
+  else showScreen('screen-vehicles');
+}
+
+// ===================== LOGIN =====================
+function doLogin(){
+  const phone=document.getElementById('login-phone').value.trim();
+  const pass=document.getElementById('login-pass').value.trim();
+  if(!phone||!pass){showToast('请输入手机号和密码');return;}
+  if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
+  const user=USERS.find(u=>u.phone===phone);
+  if(!user){showToast('账号不存在，请先注册');return;}
+  if(user.password!==pass){showToast('密码错误');return;}
+  if(user.status==='pending'){showToast('您的账号正在审核中，请等待组长审核');return;}
+  if(user.status==='rejected'){showToast('您的注册申请未通过审核');return;}
+  state.currentUser=user;
+  showScreen('screen-vehicles');
+  renderBrandTags();
+  showToast('登录成功');
+  updateMyInfo();
+}
+
+function doRegister(){
+  const name=document.getElementById('reg-name').value.trim();
+  const phone=document.getElementById('reg-phone').value.trim();
+  const pass=document.getElementById('reg-pass').value.trim();
+  const pass2=document.getElementById('reg-pass2').value.trim();
+  if(!name||!phone||!pass){showToast('请填写完整信息');return;}
+  if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
+  if(pass.length<6){showToast('密码至少6位');return;}
+  if(pass!==pass2){showToast('两次密码不一致');return;}
+  if(USERS.find(u=>u.phone===phone)){showToast('该手机号已注册');return;}
+  const isLeader=phone===LEADER_PHONE;
+  const newUser={id:Date.now(),name,phone,password:pass,role:isLeader?'admin':'user',status:isLeader?'active':'pending',created:new Date().toLocaleDateString()};
+  USERS.push(newUser);
+  saveUsers(USERS);
+  if(isLeader){showToast('组长账号注册成功');}else{showToast('注册申请已提交，请等待组长审核');}
+  showScreen('screen-login');
+}
+
+function doForgotPassword(){
+  const phone=document.getElementById('forgot-phone').value.trim();
+  const pass=document.getElementById('forgot-pass').value.trim();
+  const pass2=document.getElementById('forgot-pass2').value.trim();
+  if(!phone||!pass){showToast('请填写完整信息');return;}
+  if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
+  if(pass.length<6){showToast('密码至少6位');return;}
+  if(pass!==pass2){showToast('两次密码不一致');return;}
+  const user=USERS.find(u=>u.phone===phone);
+  if(!user){showToast('该手机号未注册');return;}
+  user.password=pass;
+  saveUsers(USERS);
+  showToast('密码重置成功');
+  showScreen('screen-login');
+}
+
+function doLogout(){
+  state.currentUser=null;
+  showScreen('screen-login');
+  showToast('已退出登录');
+}
+
+function isLeader(){return state.currentUser&&state.currentUser.role==='admin';}
+function canEdit(){return isLeader();}
+
+function updateMyInfo(){
+  if(!state.currentUser)return;
+  const card=document.querySelector('#screen-my .user-card');
+  if(card){
+    const avatar=card.querySelector('.user-avatar');
+    const name=card.querySelector('.user-name');
+    const role=card.querySelector('.user-role');
+    if(avatar)avatar.textContent=state.currentUser.name.charAt(0);
+    if(name)name.textContent=state.currentUser.name;
+    if(role)role.textContent=state.currentUser.role==='admin'?'组长':'组员';
+  }
+}
+
+// ===================== VEHICLE LIST =====================
+function renderBrandTags(){
+  const c=document.getElementById('brand-tags');
+  let html=`<button onclick="setBrandFilter('all')" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${state.brandFilter==='all'?'bg-blue-600 text-white':'bg-gray-100 text-gray-600'}">全部</button>`;
+  BRANDS.forEach(b=>{
+    const count=VEHICLES.filter(v=>v.brandId===b.id).length;
+    html+=`<button onclick="setBrandFilter('${b.id}')" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${state.brandFilter===b.id?'bg-blue-600 text-white':'bg-gray-100 text-gray-600'}">${b.name}(${count})</button>`;
+  });
+  c.innerHTML=html;
+}
+
+function setBrandFilter(bid){state.brandFilter=bid;renderBrandTags();renderVehicleList();}
+
+function setViewMode(mode){
+  state.viewMode=mode;
+  document.getElementById('btn-tree').className='text-xs font-medium flex items-center gap-1 '+(mode==='tree'?'text-blue-600':'text-gray-400');
+  document.getElementById('btn-flat').className='text-xs font-medium flex items-center gap-1 '+(mode==='flat'?'text-blue-600':'text-gray-400');
+  renderVehicleList();
+}
+
+function getFilteredVehicles(){
+  let list=VEHICLES;
+  if(state.brandFilter!=='all')list=list.filter(v=>v.brandId===state.brandFilter);
+  if(state.searchQuery){
+    const q=state.searchQuery.toLowerCase();
+    list=list.filter(v=>v.display.toLowerCase().includes(q)||v.pinyin.toLowerCase().includes(q)||v.series.toLowerCase().includes(q)||v.brand.toLowerCase().includes(q)||v.position.toLowerCase().includes(q));
+  }
+  return list;
+}
+
+function handleSearch(){
+  state.searchQuery=document.getElementById('search-input').value.trim();
+  renderVehicleList();
+}
+
+function toggleSearchMode(){
+  showScreen('screen-vehicles');
+  document.getElementById('search-input').focus();
+}
+
+function renderVehicleList(){
+  renderBrandTags();
+  const list=getFilteredVehicles();
+  document.getElementById('vehicle-count-label').textContent=`共${list.length}条`;
+  // Recent section
+  const rs=document.getElementById('recent-section');
+  if(state.searchQuery||state.brandFilter!=='all'){rs.style.display='none';}else{rs.style.display='';const rl=document.getElementById('recent-list');rl.innerHTML=state.recentVehicles.map(id=>{const v=VEHICLES.find(x=>x.id===id);if(!v)return'';return`<div onclick="openVehicleDetail(${v.id})" class="bg-white rounded-xl p-2 shadow-sm border border-gray-100 flex-shrink-0" style="width:160px;"><div class="text-xs font-medium text-gray-900 truncate">${v.display}</div><div class="text-xs text-gray-400 mt-0.5 truncate">${v.position}</div></div>`;}).join('');}
+  
+  const c=document.getElementById('vehicle-list-container');
+  if(list.length===0){c.innerHTML='<div class="text-center py-20 text-gray-400 text-sm">未找到匹配的车型</div>';return;}
+  
+  if(state.viewMode==='tree'){
+    // Hierarchical view
+    let html='';
+    const brandsToShow=state.brandFilter==='all'?BRANDS:BRANDS.filter(b=>b.id===state.brandFilter);
+    brandsToShow.forEach(b=>{
+      const vehicles=list.filter(v=>v.brandId===b.id);
+      if(vehicles.length===0)return;
+      const expanded=state.expandedBrands.has(b.id);
+      const series={};
+      vehicles.forEach(v=>{if(!series[v.series])series[v.series]=[];series[v.series].push(v);});
+      html+=`<div class="mb-2">
+        <div onclick="toggleBrand('${b.id}')" class="flex items-center justify-between py-2 px-1 cursor-pointer">
+          <div class="flex items-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-400 transition-transform ${expanded?'rotate-90':''}"><path d="M9 6l6 6-6 6"/></svg>
+            <span class="text-sm font-bold text-gray-900">${b.name}${b.en?'('+b.en+')':''}</span>
+            ${b.note?`<span class="text-xs text-gray-300">— ${b.note.substring(0,20)}${b.note.length>20?'...':''}</span>`:''}
+          </div>
+          <span class="text-xs text-gray-400">${vehicles.length}条</span>
+        </div>`;
+      if(expanded){
+        Object.entries(series).forEach(([sName,svs])=>{
+          html+=`<div class="ml-6 mb-1">
+            <div class="flex items-center gap-2 py-1.5 px-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3 text-gray-300"><path d="M6 9l6 6 6-6"/></svg>
+              <span class="text-xs font-medium text-gray-700">${sName}</span>
+              <span class="text-xs text-gray-400">${svs.length}条</span>
+            </div>`;
+          svs.forEach((v,i)=>{
+            html+=renderVehicleCard(v,i,'ml-12');
+          });
+          html+='</div>';
+        });
+      }
+      html+='</div>';
+    });
+    c.innerHTML=html;
+  }else{
+    // Flat view
+    c.innerHTML=list.map((v,i)=>renderVehicleCard(v,i,'')).join('');
+  }
+}
+
+function renderVehicleCard(v,i,ml){
+  const ptClass='pt-'+v.powerType;
+  const statusClass=v.id%5===0?'status-done':'status-pending';
+  const statusText=v.id%5===0?'已完成':'未开始';
+  const hasPhoto=v.photoPaths&&v.photoPaths.length>0;
+  const thumbHtml=hasPhoto?`<div class="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"><img src="${v.photoPaths[0]}" class="w-full h-full object-cover" alt="${v.display}"></div>`:'';
+  return `<div onclick="openVehicleDetail(${v.id})" class="${ml} bg-white rounded-xl p-3 shadow-sm border border-gray-100 active:scale-98 transition-transform cursor-pointer mb-1.5 anim-up" style="animation-delay:${i*0.03}s">
+    <div class="flex items-start gap-2">
+      ${thumbHtml}
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="font-medium text-gray-900 text-sm truncate">${v.display}</span>
+          <span class="text-xs px-1.5 py-0.5 rounded-full ${ptClass} flex-shrink-0">${v.powerType}</span>
+        </div>
+        <div class="text-xs text-gray-400 mt-0.5 truncate">${v.position}</div>
+        <div class="flex items-center gap-1.5 mt-0.5">
+          <span class="text-xs px-1.5 py-0.5 rounded-full ${statusClass}">${statusText}</span>
+          <span class="text-xs text-gray-400">${v.steps.length}步${hasPhoto?` · ${v.photoPaths.length}张图`:''}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleBrand(bid){
+  if(state.expandedBrands.has(bid))state.expandedBrands.delete(bid);
+  else state.expandedBrands.add(bid);
+  renderVehicleList();
+}
+
+// ===================== VEHICLE DETAIL =====================
+function openVehicleDetail(id){
+  const v=VEHICLES.find(x=>x.id===id);
+  if(!v)return;
+  state.currentVehicleId=id;
+  state.currentVehicleIndex=VEHICLES.indexOf(v);
+  if(!state.recentVehicles.includes(id)){state.recentVehicles.unshift(id);state.recentVehicles=state.recentVehicles.slice(0,5);}
+  document.getElementById('detail-index').textContent=`${state.currentVehicleIndex+1}/${VEHICLES.length}`;
+  const ptClass='pt-'+v.powerType;
+  const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join('');
+  const videoHtml=v.videos>0?`<div onclick="openVideoPlayer()" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="white" class="w-10 h-10"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class="absolute bottom-2 left-2 text-xs text-white">断电教学视频</span></div>`:`<div class="aspect-video rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">暂无视频</div>`;
+  
+  document.getElementById('detail-content').innerHTML=`
+    <div class="px-4 pt-4">
+      <div class="flex items-center gap-2 mb-2">
+        <h2 class="text-lg font-bold text-gray-900">${v.display}</h2>
+        <span class="text-xs px-2 py-0.5 rounded-full ${ptClass} font-medium">${v.powerType}</span>
+      </div>
+    </div>
+    <!-- Info card -->
+    <div class="px-4 mt-2"><div class="bg-white rounded-2xl p-4 shadow-sm">
+      <div class="grid grid-cols-2 gap-3">
+        <div><div class="text-xs text-gray-400">车辆尺寸</div><div class="text-sm font-medium text-gray-800 mt-0.5">${v.size||'未填写'}</div></div>
+        <div><div class="text-xs text-gray-400">动力类型</div><div class="text-sm font-medium text-gray-800 mt-0.5">${v.powerType}</div></div>
+        <div><div class="text-xs text-gray-400">品牌/车系</div><div class="text-sm font-medium text-gray-800 mt-0.5">${v.brand} / ${v.series}</div></div>
+        <div><div class="text-xs text-gray-400">配置</div><div class="text-sm font-medium text-gray-800 mt-0.5">${v.config}</div></div>
+      </div>
+    </div></div>
+    <!-- Power off position -->
+    <div class="px-4 mt-3"><div class="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+      <div class="flex items-center gap-2 mb-1"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg><span class="font-bold text-blue-900 text-sm">断电位置</span></div>
+      <div class="text-sm text-blue-800">${v.position}</div>
+    </div></div>
+    <!-- Steps -->
+    <div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm">
+      <div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-700"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><span class="font-bold text-gray-900 text-sm">断电步骤</span></div><span class="text-xs text-gray-400">已完成 0/${v.steps.length}</span></div>
+      <div class="space-y-3">${v.steps.map((s,i)=>`<div class="flex items-start gap-3 anim-up" style="animation-delay:${i*0.06}s"><div class="step-circle">${i+1}</div><div class="text-sm text-gray-700 pt-1 flex-1">${s}</div></div>`).join('')}</div>
+    </div></div>
+    <!-- Key handling -->
+    <div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm">
+      <div class="flex items-center gap-2 mb-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-700"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M14 12l8-8M16 6l4 4M19 3l4 4"/></svg><span class="font-bold text-gray-900 text-sm">钥匙处理方式</span></div>
+      <div class="flex border-b border-gray-200 mb-3" id="key-tabs">
+        <button onclick="switchKeyTab('frame')" id="ktab-frame" class="flex-1 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600">框架</button>
+        <button onclick="switchKeyTab('container')" id="ktab-container" class="flex-1 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400">集装箱</button>
+      </div>
+      <div id="key-frame-content" class="space-y-2">${v.keyFrame.map((s,i)=>`<div class="flex items-start gap-2"><div class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center flex-shrink-0 mt-0.5">${i+1}</div><div class="text-sm text-gray-700">${s}</div></div>`).join('')}</div>
+      <div id="key-container-content" class="space-y-2 hidden">${v.keyContainer.map((s,i)=>`<div class="flex items-start gap-2"><div class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center flex-shrink-0 mt-0.5">${i+1}</div><div class="text-sm text-gray-700">${s}</div></div>`).join('')}</div>
+    </div></div>
+    <!-- Photos -->
+    ${(v.photos>0||(v.photoPaths&&v.photoPaths.length))?`<div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="text-sm font-bold text-gray-700 mb-3">车辆照片</div><div class="grid grid-cols-2 gap-2">${photosHtml}</div></div></div>`:''}
+    <!-- Video -->
+    <div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="text-sm font-bold text-gray-700 mb-3">视频演示</div>${videoHtml}</div></div>
+    <!-- Remarks -->
+    ${v.remarks?`<div class="px-4 mt-3"><div class="bg-amber-50 rounded-2xl p-4 border border-amber-100"><div class="flex items-center gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" class="w-5 h-5"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg><span class="font-bold text-amber-900 text-sm">备注</span></div><div class="text-sm text-amber-800 mt-1">${v.remarks}</div></div></div>`:''}
+    <!-- Export buttons -->
+    <div class="px-4 mt-4 mb-6">
+      <div class="grid grid-cols-5 gap-2">
+        <button onclick="exportSingle('word')" class="flex flex-col items-center gap-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-medium">Word</button>
+        <button onclick="exportSingle('pdf')" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-medium">PDF</button>
+        <button onclick="exportSingle('excel')" class="flex flex-col items-center gap-1 py-2.5 bg-green-50 text-green-600 rounded-xl text-xs font-medium">Excel</button>
+        ${canEdit()?`<button onclick="openEditVehicle(${v.id})" class="flex flex-col items-center gap-1 py-2.5 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium">编辑</button><button onclick="confirmDeleteVehicle(${v.id})" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-500 rounded-xl text-xs font-medium">删除</button>`:''}
+
+      </div>
+    </div>
+  `;
+  showScreen('screen-detail');
+  document.getElementById('bottom-nav').style.display='none';
+  document.getElementById('fab-add').style.display='none';
+}
+
+function switchKeyTab(tab){
+  const f=document.getElementById('ktab-frame'),c=document.getElementById('ktab-container');
+  const fc=document.getElementById('key-frame-content'),cc=document.getElementById('key-container-content');
+  if(tab==='frame'){f.className='flex-1 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600';c.className='flex-1 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400';fc.classList.remove('hidden');cc.classList.add('hidden');}
+  else{c.className='flex-1 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600';f.className='flex-1 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400';cc.classList.remove('hidden');fc.classList.add('hidden');}
+}
+
+function prevVehicle(){if(state.currentVehicleIndex>0){state.currentVehicleIndex--;openVehicleDetail(VEHICLES[state.currentVehicleIndex].id);}}
+function nextVehicle(){if(state.currentVehicleIndex<VEHICLES.length-1){state.currentVehicleIndex++;openVehicleDetail(VEHICLES[state.currentVehicleIndex].id);}}
+
+// ===================== EDIT VEHICLE =====================
+function openEditVehicle(id){
+  if(!canEdit()){showToast('组员账号无编辑权限');return;}
+  state.isEditing=!!id;
+  const v=id?VEHICLES.find(x=>x.id===id):null;
+  document.getElementById('edit-title').textContent=id?'编辑车辆':'添加车辆';
+  document.getElementById('edit-content').innerHTML=`
+    <div class="space-y-4">
+      <div class="bg-white rounded-2xl p-4 shadow-sm">
+        <div class="text-sm font-bold text-gray-700 mb-3">车型信息</div>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between"><label class="text-sm text-gray-600">品牌</label><div class="flex items-center gap-2"><button onclick="openSelector('brand')" id="sel-brand" class="text-sm text-gray-800 px-3 py-1.5 bg-gray-50 rounded-lg min-w-[120px] text-right">${v?v.brand:'请选择品牌'}</button><button onclick="showToast('品牌管理')" class="text-xs text-blue-500">管理</button></div></div>
+          <div class="flex items-center justify-between"><label class="text-sm text-gray-600">车系</label><div class="flex items-center gap-2"><button onclick="openSelector('series')" id="sel-series" class="text-sm text-gray-800 px-3 py-1.5 bg-gray-50 rounded-lg min-w-[120px] text-right">${v?v.series:'请选择车系'}</button><button onclick="showToast('车系管理')" class="text-xs text-blue-500">管理</button></div></div>
+          <div class="flex items-center justify-between"><label class="text-sm text-gray-600">配置</label><div class="flex items-center gap-2"><button onclick="openSelector('config')" id="sel-config" class="text-sm text-gray-800 px-3 py-1.5 bg-gray-50 rounded-lg min-w-[120px] text-right">${v?v.config:'请选择配置'}</button><button onclick="showToast('配置管理')" class="text-xs text-blue-500">管理</button></div></div>
+          <div><label class="text-xs text-gray-500 mb-1 block">显示名称</label><input id="edit-display" type="text" placeholder="例如：比亚迪海豹EV" value="${v?v.display:''}" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+          <div><label class="text-xs text-gray-500 mb-1 block">车辆尺寸（长×宽×高 mm）</label><input id="edit-size" type="text" placeholder="例如：4125*1770*1570" value="${v?v.size:''}" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+          <div class="flex items-center justify-between"><label class="text-sm text-gray-600">动力类型</label><button onclick="openSelector('power')" id="sel-power" class="text-sm text-gray-800 px-3 py-1.5 bg-gray-50 rounded-lg min-w-[120px] text-right">${v?v.powerType:'请选择'}</button></div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-4 shadow-sm">
+        <div class="text-sm font-bold text-gray-700 mb-3">断电信息</div>
+        <div class="space-y-3">
+          <div><label class="text-xs text-gray-500 mb-1 block">断电位置 <span class="text-red-500">*</span></label><input id="edit-position" type="text" placeholder="例如：后备箱左侧小电瓶负极" value="${v?v.position:''}" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+          <div><label class="text-xs text-gray-500 mb-1 block">钥匙-框架处理方式</label><textarea id="edit-keyframe" class="key-textarea" placeholder="框架处理方式（例如：钥匙放在驾驶室手套箱内）">${v?v.keyFrame.join('\\n'):''}</textarea></div>
+          <div><label class="text-xs text-gray-500 mb-1 block">钥匙-集装箱处理方式</label><textarea id="edit-keycontainer" class="key-textarea" placeholder="集装箱处理方式（例如：集装箱钥匙由理货员保管）">${v?v.keyContainer.join('\\n'):''}</textarea></div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-4 shadow-sm">
+        <div class="text-sm font-bold text-gray-700 mb-3">断电步骤</div>
+        <div id="steps-container" class="space-y-2">
+          ${v?v.steps.map((s,i)=>`<div class="flex gap-2"><input type="text" class="flex-1 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-sm outline-none" value="${s.replace(/"/g,'&quot;')}"><button onclick="this.parentElement.remove()" class="px-2 text-red-400">✕</button></div>`).join(''):''}
+        </div>
+        <button onclick="addStep()" class="w-full py-2 mt-2 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400">+ 添加步骤</button>
+      </div>
+      <div class="bg-white rounded-2xl p-4 shadow-sm">
+        <div class="text-sm font-bold text-gray-700 mb-3">媒体资源</div>
+        <div class="space-y-3">
+          <div><label class="text-xs text-gray-500 mb-1 block">钥匙照片</label><div class="flex gap-2"><button onclick="showToast('拍照功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">📷 拍照</button><button onclick="showToast('相册功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">🖼 相册</button></div><div class="text-xs text-gray-300 mt-1">支持拍照、相册单选/批量选图（最多9张），自动压缩保清晰</div></div>
+          <div><label class="text-xs text-gray-500 mb-1 block">车辆照片</label><div class="flex gap-2"><button onclick="showToast('拍照功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">📷 拍照</button><button onclick="showToast('相册功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">🖼 相册</button><button onclick="showToast('批量选图功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">批量选图</button></div><div class="text-xs text-gray-300 mt-1">支持拍照、相册单选/批量选图（最多9张），自动压缩保清晰</div></div>
+          <div><label class="text-xs text-gray-500 mb-1 block">视频资源</label><div class="flex gap-2"><button onclick="showToast('相册视频功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">📹 相册视频</button></div><div class="text-xs text-gray-300 mt-1">可从相册选择视频或手动输入路径</div></div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-4 shadow-sm">
+        <div><label class="text-xs text-gray-500 mb-1 block">注意事项（可选）</label><input id="edit-remarks" type="text" placeholder="例如：放干燥剂" value="${v?v.remarks:''}" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
+      </div>
+    </div>
+  `;
+  state.editingVehicle=v;
+  showScreen('screen-edit');
+  document.getElementById('bottom-nav').style.display='none';
+  document.getElementById('fab-add').style.display='none';
+}
+
+function addStep(){
+  const c=document.getElementById('steps-container');
+  const d=document.createElement('div');
+  d.className='flex gap-2';
+  d.innerHTML='<input type="text" class="flex-1 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-sm outline-none" placeholder="步骤描述"><button onclick="this.parentElement.remove()" class="px-2 text-red-400">✕</button>';
+  c.appendChild(d);
+}
+
+function saveVehicle(){
+  const display=document.getElementById('edit-display').value.trim();
+  const position=document.getElementById('edit-position').value.trim();
+  if(!display||!position){showToast('请填写显示名称和断电位置');return;}
+  const size=document.getElementById('edit-size').value.trim();
+  if(size&&!/^\d+\*\d+\*\d+$/.test(size)){showToast('尺寸格式错误，请使用数字*数字*数字格式');return;}
+  const brand=document.getElementById('sel-brand').textContent.trim();
+  const series=document.getElementById('sel-series').textContent.trim();
+  const config=document.getElementById('sel-config').textContent.trim();
+  const powerType=document.getElementById('sel-power').textContent.trim();
+  const keyFrame=document.getElementById('edit-keyframe').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const keyContainer=document.getElementById('edit-keycontainer').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const steps=Array.from(document.querySelectorAll('#steps-container input')).map(i=>i.value.trim()).filter(Boolean);
+  const remarks=document.getElementById('edit-remarks').value.trim();
+  if(state.isEditing&&state.editingVehicle){
+    const v=state.editingVehicle;
+    v.display=display;v.size=size;v.position=position;v.brand=brand;v.series=series;
+    v.config=config;v.powerType=powerType;v.keyFrame=keyFrame;v.keyContainer=keyContainer;
+    v.steps=steps;v.remarks=remarks;v.pinyin=getPinyin(display);
+  }else{
+    const maxId=VEHICLES.reduce((m,v)=>Math.max(m,v.id),0);
+    const brandObj=BRANDS.find(b=>b.name===brand);
+    VEHICLES.push({id:maxId+1,brandId:brandObj?brandObj.id:'custom',brand,series,config,display,powerType:powerType||'纯电',size,position,steps:steps.length?steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:keyFrame.length?keyFrame:['钥匙数量绑扎检查完'],keyContainer:keyContainer.length?keyContainer:['车辆进箱无需收钥匙'],remarks,photos:0,videos:0,pinyin:getPinyin(display)});
+  }
+  showToast('保存成功');
+  renderBrandTags();
+  renderVehicleList();
+  if(state.isEditing&&state.currentVehicleId){
+    openVehicleDetail(state.currentVehicleId);
+  }else{
+    goBack();
+  }
+}
+
+function confirmDeleteVehicle(id){
+  showConfirm('删除车辆','确定删除该车辆信息？此操作不可撤销。',()=>{
+    const idx=VEHICLES.findIndex(v=>v.id===id);
+    if(idx>-1){VEHICLES.splice(idx,1);showToast('删除成功');goBack();}
+  });
+}
+
+// ===================== SELECTOR (Bottom Sheet) =====================
+function openSelector(type){
+  let items=[],title='';
+  if(type==='brand'){title='选择品牌';items=[...BRANDS.map(b=>b.name+(b.en?'('+b.en+')':'')),'+新增品牌...'];}
+  else if(type==='series'){title='选择车系';const b=BRANDS.find(x=>x.name===document.getElementById('sel-brand').textContent.split('(')[0]);items=[...new Set(VEHICLES.filter(v=>!b||v.brandId===b.id).map(v=>v.series)),'+新增车系...'];}
+  else if(type==='config'){title='选择配置';items=['低配','高配','标准','PRO','PLUS','EV','DM-i','PHEV','+新增配置...'];}
+  else if(type==='power'){title='选择动力类型';items=['燃油','纯电','混动','插混','氢燃料'];}
+  document.getElementById('selector-content').innerHTML=`
+    <div class="sticky top-0 bg-white px-5 py-3 border-b border-gray-100 flex items-center justify-between rounded-t-2xl">
+      <h3 class="font-bold text-gray-900">${title}</h3><button onclick="closeModal('modal-selector')" class="text-gray-400 text-xl">&times;</button>
+    </div>
+    <div>${items.map(i=>`<div class="bs-item ${i.startsWith('+')?'text-blue-500':''}" onclick="selectItem('${type}','${i}')"><span class="text-sm">${i}</span></div>`).join('')}</div>
+    <div class="p-3"><button onclick="closeModal('modal-selector')" class="w-full py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">取消</button></div>
+  `;
+  openModal('modal-selector');
+}
+
+function selectItem(type,item){
+  if(item.startsWith('+')){
+    const input=prompt('请输入新的'+(type==='brand'?'品牌':type==='series'?'车系':'配置')+'名称：');
+    if(input&&input.trim()){
+      if(type==='brand')document.getElementById('sel-brand').textContent=input.trim();
+      else if(type==='series')document.getElementById('sel-series').textContent=input.trim();
+      else if(type==='config')document.getElementById('sel-config').textContent=input.trim();
+      showToast('新增成功');
+    }
+    closeModal('modal-selector');
+    return;
+  }
+  if(type==='brand')document.getElementById('sel-brand').textContent=item.replace(/\(.*\)/,'');
+  else if(type==='series')document.getElementById('sel-series').textContent=item;
+  else if(type==='config')document.getElementById('sel-config').textContent=item;
+  else if(type==='power')document.getElementById('sel-power').textContent=item;
+  closeModal('modal-selector');
+}
+
+// ===================== DATA CENTER =====================
+function renderDataList(){
+  const c=document.getElementById('data-vehicle-list');
+  c.innerHTML=VEHICLES.map(v=>`
+    <div class="flex items-center gap-2 py-1.5 cursor-pointer" onclick="toggleSelect(${v.id})">
+      <div class="chk ${state.selectedVehicles.has(v.id)?'on':''}" id="chk-${v.id}"></div>
+      <span class="text-sm text-gray-700 flex-1 truncate">${v.display}</span>
+      <span class="text-xs text-gray-400">${v.position.substring(0,15)}</span>
+    </div>
+  `).join('');
+  updateSelectionCount();
+}
+
+function toggleSelect(id){
+  if(state.selectedVehicles.has(id))state.selectedVehicles.delete(id);
+  else state.selectedVehicles.add(id);
+  document.getElementById('chk-'+id).classList.toggle('on');
+  updateSelectionCount();
+}
+
+function updateSelectionCount(){
+  const n=state.selectedVehicles.size;
+  document.getElementById('selection-count').textContent=`已选 ${n}/${VEHICLES.length}`;
+  document.getElementById('btn-select-all').textContent=n===VEHICLES.length?'取消全选':'全选';
+}
+
+function toggleSelectAll(){
+  if(state.selectedVehicles.size===VEHICLES.length){state.selectedVehicles.clear();}else{VEHICLES.forEach(v=>state.selectedVehicles.add(v.id));}
+  renderDataList();
+}
+
+function clearSelection(){state.selectedVehicles.clear();renderDataList();}
+
+function exportData(format){
+  const n=state.selectedVehicles.size;
+  if(n===0){showToast('请先选择要导出的车型');return;}
+  const names={'word':'Word','pdf':'PDF','excel':'Excel','csv':'CSV','json':'JSON'};
+  showToast(`正在导出 ${n} 条数据为 ${names[format]} 格式（含照片）...`);
+  setTimeout(()=>{
+    if(format==='word'||format==='pdf'){
+      document.getElementById('share-filename').textContent=`车辆断电指南_批量_${n}_${Date.now()}.${format==='word'?'docx':'pdf'}`;
+      openModal('modal-share');
+    }else{
+      showToast(`文件已保存至 /太仓港断电手册/${names[format]}`);
+    }
+  },1000);
+}
+
+function exportSingle(format){
+  const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
+  if(!v)return;
+  const names={'word':'Word','pdf':'PDF','excel':'Excel'};
+  if(format==='pdf'){
+    showToast('正在生成PDF...');
+    setTimeout(()=>{
+      showToast('PDF导出成功！已保存至 /太仓港断电手册/PDF');
+      setTimeout(()=>{document.getElementById('share-filename').textContent=`${v.display}_断电指南.pdf`;openModal('modal-share');},500);
+    },800);
+  }else if(format==='word'){
+    showToast('正在生成Word文档（含照片）...');
+    setTimeout(()=>{
+      document.getElementById('share-filename').textContent=`${v.display}_断电指南.docx`;
+      showToast('Word导出成功！数据包含照片');
+      openModal('modal-share');
+    },800);
+  }else{
+    showToast(`${names[format]}导出成功`);
+  }
+}
+
+function doBackup(){
+  document.getElementById('share-filename').textContent=`vehicle_poweroff_data_${Date.now()}.json`;
+  openModal('modal-share');
+}
+
+// ===================== SYNC =====================
+function loadFeishuConfig(){
+  const cfg=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  const a=document.getElementById('feishu-appid');if(a)a.value=cfg.appId||'';
+  const s=document.getElementById('feishu-secret');if(s)s.value=cfg.appSecret||'';
+  const f=document.getElementById('feishu-folder');if(f)f.value=cfg.folder||'';
+  const iv=document.getElementById('feishu-interval');if(iv)iv.value=cfg.interval||30;
+  const st=document.getElementById('feishu-status');
+  if(st)st.textContent=cfg.appId?'飞书账号已配置 ✓':'未配置飞书账号';
+  const cv=document.getElementById('sync-cloud-ver');
+  if(cv)cv.textContent=cfg.appId?'已连接 · v3.0':'未连接';
+}
+
+function saveFeishuConfig(){
+  const appId=document.getElementById('feishu-appid').value.trim();
+  const appSecret=document.getElementById('feishu-secret').value.trim();
+  const folder=document.getElementById('feishu-folder').value.trim();
+  const interval=parseInt(document.getElementById('feishu-interval').value)||30;
+  if(!appId||!appSecret){showToast('请填写飞书 App ID 和 App Secret');return;}
+  const cfg={appId,appSecret,folder,interval,updatedAt:new Date().toISOString()};
+  localStorage.setItem('feishu_config',JSON.stringify(cfg));
+  const st=document.getElementById('feishu-status');
+  if(st)st.textContent='飞书账号已配置 ✓';
+  const cv=document.getElementById('sync-cloud-ver');
+  if(cv)cv.textContent='已连接 · v3.0';
+  showToast('飞书配置已保存');
+  addSyncLog('飞书账号配置已更新','blue');
+}
+
+function getFeishuToken(cfg){
+  // In production: POST https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal
+  // body: {app_id, app_secret}
+  // For demo: simulate token retrieval
+  return new Promise((resolve)=>{
+    setTimeout(()=>{
+      resolve('demo_tenant_token_'+Date.now());
+    },500);
+  });
+}
+
+function doSyncUpload(){
+  if(!canEdit()){showToast('组员无上传权限，请使用"从飞书获取数据"');return;}
+  const cfg=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  if(!cfg.appId){showToast('请先配置飞书账号');return;}
+  showConfirm('确认上传','上传将覆盖飞书云端现有数据，请先确认已备份。',async()=>{
+    showToast('正在连接飞书...');
+    try{
+      const token=await getFeishuToken(cfg);
+      showToast('正在上传同步数据...');
+      // In production: upload JSON to Feishu Drive
+      // POST https://open.feishu.cn/open-apis/drive/v1/files/upload_all
+      // body: {parent_node: folder, file_name: 'vehicles_data.json', file: JSON data}
+      const syncData={
+        version:'v3.0',
+        timestamp:new Date().toISOString(),
+        uploadedBy:state.currentUser.name,
+        vehicleCount:VEHICLES.length,
+        vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths}))
+      };
+      localStorage.setItem('feishu_sync_data',JSON.stringify(syncData));
+      setTimeout(()=>{
+        showToast(`数据已同步至飞书，共${VEHICLES.length}条车型数据`);
+        addSyncLog(`上传同步完成 · ${VEHICLES.length}条车型数据 · 飞书`,'green');
+        const cv=document.getElementById('sync-cloud-ver');
+        if(cv)cv.textContent='已连接 · v3.0 (最新)';
+        const ss=document.getElementById('sync-status-text');
+        if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
+      },1500);
+    }catch(err){
+      showToast('同步失败: '+err.message);
+      addSyncLog('同步失败: '+err.message,'red');
+    }
+  });
+}
+
+function doSyncDownload(){
+  const cfg=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  if(!cfg.appId){showToast('请先配置飞书账号');return;}
+  showToast('正在从飞书获取数据...');
+  // In production: GET file from Feishu Drive
+  // GET https://open.feishu.cn/open-apis/drive/v1/files/{file_token}/download
+  setTimeout(()=>{
+    const syncData=JSON.parse(localStorage.getItem('feishu_sync_data')||'null');
+    if(syncData&&syncData.vehicles){
+      syncData.vehicles.forEach(sv=>{
+        const v=VEHICLES.find(x=>x.id===sv.id);
+        if(v){
+          v.display=sv.display;v.brand=sv.brand;v.series=sv.series;v.config=sv.config;
+          v.powerType=sv.powerType;v.position=sv.position;v.steps=sv.steps;
+          v.keyFrame=sv.keyFrame;v.keyContainer=sv.keyContainer;v.remarks=sv.remarks;
+          v.photoPaths=sv.photoPaths;v.photos=sv.photos;
+        }
+      });
+      showToast(`数据同步完成，已更新${syncData.vehicleCount}条车型数据 (v${syncData.version})`);
+      addSyncLog(`从飞书拉取完成 · ${syncData.vehicleCount}条 · v${syncData.version}`,'green');
+      const ss=document.getElementById('sync-status-text');
+      if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
+      renderBrandTags();
+      renderVehicleList();
+    }else{
+      showToast('飞书云端暂无同步数据，请等待组长上传');
+      addSyncLog('从飞书拉取失败 · 云端无数据','red');
+    }
+  },1500);
+}
+
+function addSyncLog(msg,color){
+  let logs=JSON.parse(localStorage.getItem('sync_logs')||'[]');
+  logs.unshift({msg,color:color||'gray',time:new Date().toLocaleString('zh-CN')});
+  logs=logs.slice(0,20);
+  localStorage.setItem('sync_logs',JSON.stringify(logs));
+  renderSyncLog();
+}
+
+function renderSyncLog(){
+  const c=document.getElementById('sync-log-list');
+  if(!c)return;
+  let logs=JSON.parse(localStorage.getItem('sync_logs')||'[]');
+  if(logs.length===0){
+    c.innerHTML='<div class="text-center py-8"><div class="text-gray-300 text-sm">暂无同步记录</div><div class="text-xs text-gray-400 mt-1">首次使用，无同步日志</div></div>';
+    return;
+  }
+  const colorMap={green:'bg-green-500',blue:'bg-blue-500',red:'bg-red-500',gray:'bg-gray-300'};
+  c.innerHTML=logs.map(l=>`
+    <div class="flex items-start gap-3"><div class="w-2 h-2 rounded-full ${colorMap[l.color]||'bg-gray-300'} mt-1.5 flex-shrink-0"></div><div class="flex-1"><div class="text-xs text-gray-800">${l.msg}</div><div class="text-xs text-gray-400 mt-0.5">${l.time}</div></div></div>
+  `).join('');
+}
+
+// ===================== PHOTO VIEWER =====================
+function openPhotoViewer(index){
+  state.photoIndex=index;
+  state.photoZoom=1;
+  const img=document.getElementById('photo-viewer-img');
+  const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
+  const labels=['前脸照片','车尾照片','钥匙照片','断电位照片'];
+  document.getElementById('photo-viewer-label').textContent=labels[index]||`照片 ${index+1}`;
+  if(v&&v.photoPaths&&v.photoPaths[index]){
+    img.src=v.photoPaths[index];
+  }else{
+    img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#1a1a2e"/><text x="200" y="150" text-anchor="middle" fill="#666" font-size="20" font-family="sans-serif">${v?v.display:''} - ${labels[index]||'照片'}</text><rect x="50" y="50" width="300" height="200" fill="none" stroke="#444" stroke-width="2" rx="10"/><circle cx="120" cy="120" r="15" fill="#333"/><path d="M50 250 L150 150 L250 200 L350 100 L350 250 Z" fill="#222"/></svg>`);
+  }
+  img.style.transform='scale(1)';
+  document.getElementById('photo-viewer').classList.add('show');
+}
+
+function closePhotoViewer(){document.getElementById('photo-viewer').classList.remove('show');}
+
+function cycleZoom(){
+  state.photoZoom=state.photoZoom===1?2:state.photoZoom===2?3:1;
+  document.getElementById('photo-viewer-img').style.transform=`scale(${state.photoZoom})`;
+}
+
+function resetZoom(){state.photoZoom=1;document.getElementById('photo-viewer-img').style.transform='scale(1)';}
+
+// ===================== VIDEO PLAYER =====================
+function openVideoPlayer(){
+  document.getElementById('video-player').classList.add('show');
+  const video=document.getElementById('video-element');
+  // Use a sample video URL
+  video.src='https://www.w3schools.com/html/mov_bbb.mp4';
+  video.play().catch(()=>{});
+}
+
+function closeVideoPlayer(){
+  const video=document.getElementById('video-element');
+  video.pause();
+  document.getElementById('video-player').classList.remove('show');
+}
+
+function setVideoSpeed(speed){
+  document.getElementById('video-element').playbackRate=parseFloat(speed);
+}
+
+function toggleFullscreen(){
+  const video=document.getElementById('video-element');
+  if(video.requestFullscreen)video.requestFullscreen();
+  else if(video.webkitEnterFullscreen)video.webkitEnterFullscreen();
+}
+
+// ===================== OUTDOOR MODE =====================
+function toggleOutdoorMode(){
+  state.outdoorMode=!state.outdoorMode;
+  document.getElementById('app-root').classList.toggle('outdoor',state.outdoorMode);
+  document.getElementById('toggle-outdoor').classList.toggle('on',state.outdoorMode);
+  showToast(state.outdoorMode?'高对比度户外模式已开启':'户外模式已关闭');
+}
+
+// ===================== MODALS =====================
+function openModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+
+function openSideMenu(){openModal('modal-side-menu');}
+
+function showConfirm(title,msg,callback){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  confirmCallback=callback;
+  openModal('modal-confirm');
+}
+
+function confirmAction(){
+  closeModal('modal-confirm');
+  if(confirmCallback){confirmCallback();confirmCallback=null;}
+}
+
+// ===================== MEMBERS =====================
+function renderMemberList(){
+  const c=document.getElementById('member-list');
+  if(!c)return;
+  const activeUsers=USERS.filter(u=>u.role==='user'&&u.status==='active');
+  c.innerHTML=activeUsers.map(u=>`
+    <div class="flex items-center justify-between py-2 px-2 bg-gray-50 rounded-lg">
+      <div><div class="text-sm text-gray-800">${u.name}</div><div class="text-xs text-gray-400">${u.phone} · ${u.created}</div></div>
+      <div class="flex gap-2">
+        <button onclick="resetMemberPass(${u.id})" class="text-xs text-blue-400">重置密码</button>
+        <button onclick="deleteMember(${u.id})" class="text-xs text-red-400">删除</button>
+      </div>
+    </div>
+  `).join('')||'<div class="text-center text-sm text-gray-400 py-4">暂无组员</div>';
+
+  const pc=document.getElementById('pending-list');
+  if(pc){
+    const pending=USERS.filter(u=>u.status==='pending');
+    const pcount=document.getElementById('pending-count');
+    if(pcount)pcount.textContent=pending.length?`(${pending.length})`:'';
+    pc.innerHTML=pending.map(u=>`
+      <div class="flex items-center justify-between py-2 px-2 bg-orange-50 rounded-lg">
+        <div><div class="text-sm text-gray-800">${u.name}</div><div class="text-xs text-gray-400">${u.phone} · ${u.created}</div></div>
+        <div class="flex gap-2">
+          <button onclick="approveMember(${u.id})" class="text-xs text-green-500 font-medium">通过</button>
+          <button onclick="rejectMember(${u.id})" class="text-xs text-red-400">拒绝</button>
+        </div>
+      </div>
+    `).join('')||'<div class="text-center text-sm text-gray-400 py-4">暂无待审核注册</div>';
+  }
+}
+
+function addMember(){
+  const name=document.getElementById('mem-name').value.trim();
+  const phone=document.getElementById('mem-phone').value.trim();
+  const pass=document.getElementById('mem-pass').value.trim();
+  if(!name||!phone||!pass){showToast('请填写完整信息');return;}
+  if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
+  if(pass.length<6){showToast('密码至少6位');return;}
+  if(USERS.find(u=>u.phone===phone)){showToast('该手机号已注册');return;}
+  USERS.push({id:Date.now(),name,phone,password:pass,role:'user',status:'active',created:new Date().toLocaleDateString()});
+  saveUsers(USERS);
+  document.getElementById('mem-name').value='';
+  document.getElementById('mem-phone').value='';
+  document.getElementById('mem-pass').value='';
+  renderMemberList();
+  showToast('组员创建成功');
+}
+
+function approveMember(id){
+  const u=USERS.find(x=>x.id===id);
+  if(u){u.status='active';saveUsers(USERS);renderMemberList();showToast('已通过审核');}
+}
+
+function rejectMember(id){
+  showConfirm('拒绝注册','确定拒绝该注册申请？',()=>{
+    const idx=USERS.findIndex(u=>u.id===id);
+    if(idx>-1){USERS[idx].status='rejected';saveUsers(USERS);renderMemberList();showToast('已拒绝');}
+  });
+}
+
+function deleteMember(id){
+  showConfirm('删除组员','确定删除该组员账号？',()=>{
+    const idx=USERS.findIndex(u=>u.id===id);
+    if(idx>-1){USERS.splice(idx,1);saveUsers(USERS);renderMemberList();showToast('删除成功');}
+  });
+}
+
+function resetMemberPass(id){
+  const u=USERS.find(x=>x.id===id);
+  if(u){u.password='123456';saveUsers(USERS);showToast(`已重置${u.name}的密码为123456`);}
+}
+
+// ===================== PASSWORD =====================
+function changePassword(){
+  const o=document.getElementById('pw-old').value.trim();
+  const n=document.getElementById('pw-new').value.trim();
+  const c=document.getElementById('pw-confirm').value.trim();
+  if(!o||!n||!c){showToast('请填写所有字段');return;}
+  if(n.length<6){showToast('新密码至少6位');return;}
+  if(n!==c){showToast('两次输入的新密码不一致');return;}
+  if(!state.currentUser){showToast('请先登录');return;}
+  if(state.currentUser.password!==o){showToast('原密码错误');return;}
+  state.currentUser.password=n;
+  const u=USERS.find(x=>x.id===state.currentUser.id);
+  if(u){u.password=n;saveUsers(USERS);}
+  showToast('密码修改成功');
+  showScreen('screen-my');
+}
+
+// ===================== TOGGLE =====================
+function toggleSwitch(el){el.classList.toggle('on');}
+
+// ===================== TOAST =====================
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ===================== INIT =====================
+showScreen('screen-login');
+renderBrandTags();
+renderVehicleList();
+loadFeishuConfig();
+renderSyncLog();
+</script>
+</body>
+</html>
