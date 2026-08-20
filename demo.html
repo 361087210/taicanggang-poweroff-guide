@@ -460,6 +460,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 </div>
 <div class="bs-item" id="menu-members" onclick="showScreen('screen-members')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span class="text-sm text-gray-800">组员管理</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" id="menu-sync" onclick="showScreen('screen-sync')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据同步</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="bs-item" onclick="checkUpdate()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 12a9 9 0 11-2.64-6.36M21 3v6h-6"/></svg><div><div class="text-sm text-gray-800">检查更新</div><div class="text-xs text-gray-400 mt-0.5" id="update-current-ver">当前版本 V4.1</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="doLogout()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="w-5 h-5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="text-sm text-red-500">退出登录</span></div></div>
 </div>
 </div>
@@ -562,6 +563,31 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <button onclick="closeModal('modal-confirm')" class="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">取消</button>
 <button onclick="confirmAction()" class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium">确认</button>
 </div>
+</div>
+</div>
+</div>
+
+<!-- ===== UPDATE DIALOG ===== -->
+<div class="modal-overlay" id="modal-update" style="align-items:center;">
+<div class="modal-center p-5" style="max-height:80%;overflow-y:auto;">
+<div class="text-center mb-3">
+<div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center mb-3">
+<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" class="w-7 h-7"><path d="M21 12a9 9 0 11-2.64-6.36M21 3v6h-6"/></svg>
+</div>
+<div class="text-base font-bold text-gray-900" id="update-title">发现新版本</div>
+<div class="text-xs text-gray-400 mt-1" id="update-meta"></div>
+</div>
+<div class="bg-blue-50 rounded-xl p-3 mb-3">
+<div class="text-xs font-bold text-blue-700 mb-2">更新内容</div>
+<div class="text-xs text-gray-700 space-y-1.5" id="update-changelog"></div>
+</div>
+<div class="text-xs text-gray-400 text-center mb-3" id="update-size"></div>
+<div class="flex flex-col gap-2">
+<button onclick="downloadUpdate()" class="w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-medium">下载新版本安装包</button>
+<button onclick="skipUpdate()" class="w-full py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">稍后再说</button>
+</div>
+<div class="text-xs text-blue-500 text-center mt-3">
+<a href="javascript:void(0)" onclick="openUpdatePage()" id="update-page-link">查看发布页面</a>
 </div>
 </div>
 </div>
@@ -730,6 +756,15 @@ const DEFAULT_FEISHU_CONFIG={
   folder:'WdXUfZPkClI1audQxIYc90XRnWc',
   interval:30
 };
+
+// ===================== APP VERSION & UPDATE =====================
+const APP_VERSION='4.1.0';
+const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
+const GITHUB_BRANCH='main';
+const UPDATE_SOURCES=[
+  `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/version.json`,
+  `https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@${GITHUB_BRANCH}/version.json`
+];
 
 // HTML escape helper to prevent XSS
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -1618,9 +1653,11 @@ async function syncPendingToFeishu(user){
     formData.append('parent_type','explorer');
     formData.append('parent_node',cfg.folder);
     formData.append('size',String(blob.size));
+    formData.append('file',blob,filename);
     const uploadRes=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',{method:'POST',headers:{Authorization:'Bearer '+tokenData.tenant_access_token},body:formData});
     const uploadData=await uploadRes.json();
     if(uploadData.code!==0&&uploadData.code!==undefined)throw new Error(uploadData.msg||'上传失败');
+    console.log('Pending registration synced to Feishu:',filename);
   }catch(err){
     console.error('Sync pending to Feishu failed:',err);
   }
@@ -1669,7 +1706,7 @@ async function pullPendingFromFeishu(){
 async function doBackup(){
   const dest=document.querySelector('input[name="backup-dest"]:checked');
   const target=dest?dest.value:'local';
-  const backupData={version:'v4.0',timestamp:new Date().toISOString(),vehicleCount:VEHICLES.length,vehicles:VEHICLES,users:USERS};
+  const backupData={version:'v'+APP_VERSION,timestamp:new Date().toISOString(),vehicleCount:VEHICLES.length,vehicles:VEHICLES,users:USERS};
   const jsonStr=JSON.stringify(backupData,null,2);
   const blob=new Blob([jsonStr],{type:'application/json'});
   const filename=`vehicle_backup_${new Date().toISOString().slice(0,10)}.json`;
@@ -1685,8 +1722,8 @@ async function doBackup(){
       formData.append('file_name',filename);
       formData.append('parent_type','explorer');
       formData.append('parent_node',cfg.folder);
-      formData.append('file_name',filename);
       formData.append('size',String(blob.size));
+      formData.append('file',blob,filename);
       const tokenRes=await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:cfg.appId,app_secret:cfg.appSecret})});
       const tokenData=await tokenRes.json();
       if(!tokenData.tenant_access_token)throw new Error('飞书认证失败');
@@ -1713,7 +1750,7 @@ function loadFeishuConfig(){
   const st=document.getElementById('feishu-status');
   if(st)st.textContent=cfg.appId?'飞书账号已配置 ✓':'未配置飞书账号';
   const cv=document.getElementById('sync-cloud-ver');
-  if(cv)cv.textContent=cfg.appId?'已连接 · v4.0':'未连接';
+  if(cv)cv.textContent=cfg.appId?'已连接 · v'+APP_VERSION:'未连接';
 }
 
 function saveFeishuConfig(){
@@ -1727,20 +1764,51 @@ function saveFeishuConfig(){
   const st=document.getElementById('feishu-status');
   if(st)st.textContent='飞书账号已配置 ✓';
   const cv=document.getElementById('sync-cloud-ver');
-  if(cv)cv.textContent='已连接 · v3.1';
+  if(cv)cv.textContent='已连接 · v'+APP_VERSION;
   showToast('飞书配置已保存');
   addSyncLog('飞书账号配置已更新','blue');
 }
 
-function getFeishuToken(cfg){
-  // In production: POST https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal
-  // body: {app_id, app_secret}
-  // For demo: simulate token retrieval
-  return new Promise((resolve)=>{
-    setTimeout(()=>{
-      resolve('demo_tenant_token_'+Date.now());
-    },500);
-  });
+async function getFeishuToken(cfg){
+  const res=await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:cfg.appId,app_secret:cfg.appSecret})});
+  const data=await res.json();
+  if(!data.tenant_access_token)throw new Error('飞书认证失败: '+(data.msg||''));
+  return data.tenant_access_token;
+}
+
+async function uploadJsonToFeishu(cfg,docName,jsonStr){
+  const token=await getFeishuToken(cfg);
+  try{
+    const listRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=200`,{headers:{Authorization:'Bearer '+token}});
+    const listData=await listRes.json();
+    const olds=((listData.data||{}).files||[]).filter(f=>f.name===docName);
+    for(const f of olds){
+      await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+    }
+  }catch(e){console.warn('清理云端旧文件跳过',e);}
+  const blob=new Blob([jsonStr],{type:'application/json'});
+  const formData=new FormData();
+  formData.append('file_name',docName);
+  formData.append('parent_type','explorer');
+  formData.append('parent_node',cfg.folder);
+  formData.append('size',String(blob.size));
+  formData.append('file',blob,docName);
+  const upRes=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',{method:'POST',headers:{Authorization:'Bearer '+token},body:formData});
+  const upData=await upRes.json();
+  if(upData.code!==0&&upData.code!==undefined)throw new Error(upData.msg||'上传失败');
+  return true;
+}
+
+async function downloadJsonFromFeishu(cfg,docName){
+  const token=await getFeishuToken(cfg);
+  const listRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=200`,{headers:{Authorization:'Bearer '+token}});
+  const listData=await listRes.json();
+  if(listData.code!==0)throw new Error(listData.msg||'获取文件列表失败');
+  const target=((listData.data||{}).files||[]).find(f=>f.name===docName);
+  if(!target)return null;
+  const dlRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
+  const dlText=await dlRes.text();
+  return JSON.parse(dlText);
 }
 
 function doSyncUpload(){
@@ -1751,24 +1819,22 @@ function doSyncUpload(){
   showConfirm('确认上传','上传将覆盖飞书云端现有数据，请先确认已备份。',async()=>{
     showToast('正在连接飞书...');
     try{
-      const token=await getFeishuToken(cfg);
-      showToast('正在上传同步数据...');
       const syncData={
-        version:'v4.0',
+        version:'v'+APP_VERSION,
         timestamp:new Date().toISOString(),
         uploadedBy:state.currentUser.name,
         vehicleCount:VEHICLES.length,
         vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
       };
-      localStorage.setItem('feishu_sync_data',JSON.stringify(syncData));
-      setTimeout(()=>{
-        showToast(`数据已同步至飞书，共${VEHICLES.length}条车型数据`);
-        addSyncLog(`上传同步完成 · ${VEHICLES.length}条车型数据 · 飞书`,'green');
-        const cv=document.getElementById('sync-cloud-ver');
-        if(cv)cv.textContent='已连接 · v4.0 (最新)';
-        const ss=document.getElementById('sync-status-text');
-        if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
-      },1500);
+      showToast('正在上传同步数据...');
+      await uploadJsonToFeishu(cfg,'vehicle_sync_data.json',JSON.stringify(syncData));
+      localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
+      showToast(`数据已同步至飞书，共${VEHICLES.length}条车型数据`);
+      addSyncLog(`上传同步完成 · ${VEHICLES.length}条车型数据 · 飞书`,'green');
+      const cv=document.getElementById('sync-cloud-ver');
+      if(cv)cv.textContent='已连接 · v'+APP_VERSION+' (最新)';
+      const ss=document.getElementById('sync-status-text');
+      if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
     }catch(err){
       showToast('同步失败: '+err.message);
       addSyncLog('同步失败: '+err.message,'red');
@@ -1776,13 +1842,13 @@ function doSyncUpload(){
   });
 }
 
-function doSyncDownload(){
+async function doSyncDownload(){
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
   const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
   if(!cfg.appId){showToast('请先配置飞书账号');return;}
   showToast('正在从飞书获取数据...');
-  setTimeout(()=>{
-    const syncData=JSON.parse(localStorage.getItem('feishu_sync_data')||'null');
+  try{
+    const syncData=await downloadJsonFromFeishu(cfg,'vehicle_sync_data.json');
     if(syncData&&syncData.vehicles){
       syncData.vehicles.forEach(sv=>{
         const v=VEHICLES.find(x=>x.id===sv.id);
@@ -1794,8 +1860,8 @@ function doSyncDownload(){
           if(sv.videoPaths){v.videoPaths=sv.videoPaths;v.videos=sv.videos;}
         }
       });
-      showToast(`数据同步完成，已更新${syncData.vehicleCount}条车型数据 (v${syncData.version})`);
-      addSyncLog(`从飞书拉取完成 · ${syncData.vehicleCount}条 · v${syncData.version}`,'green');
+      showToast(`数据同步完成，已更新${syncData.vehicleCount}条车型数据 (${syncData.version||''})`);
+      addSyncLog(`从飞书拉取完成 · ${syncData.vehicleCount}条 · ${syncData.version||''}`,'green');
       const ss=document.getElementById('sync-status-text');
       if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
       renderBrandTags();
@@ -1804,7 +1870,10 @@ function doSyncDownload(){
       showToast('飞书云端暂无同步数据，请等待组长上传');
       addSyncLog('从飞书拉取失败 · 云端无数据','red');
     }
-  },1500);
+  }catch(err){
+    showToast('从飞书获取数据失败: '+err.message);
+    addSyncLog('从飞书拉取失败 · '+err.message,'red');
+  }
 }
 
 function addSyncLog(msg,color){
@@ -2019,12 +2088,106 @@ function showToast(msg){
   t._timer=setTimeout(()=>t.classList.remove('show'),1500);
 }
 
+// ===================== CHECK UPDATE =====================
+let latestUpdateInfo=null;
+
+function versionNewer(a,b){
+  const pa=String(a).replace(/[^0-9.].*$/,'').split('.').map(n=>parseInt(n)||0);
+  const pb=String(b).replace(/[^0-9.].*$/,'').split('.').map(n=>parseInt(n)||0);
+  for(let i=0;i<Math.max(pa.length,pb.length);i++){
+    const x=pa[i]||0,y=pb[i]||0;
+    if(x>y)return true;
+    if(x<y)return false;
+  }
+  return false;
+}
+
+async function fetchUpdateInfo(){
+  for(const url of UPDATE_SOURCES){
+    try{
+      const ctrl=new AbortController();
+      const timer=setTimeout(()=>ctrl.abort(),8000);
+      const res=await fetch(url+'?t='+Date.now(),{signal:ctrl.signal,cache:'no-store'});
+      clearTimeout(timer);
+      if(res.ok){
+        const data=await res.json();
+        if(data&&data.version)return data;
+      }
+    }catch(e){/* try next source */}
+  }
+  try{
+    const cfg=DEFAULT_FEISHU_CONFIG;
+    if(cfg.appId){
+      const data=await downloadJsonFromFeishu(cfg,'version.json');
+      if(data&&data.version)return data;
+    }
+  }catch(e){/* feishu fallback failed */}
+  return null;
+}
+
+async function checkUpdate(silent){
+  const verEl=document.getElementById('update-current-ver');
+  if(verEl)verEl.textContent='当前版本 V'+APP_VERSION;
+  if(!silent)showToast('正在检查更新...');
+  const info=await fetchUpdateInfo();
+  if(!info){
+    if(!silent)showToast('检查更新失败，请检查网络后重试');
+    return;
+  }
+  latestUpdateInfo=info;
+  if(!versionNewer(info.version,APP_VERSION)){
+    if(!silent)showToast('已是最新版本 V'+APP_VERSION);
+    return;
+  }
+  const skipped=localStorage.getItem('update_skipped_ver');
+  if(silent&&skipped===String(info.version))return;
+  document.getElementById('update-title').textContent='发现新版本 '+(info.versionName||('V'+info.version));
+  document.getElementById('update-meta').textContent='发布日期：'+(info.date||'')+' · 当前版本 V'+APP_VERSION;
+  const clEl=document.getElementById('update-changelog');
+  const items=Array.isArray(info.changelog)?info.changelog:[];
+  clEl.innerHTML=items.map(c=>'<div class="flex items-start gap-2"><span class="text-blue-500 mt-0.5">•</span><span>'+esc(c)+'</span></div>').join('')||'<div class="flex items-start gap-2"><span class="text-blue-500 mt-0.5">•</span><span>性能优化与问题修复</span></div>';
+  document.getElementById('update-size').textContent=info.apkSize?('安装包大小：'+info.apkSize):'';
+  openModal('modal-update');
+}
+
+function openExternal(url){
+  try{
+    if(window.cordova&&cordova.InAppBrowser){
+      cordova.InAppBrowser.open(url,'_system');
+    }else{
+      window.open(url,'_blank');
+    }
+  }catch(e){window.open(url,'_blank');}
+}
+
+function downloadUpdate(){
+  if(!latestUpdateInfo||!latestUpdateInfo.apkUrl){showToast('下载地址无效');return;}
+  openExternal(latestUpdateInfo.apkUrl);
+  showToast('正在打开下载页面');
+}
+
+function openUpdatePage(){
+  openExternal((latestUpdateInfo&&latestUpdateInfo.pageUrl)||('https://github.com/'+GITHUB_REPO+'/releases'));
+}
+
+function skipUpdate(){
+  if(latestUpdateInfo)localStorage.setItem('update_skipped_ver',String(latestUpdateInfo.version));
+  closeModal('modal-update');
+  showToast('已跳过该版本，可随时手动检查');
+}
+
 // ===================== INIT =====================
 showScreen('screen-login');
 renderBrandTags();
 renderVehicleList();
 loadFeishuConfig();
 renderSyncLog();
+(function(){
+  const verEl=document.getElementById('update-current-ver');
+  if(verEl)verEl.textContent='当前版本 V'+APP_VERSION;
+})();
+// Silent update check 3s after launch (manual check always available in "我的")
+setTimeout(()=>{checkUpdate(true).catch(()=>{});},3000);
 // Populate device info
 (function(){
   const sw=screen.width||window.innerWidth;
