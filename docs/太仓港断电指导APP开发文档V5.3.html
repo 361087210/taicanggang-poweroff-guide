@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>太仓港断电指导APP开发文档 V5.3</title>
+<style>
+:root{--primary:#1e3a5f;--accent:#2563eb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--green:#059669;--red:#dc2626;--amber:#d97706}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Noto Sans CJK SC","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
+.wrap{max-width:960px;margin:0 auto;padding:24px 16px 64px}
+header{background:linear-gradient(135deg,var(--primary),#2563eb);color:#fff;border-radius:16px;padding:32px;margin-bottom:24px}
+header h1{font-size:26px;margin-bottom:8px}
+header .sub{opacity:.85;font-size:14px}
+.badge{display:inline-block;background:rgba(255,255,255,.2);padding:2px 10px;border-radius:99px;font-size:12px;margin-right:6px;margin-top:8px}
+h2{font-size:20px;color:var(--primary);margin:32px 0 12px;padding-left:10px;border-left:4px solid var(--accent)}
+h3{font-size:16px;margin:18px 0 8px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th{background:#f1f5f9;text-align:left;padding:8px 10px;border:1px solid var(--border);white-space:nowrap}
+td{padding:8px 10px;border:1px solid var(--border);vertical-align:top}
+code{background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:12.5px;font-family:Consolas,monospace;color:#b91c1c}
+pre{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:8px;overflow-x:auto;font-size:12.5px;line-height:1.6;margin:10px 0}
+pre code{background:none;color:inherit;padding:0}
+.ok{color:var(--green);font-weight:600}
+.ng{color:var(--red);font-weight:600}
+.warn{color:var(--amber);font-weight:600}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;margin-right:4px;font-weight:600}
+.t-fix{background:#dcfce7;color:#166534}.t-new{background:#dbeafe;color:#1e40af}.t-opt{background:#fef3c7;color:#92400e}
+ul{padding-left:20px}
+li{margin:4px 0}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:12px}
+.meta div{background:rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;font-size:13px}
+.meta b{display:block;font-size:12px;opacity:.75;font-weight:400}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+<h1>太仓港断电指导APP 开发文档 V5.3</h1>
+<div class="sub">太仓港商品车断电操作标准化指导平台 · Cordova混合应用</div>
+<div>
+<span class="badge">版本 5.3.0</span><span class="badge">versionCode 50300</span><span class="badge">2026-08-20</span><span class="badge">Android 7.0+ (minSdk 24)</span>
+</div>
+<div class="meta">
+<div><b>应用包名</b>com.taicanggang.poweroff</div>
+<div><b>构建类型</b>Release 签名版 (RSA-2048, 30年)</div>
+<div><b>测试规模</b>90项自动化 (静态59+运行时21+飞书E2E 10)</div>
+<div><b>数据分仓</b>项目产物区 / APP数据备份区</div>
+</div>
+</header>
+
+<h2>一、版本定位: 全链路真机问题修复版</h2>
+<div class="card">
+<p>V5.3针对现场反馈的8项问题逐一做了<b>根因级</b>修复。核心结论: 此前多数"真机必现、浏览器正常"的问题,根源集中在四条链路上:</p>
+<table>
+<tr><th>链路</th><th>根因</th><th>V5.3方案</th></tr>
+<tr><td>网络层</td><td>飞书API响应不带CORS头,WebView(<code>https://localhost</code>源)内fetch被浏览器策略静默拦截</td><td>新增<b>cordova-plugin-advanced-http</b>原生HTTP插件,<code>httpFetch()</code>统一适配层: APP走原生网络栈,浏览器回退fetch</td></tr>
+<tr><td>媒体层</td><td>①旧数据格式<code>photos:['images/…']</code>与UI期望的<code>photoPaths</code>不匹配;②43个视频引用的文件从未随项目分发(本地/GitHub均无)</td><td>①启动幂等迁移+死链清洗;②视频<b>四源回退链</b>+组长上传补源机制</td></tr>
+<tr><td>导航层</td><td>Android硬件返回键走Cordova默认<code>history.back()</code>,与自研<code>navHistory</code>导航栈脱节</td><td><code>handleHardwareBack()</code>六级统一路由</td></tr>
+<tr><td>数据层</td><td>用户数据(账号/审批/备份)与项目产物混存于同一飞书文件夹;审批结果不上传,组员端永远看不到</td><td><b>双仓分离</b>+审批全链路闭环</td></tr>
+</table>
+</div>
+
+<h2>二、八项问题修复明细</h2>
+
+<div class="card">
+<h3><span class="tag t-fix">修复</span>问题1 · 照片视频无法正常查看播放</h3>
+<p><b>照片根因:</b> 提取脚本生成的旧格式<code>photos:['images/image1.jpeg']</code>(字符串数组)与UI期望的<code>photoPaths:['vehicle_images/…']</code>不匹配;且旧引用目录名<code>images/</code>与实际打包目录<code>vehicle_images/</code>不一致;数据中还存在49条指向不存在文件的死链引用。</p>
+<p><b>照片修复:</b></p>
+<ul>
+<li>数据层: <code>vehicles_data.js</code>死链引用一次性清洗(161→118条,全部可命中真实文件)</li>
+<li>运行层: <code>migrateLegacyMedia()</code>启动幂等迁移(旧数组→photoPaths,目录名修正,photos统一为数量语义)</li>
+<li>防御层: 列表缩略图与详情页<code>&lt;img onerror&gt;</code>兜底占位,不再出现破图图标</li>
+</ul>
+<p><b>视频根因:</b> 43辆车的<code>videoPaths</code>引用<code>vehicle_videos/*.mp4</code>,但这些视频文件<b>从未存在于本地项目或GitHub仓库</b>,旧版CDN回退链接必然404。</p>
+<p><b>视频修复(四源回退链):</b></p>
+<pre><code>源① 本地APK内 vehicle_videos/          (随包分发,当前为空)
+源② 飞书云端 APP数据备份/vehicle_videos/  (组长通过APP上传的真实视频)
+源③ GitHub jsDelivr CDN                  (视频同步到仓库后自动可用)
+源④ 诚实占位"教学视频待补充"               (绝不伪造AI视频误导现场作业)
+        ↑ 组长在占位页可见"上传本车视频"按钮(≤20MB,飞书单文件上限)</code></pre>
+</div>
+
+<div class="card">
+<h3><span class="tag t-fix">修复</span>问题2 · 数据无法以文档形式分享到其他软件</h3>
+<p><b>根因:</b> V5.2分享走base64 DataURL,微信/QQ/钉钉部分版本只识别文本不识别DataURL附件,表现为"分享面板弹出但对方收不到文件"。</p>
+<p><b>修复:</b> 分享优先级链重构——</p>
+<pre><code>① writeBlobToCache() 写入APP缓存目录 → file://真实文件路径分享  (微信/QQ/钉钉稳定识别)
+② 失败回退 base64 DataURL (修正MIME与扩展名严格对应)
+③ 再降级 Web Share API Level 2
+④ 兜底浏览器下载</code></pre>
+</div>
+
+<div class="card">
+<h3><span class="tag t-fix">修复</span>问题3 · 返回上一步操作逻辑问题</h3>
+<p><b>根因:</b> Android硬件返回键未注册处理器,Cordova默认行为<code>history.back()</code>与SPA自研导航栈<code>navHistory</code>脱节,真机按返回键行为不可预期。</p>
+<p><b>修复:</b> <code>handleHardwareBack()</code>六级统一路由(与页面返回按钮完全一致):</p>
+<table>
+<tr><th>优先级</th><th>当前状态</th><th>行为</th></tr>
+<tr><td>1</td><td>照片全屏查看器打开</td><td>关闭查看器</td></tr>
+<tr><td>2</td><td>视频播放器打开</td><td>关闭播放器(停止播放释放资源)</td></tr>
+<tr><td>3</td><td>任一弹层打开</td><td>关闭最上层弹层</td></tr>
+<tr><td>4</td><td>登录页</td><td>双击退出保护(防误触)</td></tr>
+<tr><td>5</td><td>主Tab(车辆/数据/我的)</td><td>提示"再按一次退出",2秒内再按才退出</td></tr>
+<tr><td>6</td><td>子页面(详情/编辑/同步等)</td><td><code>goBack()</code>弹出导航栈上一页</td></tr>
+</table>
+<p class="warn">浏览器预览环境同步支持: <code>popstate</code>事件走同一路由,网页版与APP行为一致。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag t-new">新增</span>问题4 · 飞书数据备份/更新 + 产物与数据分仓</h3>
+<p><b>备份失败根因:</b> 真机WebView内所有飞书请求被CORS策略<b>静默拦截</b>(浏览器预览正常,真机必现,无任何报错提示)。</p>
+<p><b>修复:</b> <code>httpFetch()</code>统一适配层,全部飞书API调用(上传/下载/列表/删除/建目录)收口至此:</p>
+<pre><code>APP环境: cordova.plugin.http 原生网络栈发送 → 天然绕过WebView CORS
+浏览器:  回退标准fetch (保留网页预览能力)
+POST体:  按类型自动切换 json/utf8 序列化器</code></pre>
+<p><b>分仓设计(项目产物与用户数据物理隔离):</b></p>
+<table>
+<tr><th>区域</th><th>位置</th><th>内容</th><th>写入方</th></tr>
+<tr><td>产物区</td><td>飞书项目根目录</td><td>APK/开发文档/测试脚本/代码/版本文件</td><td>开发侧(自动化同步)</td></tr>
+<tr><td><b>数据区</b></td><td><code>APP数据备份/</code>子文件夹(自动创建,懒加载缓存token)</td><td>账号数据<code>approved_users.json</code>、注册申请<code>pending_reg_*.json</code>、备份文件、组长上传的教学视频<code>vehicle_videos/</code></td><td>APP运行时(用户操作)</td></tr>
+</table>
+<p>数据区token缓存在<code>localStorage(tcg_data_folder)</code>,避免每次同步重复目录探测;产物区同步永不触碰用户数据,用户数据更新永不污染产物区(已有E2E断言验证)。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag t-fix">修复</span>问题5 · 跨设备注册审批收不到</h3>
+<p><b>根因链(三处断点):</b> ①组长登录时拉取一次申请,此后不再拉取→错过后续申请;②组长审批后结果只存本地,不上传飞书;③组员端无审批结果拉取逻辑。</p>
+<p><b>修复(全链路闭环):</b></p>
+<pre><code>组员注册 → 上传 pending_reg_{手机号}.json 到数据区
+                ↓
+组长端: 登录拉取 + 每60秒静默轮询 → 发现新申请 Toast弹提醒
+                ↓
+组长审批 → pushApprovedUsersToFeishu() 上传 approved_users.json
+                ↓
+组员端登录/重试 → 拉取审批结果 → 通过即可登录(跨网络/跨设备)</code></pre>
+<p>两台手机不在同一网络下亦可闭环: 所有状态交换都经由飞书云端数据区,无任何局域网依赖。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag t-opt">优化</span>问题6 · 编程规范落实</h3>
+<ul>
+<li>零空catch块(自动化断言扫描),异常全部<code>console.error</code>+用户可见Toast+同步日志三通道反馈</li>
+<li>V5.3新增的12个核心函数100%覆盖JSDoc,注释解释<b>为什么这么写</b>(如四源链为何不伪造视频、file://为何优于DataURL)</li>
+<li>防御性编程: 所有API响应非空判断、媒体加载onerror兜底、8秒源加载超时保护、飞书上传20MB预校验</li>
+<li>Tailwind/SheetJS/jsPDF/AutoTable/html-docx五库全部本地化(<code>vendor/</code>),零外链CDN,离线UI与导出完整可用</li>
+</ul>
+</div>
+
+<h2>三、架构总览(V5.3)</h2>
+<div class="card">
+<pre><code>┌─────────────────────────── demo.html (index.html) ───────────────────────────┐
+│                                                                              │
+│  UI层    Tailwind(本地) ── 列表/详情/查看器/播放器/弹层/侧边菜单              │
+│           │                                                                  │
+│  导航层   navHistory栈 + handleHardwareBack六级路由(硬件键/网页键统一)       │
+│           │                                                                  │
+│  业务层   车辆数据(内联73条) ── 媒体迁移(migrateLegacyMedia,启动幂等)        │
+│           账号体系(组长/组员) ── 注册审批闭环(轮询+上传+拉取)                │
+│           数据中心 ── Word/PDF/Excel/JSON导出 ── 分享文件化(writeBlobToCache)│
+│           │                                                                  │
+│  适配层   httpFetch(原生HTTP↔fetch) · httpUploadFile · 分享四级降级          │
+│           视频四源链 · 图片onerror兜底 · 更新检查多源探测+超时               │
+│           │                                                                  │
+│  原生层   advanced-http · file · camera · media-capture ·                    │
+│           x-socialsharing · statusbar · edge-to-edge                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+        │ APP数据备份/(用户数据)                │ 项目根目录(产物)
+        ▼                                     ▼
+   飞书云盘数据区                          GitHub仓库+Release
+   approved_users/pending_reg/             代码/文档/APK/测试
+   vehicle_videos(组长上传)                版本分发(jsDelivr多源)</code></pre>
+</div>
+
+<h2>四、测试报告</h2>
+<div class="card">
+<table>
+<tr><th>套件</th><th>文件</th><th>覆盖</th><th>结果</th></tr>
+<tr><td>静态检查(59项)</td><td><code>tests/test_v53_fixes.py</code></td><td>语法/八项问题修复点/规范符合性/vendor完整性/死链零残留</td><td class="ok">59/59 通过</td></tr>
+<tr><td>运行时仿真(21项)</td><td><code>tests/test_v53_runtime.js</code></td><td>真实VEHICLES数据执行迁移/返回键六级状态机/视频源链逐级回退/导航栈行为</td><td class="ok">21/21 通过</td></tr>
+<tr><td>飞书E2E(10项)</td><td><code>tests/test_v53_feishu_e2e.py</code></td><td>真实API: token/双仓分离/数据上传下载/注册申请闭环/产物区零污染/测试自清理</td><td class="ok">10/10 通过</td></tr>
+</table>
+<p>三套件合计<b>90项断言全绿</b>。飞书E2E使用真实租户凭证验证,与APP运行时调用链完全一致(multipart上传/列表发现/下载回读/删除清理)。</p>
+<p class="warn">真机人工验证清单(装包后10分钟): ①任意车辆详情照片可看可缩放 ②视频显示"待补充"(组长可见上传按钮) ③Word/PDF分享到微信文件可接收 ④硬件返回键逐级回退 ⑤双机不同网络注册审批闭环 ⑥飞行模式下UI/导出/照片完整可用。</p>
+</div>
+
+<h2>五、构建与签名</h2>
+<div class="card">
+<h3>签名证书(Release)</h3>
+<table>
+<tr><th>项</th><th>值</th></tr>
+<tr><td>Keystore</td><td><code>keystore/tcg_release.keystore</code>(随产物分发,请妥善保管)</td></tr>
+<tr><td>别名</td><td><code>tcg_release</code></td></tr>
+<tr><td>算法/有效期</td><td>RSA-2048 / 10950天(30年)</td></tr>
+<tr><td>签名方案</td><td>v1+v2(Gradle自动,兼容Android 7.0+全机型)</td></tr>
+</table>
+<h3>一键构建(Linux/macOS)</h3>
+<pre><code># 环境要求: JDK17 + Android SDK(34) + Gradle 8.x + Cordova 13
+cd 项目根目录
+./build_apk_v53.sh          # 同步www → 添加平台插件 → 签名Release构建
+# 产物: release/太仓港断电指导V5.3.apk (已签名)</code></pre>
+<h3>手动构建(Windows, 与旧版.bat等价)</h3>
+<pre><code>set JAVA_HOME=C:\jdk17  &  set ANDROID_HOME=C:\Android\Sdk
+copy demo.html tcg_app\www\index.html  &  xcopy /E /I /Y vehicle_images tcg_app\www\vehicle_images
+xcopy /E /I /Y vendor tcg_app\www\vendor          # V5.3新增: 本地化依赖库
+cd tcg_app  &  cordova build android --release -- --packageType=apk ^
+  --keystore=..\keystore\tcg_release.keystore --storePassword=*** --alias=tcg_release --password=***</code></pre>
+<p class="warn">注意: V5.3起<b>必须</b>同步<code>vendor/</code>目录到www,否则白屏;<b>必须</b>包含cordova-plugin-advanced-http插件(config.xml已声明,新增插件后需<code>cordova prepare</code>)。</p>
+</div>
+
+<h2>六、双端同步结构</h2>
+<div class="card">
+<table>
+<tr><th>端</th><th>位置</th><th>V5.3同步内容</th></tr>
+<tr><td>GitHub</td><td>仓库main分支 + Release V5.3</td><td>代码/文档/测试/构建脚本/version.json + 签名APK附件(jsDelivr多源更新通道)</td></tr>
+<tr><td>飞书产物区</td><td>项目根目录</td><td>APK/开发文档V5.3/测试脚本/版本文件(开发产物,与用户数据隔离)</td></tr>
+<tr><td>飞书数据区</td><td>APP数据备份/(APP自动维护)</td><td>用户账号/审批状态/操作备份/教学视频——<b>仅由APP运行时写入</b></td></tr>
+</table>
+</div>
+
+<h2>七、下一版本迭代计划(V5.4建议)</h2>
+<div class="card">
+<table>
+<tr><th>#</th><th>方向</th><th>说明</th><th>优先级</th></tr>
+<tr><td>1</td><td>视频批量上传工具</td><td>桌面端/组长端批量拖拽上传43个教学视频到飞书数据区,自动按vehiclePaths文件名归位,一次补齐全部视频源</td><td>高</td></tr>
+<tr><td>2</td><td>长事件推送</td><td>飞书开放平台事件订阅(Webhook)替代60秒轮询,注册申请秒级触达组长</td><td>高</td></tr>
+<tr><td>3</td><td>视频分片上传</td><td>upload_prepare分片协议支持>20MB长视频,组长无需压缩</td><td>中</td></tr>
+<tr><td>4</td><td>离线审批队列</td><td>断网时审批操作本地排队,联网自动补传+冲突提示</td><td>中</td></tr>
+<tr><td>5</td><td>数据版本向量</td><td>多设备并发修改的版本向量合并,避免后写覆盖先写</td><td>中</td></tr>
+<tr><td>6</td><td>密钥安全加固</td><td>AppSecret迁出前端代码(代理服务/飞书短凭证),防止反编译泄露</td><td>高(安全)</td></tr>
+<tr><td>7</td><td>操作留痕审计</td><td>断电操作电子签核(工号/时间/照片),导出合规报表</td><td>低</td></tr>
+<tr><td>8</td><td>iOS端适配</td><td>Cordova iOS平台+TestFlight分发</td><td>低</td></tr>
+</table>
+</div>
+
+<h2>八、文件清单</h2>
+<div class="card">
+<table>
+<tr><th>文件</th><th>说明</th></tr>
+<tr><td><code>demo.html</code></td><td>应用主程序(V5.3全部逻辑,内联73条车辆数据)</td></tr>
+<tr><td><code>vendor/*</code></td><td>本地化依赖库×5(离线可用)</td></tr>
+<tr><td><code>vehicle_images/*</code></td><td>车辆实拍图118张(死链已清洗)</td></tr>
+<tr><td><code>vehicles_data.js</code></td><td>数据源文件(备份/同步用,已清洗)</td></tr>
+<tr><td><code>config.xml</code></td><td>Cordova配置(V5.3: 版本50300+advanced-http插件)</td></tr>
+<tr><td><code>keystore/tcg_release.keystore</code></td><td>签名证书(30年)</td></tr>
+<tr><td><code>build_apk_v53.sh</code></td><td>一键签名构建脚本</td></tr>
+<tr><td><code>tests/test_v53_fixes.py</code></td><td>静态检查套件(59项)</td></tr>
+<tr><td><code>tests/test_v53_runtime.js</code></td><td>运行时仿真套件(21项)</td></tr>
+<tr><td><code>tests/test_v53_feishu_e2e.py</code></td><td>飞书E2E套件(10项)</td></tr>
+<tr><td><code>release/太仓港断电指导V5.3.apk</code></td><td>签名安装包</td></tr>
+<tr><td><code>version.json</code></td><td>版本清单(APP内更新通道数据源)</td></tr>
+</table>
+</div>
+
+<footer>太仓港断电指导APP V5.3 · 开发文档 · 2026-08-20 · 90项自动化测试全绿交付</footer>
+</div>
+</body>
+</html>
