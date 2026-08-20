@@ -583,8 +583,8 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 </div>
 <div class="text-xs text-gray-400 text-center mb-3" id="update-size"></div>
 <div class="flex flex-col gap-2">
-<button onclick="downloadUpdate()" class="w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-medium">下载新版本安装包</button>
-<button onclick="downloadFromFeishu()" class="w-full py-3 bg-green-600 text-white rounded-xl text-sm font-medium">从飞书云盘下载</button>
+<button onclick="downloadFromFeishu()" class="w-full py-3 bg-green-600 text-white rounded-xl text-sm font-medium">从飞书云盘下载新版</button>
+<button onclick="downloadUpdate()" class="w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium">GitHub 下载（需仓库权限）</button>
 <button onclick="skipUpdate()" class="w-full py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">稍后再说</button>
 </div>
 <div class="text-xs text-blue-500 text-center mt-3">
@@ -2188,7 +2188,8 @@ function downloadFromFeishu(){
   const folder=(latestUpdateInfo&&latestUpdateInfo.feishuFolder)||('https://feishu.cn/drive/folder/'+(DEFAULT_FEISHU_CONFIG.folder||''));
   if(!folder||folder.endsWith('/')){showToast('飞书云盘地址无效');return;}
   openExternal(folder);
-  showToast('已打开飞书云盘，请在文件夹中下载新版APK');
+  const vn=(latestUpdateInfo&&latestUpdateInfo.versionName)||('V'+APP_VERSION);
+  showToast('已打开飞书云盘，请下载「太仓港断电指导'+vn+'.apk」');
 }
 
 function openUpdatePage(){
