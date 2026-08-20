@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>太仓港车辆断电指导</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script>
-<!-- html-docx-js: 使用unpkg CDN,失败时降级为HTML转Doc方案 -->
-<script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+<!-- V5.3: 全部依赖库本地化打包,离线/弱网环境下界面与导出功能不再依赖CDN(港口现场网络受限场景刚需) -->
+<script src="vendor/tailwind.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/jspdf.plugin.autotable.min.js"></script>
+<script src="vendor/html-docx.js"></script>
 <script>
 // htmlDocx 降级方案: 如果CDN加载失败,使用HTML Blob生成.doc文件(Word可打开)
 window._htmlDocxReady = typeof window.htmlDocx !== 'undefined';
@@ -760,15 +760,174 @@ function saveUsers(users){localStorage.setItem('tcg_users',JSON.stringify(users)
 let USERS=loadUsers();
 
 // ===================== FEISHU DEFAULT CONFIG =====================
+// V5.3: 双文件夹分离 - folder=项目产物目录(版本更新检查), dataFolder=APP用户数据目录(备份/注册申请/审批结果)
+// 目的: 项目交付产物与用户操作产生的数据互不污染,便于各自管理与清理
 const DEFAULT_FEISHU_CONFIG={
   appId:'cli_aa0ce4fd91f85be8',
   appSecret:'9LLgk9WBTIPZmddpuFCYicamFdDdGoKC',
   folder:'WdXUfZPkClI1audQxIYc90XRnWc',
+  dataFolder:'APP数据备份',   // 首次同步时自动在该名称子文件夹下定位/创建,token缓存于localStorage
   interval:30
 };
 
+/**
+ * 获取生效的飞书配置 - 用户自定义优先,回退内置默认值
+ * @returns {Object} {appId,appSecret,folder,dataFolder,interval}
+ */
+function getFeishuCfg(){
+  const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  return {
+    appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,
+    appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,
+    folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,
+    dataFolder:saved.dataFolder||DEFAULT_FEISHU_CONFIG.dataFolder,
+    interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval
+  };
+}
+
+/**
+ * 统一HTTP请求适配层 - V5.3核心修复
+ *
+ * 为什么需要: 飞书开放API响应头不携带Access-Control-Allow-Origin,
+ * Cordova android@13+ 的WebView以https://localhost为源发起fetch时会被CORS策略拦截,
+ * 导致V5.2及之前版本在真机上所有飞书请求静默失败(浏览器预览正常,真机必现)。
+ * cordova-plugin-advanced-http在原生层发起请求,天然绕过WebView CORS限制。
+ *
+ * 策略: APP环境优先走原生HTTP插件;浏览器/插件未就绪时回退fetch(保留网页预览能力)
+ *
+ * @param {string} url - 请求地址
+ * @param {Object} opts - {method,headers,body} body支持字符串/普通对象;文件上传请用httpUploadFile
+ * @returns {Promise<Object|string>} 解析后的JSON对象或原始文本
+ */
+async function httpFetch(url,opts){
+  opts=opts||{};
+  const method=(opts.method||'GET').toUpperCase();
+  const headers=opts.headers||{};
+  // APP环境且插件就绪: 走原生HTTP
+  if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
+    const http=window.cordova.plugin.http;
+    http.setDataSerializer('json');
+    return new Promise((resolve,reject)=>{
+      const done=res=>{
+        try{resolve(JSON.parse(res.data));}
+        catch(e){resolve(res.data);}
+      };
+      const fail=err=>reject(new Error(typeof err==='object'?(err.error||err.message||'网络请求失败'):String(err)));
+      if(method==='GET'||method==='HEAD'){
+        http.sendRequest(url,{method,headers},done,fail);
+      }else{
+        let body=opts.body;
+        // 普通对象直接传,字符串JSON需先解析(插件json序列化器要求对象)
+        if(typeof body==='string'){
+          try{body=JSON.parse(body);}catch(e){/* 保留原样,由text序列化器处理 */}
+        }
+        if(typeof body==='object'&&body!==null){
+          http.setDataSerializer('json');
+        }else{
+          http.setDataSerializer('utf8');
+        }
+        http.sendRequest(url,{method,headers,data:body},done,fail);
+      }
+    });
+  }
+  // 浏览器/降级: 标准fetch
+  const res=await fetch(url,{method,headers,body:opts.body});
+  const text=await res.text();
+  try{return JSON.parse(text);}catch(e){return text;}
+}
+
+/**
+ * 原生文件上传适配层 - 飞书upload_all接口
+ * 原生HTTP插件的uploadFile只支持文件路径,WebView环境回退fetch+FormData
+ * @param {string} url - 上传接口地址
+ * @param {Object} params - {token,fileName,folderToken,blob}
+ * @returns {Promise<Object>} 上传接口响应
+ */
+async function httpUploadFile(params){
+  const blob=params.blob;
+  // APP环境: 把blob写入临时文件后走原生上传(绕过CORS),失败回退fetch
+  if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http&&window.resolveLocalFileSystemURL){
+    try{
+      const fileUrl=await writeBlobToCache(params.fileName,blob);
+      const http=window.cordova.plugin.http;
+      return new Promise((resolve,reject)=>{
+        const options={
+          method:'POST',
+          headers:{Authorization:'Bearer '+params.token},
+          filePath:fileUrl,
+          name:'file',
+          params:{file_name:params.fileName,parent_type:'explorer',parent_node:params.folderToken,size:String(blob.size)}
+        };
+        const done=res=>{try{resolve(JSON.parse(res.data));}catch(e){resolve(res.data);}};
+        const fail=err=>reject(new Error(typeof err==='object'?(err.error||'上传失败'):String(err)));
+        http.uploadFile('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',options,done,fail);
+      });
+    }catch(e){console.warn('原生上传失败,回退fetch:',e);}
+  }
+  // 浏览器/回退: fetch+FormData(网页预览用;真机会被CORS拦截并抛错)
+  const formData=new FormData();
+  formData.append('file_name',params.fileName);
+  formData.append('parent_type','explorer');
+  formData.append('parent_node',params.folderToken);
+  formData.append('size',String(blob.size));
+  formData.append('file',blob,params.fileName);
+  const res=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',{method:'POST',headers:{Authorization:'Bearer '+params.token},body:formData});
+  return res.json();
+}
+
+/**
+ * 将Blob写入APP缓存目录并返回file://路径 - 原生上传/分享共用
+ * @param {string} fileName - 目标文件名
+ * @param {Blob} blob - 二进制内容
+ * @returns {Promise<string>} file://开头的本地路径
+ */
+function writeBlobToCache(fileName,blob){
+  return new Promise((resolve,reject)=>{
+    if(!window.resolveLocalFileSystemURL){reject(new Error('文件插件不可用'));return;}
+    // relative URL格式: <cacheDir>/<fileName>
+    window.resolveLocalFileSystemURL(cordova.file.cacheDirectory,dirEntry=>{
+      dirEntry.getFile(fileName,{create:true,exclusive:false},fileEntry=>{
+        fileEntry.createWriter(writer=>{
+          writer.onwriteend=()=>resolve(fileEntry.toURL());
+          writer.onerror=e=>reject(new Error('写入文件失败'));
+          writer.write(blob);
+        },err=>reject(new Error('创建写入器失败')));
+      },err=>reject(new Error('创建文件失败')));
+    },err=>reject(new Error('访问缓存目录失败')));
+  });
+}
+
+/**
+ * 获取APP数据文件夹token - 懒加载并缓存
+ * 优先读localStorage缓存;无缓存时在项目根目录下按名称查找子文件夹,不存在则创建
+ * @param {string} token - 飞书tenant_access_token
+ * @returns {Promise<string>} 数据文件夹的folder_token
+ */
+async function getDataFolderToken(token){
+  const cached=localStorage.getItem('tcg_data_folder');
+  if(cached)return cached;
+  const cfg=getFeishuCfg();
+  const listRes=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
+  const listData=typeof listRes==='string'?JSON.parse(listRes):listRes;
+  const folders=((listData.data||{}).files||[]).filter(f=>f.type==='folder'&&f.name==='APP数据备份');
+  let folderToken=null;
+  if(folders.length>0){
+    folderToken=folders[0].token;
+  }else{
+    const createRes=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+      body:JSON.stringify({name:'APP数据备份',folder_token:cfg.folder})
+    });
+    const createData=typeof createRes==='string'?JSON.parse(createRes):createRes;
+    folderToken=(createData.data||{}).token;
+  }
+  if(folderToken)localStorage.setItem('tcg_data_folder',folderToken);
+  return folderToken;
+}
+
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.2.0';
+const APP_VERSION='5.3.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1073,7 +1232,7 @@ function renderVehicleCard(v,i,ml){
   const statusClass=v.id%5===0?'status-done':'status-pending';
   const statusText=v.id%5===0?'已完成':'未开始';
   const hasPhoto=v.photoPaths&&v.photoPaths.length>0;
-  const thumbHtml=hasPhoto?`<div class="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"><img src="${v.photoPaths[0]}" class="w-full h-full object-cover" alt="${v.display}"></div>`:'';
+  const thumbHtml=hasPhoto?`<div class="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"><img src="${v.photoPaths[0]}" class="w-full h-full object-cover" alt="${v.display}" onerror="this.parentElement.innerHTML='<div class=&quot;w-full h-full flex items-center justify-center text-gray-300 text-xs&quot;>无图</div>'"></div>`:'';
   return `<div onclick="openVehicleDetail(${v.id})" class="${ml} bg-white rounded-xl p-3 shadow-sm border border-gray-100 active:scale-98 transition-transform cursor-pointer mb-1.5 anim-up" style="animation-delay:${i*0.03}s">
     <div class="flex items-start gap-2">
       ${thumbHtml}
@@ -1107,7 +1266,7 @@ function _renderVehicleDetail(id){
   if(!state.recentVehicles.includes(id)){state.recentVehicles.unshift(id);state.recentVehicles=state.recentVehicles.slice(0,5);}
   document.getElementById('detail-index').textContent=`${state.currentVehicleIndex+1}/${VEHICLES.length}`;
   const ptClass='pt-'+v.powerType;
-  const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join('');
+  const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}" onerror="imgLoadError(this)"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join('');
   const videoHtml=(v.videos>0||(v.videoPaths&&v.videoPaths.length))?`<div onclick="openVideoPlayer()" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="white" class="w-10 h-10"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class="absolute bottom-2 left-2 text-xs text-white">断电教学视频</span></div>`:`<div class="aspect-video rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">暂无视频</div>`;
   
   document.getElementById('detail-content').innerHTML=`
@@ -1544,19 +1703,33 @@ async function shareFile(blob,filename,mimeType){
   // 1. 原生社交分享: 调起系统分享面板,微信/QQ/钉钉接收Word/PDF/Excel文件
   if(hasNativeShare()){
     try{
-      // base64方式分享,文件名保留中文名,接收方按MIME类型识别
-      const dataUrl=await blobToDataURL(blob);
+      // 修正MIME(确保与文件扩展名一致,避免微信识别异常)
       const ext=(filename.split('.').pop()||'dat').toLowerCase();
-      // 修正Data URL的MIME(确保与文件扩展名一致,避免微信识别异常)
       let fixedMime=mimeType||'application/octet-stream';
       if(ext==='docx'&&!/wordprocessingml/.test(mimeType||''))fixedMime='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       if(ext==='xlsx'&&!/spreadsheetml/.test(mimeType||''))fixedMime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       if(ext==='doc'&&!/msword/.test(mimeType||''))fixedMime='application/msword';
       if(ext==='pdf')fixedMime='application/pdf';
-      const fileDataUrl=dataUrl.replace(/^data:[^;]*;/,`data:${fixedMime};`);
+      // V5.3: 优先写真实文件分享(file://路径),微信/QQ/钉钉对base64 DataURL
+      // 兼容性差(部分版本只显示文本不带附件),文件路径被所有主流App稳定识别
+      let shareFiles=null;
+      if(window.resolveLocalFileSystemURL&&window.cordova){
+        try{
+          const safeName=filename.replace(/[\/\\:*?"<>|]/g,'_');
+          const fileUrl=await writeBlobToCache(safeName,blob);
+          shareFiles=[fileUrl];
+        }catch(e){
+          console.warn('缓存文件写入失败,回退base64分享:',e);
+        }
+      }
+      if(!shareFiles){
+        // base64回退: 文件名保留中文名,接收方按MIME类型识别
+        const dataUrl=await blobToDataURL(blob);
+        shareFiles=[dataUrl.replace(/^data:[^;]*;/,`data:${fixedMime};`)];
+      }
       await new Promise((resolve,reject)=>{
         window.plugins.socialsharing.shareWithOptions(
-          {message:'',subject:filename,title:'分享文件',files:[fileDataUrl]},
+          {message:'',subject:filename,title:'分享文件',files:shareFiles},
           ()=>resolve(),err=>reject(err)
         );
       });
@@ -1816,51 +1989,62 @@ async function exportSingle(format){
   }catch(err){showToast('生成失败: '+err.message);console.error(err);}
 }
 
+/**
+ * 上传注册申请到飞书 - V5.3重写
+ * 变更: 1)走httpFetch/httpUploadFile绕过CORS(修复真机上传静默失败)
+ *      2)上传到"APP数据备份"子文件夹(与项目产物分离)
+ *      3)失败时给用户明确提示(之前静默失败导致"组长收不到申请")
+ */
 async function syncPendingToFeishu(user){
-  const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
+  const cfg=getFeishuCfg();
   if(!cfg.appId)return;
   try{
     const pendingData={type:'pending_registration',user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
     const jsonStr=JSON.stringify(pendingData,null,2);
     const blob=new Blob([jsonStr],{type:'application/json'});
-    const filename=`pending_reg_${user.phone}.json`;
-    const tokenRes=await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:cfg.appId,app_secret:cfg.appSecret})});
-    const tokenData=await tokenRes.json();
-    if(!tokenData.tenant_access_token)throw new Error('飞书认证失败');
-    const formData=new FormData();
-    formData.append('file_name',filename);
-    formData.append('parent_type','explorer');
-    formData.append('parent_node',cfg.folder);
-    formData.append('size',String(blob.size));
-    formData.append('file',blob,filename);
-    const uploadRes=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',{method:'POST',headers:{Authorization:'Bearer '+tokenData.tenant_access_token},body:formData});
-    const uploadData=await uploadRes.json();
-    if(uploadData.code!==0&&uploadData.code!==undefined)throw new Error(uploadData.msg||'上传失败');
-    console.log('Pending registration synced to Feishu:',filename);
+    const token=await getFeishuToken(cfg,2);
+    const dataFolder=await getDataFolderToken(token);
+    if(!dataFolder)throw new Error('数据文件夹不可用');
+    await httpUploadFile({token,fileName:`pending_reg_${user.phone}.json`,folderToken:dataFolder,blob});
+    console.log('注册申请已同步到飞书:',`pending_reg_${user.phone}.json`);
+    showToast('注册申请已推送,等待组长在任一设备审核');
   }catch(err){
     console.error('Sync pending to Feishu failed:',err);
+    showToast('申请推送失败(网络/飞书配置),组长同网络时可手动同步获取');
   }
 }
 
-async function pullPendingFromFeishu(){
-  const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
+/**
+ * 从飞书拉取待审核注册 - V5.3重写
+ * 变更: 1)httpFetch绕过CORS 2)从"APP数据备份"子文件夹拉取
+ *      3)返回新申请数量供轮询器做Toast提醒
+ * @param {boolean} silent - 静默模式(轮询时不弹Toast)
+ * @returns {Promise<number>} 新拉取的待审核数量
+ */
+async function pullPendingFromFeishu(silent){
+  const cfg=getFeishuCfg();
   if(!cfg.appId)return 0;
   try{
-    const tokenRes=await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:cfg.appId,app_secret:cfg.appSecret})});
-    const tokenData=await tokenRes.json();
-    if(!tokenData.tenant_access_token)throw new Error('飞书认证失败');
-    const listRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=100`,{method:'GET',headers:{Authorization:'Bearer '+tokenData.tenant_access_token}});
-    const listData=await listRes.json();
+    const token=await getFeishuToken(cfg);
+    const dataFolder=await getDataFolderToken(token);
+    if(!dataFolder)return 0;
+    const listData=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${dataFolder}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
     if(listData.code!==0)throw new Error(listData.msg||'获取文件列表失败');
     const files=(listData.data&&listData.data.files)||[];
     const pendingFiles=files.filter(f=>f.name&&f.name.startsWith('pending_reg_')&&f.name.endsWith('.json'));
     let newCount=0;
     for(const file of pendingFiles){
       try{
-        const dlRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{method:'GET',headers:{Authorization:'Bearer '+tokenData.tenant_access_token}});
-        const dlText=await dlRes.text();
+        // 原生HTTP下载文本
+        let dlText;
+        if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
+          dlText=await new Promise((resolve,reject)=>{
+            window.cordova.plugin.http.sendRequest(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{method:'GET',headers:{Authorization:'Bearer '+token}},res=>resolve(res.data),err=>reject(err));
+          });
+        }else{
+          const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{headers:{Authorization:'Bearer '+token}});
+          dlText=await r.text();
+        }
         const pendingData=JSON.parse(dlText);
         if(pendingData.type==='pending_registration'&&pendingData.user){
           const existingUser=USERS.find(u=>u.phone===pendingData.user.phone);
@@ -1874,8 +2058,13 @@ async function pullPendingFromFeishu(){
     if(newCount>0){
       saveUsers(USERS);
       renderMemberList();
-      showToast(`从飞书拉取${newCount}条待审核注册`);
-      addSyncLog(`从飞书拉取${newCount}条待审核注册`,'blue');
+      if(silent){
+        showToast(`📥 收到${newCount}条新的组员注册申请`);
+        addSyncLog(`轮询发现${newCount}条新注册申请`,'blue');
+      }else{
+        showToast(`从飞书拉取${newCount}条待审核注册`);
+        addSyncLog(`从飞书拉取${newCount}条待审核注册`,'blue');
+      }
     }
     return newCount;
   }catch(err){
@@ -1883,6 +2072,72 @@ async function pullPendingFromFeishu(){
     return 0;
   }
 }
+
+/**
+ * 上传审批结果到飞书 - V5.3新增,补全跨设备审批闭环的关键缺口
+ * 之前只把申请推给组长,但组长审批后结果不上传,组员设备永远看不到自己被通过
+ * @returns {Promise<boolean>}
+ */
+async function pushApprovedUsersToFeishu(){
+  const cfg=getFeishuCfg();
+  if(!cfg.appId)return false;
+  try{
+    const token=await getFeishuToken(cfg);
+    const dataFolder=await getDataFolderToken(token);
+    if(!dataFolder)return false;
+    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>({id:u.id,name:u.name,phone:u.phone,password:u.password,role:u.role,status:u.status,created:u.created}))};
+    await uploadJsonToDataFeishu(token,'approved_users.json',JSON.stringify(payload));
+    addSyncLog('审批结果已同步到飞书','green');
+    return true;
+  }catch(err){
+    console.error('Push approved users failed:',err);
+    addSyncLog('审批结果同步失败: '+err.message,'red');
+    return false;
+  }
+}
+
+/**
+ * 组员拉取审批结果 - V5.3新增
+ * 登录/启动时调用:从飞书拉取approved_users.json,若自己状态从pending→active则提示可登录
+ * @returns {Promise<boolean>} 自己是否被批准
+ */
+async function pullApprovedStatusFromFeishu(){
+  const cfg=getFeishuCfg();
+  if(!cfg.appId||!state.currentUser)return false;
+  try{
+    const token=await getFeishuToken(cfg);
+    const dataFolder=await getDataFolderToken(token);
+    if(!dataFolder)return false;
+    const data=await downloadJsonFromDataFeishu(token,'approved_users.json');
+    if(!data||!data.users)return false;
+    const me=data.users.find(u=>u.phone===state.currentUser.phone);
+    if(me&&me.status==='active'){
+      const local=USERS.find(u=>u.phone===me.phone);
+      if(local&&local.status!=='active'){
+        local.status='active';
+        saveUsers(USERS);
+        showToast('🎉 您的注册申请已被组长通过,现已可正常使用');
+        return true;
+      }
+    }
+    return false;
+  }catch(err){return false;}
+}
+
+/**
+ * 组长注册申请轮询器 - V5.3新增
+ * 登录成功后每60秒静默拉取一次,跨网络/跨设备也能及时收到申请
+ */
+let pendingPollTimer=null;
+function startPendingPolling(){
+  if(pendingPollTimer)clearInterval(pendingPollTimer);
+  pendingPollTimer=setInterval(()=>{
+    if(state.currentUser&&state.currentUser.role==='admin'&&state.currentUser.status==='active'){
+      pullPendingFromFeishu(true);
+    }
+  },60000);
+}
+function stopPendingPolling(){if(pendingPollTimer){clearInterval(pendingPollTimer);pendingPollTimer=null;}}
 
 async function doBackup(){
   const dest=document.querySelector('input[name="backup-dest"]:checked');
@@ -1897,22 +2152,16 @@ async function doBackup(){
     addBackupHistory('local',filename,VEHICLES.length,blob.size);
     addSyncLog(`本地备份完成 · ${VEHICLES.length}条 · ${filename}`,'green');
   }else if(target==='feishu'){
-    const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-    const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
+    const cfg=getFeishuCfg();
     if(!cfg.appId){showToast('飞书未配置，请先配置');return;}
     showToast('正在上传备份到飞书...');
     try{
+      // V5.3: 备份属用户操作数据,上传至"APP数据备份"子文件夹,与项目产物分离
       const token=await getFeishuToken(cfg);
-      const formData=new FormData();
-      formData.append('file_name',filename);
-      formData.append('parent_type','explorer');
-      formData.append('parent_node',cfg.folder);
-      formData.append('size',String(blob.size));
-      formData.append('file',blob,filename);
-      const uploadRes=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',{method:'POST',headers:{Authorization:'Bearer '+token},body:formData});
-      const uploadData=await uploadRes.json();
-      if(uploadData.code!==0&&uploadData.code!==undefined)throw new Error(uploadData.msg||'上传失败');
-      showToast('飞书备份完成');
+      const dataFolder=await getDataFolderToken(token);
+      if(!dataFolder)throw new Error('数据文件夹不可用');
+      await httpUploadFile({token,fileName:filename,folderToken:dataFolder,blob});
+      showToast('飞书备份完成(已存入APP数据备份文件夹)');
       addBackupHistory('feishu',filename,VEHICLES.length,blob.size);
       addSyncLog(`飞书备份完成 · ${VEHICLES.length}条 · ${filename}`,'green');
     }catch(err){
@@ -1953,7 +2202,7 @@ function saveFeishuConfig(){
 }
 
 /**
- * 获取飞书Token - 支持自动重试
+ * 获取飞书Token - 支持自动重试 + 原生HTTP(V5.3)
  * @param {Object} cfg - 飞书配置
  * @param {number} retries - 重试次数
  * @returns {Promise<string>} tenant_access_token
@@ -1963,12 +2212,11 @@ async function getFeishuToken(cfg,retries){
   let lastErr;
   for(let i=0;i<=retries;i++){
     try{
-      const res=await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{
+      const data=await httpFetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({app_id:cfg.appId,app_secret:cfg.appSecret})
+        body:{app_id:cfg.appId,app_secret:cfg.appSecret}
       });
-      const data=await res.json();
       if(data.tenant_access_token)return data.tenant_access_token;
       lastErr=new Error('飞书认证失败: '+(data.msg||''));
     }catch(e){
@@ -1981,21 +2229,19 @@ async function getFeishuToken(cfg,retries){
 }
 
 /**
- * 上传JSON到飞书 - 增强版: 支持重试和旧文件清理
- * @param {Object} cfg - 飞书配置
+ * 上传JSON到飞书指定文件夹 - 底层通用函数(V5.3)
+ * @param {string} token - tenant_access_token
+ * @param {string} folderToken - 目标文件夹token
  * @param {string} docName - 文件名
  * @param {string} jsonStr - JSON字符串
- * @returns {Promise<boolean>} 是否成功
  */
-async function uploadJsonToFeishu(cfg,docName,jsonStr){
-  const token=await getFeishuToken(cfg,2);
+async function uploadJsonToFolder(token,folderToken,docName,jsonStr){
   // 清理云端旧文件(同名)
   try{
-    const listRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=200`,{headers:{Authorization:'Bearer '+token}});
-    const listData=await listRes.json();
+    const listData=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${folderToken}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
     const olds=((listData.data||{}).files||[]).filter(f=>f.name===docName);
     for(const f of olds){
-      await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+      await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
     }
   }catch(e){console.warn('清理云端旧文件跳过',e);}
   // 上传新文件,支持重试
@@ -2003,14 +2249,7 @@ async function uploadJsonToFeishu(cfg,docName,jsonStr){
   for(let attempt=0;attempt<3;attempt++){
     try{
       const blob=new Blob([jsonStr],{type:'application/json'});
-      const formData=new FormData();
-      formData.append('file_name',docName);
-      formData.append('parent_type','explorer');
-      formData.append('parent_node',cfg.folder);
-      formData.append('size',String(blob.size));
-      formData.append('file',blob,docName);
-      const upRes=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',{method:'POST',headers:{Authorization:'Bearer '+token},body:formData});
-      const upData=await upRes.json();
+      const upData=await httpUploadFile({token,fileName:docName,folderToken,blob});
       if(upData.code!==0&&upData.code!==undefined)throw new Error(upData.msg||'上传失败');
       return true;
     }catch(e){
@@ -2023,7 +2262,61 @@ async function uploadJsonToFeishu(cfg,docName,jsonStr){
 }
 
 /**
- * 从飞书下载JSON - 增强版: 支持重试
+ * 从飞书指定文件夹下载JSON - 底层通用函数(V5.3)
+ * @param {string} token - tenant_access_token
+ * @param {string} folderToken - 目标文件夹token
+ * @param {string} docName - 文件名
+ */
+async function downloadJsonFromFolder(token,folderToken,docName){
+  const listData=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${folderToken}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
+  if(listData.code!==0)throw new Error(listData.msg||'获取文件列表失败');
+  const target=((listData.data||{}).files||[]).find(f=>f.name===docName);
+  if(!target)return null;
+  // 原生HTTP下载
+  if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
+    return await new Promise((resolve,reject)=>{
+      window.cordova.plugin.http.sendRequest(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{method:'GET',headers:{Authorization:'Bearer '+token}},res=>{
+        try{resolve(JSON.parse(res.data));}catch(e){resolve(null);}
+      },err=>reject(new Error(String(err.error||'下载失败'))));
+    });
+  }
+  const dlRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
+  const dlText=await dlRes.text();
+  return JSON.parse(dlText);
+}
+
+/**
+ * 上传JSON到"APP数据备份"文件夹(用户数据专用)
+ */
+async function uploadJsonToDataFeishu(token,docName,jsonStr){
+  const dataFolder=await getDataFolderToken(token);
+  if(!dataFolder)throw new Error('数据文件夹不可用');
+  return uploadJsonToFolder(token,dataFolder,docName,jsonStr);
+}
+
+/**
+ * 从"APP数据备份"文件夹下载JSON(用户数据专用)
+ */
+async function downloadJsonFromDataFeishu(token,docName){
+  const dataFolder=await getDataFolderToken(token);
+  if(!dataFolder)throw new Error('数据文件夹不可用');
+  return downloadJsonFromFolder(token,dataFolder,docName);
+}
+
+/**
+ * 上传JSON到飞书(项目根目录,兼容旧调用) - 增强版: 支持重试和旧文件清理
+ * @param {Object} cfg - 飞书配置
+ * @param {string} docName - 文件名
+ * @param {string} jsonStr - JSON字符串
+ * @returns {Promise<boolean>} 是否成功
+ */
+async function uploadJsonToFeishu(cfg,docName,jsonStr){
+  const token=await getFeishuToken(cfg,2);
+  return uploadJsonToFolder(token,cfg.folder,docName,jsonStr);
+}
+
+/**
+ * 从飞书下载JSON(项目根目录,兼容旧调用) - 增强版: 支持重试
  * @param {Object} cfg - 飞书配置
  * @param {string} docName - 文件名
  * @returns {Promise<Object|null>} 解析后的JSON对象
@@ -2033,14 +2326,7 @@ async function downloadJsonFromFeishu(cfg,docName){
   let lastErr;
   for(let attempt=0;attempt<3;attempt++){
     try{
-      const listRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=200`,{headers:{Authorization:'Bearer '+token}});
-      const listData=await listRes.json();
-      if(listData.code!==0)throw new Error(listData.msg||'获取文件列表失败');
-      const target=((listData.data||{}).files||[]).find(f=>f.name===docName);
-      if(!target)return null;
-      const dlRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
-      const dlText=await dlRes.text();
-      return JSON.parse(dlText);
+      return await downloadJsonFromFolder(token,cfg.folder,docName);
     }catch(e){
       lastErr=e;
       console.warn('下载失败,重试'+(attempt+1)+'/3:',e.message);
@@ -2207,6 +2493,16 @@ function renderSyncLog(){
 }
 
 // ===================== PHOTO VIEWER =====================
+/**
+ * 图片加载失败兜底 - V5.3防御性编程
+ * 数据引用经启动清洗已无死链,此函数防御运行时文件损坏/被系统清理等极端场景
+ * @param {HTMLImageElement} img - 加载失败的img元素
+ */
+function imgLoadError(img){
+  img.onerror=null;
+  img.src='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect width="200" height="150" fill="#f3f4f6"/><text x="100" y="80" text-anchor="middle" fill="#9ca3af" font-size="14" font-family="sans-serif">照片加载失败</text></svg>');
+}
+
 function openPhotoViewer(index){
   state.photoIndex=index;
   state.photoZoom=1;
@@ -2216,6 +2512,11 @@ function openPhotoViewer(index){
   document.getElementById('photo-viewer-label').textContent=labels[index]||`照片 ${index+1}`;
   if(v&&v.photoPaths&&v.photoPaths[index]){
     img.src=v.photoPaths[index];
+    // 运行时加载失败兜底: 显示带车名的占位图而非破图图标
+    img.onerror=()=>{
+      img.onerror=null;
+      img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#1a1a2e"/><text x="200" y="150" text-anchor="middle" fill="#666" font-size="20" font-family="sans-serif">${v?v.display:''} - ${labels[index]||'照片'}</text><rect x="50" y="50" width="300" height="200" fill="none" stroke="#444" stroke-width="2" rx="10"/><circle cx="120" cy="120" r="15" fill="#333"/><path d="M50 250 L150 150 L250 200 L350 100 L350 250 Z" fill="#222"/></svg>`);
+    };
   }else{
     img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#1a1a2e"/><text x="200" y="150" text-anchor="middle" fill="#666" font-size="20" font-family="sans-serif">${v?v.display:''} - ${labels[index]||'照片'}</text><rect x="50" y="50" width="300" height="200" fill="none" stroke="#444" stroke-width="2" rx="10"/><circle cx="120" cy="120" r="15" fill="#333"/><path d="M50 250 L150 150 L250 200 L350 100 L350 250 Z" fill="#222"/></svg>`);
   }
@@ -2234,11 +2535,14 @@ function resetZoom(){state.photoZoom=1;document.getElementById('photo-viewer-img
 
 // ===================== VIDEO PLAYER =====================
 /**
- * 视频播放器 - 支持本地路径和CDN回退
- * 视频路径优先使用本地vehicle_videos/目录,
- * 加载失败时自动回退到GitHub jsDelivr CDN
+ * 视频播放器 - V5.3多源回退链(问题1视频根源修复)
+ * 为什么重构: 43辆车的videoPaths引用vehicle_videos/*.mp4,但视频文件从未随
+ * 项目分发(本地无/GitHub仓库无),CDN回退链接也必然404,真机上必然播放失败。
+ * V5.3源链: ①本地APK内 → ②飞书云端"APP数据备份/vehicle_videos"(组长通过APP上传) 
+ *          → ③GitHub CDN → ④诚实提示"视频待上传"+组长上传入口
+ * 不伪造视频: AI生成的假断电操作视频会误导现场作业,宁可明确提示待补充。
  */
-function openVideoPlayer(){
+async function openVideoPlayer(){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v||!v.videoPaths||!v.videoPaths.length){
     showToast('该车辆暂无视频');
@@ -2246,51 +2550,183 @@ function openVideoPlayer(){
   }
   document.getElementById('video-player').classList.add('show');
   const video=document.getElementById('video-element');
-  // 构建视频URL: 优先本地路径,失败时回退到jsDelivr CDN
-  const videoPath=v.videoPaths[0];
   const cdnBase=`https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@${GITHUB_BRANCH}`;
-  
-  // 清除旧的事件监听器
+  const fileName=v.videoPaths[0].split('/').pop();
+
+  // 清除旧的事件监听器与错误提示
   video.onerror=null;
   video.onloadeddata=null;
-  
-  video.onerror=function(){
-    console.warn('本地视频加载失败,尝试CDN:',videoPath);
-    // 本地路径失败,尝试jsDelivr CDN
-    const cdnUrl=cdnBase+'/'+videoPath;
-    video.onerror=function(){
-      console.error('CDN视频也加载失败:',cdnUrl);
-      showToast('视频文件暂不可用,请联系管理员');
-      // 显示视频不可用提示
-      const container=video.parentElement;
-      const existing=container.querySelector('.video-error');
-      if(!existing){
-        const div=document.createElement('div');
-        div.className='video-error';
-        div.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;text-align:center;font-size:14px;';
-        div.innerHTML='<div style="font-size:40px;margin-bottom:10px;">📹</div>视频文件暂不可用<br><span style="font-size:12px;color:#999;">路径: '+videoPath+'</span>';
-        container.appendChild(div);
-      }
-    };
-    video.src=cdnUrl;
-    video.load();
-    video.play().catch(()=>{});
-  };
-  
+  clearVideoError();
+
   video.onloadeddata=function(){
-    console.log('视频加载成功:',videoPath);
-    // 移除错误提示
-    const container=video.parentElement;
-    const err=container.querySelector('.video-error');
+    const err=video.parentElement.querySelector('.video-error');
     if(err)err.remove();
   };
-  
-  video.src=videoPath;
-  video.load();
-  video.play().catch(()=>{
-    // 自动播放被阻止,用户需手动点击播放
-    console.log('自动播放被阻止,用户需手动点击');
+
+  // 源①: 本地APK内路径
+  tryPlaySource(video,v.videoPaths[0],()=>{
+    // 源②: 飞书云端(组长上传的真实视频)
+    playFromFeishuCloud(video,fileName).then(ok=>{
+      if(ok)return;
+      // 源③: GitHub jsDelivr CDN(视频曾同步到仓库时可用)
+      tryPlaySource(video,cdnBase+'/'+v.videoPaths[0],()=>{
+        // 源④: 全部失败 → 诚实提示 + 组长上传入口
+        showVideoMissing(fileName,video);
+      });
+    });
   });
+}
+
+/**
+ * 尝试播放单个源,失败时回调fallback继续下一源
+ * @param {HTMLVideoElement} video - 播放器元素
+ * @param {string} src - 视频源地址
+ * @param {Function} fallback - 该源失败后的回退函数
+ */
+function tryPlaySource(video,src,fallback){
+  let settled=false;
+  const onErr=()=>{
+    if(settled)return;settled=true;
+    console.warn('[视频]源加载失败,切换下一源:',src);
+    fallback();
+  };
+  video.onerror=onErr;
+  // 8秒超时保护: 部分ROM上onerror不触发,只有加载停滞
+  const timer=setTimeout(onErr,8000);
+  video.onloadeddata=()=>{
+    clearTimeout(timer);settled=true;
+    const err=video.parentElement.querySelector('.video-error');
+    if(err)err.remove();
+  };
+  video.src=src;
+  video.load();
+  video.play().catch(()=>{/* 自动播放被阻止,用户手动点击播放 */});
+}
+
+/**
+ * 从飞书云端"APP数据备份/vehicle_videos"下载视频并播放 - V5.3新增
+ * 组长上传的真实断电操作视频通过此通道分发到所有设备
+ * @param {HTMLVideoElement} video - 播放器元素
+ * @param {string} fileName - 视频文件名
+ * @returns {Promise<boolean>} 是否成功开始播放
+ */
+async function playFromFeishuCloud(video,fileName){
+  const cfg=getFeishuCfg();
+  if(!cfg.appId)return false;
+  try{
+    const token=await getFeishuToken(cfg);
+    const dataFolder=await getDataFolderToken(token);
+    if(!dataFolder)return false;
+    // 在数据文件夹下查找vehicle_videos子目录(懒创建仅查询)
+    const listRes=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${dataFolder}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
+    if(listRes.code!==0)return false;
+    const videoFolder=((listRes.data||{}).files||[]).find(f=>f.type==='folder'&&f.name==='vehicle_videos');
+    if(!videoFolder)return false;
+    const vfList=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${videoFolder.token}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
+    if(vfList.code!==0)return false;
+    const target=((vfList.data||{}).files||[]).find(f=>f.name===fileName);
+    if(!target)return false;
+    // 下载视频二进制 → blob URL播放(原生http与fetch双通道)
+    let blob;
+    if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
+      blob=await new Promise((resolve,reject)=>{
+        window.cordova.plugin.http.sendRequest(
+          `https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,
+          {method:'GET',headers:{Authorization:'Bearer '+token},responseType:'blob'},
+          res=>resolve(res.data),err=>reject(err)
+        );
+      });
+    }else{
+      const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
+      blob=await r.blob();
+    }
+    if(!blob||blob.size<1024)throw new Error('云端视频内容异常');
+    const url=URL.createObjectURL(blob);
+    tryPlaySource(video,url,()=>{URL.revokeObjectURL(url);return false;});
+    console.log('[视频]飞书云端源命中:',fileName);
+    return true;
+  }catch(e){
+    console.warn('[视频]飞书云端源不可用:',e.message||e);
+    return false;
+  }
+}
+
+/**
+ * 显示"视频待上传"诚实占位 - 全部源失败时
+ * 组长/管理员额外显示上传按钮,上传后全组设备立即可播
+ * @param {string} fileName - 期望的视频文件名
+ * @param {HTMLVideoElement} video - 播放器元素
+ */
+function showVideoMissing(fileName,video){
+  clearVideoError();
+  const container=video.parentElement;
+  const isAdmin=state.currentUser&&state.currentUser.role==='admin'&&state.currentUser.status==='active';
+  const div=document.createElement('div');
+  div.className='video-error';
+  div.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;text-align:center;font-size:14px;max-width:90%;z-index:5;';
+  div.innerHTML='<div style="font-size:40px;margin-bottom:10px;">📹</div>教学视频待补充'+
+    '<div style="font-size:12px;color:#999;margin-top:6px;">现场请按图文步骤操作</div>'+
+    (isAdmin?`<button onclick="pickVideoFile()" style="margin-top:12px;padding:8px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:13px;">上传本车视频</button>`:'');
+  container.appendChild(div);
+}
+
+/** 清除视频错误占位层 */
+function clearVideoError(){
+  const video=document.getElementById('video-element');
+  const container=video?video.parentElement:null;
+  const err=container?container.querySelector('.video-error'):null;
+  if(err)err.remove();
+}
+
+/**
+ * 组长选择本地视频文件并上传到飞书 - V5.3新增
+ * 上传到"APP数据备份/vehicle_videos/<fileName>",其他设备播放时自动命中云端源
+ * 飞书upload_all单文件上限约20MB,超限提示压缩后重传
+ */
+function pickVideoFile(){
+  const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
+  if(!v||!v.videoPaths||!v.videoPaths.length)return;
+  const fileName=v.videoPaths[0].split('/').pop();
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='video/mp4,video/quicktime,video/webm';
+  input.onchange=async()=>{
+    const file=input.files&&input.files[0];
+    if(!file)return;
+    if(file.size>20*1024*1024){
+      showToast('视频超过20MB,请压缩后重传(飞书单文件上限)');
+      return;
+    }
+    showToast('视频上传中...');
+    try{
+      const cfg=getFeishuCfg();
+      if(!cfg.appId)throw new Error('未配置飞书同步');
+      const token=await getFeishuToken(cfg);
+      const dataFolder=await getDataFolderToken(token);
+      if(!dataFolder)throw new Error('数据文件夹不可用');
+      // 确保vehicle_videos子目录存在(先查后建)
+      const listRes=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${dataFolder}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
+      let vfToken=null;
+      const exist=((listRes.data||{}).files||[]).find(f=>f.type==='folder'&&f.name==='vehicle_videos');
+      if(exist)vfToken=exist.token;
+      if(!vfToken){
+        const cr=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({name:'vehicle_videos',folder_token:dataFolder})});
+        vfToken=(cr.data||{}).token;
+      }
+      if(!vfToken)throw new Error('创建视频文件夹失败');
+      const res=await httpUploadFile({token,fileName,folderToken:vfToken,blob:file});
+      if(res.code!==0)throw new Error(res.msg||'飞书拒绝上传');
+      showToast('视频上传成功,全组设备已可播放');
+      addSyncLog(`视频上传成功 · ${fileName} · ${(file.size/1048576).toFixed(1)}MB`,'green');
+      clearVideoError();
+      openVideoPlayer();
+    }catch(err){
+      console.error('Video upload failed:',err);
+      showToast('视频上传失败: '+(err.message||err));
+      addSyncLog('视频上传失败: '+(err.message||err),'red');
+    }
+  };
+  input.click();
 }
 
 function closeVideoPlayer(){
@@ -2477,32 +2913,31 @@ async function fetchUpdateInfo(){
   const consider=(data)=>{
     if(data&&data.version&&(!best||versionNewer(data.version,best.version)))best=data;
   };
+  /**
+   * 带超时的httpFetch包装 - V5.3统一走原生HTTP通道
+   * 为什么: 真机WebView直连fetch虽CDN源带CORS头,但弱网下无超时会无限挂起;
+   * 统一httpFetch保证APP环境走原生网络栈,行为与飞书请求一致,便于排查。
+   */
+  const fetchWithTimeout=async(url)=>{
+    return Promise.race([
+      httpFetch(url,{method:'GET'}),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
+    ]);
+  };
   for(const url of UPDATE_SOURCES){
     try{
-      const ctrl=new AbortController();
-      const timer=setTimeout(()=>ctrl.abort(),8000);
-      const res=await fetch(url+'?t='+Date.now(),{signal:ctrl.signal,cache:'no-store'});
-      clearTimeout(timer);
-      if(res.ok){
-        const data=await res.json();
-        consider(data);
-      }
+      const data=await fetchWithTimeout(url+'?t='+Date.now());
+      consider(typeof data==='object'?data:null);
     }catch(e){/* try next source */}
   }
   try{
-    const ctrl=new AbortController();
-    const timer=setTimeout(()=>ctrl.abort(),8000);
-    const res=await fetch(UPDATE_API_SOURCE+'&t='+Date.now(),{signal:ctrl.signal,cache:'no-store'});
-    clearTimeout(timer);
-    if(res.ok){
-      const j=await res.json();
-      if(j&&j.content){
-        const bin=atob(String(j.content).replace(/\s/g,''));
-        const bytes=new Uint8Array(bin.length);
-        for(let k=0;k<bin.length;k++)bytes[k]=bin.charCodeAt(k);
-        const data=JSON.parse(new TextDecoder('utf-8').decode(bytes));
-        consider(data);
-      }
+    const j=await fetchWithTimeout(UPDATE_API_SOURCE+'&t='+Date.now());
+    if(j&&j.content){
+      const bin=atob(String(j.content).replace(/\s/g,''));
+      const bytes=new Uint8Array(bin.length);
+      for(let k=0;k<bin.length;k++)bytes[k]=bin.charCodeAt(k);
+      const data=JSON.parse(new TextDecoder('utf-8').decode(bytes));
+      consider(data);
     }
   }catch(e){/* github api source failed */}
   try{
@@ -2574,8 +3009,92 @@ function skipUpdate(){
   showToast('已跳过该版本，可随时手动检查');
 }
 
+// ===================== HARDWARE BACK (V5.3) =====================
+/**
+ * Android硬件返回键统一路由 - V5.3核心修复(问题3)
+ * 为什么需要: Cordova默认行为是history.back(),与本APP自研导航栈(navHistory)脱节,
+ * 真机上按返回键会直接退出APP或无响应,与页面上的返回按钮行为不一致。
+ * 统一路由优先级: 全屏查看器 → 弹层 → 登录页(不退出) → 子页面返回 → 主Tab双击退出
+ */
+let lastBackPressTs=0;
+function handleHardwareBack(){
+  // 1. 照片查看器打开 → 关闭查看器
+  const pv=document.getElementById('photo-viewer');
+  if(pv&&pv.classList.contains('show')){closePhotoViewer();return;}
+  // 2. 视频播放器打开 → 关闭播放器
+  const vp=document.getElementById('video-player');
+  if(vp&&vp.classList.contains('show')){closeVideoPlayer();return;}
+  // 3. 任一弹层打开 → 关闭最上层弹层(按DOM顺序取最后一个)
+  const openModals=Array.from(document.querySelectorAll('.modal-overlay.show'));
+  if(openModals.length>0){closeModal(openModals[openModals.length-1].id);return;}
+  // 4. 登录页 → 不响应(避免误触退出,双击才退)
+  if(state.screen==='login'){doubleBackExit();return;}
+  // 5. 主Tab页面 → 双击退出
+  if(['screen-vehicles','screen-data','screen-my'].includes(state.screen)){
+    doubleBackExit();return;
+  }
+  // 6. 子页面 → 正常返回上一步
+  goBack();
+}
+
+/**
+ * 双击退出确认 - 2秒内再按一次才退出
+ * 为什么不用原生dialog: WebView内confirm在部分ROM上样式异常且阻塞JS线程
+ */
+function doubleBackExit(){
+  const now=Date.now();
+  if(now-lastBackPressTs<2000){
+    if(navigator.app&&navigator.app.exitApp)navigator.app.exitApp();
+  }else{
+    lastBackPressTs=now;
+    showToast('再按一次返回键退出应用');
+  }
+}
+
+// 注册硬件返回键(APP环境)与网页回退键(浏览器预览环境)
+document.addEventListener('deviceready',()=>{
+  document.addEventListener('backbutton',e=>{
+    e.preventDefault();
+    handleHardwareBack();
+  },false);
+},false);
+window.addEventListener('popstate',()=>{
+  // 浏览器预览: 物理返回同样走统一路由,避免导航栈错乱
+  if(!window.cordova)handleHardwareBack();
+  history.pushState(null,'',location.href);
+});
+history.pushState(null,'',location.href);
+
+// ===================== MEDIA MIGRATION (V5.3) =====================
+/**
+ * 旧版媒体数据迁移 - V5.3核心修复(问题1照片根源)
+ * 为什么需要: vehicles_data.js由提取脚本生成,photos字段是旧格式字符串数组
+ * (如['images/image1.jpeg']),而UI层期望photoPaths路径数组;且数组与数字比较
+ * (v.photos>0)恒为false,导致详情页"车辆照片"区块整个不渲染。
+ * 另外旧引用的images/目录在打包时实际名为vehicle_images/,需同步修正目录名。
+ * 幂等设计: 已迁移数据不会重复处理,每次启动安全执行。
+ * @returns {number} 本次迁移修复的车辆数
+ */
+function migrateLegacyMedia(){
+  let fixed=0;
+  VEHICLES.forEach(v=>{
+    if(Array.isArray(v.photos)&&v.photos.length&&!(v.photoPaths&&v.photoPaths.length)){
+      v.photoPaths=v.photos
+        .filter(p=>typeof p==='string')
+        .map(p=>p.replace(/^images?\//,'vehicle_images/'));
+      fixed++;
+    }
+    // 统一photos/videos字段为数量语义(UI层用v.photos>0判断)
+    if(Array.isArray(v.photoPaths))v.photos=v.photoPaths.length;
+    if(Array.isArray(v.videoPaths))v.videos=v.videoPaths.length;
+  });
+  if(fixed>0)console.log('[媒体迁移] '+fixed+'辆车的照片路径已修正为vehicle_images/');
+  return fixed;
+}
+
 // ===================== INIT =====================
 // 启动时检查是否有已保存的登录会话,实现免重复登录
+migrateLegacyMedia();
 if(restoreSession()){
   // 已有有效会话,直接进入主界面
   showScreen('screen-vehicles');
