@@ -65,6 +65,9 @@
 ├── vehicle_images/               # 车辆图片 (112张)
 ├── vehicle_videos/               # 车辆视频 (47个)
 └── tcg_app/                      # Cordova项目
+    ├── config.xml
+    ├── package.json
+    └── platforms/android/
 ```
 
 ## 快速开始
