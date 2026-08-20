@@ -1,21 +1,20 @@
 {
-  "version": "4.1.0",
-  "versionName": "V4.1",
+  "version": "5.0.0",
+  "versionName": "V5.0",
   "date": "2026-08-20",
-  "apkSize": "15MB",
+  "apkSize": "30MB",
   "changelog": [
-    "新增检查更新功能：自动检测新版本，显示更新日志，由用户选择下载",
-    "更新检测四层兜底：jsDelivr CDN → GitHub Raw → GitHub API → 飞书云盘，国内网络可用",
-    "更新弹窗新增「从飞书云盘下载」按钮，GitHub 下载不畅时可改用飞书",
-    "修复APK启动崩溃：更正Cordova入口文件配置，应用可正常打开",
-    "修复飞书备份上传失败：补全文件内容字段，移除重复参数",
-    "修复组员注册同步飞书失败：上传数据完整可用",
-    "数据同步真实化：组长上传、组员拉取均直连飞书云盘（原为本地模拟）",
-    "修复版本显示不一致问题（同步页曾显示v3.1）",
-    "网络白名单完善：GitHub/jsDelivr/飞书均可访问",
-    "33项自动化测试全部通过，含真实飞书API往返验证"
+    "修复车辆详情页视频不显示：videoPaths已合并到内嵌数据，43个车型视频正常播放",
+    "修复编辑车辆时内置照片视频不显示：移除data:前缀过滤，所有媒体资源正确加载",
+    "修复数据导出功能失效：更正html-docx-js CDN地址，Word/PDF/Excel三种格式均可正常生成",
+    "新增导出库加载检查：XLSX/jsPDF/htmlDocx加载失败时给出明确提示",
+    "修复飞书数据备份失败：使用用户保存的飞书配置替代默认配置，FormData补全file字段",
+    "新增备份历史记录：记录备份类型、文件名、数据条数和文件大小，支持查看最近10条",
+    "实现配置导出功能：exportSyncConfig导出车辆数据和飞书配置为JSON文件",
+    "文档生成包含照片和视频路径：Word文档嵌入图片，PDF/Excel列出媒体路径",
+    "44项自动化测试全部通过，覆盖视频/编辑/导出/备份/同步/安全全链路"
   ],
-  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/V4.1/taicanggang-V4.1.apk",
+  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/V5.0/taicanggang-V5.0.apk",
   "pageUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases",
   "feishuFolder": "https://feishu.cn/drive/folder/WdXUfZPkClI1audQxIYc90XRnWc"
 }
