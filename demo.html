@@ -2465,7 +2465,18 @@ function versionNewer(a,b){
   return false;
 }
 
+/**
+ * 获取最新版本信息 - 多源全量探测,返回版本号最高的一条
+ * 为什么不逐源首个成功即返回: CDN(如jsDelivr)可能缓存过期version.json,
+ * 首个成功源若为旧缓存会误判"已是最新",用户将永远收不到新版本推送;
+ * 全部探测后取最高版本,任一源为最新即可触发更新提示
+ * @returns {Promise<Object|null>} 版本号最高的version.json内容
+ */
 async function fetchUpdateInfo(){
+  let best=null;
+  const consider=(data)=>{
+    if(data&&data.version&&(!best||versionNewer(data.version,best.version)))best=data;
+  };
   for(const url of UPDATE_SOURCES){
     try{
       const ctrl=new AbortController();
@@ -2474,7 +2485,7 @@ async function fetchUpdateInfo(){
       clearTimeout(timer);
       if(res.ok){
         const data=await res.json();
-        if(data&&data.version)return data;
+        consider(data);
       }
     }catch(e){/* try next source */}
   }
@@ -2490,7 +2501,7 @@ async function fetchUpdateInfo(){
         const bytes=new Uint8Array(bin.length);
         for(let k=0;k<bin.length;k++)bytes[k]=bin.charCodeAt(k);
         const data=JSON.parse(new TextDecoder('utf-8').decode(bytes));
-        if(data&&data.version)return data;
+        consider(data);
       }
     }
   }catch(e){/* github api source failed */}
@@ -2498,10 +2509,10 @@ async function fetchUpdateInfo(){
     const cfg=DEFAULT_FEISHU_CONFIG;
     if(cfg.appId){
       const data=await downloadJsonFromFeishu(cfg,'version.json');
-      if(data&&data.version)return data;
+      consider(data);
     }
   }catch(e){/* feishu fallback failed */}
-  return null;
+  return best;
 }
 
 async function checkUpdate(silent){
