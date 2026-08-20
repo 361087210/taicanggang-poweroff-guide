@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>太仓港车辆断电指导</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.5/dist/html-docx.js"></script>
 <style>
 *{font-family:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
 body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
@@ -153,7 +157,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <button onclick="showScreen('screen-forgot')" class="text-xs text-gray-400">忘记密码？</button>
 </div>
 </div>
-<div class="mt-6 text-white/30 text-xs anim-up" style="animation-delay:.3s">V3.1 · 2026-08-20</div>
+<div class="mt-6 text-white/30 text-xs anim-up" style="animation-delay:.3s">V4.0 · 2026-08-20</div>
 </div>
 </div>
 
@@ -328,8 +332,21 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg>
 <span class="text-sm font-bold text-gray-900">数据备份</span>
 </div>
-<p class="text-xs text-gray-400 mb-3">生成完整数据备份文件，可通过微信、钉钉等方式分享到其他设备</p>
-<button onclick="doBackup()" class="w-full py-2.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2">分享备份</button>
+<p class="text-xs text-gray-400 mb-3">选择备份方式，生成完整数据备份文件</p>
+<div class="flex gap-3 mb-3">
+<label class="flex-1 flex items-center gap-2 p-2.5 rounded-xl border-2 border-blue-500 bg-blue-50 cursor-pointer">
+<input type="radio" name="backup-dest" value="local" checked class="accent-blue-600">
+<div><div class="text-sm font-medium text-blue-700">本地备份</div><div class="text-xs text-blue-400">下载到设备</div></div>
+</label>
+<label class="flex-1 flex items-center gap-2 p-2.5 rounded-xl border-2 border-gray-200 cursor-pointer">
+<input type="radio" name="backup-dest" value="feishu" class="accent-blue-600">
+<div><div class="text-sm font-medium text-gray-700">飞书云备份</div><div class="text-xs text-gray-400">上传到飞书云盘</div></div>
+</label>
+</div>
+<button onclick="doBackup()" class="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg>
+开始备份
+</button>
 </div>
 <!-- Data sync -->
 <div class="bg-white rounded-2xl p-4 shadow-sm">
@@ -706,6 +723,14 @@ function loadUsers(){
 function saveUsers(users){localStorage.setItem('tcg_users',JSON.stringify(users));}
 let USERS=loadUsers();
 
+// ===================== FEISHU DEFAULT CONFIG =====================
+const DEFAULT_FEISHU_CONFIG={
+  appId:'cli_aa0ce4fd91f85be8',
+  appSecret:'9LLgk9WBTIPZmddpuFCYicamFdDdGoKC',
+  folder:'WdXUfZPkClI1audQxIYc90XRnWc',
+  interval:30
+};
+
 // HTML escape helper to prevent XSS
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
@@ -778,6 +803,7 @@ function doLogin(){
   renderBrandTags();
   showToast('登录成功');
   updateMyInfo();
+  if(user.role==='admin'){pullPendingFromFeishu().then(()=>{renderMemberList();});}
 }
 
 function doRegister(){
@@ -794,7 +820,7 @@ function doRegister(){
   const newUser={id:Date.now(),name,phone,password:pass,role:isLeader?'admin':'user',status:isLeader?'active':'pending',created:new Date().toLocaleDateString()};
   USERS.push(newUser);
   saveUsers(USERS);
-  if(isLeader){showToast('组长账号注册成功');}else{showToast('注册申请已提交，请等待组长审核');}
+  if(isLeader){showToast('组长账号注册成功');}else{showToast('注册申请已提交，请等待组长审核');syncPendingToFeishu(newUser);}
   showScreen('screen-login');
 }
 
@@ -969,7 +995,7 @@ function _renderVehicleDetail(id){
   document.getElementById('detail-index').textContent=`${state.currentVehicleIndex+1}/${VEHICLES.length}`;
   const ptClass='pt-'+v.powerType;
   const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join('');
-  const videoHtml=v.videos>0?`<div onclick="openVideoPlayer()" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="white" class="w-10 h-10"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class="absolute bottom-2 left-2 text-xs text-white">断电教学视频</span></div>`:`<div class="aspect-video rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">暂无视频</div>`;
+  const videoHtml=(v.videos>0||(v.videoPaths&&v.videoPaths.length))?`<div onclick="openVideoPlayer()" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="white" class="w-10 h-10"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class="absolute bottom-2 left-2 text-xs text-white">断电教学视频</span></div>`:`<div class="aspect-video rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">暂无视频</div>`;
   
   document.getElementById('detail-content').innerHTML=`
     <div class="px-4 pt-4">
@@ -1081,9 +1107,40 @@ function openEditVehicle(id){
       <div class="bg-white rounded-2xl p-4 shadow-sm">
         <div class="text-sm font-bold text-gray-700 mb-3">媒体资源</div>
         <div class="space-y-3">
-          <div><label class="text-xs text-gray-500 mb-1 block">钥匙照片</label><div class="flex gap-2"><button onclick="showToast('拍照功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">📷 拍照</button><button onclick="showToast('相册功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">🖼 相册</button></div><div class="text-xs text-gray-300 mt-1">支持拍照、相册单选/批量选图（最多9张），自动压缩保清晰</div></div>
-          <div><label class="text-xs text-gray-500 mb-1 block">车辆照片</label><div class="flex gap-2"><button onclick="showToast('拍照功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">📷 拍照</button><button onclick="showToast('相册功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">🖼 相册</button><button onclick="showToast('批量选图功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">批量选图</button></div><div class="text-xs text-gray-300 mt-1">支持拍照、相册单选/批量选图（最多9张），自动压缩保清晰</div></div>
-          <div><label class="text-xs text-gray-500 mb-1 block">视频资源</label><div class="flex gap-2"><button onclick="showToast('相册视频功能需APP环境')" class="px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500">📹 相册视频</button></div><div class="text-xs text-gray-300 mt-1">可从相册选择视频或手动输入路径</div></div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">车辆照片（最多9张）</label>
+            <div class="flex gap-2 flex-wrap">
+              <label class="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                拍照
+                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(this,'camera')">
+              </label>
+              <label class="px-3 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                相册选图
+                <input type="file" accept="image/*" multiple class="hidden" onchange="handlePhotoSelect(this,'gallery')">
+              </label>
+            </div>
+            <div class="text-xs text-gray-400 mt-1">支持拍照、相册单选/批量选图，自动压缩保清晰</div>
+            <div id="photo-preview" class="grid grid-cols-3 gap-2 mt-2"></div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">视频资源</label>
+            <div class="flex gap-2 flex-wrap">
+              <label class="px-3 py-2 bg-purple-50 text-purple-600 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M23 7l-7 5 7 5V7zM1 5h15v14H1z"/></svg>
+                选择视频
+                <input type="file" accept="video/*" class="hidden" onchange="handleVideoSelect(this)">
+              </label>
+              <label class="px-3 py-2 bg-gray-50 text-gray-600 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M15 10l4.76-2.06a1 1 0 011.24.5v7.12a1 1 0 01-1.24.5L15 14"/><rect x="1" y="5" width="14" height="14" rx="2"/></svg>
+                拍摄视频
+                <input type="file" accept="video/*" capture="environment" class="hidden" onchange="handleVideoSelect(this)">
+              </label>
+            </div>
+            <div class="text-xs text-gray-400 mt-1">可从相册选择视频或拍摄视频</div>
+            <div id="video-preview" class="space-y-2 mt-2"></div>
+          </div>
         </div>
       </div>
       <div class="bg-white rounded-2xl p-4 shadow-sm">
@@ -1095,6 +1152,7 @@ function openEditVehicle(id){
   showScreen('screen-edit');
   document.getElementById('bottom-nav').style.display='none';
   document.getElementById('fab-add').style.display='none';
+  loadEditMedia(v);
 }
 
 function addStep(){
@@ -1103,6 +1161,119 @@ function addStep(){
   d.className='flex gap-2';
   d.innerHTML='<input type="text" class="flex-1 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-sm outline-none" placeholder="步骤描述"><button onclick="this.parentElement.remove()" class="px-2 text-red-400">✕</button>';
   c.appendChild(d);
+}
+
+// ===================== PHOTO/VIDEO HANDLING =====================
+let editPhotos=[];
+let editVideos=[];
+
+function handlePhotoSelect(input,source){
+  const files=Array.from(input.files);
+  if(!files.length)return;
+  const remaining=9-editPhotos.length;
+  if(remaining<=0){showToast('最多添加9张照片');input.value='';return;}
+  const toProcess=files.slice(0,remaining);
+  if(files.length>remaining){showToast(`仅添加前${remaining}张，最多9张`);}
+  toProcess.forEach(file=>{
+    if(!file.type.startsWith('image/'))return;
+    compressImage(file,800,0.7).then(dataUrl=>{
+      editPhotos.push({name:file.name,data:dataUrl});
+      renderPhotoPreview();
+    });
+  });
+  input.value='';
+}
+
+function compressImage(file,maxSize,quality){
+  return new Promise((resolve)=>{
+    const reader=new FileReader();
+    reader.onload=(e)=>{
+      const img=new Image();
+      img.onload=()=>{
+        let{width,height}=img;
+        if(width>maxSize||height>maxSize){
+          if(width>height){height=Math.round(height*maxSize/width);width=maxSize;}
+          else{width=Math.round(width*maxSize/height);height=maxSize;}
+        }
+        const canvas=document.createElement('canvas');
+        canvas.width=width;canvas.height=height;
+        canvas.getContext('2d').drawImage(img,0,0,width,height);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPhotoPreview(){
+  const c=document.getElementById('photo-preview');
+  if(!c)return;
+  c.innerHTML=editPhotos.map((p,i)=>`
+    <div class="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+      <img src="${p.data}" class="w-full h-full object-cover" onclick="viewPhoto(${i})">
+      <button onclick="removePhoto(${i})" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white text-xs flex items-center justify-center">&times;</button>
+    </div>
+  `).join('');
+}
+
+function removePhoto(idx){
+  editPhotos.splice(idx,1);
+  renderPhotoPreview();
+}
+
+function viewPhoto(idx){
+  const viewer=document.getElementById('photo-viewer');
+  const img=viewer.querySelector('img');
+  img.src=editPhotos[idx].data;
+  state.photoZoom=1;
+  img.style.transform='scale(1)';
+  viewer.classList.add('show');
+}
+
+function handleVideoSelect(input){
+  const files=Array.from(input.files);
+  if(!files.length)return;
+  const file=files[0];
+  if(!file.type.startsWith('video/')){showToast('请选择视频文件');return;}
+  if(file.size>100*1024*1024){showToast('视频不能超过100MB');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    editVideos.push({name:file.name,data:e.target.result,size:file.size});
+    renderVideoPreview();
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+function renderVideoPreview(){
+  const c=document.getElementById('video-preview');
+  if(!c)return;
+  c.innerHTML=editVideos.map((v,i)=>`
+    <div class="relative bg-gray-100 rounded-lg p-2 flex items-center gap-2">
+      <video src="${v.data}" class="w-20 h-14 object-cover rounded" muted></video>
+      <div class="flex-1 min-w-0"><div class="text-xs text-gray-700 truncate">${v.name}</div><div class="text-xs text-gray-400">${(v.size/1024/1024).toFixed(1)}MB</div></div>
+      <button onclick="removeVideo(${i})" class="w-6 h-6 rounded-full bg-red-50 text-red-500 text-xs flex items-center justify-center">&times;</button>
+    </div>
+  `).join('');
+}
+
+function removeVideo(idx){
+  editVideos.splice(idx,1);
+  renderVideoPreview();
+}
+
+function loadEditMedia(v){
+  editPhotos=[];
+  editVideos=[];
+  if(v&&v.photoPaths){
+    editPhotos=v.photoPaths.filter(p=>p.startsWith('data:')).map(p=>({name:'existing',data:p}));
+  }
+  if(v&&v.videoPaths){
+    editVideos=v.videoPaths.filter(p=>p.startsWith('data:')).map(p=>({name:'existing',data:p,size:0}));
+  }
+  renderPhotoPreview();
+  renderVideoPreview();
 }
 
 function saveVehicle(){
@@ -1119,16 +1290,21 @@ function saveVehicle(){
   const keyContainer=document.getElementById('edit-keycontainer').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const steps=Array.from(document.querySelectorAll('#steps-container input')).map(i=>i.value.trim()).filter(Boolean);
   const remarks=document.getElementById('edit-remarks').value.trim();
+  const photoPaths=editPhotos.map(p=>p.data);
+  const videoPaths=editVideos.map(v=>v.data);
   if(state.isEditing&&state.editingVehicle){
     const v=state.editingVehicle;
     v.display=display;v.size=size;v.position=position;v.brand=brand;v.series=series;
     v.config=config;v.powerType=powerType;v.keyFrame=keyFrame;v.keyContainer=keyContainer;
     v.steps=steps;v.remarks=remarks;v.pinyin=getPinyin(display);
+    v.photos=photoPaths.length;v.photoPaths=photoPaths;
+    v.videos=videoPaths.length;v.videoPaths=videoPaths;
   }else{
     const maxId=VEHICLES.reduce((m,v)=>Math.max(m,v.id),0);
     const brandObj=BRANDS.find(b=>b.name===brand);
-    VEHICLES.push({id:maxId+1,brandId:brandObj?brandObj.id:'custom',brand,series,config,display,powerType:powerType||'纯电',size,position,steps:steps.length?steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:keyFrame.length?keyFrame:['钥匙数量绑扎检查完'],keyContainer:keyContainer.length?keyContainer:['车辆进箱无需收钥匙'],remarks,photos:0,videos:0,pinyin:getPinyin(display)});
+    VEHICLES.push({id:maxId+1,brandId:brandObj?brandObj.id:'custom',brand,series,config,display,powerType:powerType||'纯电',size,position,steps:steps.length?steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:keyFrame.length?keyFrame:['钥匙数量绑扎检查完'],keyContainer:keyContainer.length?keyContainer:['车辆进箱无需收钥匙'],remarks,photos:photoPaths.length,photoPaths,videos:videoPaths.length,videoPaths,pinyin:getPinyin(display)});
   }
+  editPhotos=[];editVideos=[];
   showToast('保存成功');
   renderBrandTags();
   renderVehicleList();
@@ -1200,13 +1376,143 @@ async function shareVehicleDetail(){
   }
 }
 
-async function shareBackupData(filename){
-  const shareData={title:'车辆断电数据备份',text:'太仓港车辆断电指导APP数据备份文件'};
-  if(navigator.share){
-    try{await navigator.share(shareData);}catch(e){if(e.name!=='AbortError')showToast('分享取消');}
+async function shareFile(blob,filename,mimeType){
+  if(navigator.canShare&&navigator.canShare({files:[new File([blob],filename,{type:mimeType})]})){
+    try{
+      await navigator.share({files:[new File([blob],filename,{type:mimeType})],title:filename});
+    }catch(e){if(e.name!=='AbortError')showToast('分享取消');}
   }else{
-    showToast('备份信息已生成');
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=filename;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
+    showToast('文件已下载: '+filename);
   }
+}
+
+function getVehicleShareText(v){
+  return `${v.display} - 断电指导\n品牌：${v.brand} / ${v.series}\n配置：${v.config}\n动力类型：${v.powerType}\n断电位置：${v.position}\n\n断电步骤：\n${v.steps.map((s,i)=>(i+1)+'. '+s).join('\n')}\n\n备注：${v.remarks||'无'}`;
+}
+
+function generateExcel(vehicles){
+  const data=vehicles.map(v=>({
+    'ID':v.id,'品牌':v.brand,'车系':v.series,'配置':v.config,'显示名称':v.display,
+    '动力类型':v.powerType,'车辆尺寸':v.size||'','断电位置':v.position,
+    '断电步骤':v.steps.map((s,i)=>(i+1)+'. '+s).join('\n'),
+    '钥匙-框架':(v.keyFrame||[]).join('\n'),
+    '钥匙-集装箱':(v.keyContainer||[]).join('\n'),
+    '备注':v.remarks||'','照片数量':v.photos||0,
+    '照片路径':(v.photoPaths||[]).join('; '),'视频数量':v.videos||0,
+    '视频路径':(v.videoPaths||[]).join('; ')
+  }));
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws['!cols']=[{wch:5},{wch:10},{wch:12},{wch:10},{wch:20},{wch:8},{wch:15},{wch:20},{wch:50},{wch:30},{wch:30},{wch:15},{wch:8},{wch:40},{wch:5},{wch:40}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'断电指导数据');
+  return XLSX.write(wb,{bookType:'xlsx',type:'array'});
+}
+
+function generateWord(vehicles){
+  const isSingle=vehicles.length===1;
+  const v=vehicles[0];
+  let html;
+  if(isSingle){
+    const photoHtml=(v.photoPaths||[]).map((p,i)=>{
+      if(p.startsWith('data:'))return `<img src="${p}" style="width:200px;height:150px;object-fit:cover;margin:5px;"/>`;
+      return `<p>📷 照片${i+1}: ${p}</p>`;
+    }).join('');
+    const videoHtml=(v.videoPaths||[]).map(vp=>`<p>📹 视频: ${vp}</p>`).join('');
+    html=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body{font-family:'微软雅黑',sans-serif;font-size:12pt;}
+    h1{color:#1e40af;font-size:18pt;}h2{color:#1e40af;font-size:14pt;margin-top:15px;}
+    table{border-collapse:collapse;width:100%;}td,th{border:1px solid #ccc;padding:6px;font-size:11pt;}
+    .step{margin:5px 0;}.photo{display:inline-block;}.note{color:#d97706;}
+    </style></head><body>
+    <h1>${v.display} 断电操作指导</h1>
+    <table><tr><td>品牌</td><td>${v.brand}</td><td>车系</td><td>${v.series}</td></tr>
+    <tr><td>配置</td><td>${v.config}</td><td>动力类型</td><td>${v.powerType}</td></tr>
+    <tr><td>断电位置</td><td colspan="3">${v.position}</td></tr>
+    ${v.size?`<tr><td>车辆尺寸</td><td colspan="3">${v.size}</td></tr>`:''}
+    </table>
+    <h2>断电步骤</h2>${v.steps.map((s,i)=>`<p class="step">${i+1}. ${s}</p>`).join('')}
+    <h2>钥匙处理方式</h2>
+    <p><strong>框架:</strong> ${(v.keyFrame||[]).join('; ')}</p>
+    <p><strong>集装箱:</strong> ${(v.keyContainer||[]).join('; ')}</p>
+    ${v.remarks?`<h2>备注</h2><p class="note">${v.remarks}</p>`:''}
+    ${photoHtml?`<h2>车辆照片</h2><div class="photo">${photoHtml}</div>`:''}
+    ${videoHtml?`<h2>视频资源</h2>${videoHtml}`:''}
+    <p style="margin-top:20px;color:#999;font-size:9pt;">太仓港车辆断电指导APP · 生成于 ${new Date().toLocaleString('zh-CN')}</p>
+    </body></html>`;
+  }else{
+    const rows=vehicles.map(v=>`<tr><td>${v.id}</td><td>${v.brand}</td><td>${v.series}</td><td>${v.config}</td><td>${v.display}</td><td>${v.powerType}</td><td>${v.position}</td><td>${v.steps.length}</td><td>${v.photos||0}</td><td>${v.videos||0}</td></tr>`).join('');
+    html=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body{font-family:'微软雅黑',sans-serif;font-size:12pt;}
+    h1{color:#1e40af;font-size:18pt;}
+    table{border-collapse:collapse;width:100%;}td,th{border:1px solid #ccc;padding:6px;font-size:10pt;}
+    th{background:#1e40af;color:white;}
+    </style></head><body>
+    <h1>太仓港车辆断电指导 - 批量导出 (${vehicles.length}条)</h1>
+    <table><thead><tr><th>ID</th><th>品牌</th><th>车系</th><th>配置</th><th>显示名称</th><th>动力</th><th>断电位置</th><th>步骤数</th><th>照片</th><th>视频</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <p style="margin-top:20px;color:#999;font-size:9pt;">太仓港车辆断电指导APP · 生成于 ${new Date().toLocaleString('zh-CN')}</p>
+    </body></html>`;
+  }
+  return htmlDocx.asBlob(html);
+}
+
+function generatePDF(vehicles){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF('p','mm','a4');
+  const isSingle=vehicles.length===1;
+  if(isSingle){
+    const v=vehicles[0];
+    doc.setFontSize(18);doc.setTextColor(30,64,175);
+    doc.text(v.display+' 断电操作指导',14,20);
+    doc.setFontSize(10);doc.setTextColor(0,0,0);
+    let y=30;
+    doc.autoTable({startY:y,theme:'grid',headStyles:{fillColor:[30,64,175]},
+      head:[['品牌','车系','配置','动力类型']],
+      body:[[v.brand,v.series,v.config,v.powerType]]});
+    y=doc.lastAutoTable.finalY+5;
+    doc.autoTable({startY:y,theme:'grid',headStyles:{fillColor:[30,64,175]},
+      head:[['断电位置',v.position]],body:[]});
+    y=doc.lastAutoTable.finalY+5;
+    const stepData=v.steps.map((s,i)=>[String(i+1),s]);
+    doc.autoTable({startY:y,theme:'striped',headStyles:{fillColor:[30,64,175]},
+      head:[['步骤','内容']],body:stepData});
+    y=doc.lastAutoTable.finalY+5;
+    if(v.keyFrame&&v.keyFrame.length){
+      doc.autoTable({startY:y,theme:'striped',headStyles:{fillColor:[30,64,175]},
+        head:[['钥匙-框架处理']],body:v.keyFrame.map(s=>[s])});
+      y=doc.lastAutoTable.finalY+3;
+    }
+    if(v.keyContainer&&v.keyContainer.length){
+      doc.autoTable({startY:y,theme:'striped',headStyles:{fillColor:[30,64,175]},
+        head:[['钥匙-集装箱处理']],body:v.keyContainer.map(s=>[s])});
+      y=doc.lastAutoTable.finalY+3;
+    }
+    if(v.remarks){doc.setFontSize(9);doc.setTextColor(217,119,6);doc.text('备注: '+v.remarks,14,y+5);y+=10;}
+    if(v.photoPaths&&v.photoPaths.length){
+      doc.setFontSize(10);doc.setTextColor(100,100,100);
+      doc.text('照片: '+v.photoPaths.length+'张',14,y+5);
+      v.photoPaths.forEach((p,i)=>{doc.text(`  [${i+1}] ${p}`,14,y+10+i*5);});
+      y+=10+v.photoPaths.length*5;
+    }
+    if(v.videoPaths&&v.videoPaths.length){
+      doc.text('视频: '+v.videoPaths.join(', '),14,y+5);
+    }
+    doc.setFontSize(8);doc.setTextColor(150,150,150);
+    doc.text('太仓港车辆断电指导APP · '+new Date().toLocaleString('zh-CN'),14,287);
+  }else{
+    doc.setFontSize(16);doc.setTextColor(30,64,175);
+    doc.text(`车辆断电指导 - 批量导出 (${vehicles.length}条)`,14,20);
+    const body=vehicles.map(v=>[String(v.id),v.brand,v.series,v.config,v.display,v.powerType,v.position,String(v.steps.length),String(v.photos||0),String(v.videos||0)]);
+    doc.autoTable({startY:28,theme:'striped',headStyles:{fillColor:[30,64,175],fontSize:8},
+      bodyStyles:{fontSize:7},head:[['ID','品牌','车系','配置','显示名称','动力','断电位置','步骤','照片','视频']],body:body});
+    doc.setFontSize(8);doc.setTextColor(150,150,150);
+    doc.text('太仓港车辆断电指导APP · '+new Date().toLocaleString('zh-CN'),14,287);
+  }
+  return doc.output('blob');
 }
 
 // ===================== DATA CENTER =====================
@@ -1246,41 +1552,160 @@ function exportData(format){
   const n=state.selectedVehicles.size;
   if(n===0){showToast('请先选择要导出的车型');return;}
   const names={'word':'Word','pdf':'PDF','excel':'Excel','csv':'CSV','json':'JSON'};
-  showToast(`正在导出 ${n} 条数据为 ${names[format]} 格式...`);
-  setTimeout(()=>{
-    const selectedVehicles=VEHICLES.filter(v=>state.selectedVehicles.has(v.id));
-    const summary=selectedVehicles.map(v=>`${v.display} - ${v.position}`).join('\n');
-    if(navigator.share){
-      navigator.share({title:`车辆断电指南_批量_${n}`,text:summary}).catch(()=>showToast('分享已取消'));
-    }else{
-      showToast(`已导出 ${n} 条数据为 ${names[format]} 格式`);
-    }
-  },800);
+  const selectedVehicles=VEHICLES.filter(v=>state.selectedVehicles.has(v.id));
+  showToast(`正在生成 ${names[format]} 文件...`);
+  setTimeout(async()=>{
+    try{
+      if(format==='json'){
+        const blob=new Blob([JSON.stringify(selectedVehicles,null,2)],{type:'application/json'});
+        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.json`,'application/json');
+      }else if(format==='csv'){
+        const headers=['ID','品牌','车系','配置','显示名称','动力类型','断电位置','断电步骤','备注'];
+        const rows=selectedVehicles.map(v=>[v.id,v.brand,v.series,v.config,v.display,v.powerType,v.position,v.steps.map((s,i)=>(i+1)+'.'+s).join('|'),v.remarks||'']);
+        const csv='\uFEFF'+headers.join(',')+'\n'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+        const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.csv`,'text/csv');
+      }else if(format==='excel'){
+        const buf=generateExcel(selectedVehicles);
+        const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      }else if(format==='pdf'){
+        const blob=generatePDF(selectedVehicles);
+        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.pdf`,'application/pdf');
+      }else if(format==='word'){
+        const blob=generateWord(selectedVehicles);
+        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.docx`,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      }
+      showToast(`${names[format]} 导出成功 (${n}条)`);
+    }catch(err){showToast('导出失败: '+err.message);console.error(err);}
+  },300);
 }
 
-function exportSingle(format){
+async function exportSingle(format){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v)return;
   const names={'word':'Word','pdf':'PDF','excel':'Excel'};
-  const content=`${v.display} - 断电指导\n\n品牌：${v.brand}\n车系：${v.series}\n配置：${v.config}\n动力类型：${v.powerType}\n断电位置：${v.position}\n\n断电步骤：\n${v.steps.map((s,i)=>(i+1)+'. '+s).join('\n')}\n\n备注：${v.remarks||'无'}`;
-  if(format==='pdf'){
-    showToast('正在生成PDF...');
-    setTimeout(()=>{shareVehicleDetail();},500);
-  }else if(format==='word'){
-    showToast('正在生成Word文档...');
-    setTimeout(()=>{shareVehicleDetail();},500);
-  }else{
-    showToast(`${names[format]}导出成功`);
+  showToast(`正在生成${names[format]}文件...`);
+  try{
+    if(format==='excel'){
+      const buf=generateExcel([v]);
+      const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      await shareFile(blob,`${v.display}_断电指导.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }else if(format==='pdf'){
+      const blob=generatePDF([v]);
+      await shareFile(blob,`${v.display}_断电指导.pdf`,'application/pdf');
+    }else if(format==='word'){
+      const blob=generateWord([v]);
+      await shareFile(blob,`${v.display}_断电指导.docx`,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    }
+    showToast(`${names[format]} 文件已生成`);
+  }catch(err){showToast('生成失败: '+err.message);console.error(err);}
+}
+
+async function syncPendingToFeishu(user){
+  const cfg=DEFAULT_FEISHU_CONFIG;
+  if(!cfg.appId)return;
+  try{
+    const pendingData={type:'pending_registration',user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
+    const jsonStr=JSON.stringify(pendingData,null,2);
+    const blob=new Blob([jsonStr],{type:'application/json'});
+    const filename=`pending_reg_${user.phone}.json`;
+    const tokenRes=await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:cfg.appId,app_secret:cfg.appSecret})});
+    const tokenData=await tokenRes.json();
+    if(!tokenData.tenant_access_token)throw new Error('飞书认证失败');
+    const formData=new FormData();
+    formData.append('file_name',filename);
+    formData.append('parent_type','explorer');
+    formData.append('parent_node',cfg.folder);
+    formData.append('size',String(blob.size));
+    const uploadRes=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',{method:'POST',headers:{Authorization:'Bearer '+tokenData.tenant_access_token},body:formData});
+    const uploadData=await uploadRes.json();
+    if(uploadData.code!==0&&uploadData.code!==undefined)throw new Error(uploadData.msg||'上传失败');
+  }catch(err){
+    console.error('Sync pending to Feishu failed:',err);
   }
 }
 
-function doBackup(){
-  shareBackupData(`vehicle_poweroff_data_${Date.now()}.json`);
+async function pullPendingFromFeishu(){
+  const cfg=DEFAULT_FEISHU_CONFIG;
+  if(!cfg.appId)return 0;
+  try{
+    const tokenRes=await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:cfg.appId,app_secret:cfg.appSecret})});
+    const tokenData=await tokenRes.json();
+    if(!tokenData.tenant_access_token)throw new Error('飞书认证失败');
+    const listRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=100`,{method:'GET',headers:{Authorization:'Bearer '+tokenData.tenant_access_token}});
+    const listData=await listRes.json();
+    if(listData.code!==0)throw new Error(listData.msg||'获取文件列表失败');
+    const files=(listData.data&&listData.data.files)||[];
+    const pendingFiles=files.filter(f=>f.name&&f.name.startsWith('pending_reg_')&&f.name.endsWith('.json'));
+    let newCount=0;
+    for(const file of pendingFiles){
+      try{
+        const dlRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{method:'GET',headers:{Authorization:'Bearer '+tokenData.tenant_access_token}});
+        const dlText=await dlRes.text();
+        const pendingData=JSON.parse(dlText);
+        if(pendingData.type==='pending_registration'&&pendingData.user){
+          const existingUser=USERS.find(u=>u.phone===pendingData.user.phone);
+          if(!existingUser){
+            USERS.push(pendingData.user);
+            newCount++;
+          }
+        }
+      }catch(e){continue;}
+    }
+    if(newCount>0){
+      saveUsers(USERS);
+      renderMemberList();
+      showToast(`从飞书拉取${newCount}条待审核注册`);
+      addSyncLog(`从飞书拉取${newCount}条待审核注册`,'blue');
+    }
+    return newCount;
+  }catch(err){
+    console.error('Pull pending from Feishu failed:',err);
+    return 0;
+  }
+}
+
+async function doBackup(){
+  const dest=document.querySelector('input[name="backup-dest"]:checked');
+  const target=dest?dest.value:'local';
+  const backupData={version:'v4.0',timestamp:new Date().toISOString(),vehicleCount:VEHICLES.length,vehicles:VEHICLES,users:USERS};
+  const jsonStr=JSON.stringify(backupData,null,2);
+  const blob=new Blob([jsonStr],{type:'application/json'});
+  const filename=`vehicle_backup_${new Date().toISOString().slice(0,10)}.json`;
+  if(target==='local'){
+    await shareFile(blob,filename,'application/json');
+    showToast('本地备份完成');
+  }else if(target==='feishu'){
+    const cfg=DEFAULT_FEISHU_CONFIG;
+    if(!cfg.appId){showToast('飞书未配置，请先配置');return;}
+    showToast('正在上传备份到飞书...');
+    try{
+      const formData=new FormData();
+      formData.append('file_name',filename);
+      formData.append('parent_type','explorer');
+      formData.append('parent_node',cfg.folder);
+      formData.append('file_name',filename);
+      formData.append('size',String(blob.size));
+      const tokenRes=await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:cfg.appId,app_secret:cfg.appSecret})});
+      const tokenData=await tokenRes.json();
+      if(!tokenData.tenant_access_token)throw new Error('飞书认证失败');
+      const uploadRes=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',{method:'POST',headers:{Authorization:'Bearer '+tokenData.tenant_access_token},body:formData});
+      const uploadData=await uploadRes.json();
+      if(uploadData.code!==0&&uploadData.code!==undefined)throw new Error(uploadData.msg||'上传失败');
+      showToast('飞书备份完成');
+      addSyncLog('数据备份已上传至飞书云盘','green');
+    }catch(err){
+      showToast('飞书备份失败: '+err.message);
+      addSyncLog('飞书备份失败: '+err.message,'red');
+    }
+  }
 }
 
 // ===================== SYNC =====================
 function loadFeishuConfig(){
-  const cfg=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
   const a=document.getElementById('feishu-appid');if(a)a.value=cfg.appId||'';
   const s=document.getElementById('feishu-secret');if(s)s.value=cfg.appSecret||'';
   const f=document.getElementById('feishu-folder');if(f)f.value=cfg.folder||'';
@@ -1288,7 +1713,7 @@ function loadFeishuConfig(){
   const st=document.getElementById('feishu-status');
   if(st)st.textContent=cfg.appId?'飞书账号已配置 ✓':'未配置飞书账号';
   const cv=document.getElementById('sync-cloud-ver');
-  if(cv)cv.textContent=cfg.appId?'已连接 · v3.1':'未连接';
+  if(cv)cv.textContent=cfg.appId?'已连接 · v4.0':'未连接';
 }
 
 function saveFeishuConfig(){
@@ -1320,29 +1745,27 @@ function getFeishuToken(cfg){
 
 function doSyncUpload(){
   if(!canEdit()){showToast('组员无上传权限，请使用"从飞书获取数据"');return;}
-  const cfg=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
   if(!cfg.appId){showToast('请先配置飞书账号');return;}
   showConfirm('确认上传','上传将覆盖飞书云端现有数据，请先确认已备份。',async()=>{
     showToast('正在连接飞书...');
     try{
       const token=await getFeishuToken(cfg);
       showToast('正在上传同步数据...');
-      // In production: upload JSON to Feishu Drive
-      // POST https://open.feishu.cn/open-apis/drive/v1/files/upload_all
-      // body: {parent_node: folder, file_name: 'vehicles_data.json', file: JSON data}
       const syncData={
-        version:'v3.1',
+        version:'v4.0',
         timestamp:new Date().toISOString(),
         uploadedBy:state.currentUser.name,
         vehicleCount:VEHICLES.length,
-        vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths}))
+        vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
       };
       localStorage.setItem('feishu_sync_data',JSON.stringify(syncData));
       setTimeout(()=>{
         showToast(`数据已同步至飞书，共${VEHICLES.length}条车型数据`);
         addSyncLog(`上传同步完成 · ${VEHICLES.length}条车型数据 · 飞书`,'green');
         const cv=document.getElementById('sync-cloud-ver');
-        if(cv)cv.textContent='已连接 · v3.1 (最新)';
+        if(cv)cv.textContent='已连接 · v4.0 (最新)';
         const ss=document.getElementById('sync-status-text');
         if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
       },1500);
@@ -1354,11 +1777,10 @@ function doSyncUpload(){
 }
 
 function doSyncDownload(){
-  const cfg=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
   if(!cfg.appId){showToast('请先配置飞书账号');return;}
   showToast('正在从飞书获取数据...');
-  // In production: GET file from Feishu Drive
-  // GET https://open.feishu.cn/open-apis/drive/v1/files/{file_token}/download
   setTimeout(()=>{
     const syncData=JSON.parse(localStorage.getItem('feishu_sync_data')||'null');
     if(syncData&&syncData.vehicles){
@@ -1369,6 +1791,7 @@ function doSyncDownload(){
           v.powerType=sv.powerType;v.position=sv.position;v.steps=sv.steps;
           v.keyFrame=sv.keyFrame;v.keyContainer=sv.keyContainer;v.remarks=sv.remarks;
           v.photoPaths=sv.photoPaths;v.photos=sv.photos;
+          if(sv.videoPaths){v.videoPaths=sv.videoPaths;v.videos=sv.videos;}
         }
       });
       showToast(`数据同步完成，已更新${syncData.vehicleCount}条车型数据 (v${syncData.version})`);
@@ -1434,10 +1857,14 @@ function resetZoom(){state.photoZoom=1;document.getElementById('photo-viewer-img
 
 // ===================== VIDEO PLAYER =====================
 function openVideoPlayer(){
+  const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
+  if(!v||!v.videoPaths||!v.videoPaths.length){
+    showToast('该车辆暂无视频');
+    return;
+  }
   document.getElementById('video-player').classList.add('show');
   const video=document.getElementById('video-element');
-  // Use a sample video URL
-  video.src='https://www.w3schools.com/html/mov_bbb.mp4';
+  video.src=v.videoPaths[0];
   video.play().catch(()=>{});
 }
 
@@ -1497,7 +1924,7 @@ function renderMemberList(){
   const activeUsers=USERS.filter(u=>u.role==='user'&&u.status==='active');
   c.innerHTML=activeUsers.map(u=>`
     <div class="flex items-center justify-between py-2 px-2 bg-gray-50 rounded-lg">
-      <div><div class="text-sm text-gray-800">${u.name}</div><div class="text-xs text-gray-400">${u.phone} · ${u.created}</div></div>
+      <div><div class="text-sm text-gray-800">${esc(u.name)}</div><div class="text-xs text-gray-400">${esc(u.phone)} · ${esc(u.created)}</div></div>
       <div class="flex gap-2">
         <button onclick="resetMemberPass(${u.id})" class="text-xs text-blue-400">重置密码</button>
         <button onclick="deleteMember(${u.id})" class="text-xs text-red-400">删除</button>
@@ -1512,7 +1939,7 @@ function renderMemberList(){
     if(pcount)pcount.textContent=pending.length?`(${pending.length})`:'';
     pc.innerHTML=pending.map(u=>`
       <div class="flex items-center justify-between py-2 px-2 bg-orange-50 rounded-lg">
-        <div><div class="text-sm text-gray-800">${u.name}</div><div class="text-xs text-gray-400">${u.phone} · ${u.created}</div></div>
+        <div><div class="text-sm text-gray-800">${esc(u.name)}</div><div class="text-xs text-gray-400">${esc(u.phone)} · ${esc(u.created)}</div></div>
         <div class="flex gap-2">
           <button onclick="approveMember(${u.id})" class="text-xs text-green-500 font-medium">通过</button>
           <button onclick="rejectMember(${u.id})" class="text-xs text-red-400">拒绝</button>
@@ -1589,7 +2016,7 @@ function showToast(msg){
   t.textContent=msg;
   t.classList.add('show');
   clearTimeout(t._timer);
-  t._timer=setTimeout(()=>t.classList.remove('show'),2000);
+  t._timer=setTimeout(()=>t.classList.remove('show'),1500);
 }
 
 // ===================== INIT =====================

@@ -20,6 +20,7 @@ def check(desc, condition):
         FAILURES.append(desc)
         print(f"  [FAIL] {desc}")
 
+# Read HTML
 with open(HTML_FILE, 'r', encoding='utf-8') as f:
     html = f.read()
 
@@ -135,6 +136,7 @@ if __name__ == '__main__':
     print("=" * 60)
     print("V4.0 Full Test Suite")
     print("=" * 60)
+
     test_initialization()
     test_security()
     test_document_generation()
@@ -143,6 +145,7 @@ if __name__ == '__main__':
     test_sync()
     test_navigation()
     test_config_xml()
+
     print("\n" + "=" * 60)
     print(f"Results: {PASS} passed, {FAIL} failed, total {PASS+FAIL}")
     if FAILURES:
