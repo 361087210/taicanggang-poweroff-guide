@@ -57,14 +57,30 @@
 ```
 车辆断电指导应用开发/
 ├── demo.html                    # 应用主程序 (单页应用)
-├── config.xml                    # Cordova配置文件
-├── vehicles_data.js              # 车辆数据
-├── test_v4.py                    # 自动化测试脚本 (79项)
-├── 太仓港断电指导V4.0.apk         # Android安装包
-├── 太仓港断电指导APP开发文档V4.0.html  # 开发文档
-├── vehicle_images/               # 车辆图片 (112张)
-├── vehicle_videos/               # 车辆视频 (47个)
-└── tcg_app/                      # Cordova项目
+├── config.xml                   # Cordova 配置文件
+├── vehicles_data.js             # 车辆数据
+├── package.json                 # npm 依赖
+├── build_apk_v40.bat            # APK 构建入口脚本
+├── docs/                        # 文档
+│   ├── 太仓港断电指导APP开发文档V4.0.html   # 当前版开发文档
+│   ├── 太仓港断电指导APP开发文档V3.1.html   # 历史版本文档
+│   └── 参考资料/                # 源操作手册、参考PDF
+├── scripts/                     # 开发辅助脚本（从项目根目录运行）
+│   ├── 数据提取/                # docx手册解析、数据生成
+│   ├── 构建/                    # 历史构建脚本
+│   └── 同步上传/                # GitHub/飞书同步脚本
+├── tests/                       # 测试
+│   ├── test_v4.py               # V4.0 自动化测试 (79项)
+│   ├── test_full_v3.py          # V3.x 历史测试
+│   └── test_screenshots/        # 测试截图
+├── release/                     # 发布产物
+│   ├── 太仓港断电指导V4.0.apk    # 当前版本安装包
+│   └── (V1.0/V1.8/V3.1 历史版本)
+├── archive/                     # 归档（工作数据、笔记、日志）
+├── images/                      # 数据图片 (162张，vehicles_data.js 引用)
+├── vehicle_images/              # 车辆详情图片 (112张，demo.html 引用)
+├── vehicle_videos/              # 车辆操作视频 (47个)
+└── tcg_app/                     # Cordova 工程
     ├── config.xml
     ├── package.json
     └── platforms/android/
@@ -76,7 +92,7 @@
 直接用浏览器打开 `demo.html` 即可使用全部功能。
 
 ### Android安装
-1. 下载 `太仓港断电指导V4.0.apk`
+1. 下载 `release/太仓港断电指导V4.0.apk`
 2. 在Android设备上安装（需允许未知来源安装）
 3. 首次打开显示登录页面，使用账号登录
 
