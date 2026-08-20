@@ -7,12 +7,12 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 *{font-family:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
-body{margin:0;background:#1a1a2e;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;}
+body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
+:root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
 
-/* Phone frame */
-.phone-frame{width:412px;height:870px;background:#0f0f1a;border-radius:48px;padding:10px;box-shadow:0 0 0 2px #2a2a3e,0 25px 80px rgba(0,0,0,.5);position:relative;overflow:hidden;flex-shrink:0;}
-.phone-screen{width:100%;height:100%;background:#f5f6fa;border-radius:40px;overflow:hidden;position:relative;}
-.phone-notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:130px;height:26px;background:#0f0f1a;border-radius:0 0 16px 16px;z-index:200;}
+/* Full-screen adaptive container */
+.phone-frame{width:100vw;height:100vh;height:100dvh;background:#f5f6fa;position:relative;overflow:hidden;}
+.phone-screen{width:100%;height:100%;background:#f5f6fa;overflow:hidden;position:relative;}
 
 /* Screens */
 .screen{position:absolute;inset:0;display:none;flex-direction:column;background:#f5f6fa;overflow:hidden;}
@@ -62,8 +62,8 @@ body{margin:0;background:#1a1a2e;display:flex;justify-content:center;align-items
 .modal-center{background:#fff;width:90%;max-width:360px;border-radius:16px;overflow:hidden;animation:scaleIn .25s ease-out;}
 
 /* Toast */
-.toast{position:absolute;bottom:90px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(0,0,0,.82);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:400;transition:transform .3s;white-space:nowrap;max-width:90%;}
-.toast.show{transform:translateX(-50%) translateY(0);}
+.toast{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:400;opacity:0;pointer-events:none;transition:opacity .15s;white-space:nowrap;max-width:90%;}
+.toast.show{opacity:1;}
 
 /* Bottom sheet item */
 .bs-item{padding:14px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s;}
@@ -123,12 +123,15 @@ body{margin:0;background:#1a1a2e;display:flex;justify-content:center;align-items
 .chk{width:20px;height:20px;border-radius:5px;border:2px solid #d1d5db;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;}
 .chk.on{background:#2563eb;border-color:#2563eb;}
 .chk.on::after{content:'';width:6px;height:10px;border:2px solid #fff;border-top:0;border-left:0;transform:rotate(45deg) translate(-1px,-1px);}
+
+/* Safe area padding for status bar */
+.phone-frame .pt-12{padding-top:calc(var(--safe-top) + 12px);}
+.phone-frame .pb-24{padding-bottom:calc(var(--safe-bottom) + 24px);}
 </style>
 </head>
 <body>
 
 <div class="phone-frame" id="app-root">
-<div class="phone-notch"></div>
 <div class="phone-screen" id="phone-screen">
 
 <!-- ===== LOGIN ===== -->
@@ -150,7 +153,7 @@ body{margin:0;background:#1a1a2e;display:flex;justify-content:center;align-items
 <button onclick="showScreen('screen-forgot')" class="text-xs text-gray-400">忘记密码？</button>
 </div>
 </div>
-<div class="mt-6 text-white/30 text-xs anim-up" style="animation-delay:.3s">V3.0 · 2026-08-20</div>
+<div class="mt-6 text-white/30 text-xs anim-up" style="animation-delay:.3s">V3.1 · 2026-08-20</div>
 </div>
 </div>
 
@@ -365,7 +368,7 @@ body{margin:0;background:#1a1a2e;display:flex;justify-content:center;align-items
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v3.0</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v3.1</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -399,9 +402,7 @@ body{margin:0;background:#1a1a2e;display:flex;justify-content:center;align-items
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="text-sm font-bold text-gray-700 mb-3">同步日志</div>
 <div class="space-y-2" id="sync-log-list">
-<div class="flex items-start gap-3"><div class="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div><div class="flex-1"><div class="text-xs text-gray-800">增量同步完成 · 更新3条车型数据</div><div class="text-xs text-gray-400 mt-0.5">2026-08-19 08:30:15</div></div></div>
-<div class="flex items-start gap-3"><div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div><div class="flex-1"><div class="text-xs text-gray-800">全量同步完成 · 共73条车型数据</div><div class="text-xs text-gray-400 mt-0.5">2026-08-18 18:00:00</div></div></div>
-<div class="flex items-start gap-3"><div class="w-2 h-2 rounded-full bg-gray-300 mt-1.5 flex-shrink-0"></div><div class="flex-1"><div class="text-xs text-gray-800">新增车型: 比亚迪·唐L-EV</div><div class="text-xs text-gray-400 mt-0.5">2026-08-17 14:22:33</div></div></div>
+<div class="text-center py-8"><div class="text-gray-300 text-sm">暂无同步记录</div><div class="text-xs text-gray-400 mt-1">首次使用，无同步日志</div></div>
 </div>
 </div>
 </div>
@@ -427,10 +428,10 @@ body{margin:0;background:#1a1a2e;display:flex;justify-content:center;align-items
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="text-sm font-bold text-gray-700 mb-3">设备信息</div>
 <div class="grid grid-cols-2 gap-3 text-xs">
-<div><div class="text-gray-400">屏幕尺寸</div><div class="text-gray-700 mt-0.5">411×858</div></div>
-<div><div class="text-gray-400">像素密度</div><div class="text-gray-700 mt-0.5">2.625x</div></div>
-<div><div class="text-gray-400">平台</div><div class="text-gray-700 mt-0.5">Android</div></div>
-<div><div class="text-gray-400">设备型号</div><div class="text-gray-700 mt-0.5">23117RK66C</div></div>
+<div><div class="text-gray-400">屏幕尺寸</div><div class="text-gray-700 mt-0.5" id="dev-screen">-</div></div>
+<div><div class="text-gray-400">像素密度</div><div class="text-gray-700 mt-0.5" id="dev-dpr">-</div></div>
+<div><div class="text-gray-400">平台</div><div class="text-gray-700 mt-0.5" id="dev-platform">-</div></div>
+<div><div class="text-gray-400">设备型号</div><div class="text-gray-700 mt-0.5" id="dev-model">-</div></div>
 </div>
 </div>
 <!-- Settings list -->
@@ -573,9 +574,9 @@ body{margin:0;background:#1a1a2e;display:flex;justify-content:center;align-items
 <div class="modal-overlay" id="modal-side-menu" style="align-items:stretch;justify-content:flex-start;">
 <div style="width:280px;background:#fff;height:100%;animation:slideUp .3s ease-out;" class="flex flex-col">
 <div class="bg-gradient-to-br from-blue-700 to-blue-600 text-white p-5 pt-12">
-<div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold mb-2">1</div>
-<div class="font-bold text-base">17602554481</div>
-<div class="text-white/60 text-xs">组长</div>
+<div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold mb-2" id="side-avatar">?</div>
+<div class="font-bold text-base" id="side-phone">未登录</div>
+<div class="text-white/60 text-xs" id="side-role">-</div>
 </div>
 <div class="flex-1 py-2">
 <div class="bs-item" onclick="showScreen('screen-members');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="text-sm text-gray-800">组员管理</span></div></div>
@@ -705,18 +706,21 @@ function loadUsers(){
 function saveUsers(users){localStorage.setItem('tcg_users',JSON.stringify(users));}
 let USERS=loadUsers();
 
+// HTML escape helper to prevent XSS
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 // Add pinyin to each vehicle
 VEHICLES.forEach(v=>{v.pinyin=getPinyin(v.display);});
 
 // ===================== STATE =====================
 let state={screen:'login',currentUser:null,viewMode:'tree',currentVehicleId:null,currentVehicleIndex:0,searchQuery:'',brandFilter:'all',selectedVehicles:new Set(),editingVehicle:null,isEditing:false,outdoorMode:false,expandedBrands:new Set(['saic']),recentVehicles:[],photoZoom:1};
 let confirmCallback=null;
+let navHistory=[];
 
 // ===================== NAVIGATION =====================
-function showScreen(id){
+function _activateScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active','screen-slide');
-  // Update bottom nav
   const tab=id.replace('screen-','');
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   const navMap={'vehicles':0,'data':1,'my':2};
@@ -725,10 +729,8 @@ function showScreen(id){
   if(id==='screen-vehicles')renderVehicleList();
   if(id==='screen-data')renderDataList();
   if(id==='screen-my')renderMemberList();
-  // Show/hide bottom nav
   const showNav=['screen-vehicles','screen-data','screen-my'].includes(id);
   document.getElementById('bottom-nav').style.display=showNav?'flex':'none';
-  // Show/hide FAB
   document.getElementById('fab-add').style.display=(id==='screen-vehicles'&&canEdit())?'flex':'none';
   if(id==='screen-my'){
     updateMyInfo();
@@ -739,14 +741,25 @@ function showScreen(id){
     const acct=document.getElementById('pw-current-account');
     if(acct&&state.currentUser)acct.textContent=state.currentUser.phone;
   }
+  if(id==='screen-sync'){
+    loadFeishuConfig();
+    renderSyncLog();
+  }
+}
+
+function showScreen(id){
+  if(state.screen&&state.screen!==id){
+    navHistory.push(state.screen);
+  }
+  if(['screen-vehicles','screen-data','screen-my'].includes(id)){
+    navHistory=[];
+  }
+  _activateScreen(id);
 }
 
 function goBack(){
-  if(state.screen==='screen-detail')showScreen('screen-vehicles');
-  else if(state.screen==='screen-edit')showScreen(state.isEditing?'screen-detail':'screen-vehicles');
-  else if(state.screen==='screen-register'||state.screen==='screen-forgot')showScreen('screen-login');
-  else if(state.screen==='screen-members'||state.screen==='screen-password'||state.screen==='screen-sync')showScreen('screen-my');
-  else showScreen('screen-vehicles');
+  const target=navHistory.pop()||'screen-vehicles';
+  _activateScreen(target);
 }
 
 // ===================== LOGIN =====================
@@ -947,7 +960,7 @@ function toggleBrand(bid){
 }
 
 // ===================== VEHICLE DETAIL =====================
-function openVehicleDetail(id){
+function _renderVehicleDetail(id){
   const v=VEHICLES.find(x=>x.id===id);
   if(!v)return;
   state.currentVehicleId=id;
@@ -1006,11 +1019,16 @@ function openVehicleDetail(id){
         <button onclick="exportSingle('word')" class="flex flex-col items-center gap-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-medium">Word</button>
         <button onclick="exportSingle('pdf')" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-medium">PDF</button>
         <button onclick="exportSingle('excel')" class="flex flex-col items-center gap-1 py-2.5 bg-green-50 text-green-600 rounded-xl text-xs font-medium">Excel</button>
-        ${canEdit()?`<button onclick="openEditVehicle(${v.id})" class="flex flex-col items-center gap-1 py-2.5 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium">编辑</button><button onclick="confirmDeleteVehicle(${v.id})" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-500 rounded-xl text-xs font-medium">删除</button>`:''}
+        <button onclick="shareVehicleDetail()" class="flex flex-col items-center gap-1 py-2.5 bg-purple-50 text-purple-600 rounded-xl text-xs font-medium">分享</button>
+        ${canEdit()?`<button onclick="openEditVehicle(${v.id})" class="flex flex-col items-center gap-1 py-2.5 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium">编辑</button><button onclick="confirmDeleteVehicle(${v.id})" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-500 rounded-xl text-xs font-medium">删除</button>`:'<div class="flex flex-col items-center gap-1 py-2.5 bg-gray-50 text-gray-300 rounded-xl text-xs">-</div>'}
 
       </div>
     </div>
   `;
+}
+
+function openVehicleDetail(id){
+  _renderVehicleDetail(id);
   showScreen('screen-detail');
   document.getElementById('bottom-nav').style.display='none';
   document.getElementById('fab-add').style.display='none';
@@ -1023,8 +1041,8 @@ function switchKeyTab(tab){
   else{c.className='flex-1 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600';f.className='flex-1 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400';cc.classList.remove('hidden');fc.classList.add('hidden');}
 }
 
-function prevVehicle(){if(state.currentVehicleIndex>0){state.currentVehicleIndex--;openVehicleDetail(VEHICLES[state.currentVehicleIndex].id);}}
-function nextVehicle(){if(state.currentVehicleIndex<VEHICLES.length-1){state.currentVehicleIndex++;openVehicleDetail(VEHICLES[state.currentVehicleIndex].id);}}
+function prevVehicle(){if(state.currentVehicleIndex>0){state.currentVehicleIndex--;_renderVehicleDetail(VEHICLES[state.currentVehicleIndex].id);}}
+function nextVehicle(){if(state.currentVehicleIndex<VEHICLES.length-1){state.currentVehicleIndex++;_renderVehicleDetail(VEHICLES[state.currentVehicleIndex].id);}}
 
 // ===================== EDIT VEHICLE =====================
 function openEditVehicle(id){
@@ -1115,7 +1133,10 @@ function saveVehicle(){
   renderBrandTags();
   renderVehicleList();
   if(state.isEditing&&state.currentVehicleId){
-    openVehicleDetail(state.currentVehicleId);
+    _renderVehicleDetail(state.currentVehicleId);
+    _activateScreen('screen-detail');
+    document.getElementById('bottom-nav').style.display='none';
+    document.getElementById('fab-add').style.display='none';
   }else{
     goBack();
   }
@@ -1124,7 +1145,7 @@ function saveVehicle(){
 function confirmDeleteVehicle(id){
   showConfirm('删除车辆','确定删除该车辆信息？此操作不可撤销。',()=>{
     const idx=VEHICLES.findIndex(v=>v.id===id);
-    if(idx>-1){VEHICLES.splice(idx,1);showToast('删除成功');goBack();}
+    if(idx>-1){VEHICLES.splice(idx,1);showToast('删除成功');renderBrandTags();renderVehicleList();goBack();}
   });
 }
 
@@ -1164,6 +1185,30 @@ function selectItem(type,item){
   closeModal('modal-selector');
 }
 
+// ===================== SHARE =====================
+async function shareVehicleDetail(){
+  const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
+  if(!v)return;
+  const shareText=`${v.display} - 断电指导\n品牌：${v.brand} / ${v.series}\n配置：${v.config}\n动力类型：${v.powerType}\n断电位置：${v.position}\n\n断电步骤：\n${v.steps.map((s,i)=>(i+1)+'. '+s).join('\n')}\n\n备注：${v.remarks||'无'}`;
+  const shareData={title:v.display+' 断电指导',text:shareText};
+  if(navigator.share){
+    try{await navigator.share(shareData);}catch(e){if(e.name!=='AbortError')showToast('分享取消');}
+  }else if(navigator.clipboard){
+    try{await navigator.clipboard.writeText(shareText);showToast('已复制断电信息到剪贴板');}catch(e){showToast('分享功能不可用');}
+  }else{
+    showToast('当前环境不支持分享');
+  }
+}
+
+async function shareBackupData(filename){
+  const shareData={title:'车辆断电数据备份',text:'太仓港车辆断电指导APP数据备份文件'};
+  if(navigator.share){
+    try{await navigator.share(shareData);}catch(e){if(e.name!=='AbortError')showToast('分享取消');}
+  }else{
+    showToast('备份信息已生成');
+  }
+}
+
 // ===================== DATA CENTER =====================
 function renderDataList(){
   const c=document.getElementById('data-vehicle-list');
@@ -1201,42 +1246,36 @@ function exportData(format){
   const n=state.selectedVehicles.size;
   if(n===0){showToast('请先选择要导出的车型');return;}
   const names={'word':'Word','pdf':'PDF','excel':'Excel','csv':'CSV','json':'JSON'};
-  showToast(`正在导出 ${n} 条数据为 ${names[format]} 格式（含照片）...`);
+  showToast(`正在导出 ${n} 条数据为 ${names[format]} 格式...`);
   setTimeout(()=>{
-    if(format==='word'||format==='pdf'){
-      document.getElementById('share-filename').textContent=`车辆断电指南_批量_${n}_${Date.now()}.${format==='word'?'docx':'pdf'}`;
-      openModal('modal-share');
+    const selectedVehicles=VEHICLES.filter(v=>state.selectedVehicles.has(v.id));
+    const summary=selectedVehicles.map(v=>`${v.display} - ${v.position}`).join('\n');
+    if(navigator.share){
+      navigator.share({title:`车辆断电指南_批量_${n}`,text:summary}).catch(()=>showToast('分享已取消'));
     }else{
-      showToast(`文件已保存至 /太仓港断电手册/${names[format]}`);
+      showToast(`已导出 ${n} 条数据为 ${names[format]} 格式`);
     }
-  },1000);
+  },800);
 }
 
 function exportSingle(format){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v)return;
   const names={'word':'Word','pdf':'PDF','excel':'Excel'};
+  const content=`${v.display} - 断电指导\n\n品牌：${v.brand}\n车系：${v.series}\n配置：${v.config}\n动力类型：${v.powerType}\n断电位置：${v.position}\n\n断电步骤：\n${v.steps.map((s,i)=>(i+1)+'. '+s).join('\n')}\n\n备注：${v.remarks||'无'}`;
   if(format==='pdf'){
     showToast('正在生成PDF...');
-    setTimeout(()=>{
-      showToast('PDF导出成功！已保存至 /太仓港断电手册/PDF');
-      setTimeout(()=>{document.getElementById('share-filename').textContent=`${v.display}_断电指南.pdf`;openModal('modal-share');},500);
-    },800);
+    setTimeout(()=>{shareVehicleDetail();},500);
   }else if(format==='word'){
-    showToast('正在生成Word文档（含照片）...');
-    setTimeout(()=>{
-      document.getElementById('share-filename').textContent=`${v.display}_断电指南.docx`;
-      showToast('Word导出成功！数据包含照片');
-      openModal('modal-share');
-    },800);
+    showToast('正在生成Word文档...');
+    setTimeout(()=>{shareVehicleDetail();},500);
   }else{
     showToast(`${names[format]}导出成功`);
   }
 }
 
 function doBackup(){
-  document.getElementById('share-filename').textContent=`vehicle_poweroff_data_${Date.now()}.json`;
-  openModal('modal-share');
+  shareBackupData(`vehicle_poweroff_data_${Date.now()}.json`);
 }
 
 // ===================== SYNC =====================
@@ -1249,7 +1288,7 @@ function loadFeishuConfig(){
   const st=document.getElementById('feishu-status');
   if(st)st.textContent=cfg.appId?'飞书账号已配置 ✓':'未配置飞书账号';
   const cv=document.getElementById('sync-cloud-ver');
-  if(cv)cv.textContent=cfg.appId?'已连接 · v3.0':'未连接';
+  if(cv)cv.textContent=cfg.appId?'已连接 · v3.1':'未连接';
 }
 
 function saveFeishuConfig(){
@@ -1263,7 +1302,7 @@ function saveFeishuConfig(){
   const st=document.getElementById('feishu-status');
   if(st)st.textContent='飞书账号已配置 ✓';
   const cv=document.getElementById('sync-cloud-ver');
-  if(cv)cv.textContent='已连接 · v3.0';
+  if(cv)cv.textContent='已连接 · v3.1';
   showToast('飞书配置已保存');
   addSyncLog('飞书账号配置已更新','blue');
 }
@@ -1292,7 +1331,7 @@ function doSyncUpload(){
       // POST https://open.feishu.cn/open-apis/drive/v1/files/upload_all
       // body: {parent_node: folder, file_name: 'vehicles_data.json', file: JSON data}
       const syncData={
-        version:'v3.0',
+        version:'v3.1',
         timestamp:new Date().toISOString(),
         uploadedBy:state.currentUser.name,
         vehicleCount:VEHICLES.length,
@@ -1303,7 +1342,7 @@ function doSyncUpload(){
         showToast(`数据已同步至飞书，共${VEHICLES.length}条车型数据`);
         addSyncLog(`上传同步完成 · ${VEHICLES.length}条车型数据 · 飞书`,'green');
         const cv=document.getElementById('sync-cloud-ver');
-        if(cv)cv.textContent='已连接 · v3.0 (最新)';
+        if(cv)cv.textContent='已连接 · v3.1 (最新)';
         const ss=document.getElementById('sync-status-text');
         if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
       },1500);
@@ -1430,7 +1469,14 @@ function toggleOutdoorMode(){
 function openModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 
-function openSideMenu(){openModal('modal-side-menu');}
+function openSideMenu(){
+  if(state.currentUser){
+    document.getElementById('side-avatar').textContent=state.currentUser.name.charAt(0);
+    document.getElementById('side-phone').textContent=state.currentUser.phone;
+    document.getElementById('side-role').textContent=state.currentUser.role==='admin'?'组长':'组员';
+  }
+  openModal('modal-side-menu');
+}
 
 function showConfirm(title,msg,callback){
   document.getElementById('confirm-title').textContent=title;
@@ -1543,7 +1589,7 @@ function showToast(msg){
   t.textContent=msg;
   t.classList.add('show');
   clearTimeout(t._timer);
-  t._timer=setTimeout(()=>t.classList.remove('show'),2500);
+  t._timer=setTimeout(()=>t.classList.remove('show'),2000);
 }
 
 // ===================== INIT =====================
@@ -1552,6 +1598,22 @@ renderBrandTags();
 renderVehicleList();
 loadFeishuConfig();
 renderSyncLog();
+// Populate device info
+(function(){
+  const sw=screen.width||window.innerWidth;
+  const sh=screen.height||window.innerHeight;
+  const dprEl=document.getElementById('dev-screen');
+  const dprEl2=document.getElementById('dev-dpr');
+  const pEl=document.getElementById('dev-platform');
+  const mEl=document.getElementById('dev-model');
+  if(dprEl)dprEl.textContent=sw+'×'+sh;
+  if(dprEl2)dprEl2.textContent=(window.devicePixelRatio||1)+'x';
+  if(pEl)pEl.textContent=navigator.userAgent.match(/Android/i)?'Android':navigator.userAgent.match(/iPhone|iPad|iPod/i)?'iOS':'Web';
+  if(mEl){
+    const m=navigator.userAgent.match(/;\s*([^;)]+)\s*[);]/);
+    mEl.textContent=m?m[1].trim():navigator.userAgent.substring(0,20);
+  }
+})();
 </script>
 </body>
 </html>
