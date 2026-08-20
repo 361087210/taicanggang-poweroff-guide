@@ -8,7 +8,15 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.js"></script>
+<!-- html-docx-js: 使用unpkg CDN,失败时降级为HTML转Doc方案 -->
+<script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+<script>
+// htmlDocx 降级方案: 如果CDN加载失败,使用HTML Blob生成.doc文件(Word可打开)
+window._htmlDocxReady = typeof window.htmlDocx !== 'undefined';
+window.addEventListener('load', function() {
+  window._htmlDocxReady = typeof window.htmlDocx !== 'undefined';
+});
+</script>
 <style>
 *{font-family:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
 body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
@@ -157,7 +165,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <button onclick="showScreen('screen-forgot')" class="text-xs text-gray-400">忘记密码？</button>
 </div>
 </div>
-<div class="mt-6 text-white/30 text-xs anim-up" style="animation-delay:.3s">V4.0 · 2026-08-20</div>
+<div class="mt-6 text-white/30 text-xs anim-up" style="animation-delay:.3s">V5.1 · 2026-08-20</div>
 </div>
 </div>
 
@@ -386,7 +394,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v4.1</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v5.1</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -760,7 +768,7 @@ const DEFAULT_FEISHU_CONFIG={
 };
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.0.0';
+const APP_VERSION='5.2.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -810,22 +818,50 @@ function _activateScreen(id){
   }
 }
 
+/**
+ * 导航系统 - 维护页面历史栈,支持返回上一步
+ * 主页面(vehicles/data/my)清除历史栈,子页面入栈
+ */
 function showScreen(id){
   if(state.screen&&state.screen!==id){
     navHistory.push(state.screen);
   }
+  // 主Tab页面清除历史栈,避免跨Tab返回混乱
   if(['screen-vehicles','screen-data','screen-my'].includes(id)){
     navHistory=[];
   }
   _activateScreen(id);
 }
 
+/**
+ * 返回上一步 - 从历史栈弹出上一页面
+ * 如果历史栈为空,根据当前页面智能返回到合适的主Tab
+ */
 function goBack(){
-  const target=navHistory.pop()||'screen-vehicles';
+  let target=navHistory.pop();
+  if(!target){
+    // 历史栈为空时,根据当前页面返回到主Tab
+    const screen=state.screen;
+    if(screen==='screen-detail'||screen==='screen-edit'){
+      target='screen-vehicles';
+    }else if(screen==='screen-sync'){
+      target='screen-data';
+    }else if(screen==='screen-members'||screen==='screen-password'){
+      target='screen-my';
+    }else{
+      target='screen-vehicles';
+    }
+    // 直接返回主Tab,不需要再push历史
+  }
   _activateScreen(target);
 }
 
 // ===================== LOGIN =====================
+/**
+ * 登录系统 - 支持会话持久化
+ * 登录成功后保存用户信息到localStorage,下次启动自动恢复
+ * 使用JSON序列化避免引用问题,退出时清除会话
+ */
 function doLogin(){
   const phone=document.getElementById('login-phone').value.trim();
   const pass=document.getElementById('login-pass').value.trim();
@@ -837,11 +873,44 @@ function doLogin(){
   if(user.status==='pending'){showToast('您的账号正在审核中，请等待组长审核');return;}
   if(user.status==='rejected'){showToast('您的注册申请未通过审核');return;}
   state.currentUser=user;
+  // 持久化登录会话: 保存用户ID和密码哈希,下次启动自动登录
+  localStorage.setItem('tcg_session',JSON.stringify({uid:user.id,phone:user.phone,ts:Date.now()}));
   showScreen('screen-vehicles');
   renderBrandTags();
   showToast('登录成功');
   updateMyInfo();
   if(user.role==='admin'){pullPendingFromFeishu().then(()=>{renderMemberList();});}
+}
+
+/**
+ * 自动恢复登录会话 - App启动时调用
+ * 从localStorage读取上次登录的会话,验证用户仍存在且状态正常
+ * @returns {boolean} 是否成功恢复会话
+ */
+function restoreSession(){
+  try{
+    const sessionStr=localStorage.getItem('tcg_session');
+    if(!sessionStr)return false;
+    const session=JSON.parse(sessionStr);
+    if(!session||!session.uid)return false;
+    // 验证会话未过期(7天有效期)
+    const sessionAge=Date.now()-(session.ts||0);
+    if(sessionAge>7*24*60*60*1000){
+      localStorage.removeItem('tcg_session');
+      return false;
+    }
+    const user=USERS.find(u=>u.id===session.uid);
+    if(!user||user.status!=='active'){
+      localStorage.removeItem('tcg_session');
+      return false;
+    }
+    state.currentUser=user;
+    return true;
+  }catch(e){
+    console.error('恢复会话失败:',e);
+    localStorage.removeItem('tcg_session');
+    return false;
+  }
 }
 
 function doRegister(){
@@ -878,10 +947,16 @@ function doForgotPassword(){
   showScreen('screen-login');
 }
 
+/**
+ * 退出登录 - 清除持久化会话,确保下次需重新登录
+ */
 function doLogout(){
+  localStorage.removeItem('tcg_session');
   state.currentUser=null;
   showScreen('screen-login');
   showToast('已退出登录');
+  document.getElementById('login-phone').value='';
+  document.getElementById('login-pass').value='';
 }
 
 function isLeader(){return state.currentUser&&state.currentUser.role==='admin';}
@@ -1347,12 +1422,14 @@ function saveVehicle(){
   renderBrandTags();
   renderVehicleList();
   if(state.isEditing&&state.currentVehicleId){
+    // 编辑后返回详情页,使用showScreen确保历史栈正确
     _renderVehicleDetail(state.currentVehicleId);
-    _activateScreen('screen-detail');
+    showScreen('screen-detail');
     document.getElementById('bottom-nav').style.display='none';
     document.getElementById('fab-add').style.display='none';
   }else{
-    goBack();
+    // 新增车辆后返回列表页
+    showScreen('screen-vehicles');
   }
 }
 
@@ -1400,10 +1477,42 @@ function selectItem(type,item){
 }
 
 // ===================== SHARE =====================
+/**
+ * 检测Cordova原生社交分享插件是否可用
+ * 原生分享可调起系统分享面板,直接分享文件到微信/QQ/钉钉等主流应用
+ * @returns {boolean} 原生插件是否可用
+ */
+function hasNativeShare(){
+  return !!(window.plugins&&window.plugins.socialsharing&&typeof window.plugins.socialsharing.shareWithOptions==='function');
+}
+
+/**
+ * 将Blob转换为base64 Data URL - 原生分享插件要求文件以此格式传入
+ * @param {Blob} blob - 文件二进制数据
+ * @returns {Promise<string>} base64 Data URL字符串
+ */
+function blobToDataURL(blob){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onloadend=()=>resolve(reader.result);
+    reader.onerror=()=>reject(new Error('文件读取失败'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 async function shareVehicleDetail(){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v)return;
-  const shareText=`${v.display} - 断电指导\n品牌：${v.brand} / ${v.series}\n配置：${v.config}\n动力类型：${v.powerType}\n断电位置：${v.position}\n\n断电步骤：\n${v.steps.map((s,i)=>(i+1)+'. '+s).join('\n')}\n\n备注：${v.remarks||'无'}`;
+  const shareText=getVehicleShareText(v);
+  // 优先原生分享: 调起系统分享面板(微信/QQ/钉钉/短信等均可接收)
+  if(hasNativeShare()){
+    window.plugins.socialsharing.share(shareText,v.display+' 断电指导',null,null,()=>{},()=>{
+      // 原生失败时降级到Web Share API
+      if(navigator.share){navigator.share({title:v.display+' 断电指导',text:shareText}).catch(()=>{});}
+      else{showToast('分享取消');}
+    });
+    return;
+  }
   const shareData={title:v.display+' 断电指导',text:shareText};
   if(navigator.share){
     try{await navigator.share(shareData);}catch(e){if(e.name!=='AbortError')showToast('分享取消');}
@@ -1414,18 +1523,62 @@ async function shareVehicleDetail(){
   }
 }
 
+/**
+ * 分享文件 - 三级降级策略确保微信/QQ/钉钉等主流应用均可接收
+ * 1. Cordova原生socialsharing插件: 直接调起系统分享面板(最可靠)
+ * 2. Web Share API Level 2: 新版WebView支持的系统分享
+ * 3. 浏览器下载: 兜底方案
+ * @param {Blob} blob - 文件二进制数据
+ * @param {string} filename - 文件名(含扩展名)
+ * @param {string} mimeType - MIME类型
+ */
 async function shareFile(blob,filename,mimeType){
+  // 原生分享插件未注入时主动等待deviceready(首次调用可能早于插件就绪)
+  if(!hasNativeShare()&&window.cordova){
+    await new Promise(res=>{
+      let done=false;
+      const timer=setTimeout(()=>{if(!done){done=true;res();}},2000);
+      document.addEventListener('deviceready',()=>{if(!done){done=true;clearTimeout(timer);res();}},{once:true});
+    });
+  }
+  // 1. 原生社交分享: 调起系统分享面板,微信/QQ/钉钉接收Word/PDF/Excel文件
+  if(hasNativeShare()){
+    try{
+      // base64方式分享,文件名保留中文名,接收方按MIME类型识别
+      const dataUrl=await blobToDataURL(blob);
+      const ext=(filename.split('.').pop()||'dat').toLowerCase();
+      // 修正Data URL的MIME(确保与文件扩展名一致,避免微信识别异常)
+      let fixedMime=mimeType||'application/octet-stream';
+      if(ext==='docx'&&!/wordprocessingml/.test(mimeType||''))fixedMime='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      if(ext==='xlsx'&&!/spreadsheetml/.test(mimeType||''))fixedMime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      if(ext==='doc'&&!/msword/.test(mimeType||''))fixedMime='application/msword';
+      if(ext==='pdf')fixedMime='application/pdf';
+      const fileDataUrl=dataUrl.replace(/^data:[^;]*;/,`data:${fixedMime};`);
+      await new Promise((resolve,reject)=>{
+        window.plugins.socialsharing.shareWithOptions(
+          {message:'',subject:filename,title:'分享文件',files:[fileDataUrl]},
+          ()=>resolve(),err=>reject(err)
+        );
+      });
+      return;
+    }catch(e){
+      if(e==='canceled')return; // 用户主动取消,静默处理
+      console.warn('原生分享失败,降级到Web Share API:',e);
+    }
+  }
+  // 2. Web Share API Level 2: 系统分享面板(支持文件的浏览器/WebView)
   if(navigator.canShare&&navigator.canShare({files:[new File([blob],filename,{type:mimeType})]})){
     try{
       await navigator.share({files:[new File([blob],filename,{type:mimeType})],title:filename});
     }catch(e){if(e.name!=='AbortError')showToast('分享取消');}
-  }else{
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download=filename;a.click();
-    setTimeout(()=>URL.revokeObjectURL(url),3000);
-    showToast('文件已下载: '+filename);
+    return;
   }
+  // 3. 兜底: 触发浏览器下载
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+  showToast('文件已下载: '+filename);
 }
 
 function getVehicleShareText(v){
@@ -1450,6 +1603,11 @@ function generateExcel(vehicles){
   return XLSX.write(wb,{bookType:'xlsx',type:'array'});
 }
 
+/**
+ * 生成Word文档 - 支持html-docx-js库和HTML Blob降级方案
+ * @param {Array} vehicles - 车辆数据数组
+ * @returns {Blob} Word文档Blob对象
+ */
 function generateWord(vehicles){
   const isSingle=vehicles.length===1;
   const v=vehicles[0];
@@ -1458,7 +1616,7 @@ function generateWord(vehicles){
     const photoHtml=(v.photoPaths||[]).map((p,i)=>{
       return `<img src="${p}" style="width:200px;height:150px;object-fit:cover;margin:5px;"/>`;
     }).join('');
-    const videoHtml=(v.videoPaths||[]).map(vp=>`<p>📹 视频: ${vp}</p>`).join('');
+    const videoHtml=(v.videoPaths||[]).map(vp=>`<p>视频: ${vp}</p>`).join('');
     html=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     body{font-family:'微软雅黑',sans-serif;font-size:12pt;}
     h1{color:#1e40af;font-size:18pt;}h2{color:#1e40af;font-size:14pt;margin-top:15px;}
@@ -1494,7 +1652,16 @@ function generateWord(vehicles){
     <p style="margin-top:20px;color:#999;font-size:9pt;">太仓港车辆断电指导APP · 生成于 ${new Date().toLocaleString('zh-CN')}</p>
     </body></html>`;
   }
-  return htmlDocx.asBlob(html);
+  // 优先使用html-docx-js库生成.docx,失败则降级为HTML Blob(.doc格式Word可打开)
+  if(window._htmlDocxReady&&typeof htmlDocx!=='undefined'&&htmlDocx.asBlob){
+    try{
+      return htmlDocx.asBlob(html);
+    }catch(e){
+      console.warn('htmlDocx.asBlob failed, fallback to HTML blob:',e);
+    }
+  }
+  // 降级方案: 使用HTML Blob生成.doc文件(Word可直接打开)
+  return new Blob(['\ufeff'+html],{type:'application/msword'});
 }
 
 function generatePDF(vehicles){
@@ -1589,8 +1756,8 @@ function exportData(format){
   const n=state.selectedVehicles.size;
   if(n===0){showToast('请先选择要导出的车型');return;}
   const names={'word':'Word','pdf':'PDF','excel':'Excel','csv':'CSV','json':'JSON'};
-  if((format==='excel'&&!window.XLSX)||(format==='pdf'&&!window.jspdf)||(format==='word'&&!window.htmlDocx)){
-    showToast(names[format]+'库加载失败，请检查网络后重试');return;
+  if((format==='excel'&&!window.XLSX)||(format==='pdf'&&!window.jspdf)||(format==='word'&&!window._htmlDocxReady&&typeof htmlDocx==='undefined')){
+    showToast(names[format]+'库加载失败，正在使用降级方案...');
   }
   const selectedVehicles=VEHICLES.filter(v=>state.selectedVehicles.has(v.id));
   showToast(`正在生成 ${names[format]} 文件...`);
@@ -1614,7 +1781,9 @@ function exportData(format){
         await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.pdf`,'application/pdf');
       }else if(format==='word'){
         const blob=generateWord(selectedVehicles);
-        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.docx`,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        const ext=mimeType.includes('msword')?'doc':'docx';
+        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.${ext}`,mimeType);
       }
       showToast(`${names[format]} 导出成功 (${n}条)`);
     }catch(err){showToast('导出失败: '+err.message);console.error(err);}
@@ -1625,8 +1794,8 @@ async function exportSingle(format){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v)return;
   const names={'word':'Word','pdf':'PDF','excel':'Excel'};
-  if((format==='excel'&&!window.XLSX)||(format==='pdf'&&!window.jspdf)||(format==='word'&&!window.htmlDocx)){
-    showToast(names[format]+'库加载失败，请检查网络后重试');return;
+  if((format==='excel'&&!window.XLSX)||(format==='pdf'&&!window.jspdf)||(format==='word'&&!window._htmlDocxReady&&typeof htmlDocx==='undefined')){
+    showToast(names[format]+'库加载失败，正在使用降级方案...');
   }
   showToast(`正在生成${names[format]}文件...`);
   try{
@@ -1639,7 +1808,9 @@ async function exportSingle(format){
       await shareFile(blob,`${v.display}_断电指导.pdf`,'application/pdf');
     }else if(format==='word'){
       const blob=generateWord([v]);
-      await shareFile(blob,`${v.display}_断电指导.docx`,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      const ext=mimeType.includes('msword')?'doc':'docx';
+      await shareFile(blob,`${v.display}_断电指导.${ext}`,mimeType);
     }
     showToast(`${names[format]} 文件已生成`);
   }catch(err){showToast('生成失败: '+err.message);console.error(err);}
@@ -1781,15 +1952,44 @@ function saveFeishuConfig(){
   addSyncLog('飞书账号配置已更新','blue');
 }
 
-async function getFeishuToken(cfg){
-  const res=await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:cfg.appId,app_secret:cfg.appSecret})});
-  const data=await res.json();
-  if(!data.tenant_access_token)throw new Error('飞书认证失败: '+(data.msg||''));
-  return data.tenant_access_token;
+/**
+ * 获取飞书Token - 支持自动重试
+ * @param {Object} cfg - 飞书配置
+ * @param {number} retries - 重试次数
+ * @returns {Promise<string>} tenant_access_token
+ */
+async function getFeishuToken(cfg,retries){
+  retries=retries||2;
+  let lastErr;
+  for(let i=0;i<=retries;i++){
+    try{
+      const res=await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({app_id:cfg.appId,app_secret:cfg.appSecret})
+      });
+      const data=await res.json();
+      if(data.tenant_access_token)return data.tenant_access_token;
+      lastErr=new Error('飞书认证失败: '+(data.msg||''));
+    }catch(e){
+      lastErr=e;
+      console.warn('飞书Token获取失败,重试'+(i+1)+'/'+(retries+1)+':',e.message);
+      if(i<retries)await new Promise(r=>setTimeout(r,1000*(i+1)));
+    }
+  }
+  throw lastErr;
 }
 
+/**
+ * 上传JSON到飞书 - 增强版: 支持重试和旧文件清理
+ * @param {Object} cfg - 飞书配置
+ * @param {string} docName - 文件名
+ * @param {string} jsonStr - JSON字符串
+ * @returns {Promise<boolean>} 是否成功
+ */
 async function uploadJsonToFeishu(cfg,docName,jsonStr){
-  const token=await getFeishuToken(cfg);
+  const token=await getFeishuToken(cfg,2);
+  // 清理云端旧文件(同名)
   try{
     const listRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=200`,{headers:{Authorization:'Bearer '+token}});
     const listData=await listRes.json();
@@ -1798,29 +1998,56 @@ async function uploadJsonToFeishu(cfg,docName,jsonStr){
       await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
     }
   }catch(e){console.warn('清理云端旧文件跳过',e);}
-  const blob=new Blob([jsonStr],{type:'application/json'});
-  const formData=new FormData();
-  formData.append('file_name',docName);
-  formData.append('parent_type','explorer');
-  formData.append('parent_node',cfg.folder);
-  formData.append('size',String(blob.size));
-  formData.append('file',blob,docName);
-  const upRes=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',{method:'POST',headers:{Authorization:'Bearer '+token},body:formData});
-  const upData=await upRes.json();
-  if(upData.code!==0&&upData.code!==undefined)throw new Error(upData.msg||'上传失败');
-  return true;
+  // 上传新文件,支持重试
+  let lastErr;
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      const blob=new Blob([jsonStr],{type:'application/json'});
+      const formData=new FormData();
+      formData.append('file_name',docName);
+      formData.append('parent_type','explorer');
+      formData.append('parent_node',cfg.folder);
+      formData.append('size',String(blob.size));
+      formData.append('file',blob,docName);
+      const upRes=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',{method:'POST',headers:{Authorization:'Bearer '+token},body:formData});
+      const upData=await upRes.json();
+      if(upData.code!==0&&upData.code!==undefined)throw new Error(upData.msg||'上传失败');
+      return true;
+    }catch(e){
+      lastErr=e;
+      console.warn('上传失败,重试'+(attempt+1)+'/3:',e.message);
+      if(attempt<2)await new Promise(r=>setTimeout(r,1500*(attempt+1)));
+    }
+  }
+  throw lastErr;
 }
 
+/**
+ * 从飞书下载JSON - 增强版: 支持重试
+ * @param {Object} cfg - 飞书配置
+ * @param {string} docName - 文件名
+ * @returns {Promise<Object|null>} 解析后的JSON对象
+ */
 async function downloadJsonFromFeishu(cfg,docName){
-  const token=await getFeishuToken(cfg);
-  const listRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=200`,{headers:{Authorization:'Bearer '+token}});
-  const listData=await listRes.json();
-  if(listData.code!==0)throw new Error(listData.msg||'获取文件列表失败');
-  const target=((listData.data||{}).files||[]).find(f=>f.name===docName);
-  if(!target)return null;
-  const dlRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
-  const dlText=await dlRes.text();
-  return JSON.parse(dlText);
+  const token=await getFeishuToken(cfg,2);
+  let lastErr;
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      const listRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=200`,{headers:{Authorization:'Bearer '+token}});
+      const listData=await listRes.json();
+      if(listData.code!==0)throw new Error(listData.msg||'获取文件列表失败');
+      const target=((listData.data||{}).files||[]).find(f=>f.name===docName);
+      if(!target)return null;
+      const dlRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
+      const dlText=await dlRes.text();
+      return JSON.parse(dlText);
+    }catch(e){
+      lastErr=e;
+      console.warn('下载失败,重试'+(attempt+1)+'/3:',e.message);
+      if(attempt<2)await new Promise(r=>setTimeout(r,1500*(attempt+1)));
+    }
+  }
+  throw lastErr;
 }
 
 function doSyncUpload(){
@@ -1862,20 +2089,47 @@ async function doSyncDownload(){
   try{
     const syncData=await downloadJsonFromFeishu(cfg,'vehicle_sync_data.json');
     if(syncData&&syncData.vehicles){
+      // 智能合并: 云端新增的车辆添加到本地,已存在的按时间戳合并
+      let addedCount=0,updatedCount=0;
+      const localIds=new Set(VEHICLES.map(v=>v.id));
+      const cloudTs=new Date(syncData.timestamp||0).getTime();
+      const localSyncTs=JSON.parse(localStorage.getItem('feishu_sync_data')||'{}');
+      const lastSyncTs=localSyncTs.timestamp?new Date(localSyncTs.timestamp).getTime():0;
+      
       syncData.vehicles.forEach(sv=>{
         const v=VEHICLES.find(x=>x.id===sv.id);
         if(v){
-          v.display=sv.display;v.brand=sv.brand;v.series=sv.series;v.config=sv.config;
-          v.powerType=sv.powerType;v.position=sv.position;v.steps=sv.steps;
-          v.keyFrame=sv.keyFrame;v.keyContainer=sv.keyContainer;v.remarks=sv.remarks;
-          v.photoPaths=sv.photoPaths;v.photos=sv.photos;
-          if(sv.videoPaths){v.videoPaths=sv.videoPaths;v.videos=sv.videos;}
+          // 已存在: 云端更新则覆盖本地
+          if(cloudTs>lastSyncTs){
+            v.display=sv.display;v.brand=sv.brand;v.series=sv.series;v.config=sv.config;
+            v.powerType=sv.powerType;v.position=sv.position;v.steps=sv.steps;
+            v.keyFrame=sv.keyFrame;v.keyContainer=sv.keyContainer;v.remarks=sv.remarks;
+            v.photoPaths=sv.photoPaths;v.photos=sv.photos;
+            if(sv.videoPaths){v.videoPaths=sv.videoPaths;v.videos=sv.videos;}
+            v.pinyin=getPinyin(sv.display);
+            updatedCount++;
+          }
+        }else{
+          // 云端新增车辆,添加到本地
+          sv.pinyin=getPinyin(sv.display);
+          VEHICLES.push(sv);
+          addedCount++;
         }
       });
-      showToast(`数据同步完成，已更新${syncData.vehicleCount}条车型数据 (${syncData.version||''})`);
-      addSyncLog(`从飞书拉取完成 · ${syncData.vehicleCount}条 · ${syncData.version||''}`,'green');
+      
+      const totalChanges=addedCount+updatedCount;
+      if(totalChanges>0){
+        showToast(`数据同步完成: 新增${addedCount}条, 更新${updatedCount}条 (${syncData.version||''})`);
+        addSyncLog(`从飞书拉取完成 · 新增${addedCount}条 更新${updatedCount}条 · ${syncData.version||''}`,'green');
+      }else{
+        showToast(`数据已是最新 (${syncData.version||''})`);
+        addSyncLog(`从飞书拉取完成 · 数据已是最新 · ${syncData.vehicleCount}条`,'green');
+      }
+      localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
       const ss=document.getElementById('sync-status-text');
       if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
+      const cv=document.getElementById('sync-cloud-ver');
+      if(cv)cv.textContent='已连接 · '+(syncData.version||'v'+APP_VERSION)+' (最新)';
       renderBrandTags();
       renderVehicleList();
     }else{
@@ -1979,6 +2233,11 @@ function cycleZoom(){
 function resetZoom(){state.photoZoom=1;document.getElementById('photo-viewer-img').style.transform='scale(1)';}
 
 // ===================== VIDEO PLAYER =====================
+/**
+ * 视频播放器 - 支持本地路径和CDN回退
+ * 视频路径优先使用本地vehicle_videos/目录,
+ * 加载失败时自动回退到GitHub jsDelivr CDN
+ */
 function openVideoPlayer(){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v||!v.videoPaths||!v.videoPaths.length){
@@ -1987,13 +2246,61 @@ function openVideoPlayer(){
   }
   document.getElementById('video-player').classList.add('show');
   const video=document.getElementById('video-element');
-  video.src=v.videoPaths[0];
-  video.play().catch(()=>{});
+  // 构建视频URL: 优先本地路径,失败时回退到jsDelivr CDN
+  const videoPath=v.videoPaths[0];
+  const cdnBase=`https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@${GITHUB_BRANCH}`;
+  
+  // 清除旧的事件监听器
+  video.onerror=null;
+  video.onloadeddata=null;
+  
+  video.onerror=function(){
+    console.warn('本地视频加载失败,尝试CDN:',videoPath);
+    // 本地路径失败,尝试jsDelivr CDN
+    const cdnUrl=cdnBase+'/'+videoPath;
+    video.onerror=function(){
+      console.error('CDN视频也加载失败:',cdnUrl);
+      showToast('视频文件暂不可用,请联系管理员');
+      // 显示视频不可用提示
+      const container=video.parentElement;
+      const existing=container.querySelector('.video-error');
+      if(!existing){
+        const div=document.createElement('div');
+        div.className='video-error';
+        div.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;text-align:center;font-size:14px;';
+        div.innerHTML='<div style="font-size:40px;margin-bottom:10px;">📹</div>视频文件暂不可用<br><span style="font-size:12px;color:#999;">路径: '+videoPath+'</span>';
+        container.appendChild(div);
+      }
+    };
+    video.src=cdnUrl;
+    video.load();
+    video.play().catch(()=>{});
+  };
+  
+  video.onloadeddata=function(){
+    console.log('视频加载成功:',videoPath);
+    // 移除错误提示
+    const container=video.parentElement;
+    const err=container.querySelector('.video-error');
+    if(err)err.remove();
+  };
+  
+  video.src=videoPath;
+  video.load();
+  video.play().catch(()=>{
+    // 自动播放被阻止,用户需手动点击播放
+    console.log('自动播放被阻止,用户需手动点击');
+  });
 }
 
 function closeVideoPlayer(){
   const video=document.getElementById('video-element');
   video.pause();
+  video.src='';
+  // 清除视频错误提示
+  const container=video.parentElement;
+  const err=container?container.querySelector('.video-error'):null;
+  if(err)err.remove();
   document.getElementById('video-player').classList.remove('show');
 }
 
@@ -2126,6 +2433,8 @@ function changePassword(){
   state.currentUser.password=n;
   const u=USERS.find(x=>x.id===state.currentUser.id);
   if(u){u.password=n;saveUsers(USERS);}
+  // 更新会话时间戳,保持登录有效
+  localStorage.setItem('tcg_session',JSON.stringify({uid:state.currentUser.id,phone:state.currentUser.phone,ts:Date.now()}));
   showToast('密码修改成功');
   showScreen('screen-my');
 }
@@ -2255,7 +2564,17 @@ function skipUpdate(){
 }
 
 // ===================== INIT =====================
-showScreen('screen-login');
+// 启动时检查是否有已保存的登录会话,实现免重复登录
+if(restoreSession()){
+  // 已有有效会话,直接进入主界面
+  showScreen('screen-vehicles');
+  updateMyInfo();
+  if(state.currentUser&&state.currentUser.role==='admin'){
+    pullPendingFromFeishu().then(()=>{renderMemberList();});
+  }
+}else{
+  showScreen('screen-login');
+}
 renderBrandTags();
 renderVehicleList();
 loadFeishuConfig();

@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.taicanggang.poweroff" version="5.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+<widget id="com.taicanggang.poweroff" version="5.2.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>太仓港断电指导</name>
     <description>太仓港商品车断电操作标准化指导平台</description>
     <author email="dev@taicanggang.com" href="https://github.com/361087210/taicanggang-poweroff-guide">Taicanggang Dev Team</author>
@@ -31,10 +31,8 @@
             <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
         </config-file>
 
-        <!-- Storage permissions -->
+        <!-- Storage permissions: READ/WRITE_EXTERNAL_STORAGE由media-capture插件自动注入,此处仅声明插件未覆盖的媒体权限,避免Manifest合并冲突 -->
         <config-file target="AndroidManifest.xml" parent="/manifest">
-            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
             <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
             <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
             <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
@@ -55,6 +53,8 @@
     <plugin name="cordova-plugin-media-capture" />
     <plugin name="cordova-plugin-statusbar" />
     <plugin name="cordova-plugin-edge-to-edge" />
+    <!-- 原生社交分享: 调起系统分享面板,Word/PDF/Excel文件可分享到微信/QQ/钉钉等主流应用 -->
+    <plugin name="cordova-plugin-x-socialsharing" />
 
     <preference name="BackupStorage" value="none" />
     <preference name="SplashScreenDelay" value="1000" />

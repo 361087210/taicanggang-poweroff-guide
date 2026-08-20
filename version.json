@@ -1,20 +1,16 @@
 {
-  "version": "5.0.0",
-  "versionName": "V5.0",
+  "version": "5.2.0",
+  "versionName": "V5.2",
   "date": "2026-08-20",
-  "apkSize": "30MB",
+  "apkSize": "19MB",
   "changelog": [
-    "修复车辆详情页视频不显示：videoPaths已合并到内嵌数据，43个车型视频正常播放",
-    "修复编辑车辆时内置照片视频不显示：移除data:前缀过滤，所有媒体资源正确加载",
-    "修复数据导出功能失效：更正html-docx-js CDN地址，Word/PDF/Excel三种格式均可正常生成",
-    "新增导出库加载检查：XLSX/jsPDF/htmlDocx加载失败时给出明确提示",
-    "修复飞书数据备份失败：使用用户保存的飞书配置替代默认配置，FormData补全file字段",
-    "新增备份历史记录：记录备份类型、文件名、数据条数和文件大小，支持查看最近10条",
-    "实现配置导出功能：exportSyncConfig导出车辆数据和飞书配置为JSON文件",
-    "文档生成包含照片和视频路径：Word文档嵌入图片，PDF/Excel列出媒体路径",
-    "44项自动化测试全部通过，覆盖视频/编辑/导出/备份/同步/安全全链路"
+    "新增原生社交分享: 集成cordova-plugin-x-socialsharing, Word/PDF/Excel文件可直接调起系统分享面板分享到微信/QQ/钉钉等主流应用",
+    "分享三级降级策略: 原生分享插件 -> Web Share API -> 浏览器下载, 确保任意环境可完成分享",
+    "分享文件MIME类型自动修正: docx/xlsx/doc/pdf扩展名与MIME严格对应, 避免微信识别异常",
+    "详情页文本分享同步支持原生通道, 分享面板直接选择微信/QQ/钉钉",
+    "deviceready等待机制: 首次分享时自动等待插件就绪(最长2秒), 修复冷启动立即分享失败问题"
   ],
-  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/V5.0/taicanggang-V5.0.apk",
+  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/V5.2/taicanggang-V5.2.apk",
   "pageUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases",
   "feishuFolder": "https://feishu.cn/drive/folder/WdXUfZPkClI1audQxIYc90XRnWc"
 }
