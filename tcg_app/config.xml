@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.tcg.poweroff" version="3.1.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>太仓港断电指导</name>
+    <description>
+        太仓港商品车断电操作标准化指导平台
+    </description>
+    <author email="dev@tcg.com" href="https://tcg.com">
+        TCG Team
+    </author>
+    <content src="index.html" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <preference name="StatusBarOverlaysWebView" value="false" />
+    <preference name="StatusBarBackgroundColor" value="#1e40af" />
+    <preference name="AndroidWindowSplashScreenBackground" value="#1e40af" />
+    <preference name="Fullscreen" value="false" />
+    <preference name="edge-to-edge" value="true" />
+</widget>
