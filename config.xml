@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.taicanggang.poweroff" version="4.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>太仓港断电指导</name>
+    <description>太仓港商品车断电操作标准化指导平台</description>
+    <author email="dev@taicanggang.com" href="https://github.com/361087210/taicanggang-poweroff-guide">Taicanggang Dev Team</author>
+    <content src="demo.html" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="mailto:*" />
+    <allow-navigation href="https://cdn.jsdelivr.net/*" />
+    <allow-navigation href="https://cdn.tailwindcss.com/*" />
+
+    <!-- Platform: Android -->
+    <platform name="android">
+        <preference name="android-minSdkVersion" value="24" />
+        <preference name="android-targetSdkVersion" value="34" />
+        <preference name="AndroidXEnabled" value="true" />
+        <preference name="android-edge-to-edge" value="true" />
+        <preference name="StatusBarOverlaysWebView" value="false" />
+        <preference name="StatusBarBackgroundColor" value="#1e3a5f" />
+        <preference name="StatusBarStyle" value="darkcontent" />
+        <preference name="DisallowOverscroll" value="true" />
+
+        <!-- Camera permissions -->
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.CAMERA" />
+            <uses-feature android:name="android.hardware.camera" android:required="false" />
+            <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+        </config-file>
+
+        <!-- Storage permissions -->
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+            <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+            <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+            <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+        </config-file>
+
+        <!-- Network permissions -->
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+            <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+        </config-file>
+
+    </platform>
+
+    <!-- Cordova Plugins -->
+    <plugin name="cordova-plugin-camera" />
+    <plugin name="cordova-plugin-file" />
+    <plugin name="cordova-plugin-media-capture" />
+    <plugin name="cordova-plugin-statusbar" />
+    <plugin name="cordova-plugin-edge-to-edge" />
+
+    <preference name="BackupStorage" value="none" />
+    <preference name="SplashScreenDelay" value="1000" />
+    <preference name="ShowSplashScreenSpinner" value="false" />
+</widget>
