@@ -1,0 +1,9 @@
+node_modules/
+tcg_app/platforms/
+tcg_app/plugins/
+tcg_app/www/
+archive/
+tests/test_screenshots/
+*.log
+build_err*.txt
+build_log*.txt
