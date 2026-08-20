@@ -16,7 +16,8 @@ const H = {
   'X-GitHub-Api-Version': '2022-11-28'
 };
 
-// [localPath, repoPath]
+// [localPath, repoPath] — APK is distributed via Release asset only (large blob
+// uploads through the sandbox proxy are unreliable); the old in-tree APK is removed below.
 const FILES = [
   ['demo.html', 'demo.html'],
   ['version.json', 'version.json'],
@@ -31,9 +32,11 @@ const FILES = [
   ['tests/test_crash_v41.py', 'tests/test_crash_v41.py'],
   ['tests/test_feishu_roundtrip.js', 'tests/test_feishu_roundtrip.js'],
   ['docs/太仓港断电指导APP开发文档V4.1.html', 'docs/太仓港断电指导APP开发文档V4.1.html'],
-  ['docs/项目改进优化方案V1.html', 'docs/项目改进优化方案V1.html'],
-  ['app-debV4.1.apk', 'release/太仓港断电指导V4.1.apk']
+  ['docs/项目改进优化方案V1.html', 'docs/项目改进优化方案V1.html']
 ];
+
+// tree entries to delete (sha: null removes the path from base_tree)
+const DELETES = ['release/太仓港断电指导V4.1.apk'];
 
 async function api(url, opts = {}) {
   const res = await fetch(url, { ...opts, headers: { ...H, ...(opts.headers || {}) } });
@@ -86,6 +89,10 @@ async function main() {
     fs.writeFileSync(cachePath, JSON.stringify(cache));
     entries.push({ path: remote, mode: '100644', type: 'blob', sha: blob.sha });
     console.log('  blob ok:', remote, buf.length, 'bytes');
+  }
+  for (const p of DELETES) {
+    entries.push({ path: p, mode: '100644', type: 'blob', sha: null });
+    console.log('  tree delete:', p);
   }
 
   // 3. Tree -> commit -> update ref (PATCH uses git/refs plural)
