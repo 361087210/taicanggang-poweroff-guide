@@ -90,7 +90,11 @@ async function main() {
     entries.push({ path: remote, mode: '100644', type: 'blob', sha: blob.sha });
     console.log('  blob ok:', remote, buf.length, 'bytes');
   }
+  // only delete paths still present in the base tree (re-deleting a missing path -> 422)
+  const baseTreeData = await api(`${API}/repos/${REPO}/git/trees/${baseTree}?recursive=1`);
+  const existing = new Set(baseTreeData.tree.filter(t => t.type === 'blob').map(t => t.path));
   for (const p of DELETES) {
+    if (!existing.has(p)) { console.log('  tree delete skipped (absent):', p); continue; }
     entries.push({ path: p, mode: '100644', type: 'blob', sha: null });
     console.log('  tree delete:', p);
   }
