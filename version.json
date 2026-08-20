@@ -1,0 +1,19 @@
+{
+  "version": "4.1.0",
+  "versionName": "V4.1",
+  "date": "2026-08-20",
+  "apkSize": "15MB",
+  "changelog": [
+    "新增检查更新功能：自动检测新版本，显示更新日志，由用户选择下载",
+    "修复APK启动崩溃：更正Cordova入口文件配置，应用可正常打开",
+    "修复飞书备份上传失败：补全文件内容字段，移除重复参数",
+    "修复组员注册同步飞书失败：上传数据完整可用",
+    "数据同步真实化：组长上传、组员拉取均直连飞书云盘（原为本地模拟）",
+    "修复版本显示不一致问题（同步页曾显示v3.1）",
+    "网络白名单完善：GitHub/jsDelivr/飞书均可访问",
+    "33项自动化测试全部通过，含真实飞书API往返验证"
+  ],
+  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/V4.1/taicanggang-V4.1.apk",
+  "pageUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases",
+  "feishuFolder": "https://feishu.cn/drive/folder/WdXUfZPkClI1audQxIYc90XRnWc"
+}
