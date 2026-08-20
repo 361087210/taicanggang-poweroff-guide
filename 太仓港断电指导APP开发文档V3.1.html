@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>太仓港商品车断电指导 APP V3.1 开发文档</title>
+<style>
+:root{--primary:#1e40af;--secondary:#3b82f6;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0}
+.container{max-width:900px;margin:0 auto;padding:20px}
+h1{font-size:28px;color:var(--primary);text-align:center;margin:30px 0 10px;border-bottom:3px solid var(--primary);padding-bottom:10px}
+h2{font-size:22px;color:var(--primary);margin:30px 0 15px;padding-left:12px;border-left:4px solid var(--secondary)}
+h3{font-size:18px;color:#334155;margin:25px 0 10px}
+h4{font-size:16px;color:#475569;margin:20px 0 8px}
+p{margin:8px 0}
+table{width:100%;border-collapse:collapse;margin:15px 0;font-size:14px;background:var(--card)}
+th{background:var(--primary);color:#fff;padding:10px 12px;text-align:left}
+td{padding:8px 12px;border:1px solid var(--border)}
+tr:nth-child(even){background:#f1f5f9}
+.card{background:var(--card);border-radius:12px;padding:20px;margin:15px 0;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid var(--border)}
+.code-block{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:16px;margin:10px 0;font-family:'Consolas','Courier New',monospace;font-size:13px;overflow-x:auto;white-space:pre}
+.code-block .kw{color:#60a5fa}
+.code-block .str{color:#4ade80}
+.code-block .cmt{color:#94a3b8}
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;margin:0 2px}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-amber{background:#fef3c7;color:#92400e}
+ul,ol{margin:8px 0 8px 25px}
+li{margin:4px 0}
+.cover{text-align:center;padding:60px 20px;background:linear-gradient(135deg,#1e3a5f,#1e40af);color:#fff;border-radius:0 0 20px 20px;margin-bottom:30px}
+.cover h1{color:#fff;border:none}
+.cover p{color:rgba(255,255,255,.8)}
+.cover .version{font-size:48px;font-weight:800;margin:20px 0}
+.toc{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin:20px 0}
+.toc ol{margin-left:20px}
+.toc a{color:var(--secondary);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.section{margin:30px 0}
+.info-box{background:#eff6ff;border-left:4px solid var(--secondary);padding:12px 16px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14px}
+.warn-box{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14px}
+.pass{color:#16a34a;font-weight:700}
+.fail{color:#dc2626;font-weight:700}
+@media print{body{background:#fff}.card{box-shadow:none;border:1px solid #ccc}.cover{border-radius:0}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- 封面 -->
+<div class="cover">
+<div class="version">V3.1</div>
+<h1>太仓港商品车断电指导 APP</h1>
+<p>软件开发文档（第三版更新）</p>
+<p style="margin-top:15px">2026年8月20日</p>
+</div>
+
+<!-- 目录 -->
+<div class="toc">
+<h3>文档目录</h3>
+<ol>
+<li><a href="#ch1">项目概述</a></li>
+<li><a href="#ch2">V3.1 更新内容</a></li>
+<li><a href="#ch3">全屏自适应显示</a></li>
+<li><a href="#ch4">导航历史栈与返回逻辑</a></li>
+<li><a href="#ch5">车辆详情分享与编辑删除</a></li>
+<li><a href="#ch6">悬浮提示修复</a></li>
+<li><a href="#ch7">安全加固与代码优化</a></li>
+<li><a href="#ch8">系统架构</a></li>
+<li><a href="#ch9">用户与权限系统</a></li>
+<li><a href="#ch10">数据同步与飞书接口</a></li>
+<li><a href="#ch11">功能测试报告</a></li>
+<li><a href="#ch12">安卓打包与部署</a></li>
+<li><a href="#ch13">已知限制与后续规划</a></li>
+</ol>
+</div>
+
+<!-- 第一章 -->
+<div class="section" id="ch1">
+<h2>1. 项目概述</h2>
+<div class="card">
+<h3>1.1 项目背景</h3>
+<p>太仓港作为国内重要商品车滚装港口，每日处理大量商品车的断电操作。为规范操作流程、提升作业效率，开发本应用，为现场作业人员提供断电位置查询、操作步骤指导、照片参考等一站式服务。</p>
+
+<h3>1.2 版本信息</h3>
+<table>
+<tr><th>项目</th><th>说明</th></tr>
+<tr><td>应用名称</td><td>太仓港商品车断电指导</td></tr>
+<tr><td>版本号</td><td>V3.1</td></tr>
+<tr><td>发布日期</td><td>2026年8月20日</td></tr>
+<tr><td>开发框架</td><td>HTML5 + Cordova（Android WebView 混合应用）</td></tr>
+<tr><td>目标平台</td><td>Android 8.0+（API 27+）</td></tr>
+<tr><td>包名</td><td>com.tcg.poweroff</td></tr>
+<tr><td>APK大小</td><td>约14.6 MB</td></tr>
+<tr><td>车辆数据</td><td>73款车型，覆盖10个品牌</td></tr>
+<tr><td>图片资源</td><td>112张车型关联照片</td></tr>
+</table>
+
+<h3>1.3 核心功能</h3>
+<ul>
+<li><strong>用户系统</strong>：组长/组员角色分离，注册审核流程，密码管理</li>
+<li><strong>车型管理</strong>：73款车型断电指导，缩略图预览，树形/平铺视图</li>
+<li><strong>数据同步</strong>：飞书云端接口，组长上传/组员拉取</li>
+<li><strong>操作指导</strong>：断电位置、操作步骤、钥匙处理、照片参考</li>
+<li><strong>数据导出与分享</strong>：真实系统分享控件，支持文本复制与社交分享</li>
+<li><strong>全屏自适应</strong>：去除模拟器边框，自适应所有屏幕比例</li>
+</ul>
+</div>
+</div>
+
+<!-- 第二章 V3.1更新 -->
+<div class="section" id="ch2">
+<h2>2. V3.1 更新内容</h2>
+<div class="card">
+<div class="info-box">
+<strong>本次更新（V3.1）涵盖以下改进：</strong>
+<ul>
+<li><strong>全屏自适应显示</strong>：去除界面黑边和模拟器刘海，实现 100vw/100vh 全屏自适应</li>
+<li><strong>导航返回逻辑修复</strong>：实现导航历史栈，多界面返回上一步不再失效</li>
+<li><strong>真实分享控件</strong>：调用系统 Web Share API，支持原生分享面板和剪贴板兜底</li>
+<li><strong>车辆编辑与删除</strong>：详情页新增编辑/删除按钮，数据实时持久化</li>
+<li><strong>悬浮提示修复</strong>：修复 Toast 上下跳动及长时间不消失问题</li>
+<li><strong>XSS 安全加固</strong>：所有动态内容插入点实施 HTML 转义</li>
+<li><strong>代码优化</strong>：审查漏洞，不改动不影响已有功能的前提下优化</li>
+</ul>
+</div>
+
+<h3>2.1 版本演进历程</h3>
+<table>
+<tr><th>版本</th><th>日期</th><th>主要变更</th></tr>
+<tr><td>V1.0</td><td>2026-08-20</td><td>初始版本，73款车型数据导入，基础功能</td></tr>
+<tr><td>V1.1</td><td>2026-08-20</td><td>修复首次登录状态、同步日志、同步状态默认值</td></tr>
+<tr><td>V3.1</td><td>2026-08-20</td><td>全屏自适应、导航修复、分享控件、编辑删除、Toast修复、安全加固</td></tr>
+</table>
+</div>
+</div>
+
+<!-- 第三章 全屏自适应 -->
+<div class="section" id="ch3">
+<h2>3. 全屏自适应显示</h2>
+<div class="card">
+<h3>3.1 问题描述</h3>
+<p>之前版本使用模拟手机外框（phone-frame）和刘海（phone-notch）元素，导致：</p>
+<ul>
+<li>界面四周有黑色边框，浪费屏幕空间</li>
+<li>刘海元素遮挡顶部内容</li>
+<li>不同屏幕比例设备显示不一致</li>
+</ul>
+
+<h3>3.2 解决方案</h3>
+<p>移除模拟器外框和刘海，使用 CSS 视口单位实现全屏自适应：</p>
+<div class="code-block">
+<span class="cmt">/* 全屏自适应容器 */</span>
+.phone-frame{
+  <span class="kw">width</span>:<span class="str">100vw</span>;
+  <span class="kw">height</span>:<span class="str">100vh</span>;
+  <span class="kw">height</span>:<span class="str">100dvh</span>;  <span class="cmt">/* 动态视口高度，适配移动端地址栏 */</span>
+  <span class="kw">background</span>:<span class="str">#f5f6fa</span>;
+  <span class="kw">position</span>:<span class="str">relative</span>;
+  <span class="kw">overflow</span>:<span class="str">hidden</span>;
+}
+.phone-screen{
+  <span class="kw">width</span>:<span class="str">100%</span>;
+  <span class="kw">height</span>:<span class="str">100%</span>;
+  <span class="kw">background</span>:<span class="str">#f5f6fa</span>;
+  <span class="kw">overflow</span>:<span class="str">hidden</span>;
+  <span class="kw">position</span>:<span class="str">relative</span>;
+}</div>
+
+<h3>3.3 Cordova 配置</h3>
+<p>在 config.xml 中配置 edge-to-edge 显示：</p>
+<div class="code-block">
+&lt;preference name=<span class="str">"StatusBarOverlaysWebView"</span> value=<span class="str">"false"</span> /&gt;
+&lt;preference name=<span class="str">"Fullscreen"</span> value=<span class="str">"false"</span> /&gt;
+&lt;preference name=<span class="str">"edge-to-edge"</span> value=<span class="str">"true"</span> /&gt;</div>
+
+<h3>3.4 设备信息动态检测</h3>
+<p>移除硬编码设备型号，改为运行时动态检测：</p>
+<div class="code-block">
+<span class="kw">const</span> deviceInfo = {
+  model: navigator.userAgent.match(/Android\s+([\d.]+)/)?.[1] || <span class="str">'未知'</span>,
+  screen: screen.width + <span class="str">'×'</span> + screen.height,
+  dpr: window.devicePixelRatio || 1
+};</div>
+</div>
+</div>
+
+<!-- 第四章 导航历史栈 -->
+<div class="section" id="ch4">
+<h2>4. 导航历史栈与返回逻辑</h2>
+<div class="card">
+<h3>4.1 问题描述</h3>
+<p>之前版本的 goBack() 函数直接跳转到固定页面（如"我的"），导致：</p>
+<ul>
+<li>从车型详情返回时跳到错误页面</li>
+<li>从同步中心返回时跳到错误页面</li>
+<li>多层导航后返回逻辑混乱</li>
+</ul>
+
+<h3>4.2 解决方案：导航历史栈</h3>
+<p>引入 navHistory 数组记录导航路径，实现精准返回上一步：</p>
+<div class="code-block">
+<span class="kw">let</span> navHistory = [];
+
+<span class="kw">function</span> showScreen(id) {
+  <span class="cmt">// 记录当前页面到历史栈（主Tab页清空历史）</span>
+  <span class="kw">if</span> (state.screen && state.screen !== id) {
+    navHistory.push(state.screen);
+  }
+  <span class="kw">if</span> ([<span class="str">'screen-vehicles'</span>, <span class="str">'screen-data'</span>, <span class="str">'screen-my'</span>].includes(id)) {
+    navHistory = [];  <span class="cmt">// 主Tab页清空历史</span>
+  }
+  _activateScreen(id);
+}
+
+<span class="kw">function</span> goBack() {
+  <span class="kw">const</span> target = navHistory.pop() || <span class="str">'screen-vehicles'</span>;
+  _activateScreen(target);
+}</div>
+
+<h3>4.3 _activateScreen 统一激活函数</h3>
+<p>将屏幕激活逻辑抽取为独立函数，确保 showScreen 和 goBack 行为一致：</p>
+<div class="code-block">
+<span class="kw">function</span> _activateScreen(id) {
+  document.querySelectorAll(<span class="str">'.screen'</span>).forEach(s =&gt; s.classList.remove(<span class="str">'active'</span>));
+  document.getElementById(id).classList.add(<span class="str">'active'</span>, <span class="str">'screen-slide'</span>);
+  state.screen = id;
+  <span class="cmt">// 更新底部导航高亮</span>
+  <span class="kw">if</span> ([<span class="str">'screen-vehicles'</span>, <span class="str">'screen-data'</span>, <span class="str">'screen-my'</span>].includes(id)) {
+    state.tab = id.replace(<span class="str">'screen-'</span>, <span class="str">''</span>);
+    updateBottomNav();
+  }
+}</div>
+
+<h3>4.4 导航路径示例</h3>
+<table>
+<tr><th>操作路径</th><th>历史栈状态</th><th>goBack()返回到</th></tr>
+<tr><td>车型列表 → 车型详情</td><td>['screen-vehicles']</td><td>车型列表</td></tr>
+<tr><td>数据 → 同步中心</td><td>['screen-data']</td><td>数据页</td></tr>
+<tr><td>车型列表 → 详情 → 编辑</td><td>['screen-vehicles', 'screen-detail']</td><td>详情页</td></tr>
+</table>
+</div>
+</div>
+
+<!-- 第五章 分享与编辑删除 -->
+<div class="section" id="ch5">
+<h2>5. 车辆详情分享与编辑删除</h2>
+<div class="card">
+<h3>5.1 真实分享控件</h3>
+<p>调用系统 Web Share API，弹出原生分享面板；不支持时自动降级为剪贴板复制：</p>
+<div class="code-block">
+<span class="kw">async function</span> shareVehicleDetail() {
+  <span class="kw">const</span> v = VEHICLES.find(x =&gt; x.id === state.currentVehicleId);
+  <span class="kw">if</span> (!v) <span class="kw">return</span>;
+  
+  <span class="kw">const</span> shareText = `${v.display} - 断电指导\n品牌：${v.brand}\n配置：${v.config}\n断电位置：${v.position}\n\n断电步骤：\n${v.steps.map((s,i) =&gt; (i+1)+'. '+s).join('\n')}`;
+  
+  <span class="kw">const</span> shareData = { title: v.display + ' 断电指导', text: shareText };
+  
+  <span class="kw">if</span> (navigator.share) {
+    <span class="kw">try</span> {
+      <span class="kw">await</span> navigator.share(shareData);
+    } <span class="kw">catch</span>(e) {
+      <span class="kw">if</span> (e.name !== <span class="str">'AbortError'</span>) showToast(<span class="str">'分享取消'</span>);
+    }
+  } <span class="kw">else if</span> (navigator.clipboard) {
+    <span class="kw">try</span> {
+      <span class="kw">await</span> navigator.clipboard.writeText(shareText);
+      showToast(<span class="str">'已复制断电信息到剪贴板'</span>);
+    } <span class="kw">catch</span>(e) {
+      showToast(<span class="str">'分享功能不可用'</span>);
+    }
+  } <span class="kw">else</span> {
+    showToast(<span class="str">'当前环境不支持分享'</span>);
+  }
+}</div>
+
+<h3>5.2 车辆编辑功能</h3>
+<p>详情页"编辑"按钮跳转编辑界面，保存后实时刷新详情页数据：</p>
+<div class="code-block">
+<span class="kw">function</span> saveVehicle() {
+  <span class="cmt">// 收集表单数据</span>
+  <span class="kw">const</span> vehicleData = {
+    id: state.currentVehicleId,
+    display: document.getElementById(<span class="str">'edit-display'</span>).value,
+    brand: document.getElementById(<span class="str">'edit-brand'</span>).value,
+    <span class="cmt">// ... 其他字段</span>
+  };
+  
+  <span class="cmt">// 更新 VEHICLES 数组</span>
+  <span class="kw">if</span> (state.currentVehicleId) {
+    <span class="kw">const</span> idx = VEHICLES.findIndex(v =&gt; v.id === state.currentVehicleId);
+    <span class="kw">if</span> (idx &gt;= 0) VEHICLES[idx] = { ...VEHICLES[idx], ...vehicleData };
+    <span class="kw">else</span> VEHICLES.push(vehicleData);
+  }
+  
+  <span class="cmt">// 保存到 localStorage</span>
+  localStorage.setItem(<span class="str">'vehicles_data'</span>, JSON.stringify(VEHICLES));
+  
+  <span class="cmt">// 关键：刷新详情页而非返回</span>
+  openVehicleDetail(state.currentVehicleId);
+  showToast(<span class="str">'保存成功'</span>);
+}</div>
+
+<h3>5.3 车辆删除功能</h3>
+<p>详情页"删除"按钮，确认后从 VEHICLES 数组移除并返回列表：</p>
+<div class="code-block">
+<span class="kw">function</span> deleteVehicle() {
+  <span class="kw">if</span> (!confirm(<span class="str">'确认删除该车型？此操作不可撤销。'</span>)) <span class="kw">return</span>;
+  
+  <span class="kw">const</span> idx = VEHICLES.findIndex(v =&gt; v.id === state.currentVehicleId);
+  <span class="kw">if</span> (idx &gt;= 0) {
+    VEHICLES.splice(idx, 1);
+    localStorage.setItem(<span class="str">'vehicles_data'</span>, JSON.stringify(VEHICLES));
+    showToast(<span class="str">'已删除'</span>);
+    showScreen(<span class="str">'screen-vehicles'</span>);
+    renderVehicleList();
+  }
+}</div>
+</div>
+</div>
+
+<!-- 第六章 悬浮提示修复 -->
+<div class="section" id="ch6">
+<h2>6. 悬浮提示修复</h2>
+<div class="card">
+<h3>6.1 问题描述</h3>
+<p>Toast 通知存在两个问题：</p>
+<ul>
+<li><strong>上下跳动</strong>：CSS 使用 transform 动画导致位置抖动</li>
+<li><strong>长时间不消失</strong>：setTimeout 被重复调用导致计时混乱</li>
+</ul>
+
+<h3>6.2 CSS 修复</h3>
+<p>改用 opacity 过渡，消除位移抖动：</p>
+<div class="code-block">
+.toast{
+  <span class="kw">position</span>:<span class="str">absolute</span>;
+  <span class="kw">bottom</span>:<span class="str">90px</span>;
+  <span class="kw">left</span>:<span class="str">50%</span>;
+  <span class="kw">transform</span>:<span class="str">translateX(-50%)</span>;
+  <span class="kw">background</span>:<span class="str">rgba(0,0,0,.82)</span>;
+  <span class="kw">color</span>:<span class="str">#fff</span>;
+  <span class="kw">padding</span>:<span class="str">8px 20px</span>;
+  <span class="kw">border-radius</span>:<span class="str">20px</span>;
+  <span class="kw">font-size</span>:<span class="str">13px</span>;
+  <span class="kw">z-index</span>:<span class="str">400</span>;
+  <span class="kw">opacity</span>:<span class="str">0</span>;
+  <span class="kw">pointer-events</span>:<span class="str">none</span>;
+  <span class="kw">transition</span>:<span class="str">opacity .15s</span>;  <span class="cmt">/* 仅 opacity 过渡 */</span>
+  <span class="kw">white-space</span>:<span class="str">nowrap</span>;
+  <span class="kw">max-width</span>:<span class="str">90%</span>;
+}
+.toast.show{ <span class="kw">opacity</span>:<span class="str">1</span>; }</div>
+
+<h3>6.3 JavaScript 修复</h3>
+<p>清除重复计时器，确保每次调用只有一个定时器：</p>
+<div class="code-block">
+<span class="kw">let</span> toastTimer = <span class="kw">null</span>;
+
+<span class="kw">function</span> showToast(msg) {
+  <span class="kw">const</span> toast = document.getElementById(<span class="str">'toast'</span>);
+  <span class="kw">if</span> (!toast) <span class="kw">return</span>;
+  toast.textContent = msg;
+  toast.classList.add(<span class="str">'show'</span>);
+  
+  <span class="cmt">// 清除已有计时器，避免重复</span>
+  <span class="kw">if</span> (toastTimer) clearTimeout(toastTimer);
+  
+  <span class="cmt">// 1.5秒后自动消失</span>
+  toastTimer = setTimeout(() =&gt; {
+    toast.classList.remove(<span class="str">'show'</span>);
+    toastTimer = <span class="kw">null</span>;
+  }, 1500);
+}</div>
+</div>
+</div>
+
+<!-- 第七章 安全加固 -->
+<div class="section" id="ch7">
+<h2>7. 安全加固与代码优化</h2>
+<div class="card">
+<h3>7.1 XSS 防护</h3>
+<p>所有动态内容插入点实施 HTML 转义，防止跨站脚本攻击：</p>
+<div class="code-block">
+<span class="kw">function</span> esc(str) {
+  <span class="kw">if</span> (str == <span class="kw">null</span>) <span class="kw">return</span> <span class="str">''</span>;
+  <span class="kw">return</span> String(str)
+    .replace(/&amp;/g, <span class="str">'&amp;amp;'</span>)
+    .replace(/&lt;/g, <span class="str">'&amp;lt;'</span>)
+    .replace(/&gt;/g, <span class="str">'&amp;gt;'</span>)
+    .replace(/"/g, <span class="str">'&amp;quot;'</span>)
+    .replace(/'/g, <span class="str">'&amp;#39;'</span>);
+}</div>
+<p>所有通过 innerHTML 插入的动态数据均经过 esc() 转义处理。</p>
+
+<h3>7.2 凭证安全</h3>
+<ul>
+<li>移除代码中硬编码的飞书 API Token</li>
+<li>敏感配置改为运行时从 localStorage 读取</li>
+<li>不存储明文密码，使用 SHA-256 哈希比较</li>
+</ul>
+
+<h3>7.3 代码优化</h3>
+<ul>
+<li><strong>导航逻辑统一</strong>：_activateScreen 函数避免代码重复</li>
+<li><strong>Toast 计时器管理</strong>：单例计时器避免内存泄漏</li>
+<li><strong>事件监听清理</strong>：避免重复绑定导致的事件触发多次</li>
+<li><strong>localStorage 数据校验</strong>：读取时增加 JSON 解析异常处理</li>
+</ul>
+</div>
+</div>
+
+<!-- 第八章 系统架构 -->
+<div class="section" id="ch8">
+<h2>8. 系统架构</h2>
+<div class="card">
+<h3>8.1 技术架构</h3>
+<p>本应用采用 <strong>WebView 混合应用架构</strong>，通过 Cordova 将 HTML5 应用打包为 Android 原生安装包。</p>
+<div class="code-block">
+<span class="cmt">架构层次</span>
+┌─────────────────────────────────┐
+│        Android APK (Cordova)       │  <span class="cmt">// 原生壳</span>
+│  ┌───────────────────────────┐  │
+│  │      WebView (Chrome)      │  │  <span class="cmt">// 渲染层</span>
+│  │  ┌─────────────────────┐  │  │
+│  │  │   HTML5/CSS3/JS    │  │  │  <span class="cmt">// 业务逻辑层</span>
+│  │  │  Web Share API     │  │  │  <span class="cmt">// 系统分享</span>
+│  │  │  localStorage       │  │  │  <span class="cmt">// 本地数据持久化</span>
+│  │  └─────────────────────┘  │  │
+│  └───────────────────────────┘  │
+│  ┌───────────────────────────┐  │
+│  │  飞书 API (HTTPS)         │  │  <span class="cmt">// 云端同步</span>
+│  └───────────────────────────┘  │
+└─────────────────────────────────┘</div>
+
+<h3>8.2 文件结构</h3>
+<div class="code-block">
+e:\车辆断电指导应用开发\
+├── demo.html              <span class="cmt"># 主应用代码（HTML+CSS+JS 单文件）</span>
+├── vehicle_images/        <span class="cmt"># 车辆照片目录（112张）</span>
+├── tcg_app/               <span class="cmt"># Cordova 项目目录</span>
+│   ├── config.xml         <span class="cmt"># Cordova 配置</span>
+│   ├── www/index.html     <span class="cmt"># 打包用 HTML（同 demo.html）</span>
+│   └── platforms/android/ <span class="cmt"># Android 原生工程</span>
+├── test_full_v3.py        <span class="cmt"># 自动化测试脚本</span>
+├── build_apk_v31.bat      <span class="cmt"># APK 构建脚本</span>
+├── 太仓港断电指导V3.1.apk <span class="cmt"># Android 安装包</span>
+└── 太仓港断电指导APP开发文档V3.1.html <span class="cmt"># 本文档</span></div>
+</div>
+</div>
+
+<!-- 第九章 用户与权限 -->
+<div class="section" id="ch9">
+<h2>9. 用户与权限系统</h2>
+<div class="card">
+<h3>9.1 角色定义</h3>
+<table>
+<tr><th>角色</th><th>权限</th><th>默认账号</th></tr>
+<tr><td>组长</td><td>增删改车型、数据上传飞书、审核组员注册、全部功能</td><td>17602554481</td></tr>
+<tr><td>组员</td><td>查看车型、数据拉取同步、个人设置</td><td>需审核后激活</td></tr>
+</table>
+
+<h3>9.2 登录流程</h3>
+<ol>
+<li>应用启动 → 显示登录页（所有账号默认退出状态）</li>
+<li>输入手机号+密码 → 验证通过 → 进入主页</li>
+<li>组长账号直接可用，组员需组长审核</li>
+<li>登录状态持久化到 localStorage</li>
+</ol>
+
+<h3>9.3 首次启动保证</h3>
+<div class="info-box">
+应用初始化时显式调用 <code>showScreen('screen-login')</code>，确保所有账号默认退出登录状态，不显示任何已登录界面。
+</div>
+</div>
+</div>
+
+<!-- 第十章 数据同步 -->
+<div class="section" id="ch10">
+<h2>10. 数据同步与飞书接口</h2>
+<div class="card">
+<h3>10.1 同步架构</h3>
+<ul>
+<li><strong>组长上传</strong>：将本地 VEHICLES 数组数据上传至飞书多维表格</li>
+<li><strong>组员拉取</strong>：从飞书多维表格拉取最新数据到本地</li>
+<li><strong>同步状态</strong>：初始显示"未同步"（灰色），成功后变"已同步"（绿色）</li>
+</ul>
+
+<h3>10.2 同步中心</h3>
+<p>首次进入同步中心显示"暂无同步记录"，不显示任何模拟历史日志。同步操作完成后记录实时写入。</p>
+
+<h3>10.3 飞书配置</h3>
+<table>
+<tr><th>配置项</th><th>说明</th></tr>
+<tr><td>App ID</td><td>飞书应用 ID</td></tr>
+<tr><td>App Secret</td><td>飞书应用密钥</td></tr>
+<tr><td>Bitable App Token</td><td>多维表格 Token</td></tr>
+<tr><td>Table ID</td><td>数据表 ID</td></tr>
+</table>
+<p>以上配置在组长"我的"页面设置，存储于 localStorage。</p>
+</div>
+</div>
+
+<!-- 第十一章 测试报告 -->
+<div class="section" id="ch11">
+<h2>11. 功能测试报告</h2>
+<div class="card">
+<h3>11.1 测试环境</h3>
+<table>
+<tr><th>项目</th><th>说明</th></tr>
+<tr><td>测试工具</td><td>Playwright（Chromium 模拟）</td></tr>
+<tr><td>视口尺寸</td><td>412 × 915</td></tr>
+<tr><td>测试文件</td><td>test_full_v3.py</td></tr>
+</table>
+
+<h3>11.2 V3.1 新增测试项</h3>
+<table>
+<tr><th>序号</th><th>测试项</th><th>预期结果</th><th>状态</th></tr>
+<tr><td>1</td><td>全屏宽度自适应</td><td>phone-frame 宽度 = 视口宽度</td><td><span class="pass">PASS</span></td></tr>
+<tr><td>2</td><td>无刘海元素</td><td>phone-notch 元素不存在</td><td><span class="pass">PASS</span></td></tr>
+<tr><td>3</td><td>详情→返回→车型列表</td><td>goBack() 返回车型列表</td><td><span class="pass">PASS</span></td></tr>
+<tr><td>4</td><td>数据→同步→返回→数据</td><td>goBack() 返回数据页</td><td><span class="pass">PASS</span></td></tr>
+<tr><td>5</td><td>分享按钮存在</td><td>详情页有分享按钮</td><td><span class="pass">PASS</span></td></tr>
+<tr><td>6</td><td>编辑按钮存在</td><td>详情页有编辑按钮</td><td><span class="pass">PASS</span></td></tr>
+<tr><td>7</td><td>删除按钮存在</td><td>详情页有删除按钮</td><td><span class="pass">PASS</span></td></tr>
+<tr><td>8</td><td>Toast 不跳动</td><td>transform 仅 translateX，无 Y 轴动画</td><td><span class="pass">PASS</span></td></tr>
+<tr><td>9</td><td>Toast 自动消失</td><td>1.5秒后 class 移除</td><td><span class="pass">PASS</span></td></tr>
+<tr><td>10</td><td>XSS 转义函数</td><td>esc() 函数存在且生效</td><td><span class="pass">PASS</span></td></tr>
+</table>
+
+<h3>11.3 完整测试套件</h3>
+<p>包含原有 34 项基础测试 + 10 项 V3.1 新增测试，共 44 项，全部通过。</p>
+</div>
+</div>
+
+<!-- 第十二章 安卓打包 -->
+<div class="section" id="ch12">
+<h2>12. 安卓打包与部署</h2>
+<div class="card">
+<h3>12.1 构建环境</h3>
+<table>
+<tr><th>项目</th><th>版本</th></tr>
+<tr><td>Cordova</td><td>最新版（通过 npm 安装）</td></tr>
+<tr><td>Android SDK</td><td>API 36（Android 16）</td></tr>
+<tr><td>Build Tools</td><td>36.0.0</td></tr>
+<tr><td>JDK</td><td>OpenJDK 17.0.13</td></tr>
+<tr><td>Gradle</td><td>8.14.2（Wrapper）</td></tr>
+<tr><td>Node.js</td><td>v22.16.0</td></tr>
+</table>
+
+<h3>12.2 构建步骤</h3>
+<ol>
+<li>将 demo.html 复制到 tcg_app/www/index.html</li>
+<li>运行 build_apk_v31.bat</li>
+<li>APK 输出至 platforms/android/app/build/outputs/apk/debug/</li>
+<li>重命名为 太仓港断电指导V3.1.apk</li>
+</ol>
+
+<h3>12.3 config.xml 关键配置</h3>
+<div class="code-block">
+&lt;widget id=<span class="str">"com.tcg.poweroff"</span> version=<span class="str">"3.1.0"</span>&gt;
+  &lt;preference name=<span class="str">"StatusBarOverlaysWebView"</span> value=<span class="str">"false"</span> /&gt;
+  &lt;preference name=<span class="str">"StatusBarBackgroundColor"</span> value=<span class="str">"#1e40af"</span> /&gt;
+  &lt;preference name=<span class="str">"AndroidWindowSplashScreenBackground"</span> value=<span class="str">"#1e40af"</span> /&gt;
+  &lt;preference name=<span class="str">"Fullscreen"</span> value=<span class="str">"false"</span> /&gt;
+  &lt;preference name=<span class="str">"edge-to-edge"</span> value=<span class="str">"true"</span> /&gt;
+&lt;/widget&gt;</div>
+</div>
+</div>
+
+<!-- 第十三章 限制与规划 -->
+<div class="section" id="ch13">
+<h2>13. 已知限制与后续规划</h2>
+<div class="card">
+<h3>13.1 已知限制</h3>
+<ul>
+<li>Web Share API 在部分旧版 Android 上不可用，降级为剪贴板复制</li>
+<li>飞书同步需要网络连接，离线状态下仅可查看本地数据</li>
+<li>车辆图片为本地存储，APK 体积较大（约15MB）</li>
+</ul>
+
+<h3>13.2 后续规划</h3>
+<ul>
+<li>图片云端化，减小 APK 体积</li>
+<li>支持车型数据版本管理和回滚</li>
+<li>增加操作记录审计日志</li>
+<li>支持多语言（中/英）</li>
+</ul>
+</div>
+</div>
+
+<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;border-top:1px solid var(--border)">
+<p>太仓港商品车断电指导 APP V3.1 开发文档</p>
+<p>TCG Team © 2026 | 最后更新：2026年8月20日</p>
+</div>
+
+</div>
+</body>
+</html>
