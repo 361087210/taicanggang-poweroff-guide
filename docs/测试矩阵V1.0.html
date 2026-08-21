@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多维度真机测试矩阵 V1.0</title>
+<style>
+  :root {
+    --primary: #0f4c81; --primary-light: #e8f1f8; --accent: #c9a227;
+    --ok: #1e8e5a; --ok-bg: #e8f6ef; --danger: #c0392b; --danger-bg: #fdecea;
+    --warn: #b7791f; --warn-bg: #fdf3e3; --block: #64748b; --block-bg: #eef2f7;
+    --text: #1f2937; --muted: #6b7280; --border: #e5e7eb; --bg: #f5f7fa; --card: #fff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); padding-bottom: 80px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 16px; }
+
+  header { background: linear-gradient(135deg, var(--primary), #1a5fa0); color: #fff; padding: 26px 16px 22px; }
+  header .inner { max-width: 1100px; margin: 0 auto; }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header .sub { font-size: 12px; opacity: .85; margin-top: 6px; line-height: 1.7; }
+  .badge { display: inline-block; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 2px 10px; font-size: 11px; margin: 10px 6px 0 0; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  @media(min-width: 720px) { .stats { grid-template-columns: repeat(6, 1fr); } }
+  .stat { background: var(--card); border-radius: 10px; padding: 12px; border: 1px solid var(--border); }
+  .stat .num { font-size: 20px; font-weight: 800; color: var(--primary); }
+  .stat .num.red { color: var(--danger); } .stat .num.green { color: var(--ok); } .stat .num.gray { color: var(--block); }
+  .stat .label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .panel { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-top: 14px; overflow: hidden; }
+  .panel-head { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .panel-head h2 { font-size: 14px; font-weight: 700; }
+  .panel-body { padding: 14px; }
+
+  .flow { display: grid; gap: 8px; }
+  @media(min-width: 720px) { .flow { grid-template-columns: repeat(6, 1fr); } }
+  .step { background: var(--primary-light); border-radius: 8px; padding: 10px; }
+  .step .n { font-size: 11px; font-weight: 800; color: var(--primary); }
+  .step .t { font-size: 12px; font-weight: 700; margin-top: 2px; }
+  .step .d { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn { border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .btn:active { opacity: .7; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-danger { background: var(--danger-bg); color: var(--danger); }
+  .btn-ghost { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+
+  .dim-head { display: flex; align-items: center; gap: 10px; margin: 22px 0 10px; }
+  .dim-head .idx { width: 30px; height: 30px; border-radius: 8px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0; }
+  .dim-head h3 { font-size: 15px; font-weight: 700; }
+  .dim-head .cnt { font-size: 11px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+
+  .case { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #fff; }
+  .case.done-ok { border-color: #9fd8bd; background: #f4fbf8; }
+  .case.done-fail { border-color: #f2b8b0; background: #fef7f6; }
+  .case .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .case .name { font-size: 13px; font-weight: 700; }
+  .case .cid { font-size: 11px; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+  .case .desc { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.7; }
+  .case .desc b { color: var(--text); }
+  .case .ctrl { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { border: none; background: #fff; padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--muted); font-weight: 600; }
+  .seg button.on-ok { background: var(--ok); color: #fff; }
+  .seg button.on-fail { background: var(--danger); color: #fff; }
+  .seg button.on-block { background: var(--block); color: #fff; }
+  .case input.note { flex: 1; min-width: 140px; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 12px; }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(90px); background: rgba(17,24,39,.92); color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; transition: transform .25s; z-index: 50; max-width: 90vw; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  footer { text-align: center; font-size: 11px; color: var(--muted); margin-top: 26px; line-height: 1.8; }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<header>
+  <div class="inner">
+    <h1>多维度真机测试矩阵</h1>
+    <div class="sub">落实优化方案「问题11：测试不足，未进行多轮多维度真机模拟测试」——按 8 大维度 × 6 步执行流程组织 42 项用例，勾选状态自动保存本机，一键导出测试报告。</div>
+    <span class="badge">8 维度</span><span class="badge">42 用例</span><span class="badge">6 步执行流程</span><span class="badge">进度本地保存</span><span class="badge">报告导出</span>
+  </div>
+</header>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="num" id="sTotal">0</div><div class="label">用例总数</div></div>
+    <div class="stat"><div class="num gray" id="sUntested">0</div><div class="label">未测</div></div>
+    <div class="stat"><div class="num green" id="sPass">0</div><div class="label">通过</div></div>
+    <div class="stat"><div class="num red" id="sFail">0</div><div class="label">失败</div></div>
+    <div class="stat"><div class="num gray" id="sBlock">0</div><div class="label">阻塞</div></div>
+    <div class="stat"><div class="num" id="sRate">0%</div><div class="label">通过率</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>执行流程（每轮按序推进，每轮保存测试报告）</h2></div>
+    <div class="panel-body"><div class="flow" id="flow"></div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>测试记录</h2>
+      <div class="toolbar">
+        <button class="btn btn-primary" id="btnExport">导出测试报告</button>
+        <button class="btn btn-danger" id="btnReset">清空全部记录</button>
+        <div class="legend">
+          <span><i class="dot" style="background:var(--ok)"></i>通过</span>
+          <span><i class="dot" style="background:var(--danger)"></i>失败</span>
+          <span><i class="dot" style="background:var(--block)"></i>阻塞</span>
+          <span><i class="dot" style="background:var(--border)"></i>未测</span>
+        </div>
+      </div>
+    </div>
+    <div class="panel-body" id="matrix"></div>
+  </div>
+
+  <footer>
+    太仓港商品车断电操作标准化指导平台 · 多维度真机测试矩阵 V1.0（2026-08-21）<br>
+    用例状态保存于本机 localStorage；导出报告含全部用例结果与备注，归档至 docs/ 参考资料
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/**
+ * 多维度测试矩阵数据定义
+ * 为什么按这 8 个维度组织: 严格对应优化方案「问题11」给出的测试矩阵表,
+ * 覆盖网络/设备/系统/数据/权限/分享/账号/异常, 每个用例绑定项目真实功能路径。
+ */
+const FLOW = [
+  ['冒烟测试', '主流程能跑通: 启动/登录/列表/详情/返回'],
+  ['功能测试', '按维度 4-8 用例逐项验证'],
+  ['兼容性测试', '维度 2-3 多设备多系统'],
+  ['弱网/异常测试', '维度 1 弱网断网 + 维度 8 异常注入'],
+  ['回归测试', '失败项修复后全量复测'],
+  ['真机多轮测试', '每轮导出报告归档, 至少 2 轮']
+];
+
+const DIMS = [
+  ['冒烟基线', '主链路 30 秒快速验证, 任何一轮测试的起点', [
+    ['SMOKE-01', '冷启动', '清除后台后点开APP', '<b>3 秒内</b>进入主界面, 无白屏/闪退, 车型列表正常渲染'],
+    ['SMOKE-02', '车型列表与搜索', '浏览列表→搜索"比亚迪"→点击筛选', '73 车型分页流畅, 搜索即时过滤, 缩略图正常显示'],
+    ['SMOKE-03', '车辆详情', '点击任一车型进入详情', '照片可查看(点开大图), 操作步骤完整, 断电位置清晰'],
+    ['SMOKE-04', '设置页', '进入设置→填写飞书 Secret→保存', 'Secret 保存成功(localStorage), 无明文回显, 重启后保留'],
+    ['SMOKE-05', '返回键', '详情页按 Android 返回键', '返回列表而非退出应用; 主 Tab 双击才退出'],
+    ['SMOKE-06', '文档导出', '详情页导出 PDF/Excel/Word', '文件生成并拉起系统分享面板, 目标应用可接收']
+  ]],
+  ['网络环境', '跨网段/弱网/断网下的数据与媒体可用性', [
+    ['NET-01', 'Wi-Fi 常规网络', '办公室 Wi-Fi 下全功能走查', '云同步/审批/视频回退链全部正常'],
+    ['NET-02', '4G/5G 蜂窝', '关 Wi-Fi 用流量走查云同步', '上传下载正常, 无 CORS 报错(httpFetch 原生通道生效)'],
+    ['NET-03', '跨网段双机', 'A 机 Wi-Fi + B 机 4G, 组员申请组长审批', '审批消息 60 秒轮询内触达, 结果双向同步'],
+    ['NET-04', '弱网模拟', '开发者选项限速/边缘信号区操作', '版本检查 8 秒超时不挂起, 弱网提示友好, 可继续离线浏览'],
+    ['NET-05', '断网离线', '飞行模式浏览已缓存数据', 'UI/导出/查询完整可用(零CDN本地化), 联网功能给出明确离线提示而非静默失败']
+  ]],
+  ['设备矩阵', '不同品牌/内存/屏幕的真机表现', [
+    ['DEV-01', '主流品牌真机', '华为/小米/OPPO/vivo 各 1 台走冒烟', '四品牌全部通过冒烟基线'],
+    ['DEV-02', '低内存机型', '2-3GB RAM 老机型压测列表滚动+大图查看', '无 OOM 闪退, 图片按需加载, 滚动不掉帧明显卡死'],
+    ['DEV-03', '平板/大屏', '平板横竖屏切换', '布局自适应, 无元素错位/拉伸'],
+    ['DEV-04', '小屏机型', '5 英寸小屏操作详情页', '按钮可点, 文字不截断, 弹层可关闭']
+  ]],
+  ['系统版本', 'Android 8-14 覆盖(项目最低 API 24)', [
+    ['SYS-08', 'Android 8/9', '老系统真机或模拟器全功能', '文件分享/相机/存储权限流程正常'],
+    ['SYS-10', 'Android 10', ' scoped storage 行为验证', '缓存文件写入与 file:// 分享正常'],
+    ['SYS-11', 'Android 11', '一次性权限对话框处理', '拒绝"仅此一次"后再次进入正确重新申请'],
+    ['SYS-12', 'Android 12', '返回键手势导航', '手势返回与物理返回行为一致(统一路由)'],
+    ['SYS-13', 'Android 13', 'READ_MEDIA_IMAGES/VIDEO 新权限', '媒体选择与拍照正常, 权限说明清晰'],
+    ['SYS-14', 'Android 14', '最新系统回归', '全功能通过, 无系统兼容性崩溃']
+  ]],
+  ['数据场景', '空/满/大负载边界', [
+    ['DATA-01', '空数据首装', '全新安装未配置 Secret', '引导提示明确, 不白屏不报错, 本地数据完整可用'],
+    ['DATA-02', '全量 73 车型', '完整数据集滚动浏览', '列表流畅, 筛选/搜索响应 &lt; 1 秒'],
+    ['DATA-03', '大视频上传', '组长上传 20MB 教学视频到飞书', '上传进度可见, 成功后他机播放命中云端源'],
+    ['DATA-04', '9 图满配车辆', '为车辆添加 9 张照片并保存', '保存成功, 详情页九宫格正常, 导出文档含全部图']
+  ]],
+  ['权限场景', '拒绝/回收权限的降级行为', [
+    ['PERM-01', '拒绝相机', '拍照功能首次拒绝授权', '友好引导开启, 不闪退; 可改用相册选择'],
+    ['PERM-02', '拒绝媒体权限', '拒绝存储/媒体读取', '浏览本地媒体给出明确提示, 其余功能不受影响'],
+    ['PERM-03', '权限后补', '设置中手动开启权限后返回', '无需重启即恢复功能']
+  ]],
+  ['分享场景', '主流目标应用兼容', [
+    ['SHARE-01', '分享到微信', '导出 PDF 后选微信发送', '文件可发送, 接收方可打开(file://缓存路径策略生效)'],
+    ['SHARE-02', '分享到 QQ', '同上选 QQ', '正常接收打开'],
+    ['SHARE-03', '分享到钉钉', '同上选钉钉', '正常接收打开'],
+    ['SHARE-04', '邮件附件', '分享到邮件应用', '附件类型/文件名/MIME 正确'],
+    ['SHARE-05', '文件管理器', '另存到本地文件管理器', '文件落盘可查, 内容完整']
+  ]],
+  ['账号场景', '跨网络审批闭环(问题10修复回归)', [
+    ['ACC-01', '跨网注册审批', '双机不同网络: 组员注册→组长审批', '组长 60 秒内收到提醒, 审批后组员端拉取到结果'],
+    ['ACC-02', '并发申请', '3 名组员同时提交注册', '组长端待审列表完整, 逐条审批互不覆盖'],
+    ['ACC-03', '重复申请', '同一组员重复提交', '有防重提示或合并处理, 不产生脏数据'],
+    ['ACC-04', '拒绝后重试', '组长拒绝→组员修改后重新申请', '状态正确流转, 无"幽灵通过"'],
+    ['ACC-05', '密码重置推送', '组长重置组员密码', '组员端下次登录用新密码成功, 旧密码失效']
+  ]],
+  ['异常场景', '外部依赖故障的容错', [
+    ['EXC-01', 'token 过期', '长时间挂后台后执行云操作', '自动刷新或明确重新认证提示, 不静默失败'],
+    ['EXC-02', '飞书限流/不可用', '高频请求或 Secret 错误', '错误 toast 明确指出原因, 可重试, 不崩溃'],
+    ['EXC-03', 'GitHub 拉取失败', '断网时检查更新', '8 秒超时, 多源探测依次回退, 界面不挂起'],
+    ['EXC-04', '云端数据损坏', '手工构造异常 JSON 同步', '解析失败有兜底提示, 本地数据不被污染']
+  ]]
+];
+
+const STORE_KEY = 'tcg_test_matrix_v1';
+const $ = id => document.getElementById(id);
+let state = {};
+
+/** 初始化本地保存的测试状态 */
+function loadState() {
+  try { state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { state = {}; }
+}
+function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function render() {
+  $('flow').innerHTML = FLOW.map((s, i) =>
+    '<div class="step"><div class="n">STEP ' + (i + 1) + '</div><div class="t">' + s[0] + '</div><div class="d">' + s[1] + '</div></div>').join('');
+
+  let html = '', total = 0, pass = 0, fail = 0, block = 0;
+  DIMS.forEach((dim, di) => {
+    const cases = dim[2];
+    const dp = cases.filter(c => (state[c[0]] || {}).st === 'ok').length;
+    total += cases.length;
+    html += '<div class="dim-head"><div class="idx">' + (di + 1) + '</div><h3>' + dim[0] + '</h3><div class="cnt">' + dp + '/' + cases.length + ' 通过 · ' + dim[1] + '</div></div>';
+    html += cases.map(c => {
+      const st = (state[c[0]] || {}).st || '';
+      const note = (state[c[0]] || {}).note || '';
+      if (st === 'ok') pass++; else if (st === 'fail') fail++; else if (st === 'block') block++;
+      const cls = st === 'ok' ? 'done-ok' : st === 'fail' ? 'done-fail' : '';
+      return '<div class="case ' + cls + '" data-id="' + c[0] + '">' +
+        '<div class="top"><div><div class="name">' + c[1] + '</div><div class="cid">' + c[0] + '</div></div></div>' +
+        '<div class="desc"><b>步骤:</b> ' + c[2] + '<br><b>预期:</b> ' + c[3] + '</div>' +
+        '<div class="ctrl"><div class="seg">' +
+        ['ok:通过', 'fail:失败', 'block:阻塞'].map(o => {
+          const [k, label] = o.split(':');
+          return '<button data-st="' + k + '" class="' + (st === k ? 'on-' + k : '') + '">' + label + '</button>';
+        }).join('') + '</div>' +
+        '<input class="note" placeholder="实测备注(机型/现象/截图编号…)" value="' + note.replace(/"/g, '&quot;') + '"></div></div>';
+    }).join('');
+  });
+  $('matrix').innerHTML = html;
+
+  $('sTotal').textContent = total;
+  $('sPass').textContent = pass;
+  $('sFail').textContent = fail;
+  $('sBlock').textContent = block;
+  $('sUntested').textContent = total - pass - fail - block;
+  $('sRate').textContent = total ? Math.round(pass / total * 100) + '%' : '0%';
+}
+
+/** 事件委托: 状态切换与备注输入 */
+$('matrix').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-st]');
+  if (!btn) return;
+  const caseEl = btn.closest('.case');
+  const id = caseEl.dataset.id;
+  const cur = state[id] || {};
+  const next = cur.st === btn.dataset.st ? '' : btn.dataset.st; // 再点一次取消
+  state[id] = { st: next, note: cur.note || '' };
+  saveState(); render();
+});
+$('matrix').addEventListener('input', e => {
+  if (!e.target.classList.contains('note')) return;
+  const id = e.target.closest('.case').dataset.id;
+  const cur = state[id] || {};
+  state[id] = { st: cur.st || '', note: e.target.value };
+  saveState();
+});
+
+$('btnReset').addEventListener('click', () => {
+  if (confirm('确定清空全部测试记录? 此操作不可恢复')) {
+    state = {}; saveState(); render(); toast('已清空全部记录');
+  }
+});
+
+/** 导出文本测试报告(含全部用例状态与备注, 归档即满足"每轮保存测试报告") */
+$('btnExport').addEventListener('click', () => {
+  const lines = ['# 太仓港断电指导APP 多维度真机测试报告', '# 导出时间: ' + new Date().toLocaleString('zh-CN'), ''];
+  let total = 0, pass = 0, fail = 0, block = 0;
+  DIMS.forEach(dim => {
+    lines.push('## ' + dim[0] + ' (' + dim[1] + ')');
+    dim[2].forEach(c => {
+      total++;
+      const s = (state[c[0]] || {}).st || '未测';
+      const n = (state[c[0]] || {}).note || '';
+      if (s === 'ok') pass++; else if (s === 'fail') fail++; else if (s === 'block') block++;
+      lines.push('- [' + ({ ok: '通过', fail: '失败', block: '阻塞' }[s] || '未测') + '] ' + c[0] + ' ' + c[1] + (n ? ' | 备注: ' + n : ''));
+    });
+    lines.push('');
+  });
+  lines.push('## 汇总: 总' + total + ' / 通过' + pass + ' / 失败' + fail + ' / 阻塞' + block + ' / 通过率' + Math.round(pass / total * 100) + '%');
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '真机测试报告_' + new Date().toISOString().slice(0, 10) + '.txt';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('测试报告已导出(通过率 ' + Math.round(pass / total * 100) + '%)');
+});
+
+loadState();
+render();
+</script>
+</body>
+</html>

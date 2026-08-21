@@ -1,0 +1,201 @@
+# =============================================================================
+# Android Release 构建流水线 (落实优化方案「问题5: CI/CD规范化」)
+#
+# 设计要点(对应优化方案原文):
+#   1. 每次构建前清理缓存 —— GitHub Runner 每次均为全新虚拟机, 天然零缓存;
+#      且故意不配置 npm/gradle cache, 避免缓存污染产物。
+#   2. 版本号不变也要重新编译打包 —— tag 触发即全量重编译。
+#   3. 使用独立构建号 buildNumber 区分产物 ——
+#      android-versionCode = 50300 + run_number(唯一递增),
+#      产物命名 taicanggang-V{版本}-b{run_number}.apk, 并回写 version.json。
+#   4. keystore 签名, 生成 APK —— 密钥与密码全部走 GitHub Secrets, 零明文。
+#   5. 双端同步目标分开 —— GitHub Release 放正式产物;
+#      飞书云文件夹(内部测试产物)由 scripts/sync_feishu_v53.py 单独推送, 不混入本流水线。
+#
+# 所需 Secrets(仓库 Settings → Secrets and variables → Actions):
+#   KEYSTORE_BASE64   签名密钥 base64: base64 -w0 release/keystore/tcg_release.keystore
+#   KEYSTORE_PASSWORD keystore 密码(storePassword 与 keyPassword 共用)
+#   KEY_ALIAS         密钥别名(默认 tcg_release)
+#
+# 触发方式:
+#   - 推送 tag:  git tag v5.3.2 && git push origin v5.3.2  → 自动构建并发布 Release
+#   - 手动触发:  Actions → Android Release Build → Run workflow(可选择 dry-run 不发布)
+# =============================================================================
+name: Android Release Build
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '仅构建不发布 Release(测试用)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  APP_VERSION: '5.3'
+  BASE_VERSION_CODE: 50300
+
+jobs:
+  build:
+    name: 构建 Release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 配置 Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 配置 Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 接受 SDK 许可
+        run: yes | sdkmanager --licenses > /dev/null || true
+
+      # ---------- 构建号策略: 版本号不变, buildNumber 唯一递增 ----------
+      - name: 计算独立构建号
+        id: buildno
+        run: |
+          echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "version_code=$(( $BASE_VERSION_CODE + ${{ github.run_number }} ))" >> $GITHUB_OUTPUT
+          echo "apk_name=taicanggang-V${APP_VERSION}-b${{ github.run_number }}.apk" >> $GITHUB_OUTPUT
+          echo "构建号: ${{ github.run_number }}, versionCode: $(( $BASE_VERSION_CODE + ${{ github.run_number }} ))"
+
+      # ---------- 前置校验(与CI流水线同一关卡, 不通过直接终止) ----------
+      - name: 资产与安全校验
+        run: node scripts/validate_web_assets.js
+
+      # ---------- 同步文件到 Cordova www(复刻 build_apk_v53.bat 逻辑) ----------
+      - name: 同步 Web 资产到 tcg_app/www
+        run: |
+          set -e
+          mkdir -p tcg_app/www/js
+          cp demo.html            tcg_app/www/index.html
+          cp config.xml           tcg_app/config.xml
+          cp vehicles_data.js     tcg_app/www/js/vehicles_data.js
+          cp -r vendor            tcg_app/www/vendor
+          cp -r vehicle_images    tcg_app/www/vehicle_images
+          [ -d images ] && cp -r images tcg_app/www/images || echo "无旧版 images/ 目录, 跳过"
+          echo "www 同步完成: $(du -sh tcg_app/www | cut -f1)"
+
+      - name: 注入构建号到 config.xml (versionCode 唯一递增)
+        working-directory: tcg_app
+        run: |
+          sed -i "s/android-versionCode=\"[0-9]*\"/android-versionCode=\"${{ steps.buildno.outputs.version_code }}\"/" config.xml
+          grep -o 'android-versionCode="[0-9]*"' config.xml
+
+      # ---------- 安装 Cordova 并准备 Android 平台 ----------
+      - name: 安装 Cordova CLI
+        working-directory: tcg_app
+        run: npm install cordova@12 --no-save
+
+      - name: 添加 Android 平台(插件随 config.xml 自动装配)
+        working-directory: tcg_app
+        run: |
+          npx cordova platform add android@13 --no-telemetry || npx cordova platform add android --no-telemetry
+          npx cordova prepare android --no-telemetry
+
+      # ---------- 签名配置: 密钥与密码全部来自 Secrets ----------
+      - name: 解码签名密钥
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          set -e
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::缺少 Secret KEYSTORE_BASE64, 无法签名构建。参考 docs/CICD使用说明.md 配置。"
+            exit 1
+          fi
+          mkdir -p release/keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > release/keystore/tcg_release.keystore
+          echo "密钥解码完成: $(stat -c%s release/keystore/tcg_release.keystore) bytes"
+
+      - name: 生成签名配置文件(零明文密码)
+        working-directory: tcg_app
+        env:
+          KS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -e
+          [ -z "$KS_PASSWORD" ] && { echo "::error::缺少 Secret KEYSTORE_PASSWORD"; exit 1; }
+          KS_FILE="$(pwd)/../release/keystore/tcg_release.keystore"
+          {
+            echo "storeFile=$KS_FILE"
+            echo "storeType=jks"
+            echo "storePassword=$KS_PASSWORD"
+            echo "keyAlias=${KS_ALIAS:-tcg_release}"
+            echo "keyPassword=$KS_PASSWORD"
+          } > platforms/android/release-signing.properties
+          echo "release-signing.properties 已生成(密码来自 Secrets)"
+
+      # ---------- 全量构建(全新Runner, 天然清理缓存) ----------
+      - name: 构建 Release APK
+        working-directory: tcg_app
+        run: npx cordova build android --release --no-telemetry
+
+      - name: 重命名产物(独立构建号)
+        run: |
+          set -e
+          APK=$(find tcg_app/platforms/android/app/build/outputs/apk/release -name '*.apk' | head -1)
+          [ -z "$APK" ] && { echo "::error::未找到构建产物 APK"; exit 1; }
+          cp "$APK" "${{ steps.buildno.outputs.apk_name }}"
+          echo "产物: ${{ steps.buildno.outputs.apk_name }} ($(du -h ${{ steps.buildno.outputs.apk_name }} | cut -f1))"
+          ls -lh *.apk
+
+      # ---------- 回写构建号到 version.json(APP 远程版本探测数据源) ----------
+      - name: 回写 buildNumber 到 version.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            const v = JSON.parse(fs.readFileSync('version.json', 'utf8'));
+            v.buildNumber = ${{ github.run_number }};
+            v.buildDate = new Date().toISOString().slice(0, 10);
+            fs.writeFileSync('version.json', JSON.stringify(v, null, 2) + '\n');
+            console.log('version.json 已回写 buildNumber=${{ github.run_number }}');
+          "
+
+      - name: 提交构建号(App 远程多源版本探测需读取)
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.json
+          git diff --cached --quiet && echo "version.json 无变更" || git commit -m "chore(release): buildNumber=${{ github.run_number }} [skip ci]"
+          git push origin HEAD:main || git push origin HEAD:master
+
+      # ---------- 产物归档 ----------
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.buildno.outputs.apk_name }}
+          path: ${{ steps.buildno.outputs.apk_name }}
+          retention-days: 90
+
+      # ---------- 正式产物发布到 GitHub Release(飞书内部测试产物走 sync_feishu 单独推送) ----------
+      - name: 发布 GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') && ${{ !inputs.dry_run }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.buildno.outputs.apk_name }}
+          generate_release_notes: true
+          body: |
+            ## 太仓港断电指导 ${{ github.ref_name }}
+
+            - 应用版本: V${{ env.APP_VERSION }}
+            - 独立构建号: b${{ github.run_number }}
+            - android-versionCode: ${{ steps.buildno.outputs.version_code }}
+            - 签名: tcg_release.keystore (V1+V2, Secrets 注入)
+
+            > 内部测试产物请从飞书「APP数据备份」同目录获取; 本 Release 仅为正式分发渠道。

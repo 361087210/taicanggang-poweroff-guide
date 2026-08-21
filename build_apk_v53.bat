@@ -104,21 +104,27 @@ if not exist "plugins\cordova-plugin-advanced-http" (
 )
 echo.
 
-REM ===== V5.3 Release 签名配置 =====
+REM ===== V5.3 Release 签名配置 (V5.3.1 安全化改造) =====
 REM keystore 由首次发布时生成, 放在项目根目录 release\keystore\ 下
+REM 密码不再硬编码: 优先读环境变量 TCG_KS_PASSWORD / TCG_KEY_ALIAS, 未设置则交互输入
+REM CI 环境参考 .github/workflows/android-release.yml (GitHub Secrets 注入)
 REM 若无 keystore 则回退 debug 构建(仅限本地调试, 禁止对外分发debug包)
 set "KS_DIR=%~dp0release\keystore"
 set "KS_FILE=%KS_DIR%\tcg_release.keystore"
 
 if exist "%KS_FILE%" (
     echo [OK] Found release keystore.
+    if not defined TCG_KS_PASSWORD (
+        set /p TCG_KS_PASSWORD=Enter keystore password ^(TCG_KS_PASSWORD^): 
+    )
+    if not defined TCG_KEY_ALIAS set "TCG_KEY_ALIAS=tcg_release"
     if not exist "platforms\android\release-signing.properties" (
         echo storeFile=%KS_FILE%> "platforms\android\release-signing.properties"
         echo storeType=jks>> "platforms\android\release-signing.properties"
-        echo storePassword=Tcg@2026Release>> "platforms\android\release-signing.properties"
-        echo keyAlias=tcg_release>> "platforms\android\release-signing.properties"
-        echo keyPassword=Tcg@2026Release>> "platforms\android\release-signing.properties"
-        echo [OK] Generated release-signing.properties
+        echo storePassword=!TCG_KS_PASSWORD!>> "platforms\android\release-signing.properties"
+        echo keyAlias=!TCG_KEY_ALIAS!>> "platforms\android\release-signing.properties"
+        echo keyPassword=!TCG_KS_PASSWORD!>> "platforms\android\release-signing.properties"
+        echo [OK] Generated release-signing.properties ^(password from env/prompt, not hardcoded^)
     )
     set "BUILD_MODE=release"
 ) else (

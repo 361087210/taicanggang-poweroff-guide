@@ -1,0 +1,74 @@
+﻿车型ID,品牌,车系,配置,显示名称,动力类型,断电位置,照片数,照片文件,本地照片缺失数,视频数,视频文件,视频匹配状态,备注说明
+V001,比亚迪,海豚,低配,比亚迪海豚(低配),纯电,副驾驶底部,3,image1.jpeg;image2.jpeg;image3.jpeg,0,1,比亚迪海豚_低配.mp4,本地缺失-需云端补录,放干燥剂
+V002,比亚迪,海豚,高配,比亚迪海豚(高配),纯电,后排座椅腿托下方,3,image1.jpeg;image2.jpeg;image4.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
+V003,比亚迪,海鸥,低配,比亚迪海鸥(低配),纯电,主驾驶座椅下面,3,image5.jpeg;image6.jpeg;image7.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
+V004,比亚迪,海鸥,高配(天窗),比亚迪海鸥(高配(天窗)),纯电,后排座椅腿托下方,3,image8.jpeg;image9.jpeg;image4.jpeg,0,1,比亚迪海鸥_高配_天窗_.mp4,本地缺失-需云端补录,放干燥剂
+V005,比亚迪,海豹,海豹DM-I,比亚迪海豹(海豹DM-I),混动,后备箱左侧储物网兜盖板内,3,image10.jpeg;image11.jpeg;image12.jpeg,0,1,比亚迪海豹_海豹DM_I.mp4,本地缺失-需云端补录,放干燥剂
+V006,比亚迪,海豹,海豹EV,比亚迪海豹(海豹EV),纯电,后排腿托下方,3,image13.jpeg;image14.jpeg;image4.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
+V007,比亚迪,海狮,海狮,比亚迪海狮,纯电,主驾驶底部前端,0,,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
+V008,比亚迪,鲨鱼皮卡（SHARK）,鲨鱼皮卡（SHARK）,比亚迪鲨鱼皮卡（SHARK）,混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
+V009,比亚迪,秦,秦/秦PLUS/PRO,比亚迪秦(秦/秦PLUS/PRO),混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
+V010,比亚迪,宋,宋PLUS DM-I,比亚迪宋(宋PLUS DM-I),混动,前机盖电池负极,2,image15.jpeg;image16.jpeg,0,1,比亚迪宋_宋PLUS_DM_I.mp4,本地缺失-需云端补录,放干燥剂
+V011,比亚迪,宋,宋PRO,比亚迪宋(宋PRO),混动,前机盖电池负极,0,,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
+V012,比亚迪,唐,唐L-EV（天神之眼）,比亚迪唐(唐L-EV（天神之眼）),纯电,前机盖电池负极,3,image17.png;image18.png;image19.png,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
+V013,比亚迪,唐,唐EV（欧标）,比亚迪唐(唐EV（欧标）),纯电,前机盖电池负极,1,image20.png,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
+V014,比亚迪,唐,ATTO8,比亚迪唐(ATTO8),纯电,前机盖电池负极,2,image21.jpeg;image22.jpeg,0,1,比亚迪唐_ATTO8.mp4,本地缺失-需云端补录,放干燥剂
+V015,比亚迪,元,元UP,比亚迪元(元UP),纯电,后排坐椅腿托下方,1,image4.jpeg,0,1,比亚迪元_元UP.mp4,本地缺失-需云端补录,放干燥剂
+V016,比亚迪,元,元PRO,比亚迪元(元PRO),纯电,前机盖电池负极,1,image23.jpeg,0,0,,无视频引用,放干燥剂
+V017,比亚迪,元,元PLUS,比亚迪元(元PLUS),纯电,副驾驶底部,3,image24.jpeg;image25.jpeg;image3.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
+V018,比亚迪,汉,汉,比亚迪汉,混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
+V019,比亚迪,驱逐舰05（KING）,驱逐舰05（KING）,比亚迪驱逐舰05（KING）,混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
+V020,比亚迪,腾势,方程豹B5,比亚迪腾势(方程豹B5),混动,副驾驶底部,3,image26.jpeg;image27.jpeg;image3.jpeg,0,1,比亚迪腾势_方程豹B5.mp4,本地缺失-需云端补录,放干燥剂
+V021,长安,深蓝,S7/S5,长安深蓝(S7/S5),混动,屏幕下电,3,image28.jpeg;image29.jpeg;image30.png,0,1,长安深蓝_S7_S5.mp4,本地缺失-需云端补录,
+V022,长安,深蓝,G318,长安深蓝(G318),混动,后备箱右下方,3,image31.jpeg;image32.jpeg;image33.jpeg,0,1,长安深蓝_G318.mp4,本地缺失-需云端补录,
+V023,长安,悦翔,CS15/CS35MAX/CS75/CS55PLUS(2025款),长安悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款)),混动,前机盖电池负极,3,image34.jpeg;image35.jpeg;image36.jpeg,0,1,长安悦翔_CS15_CS35MAX_CS75_CS55PLUS_2025款_.mp4,本地缺失-需云端补录,
+V024,长安,启源,CS55PLUS(2026款),长安启源(CS55PLUS(2026款)),混动,后备箱右下方,3,image37.jpeg;image38.jpeg;image39.jpeg,0,1,长安启源_CS55PLUS_2026款_.mp4,本地缺失-需云端补录,
+V025,长安,启源,EADO PLUS,长安启源(EADO PLUS),混动,后备箱左下方,3,image40.jpeg;image41.jpeg;image42.jpeg,0,1,长安启源_EADO_PLUS.mp4,本地缺失-需云端补录,
+V026,长安,糯米,糯米,长安糯米,混动,前机盖电池负极,3,image43.jpeg;image44.jpeg;image36.jpeg,0,1,长安糯米_糯米.mp4,本地缺失-需云端补录,
+V027,长安,UNI-,UNI-T,长安UNI-(UNI-T),混动,前机盖电池负极,2,image45.jpeg;image46.jpeg,0,1,长安UNI__UNI_T.mp4,本地缺失-需云端补录,
+V028,长安,UNI-,UNI-V,长安UNI-(UNI-V),混动,前机盖电池负极,2,image45.jpeg;image46.jpeg,0,1,长安UNI__UNI_T.mp4,本地缺失-需云端补录,
+V029,长安,长安之星,小货车,长安长安之星(小货车),混动,主驾驶座位下方,2,image47.jpeg;image48.jpeg,0,1,长安长安之星_小货车.mp4,本地缺失-需云端补录,
+V030,长安,皮卡,HUNTER（猎手）燃油版/混动版,长安皮卡(HUNTER（猎手）燃油版/混动版),混动,前机盖电池负极,3,image49.jpeg;image50.jpeg;image51.jpeg,0,1,长安皮卡_HUNTER_猎手_燃油版_混动版.mp4,本地缺失-需云端补录,
+V031,上汽,名爵,ZS/HS/EHS(PHEV),上汽名爵(ZS/HS/EHS(PHEV)),混动,断电器熄灭后自动断电,3,image52.jpeg;image53.jpeg;image54.jpeg,0,1,上汽名爵_ZS_HS_EHS_PHEV_.mp4,本地缺失-需云端补录,
+V032,上汽,名爵,赛博斯特,上汽名爵(赛博斯特),混动,前机盖电池负极,2,image55.jpeg;image56.jpeg,0,1,上汽名爵_赛博斯特.mp4,本地缺失-需云端补录,备注：机盖打开方式：拉动前保险杠左前盖板内的拉线
+V033,上汽,大通,大通货车,上汽大通(大通货车),混动,前机盖电池负极,2,image58.jpeg;image59.jpeg,0,1,上汽大通_大通货车.mp4,本地缺失-需云端补录,
+V034,长城,哈佛,H6,长城哈佛(H6),混动,后备箱盖板下方,3,image60.jpeg;image61.jpeg;image62.jpeg,0,1,长城哈佛_H6.mp4,本地缺失-需云端补录,放干燥剂
+V035,长城,好猫,好猫,长城好猫,纯电,前机盖电池负极,2,image63.png;image64.png,0,1,长城好猫_好猫.mp4,本地缺失-需云端补录,放干燥剂
+V036,东风,风行,T5EVO,东风风行(T5EVO),纯电,后备箱盖板右下方,3,image65.jpeg;image66.jpeg;image67.jpeg,0,1,东风风行_T5EVO.mp4,本地缺失-需云端补录,
+V037,东风,风度,帕拉丁（PALADIN）,东风风度(帕拉丁（PALADIN）),混动,前机盖电池负极,3,image68.jpeg;image69.jpeg;image70.jpeg,0,1,东风风度_帕拉丁_PALADIN_.mp4,本地缺失-需云端补录,
+V038,东风,风神,风神HUGEMHD500T/MAGEMHD500T,东风风神(风神HUGEMHD500T/MAGEMHD500T),混动,后备箱右后方,3,image71.jpeg;image72.jpeg;image73.jpeg,0,1,东风风神_风神HUGEMHD500T_MAGEMHD500T.mp4,本地缺失-需云端补录,
+V039,东风,VIGO,VIGO（纳米06海外版）/纳米06国内版,东风VIGO(VIGO（纳米06海外版）/纳米06国内版),混动,屏幕下电,2,image74.jpeg;image75.jpeg,0,1,东风VIGO_VIGO_纳米06海外版__纳米06国内版.mp4,本地缺失-需云端补录,
+V040,东风,VIGO,纳米01,东风VIGO(纳米01),混动,屏幕下电,2,image76.jpeg;image77.jpeg,0,0,,无视频引用,
+V041,东风,VIGO,BOX,东风VIGO(BOX),混动,屏幕下电,2,image78.jpeg;image79.jpeg,0,0,,无视频引用,
+V042,东风,锐棋（RICH）,RICH6,东风锐棋（RICH）(RICH6),混动,前机盖电池负极,3,image80.jpeg;image81.jpeg;image82.jpeg,0,1,东风锐棋_RICH__RICH6.mp4,本地缺失-需云端补录,
+V043,东风,小康,MPVC37,东风小康(MPVC37),混动,主驾驶座位下方,3,image83.jpeg;image84.jpeg;image85.jpeg,0,1,东风小康_MPVC37.mp4,本地缺失-需云端补录,
+V044,江淮,E-JS1/4,E-JS1/4,江淮E-JS1/4,混动,前机盖电池负极,3,image86.jpeg;image87.jpeg;image88.jpeg,0,1,江淮E_JS1_4_E_JS1_4.mp4,本地缺失-需云端补录,
+V045,江淮,江淮皮卡,T8PRO,江淮江淮皮卡(T8PRO),混动,前机盖电池负极,3,image89.jpeg;image90.jpeg;image91.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
+V046,江淮,江淮皮卡,T6,江淮江淮皮卡(T6),混动,前机盖电池负极,3,image92.jpeg;image93.jpeg;image94.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
+V047,吉利,极氪,极氪001/X/7X,吉利极氪(极氪001/X/7X),纯电,前机盖电池负极,2,image95.jpeg;image96.jpeg,0,1,吉利极氪_极氪001_X_7X.mp4,本地缺失-需云端补录,
+V048,吉利,沃尔沃,S60,吉利沃尔沃(S60),混动,后备箱左后盖板处,3,image97.jpeg;image98.jpeg;image99.jpeg,0,1,吉利沃尔沃_S60.mp4,本地缺失-需云端补录,
+V049,吉利,雷达（RIODARA）皮卡,雷达6,吉利雷达（RIODARA）皮卡(雷达6),混动,前机盖,3,image100.jpeg;image101.jpeg;image102.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
+V050,吉利,银河,EX5（银河E5）,吉利银河(EX5（银河E5）),纯电,屏幕下电,2,image103.jpeg;image104.jpeg,0,1,吉利银河_EX5_银河E5_.mp4,本地缺失-需云端补录,
+V051,吉利,银河,EX2（银河E2）,吉利银河(EX2（银河E2）),纯电,前机盖,3,image105.jpeg;image106.jpeg;image107.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
+V052,吉利,领克,领克02,吉利领克(领克02),混动,屏幕下电,2,image108.jpeg;image109.jpeg,0,1,吉利领克_领克02.mp4,本地缺失-需云端补录,
+V053,吉利,领克,领克08,吉利领克(领克08),混动,屏幕下电,3,image110.jpeg;image111.jpeg;image109.jpeg,0,0,,无视频引用,
+V054,奇瑞,欧萌达,欧萌达5,奇瑞欧萌达(欧萌达5),混动,后备箱盖板下方,3,image112.jpeg;image113.jpeg;image114.png,0,1,奇瑞欧萌达_欧萌达5.mp4,本地缺失-需云端补录,
+V055,奇瑞,瑞虎,瑞虎7PRO,奇瑞瑞虎(瑞虎7PRO),混动,前机盖,2,image115.jpeg;image116.jpeg,0,1,奇瑞瑞虎_瑞虎7PRO.mp4,本地缺失-需云端补录,
+V056,奇瑞,瑞虎,瑞虎7 CSH/PLUGIN HYBRID,奇瑞瑞虎(瑞虎7 CSH/PLUGIN HYBRID),混动,后备箱泡沫板底部,3,image117.jpeg;image118.jpeg;image119.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
+V057,奇瑞,瑞虎,瑞虎8 CSH,奇瑞瑞虎(瑞虎8 CSH),混动,后备箱电池负极,3,image120.jpeg;image121.jpeg;image122.jpeg,0,1,奇瑞瑞虎_瑞虎8_CSH.mp4,本地缺失-需云端补录,
+V058,奇瑞,艾瑞泽,艾瑞泽5PRO,奇瑞艾瑞泽(艾瑞泽5PRO),混动,前机盖,2,image123.jpeg;image124.jpeg,0,1,奇瑞艾瑞泽_艾瑞泽5PRO.mp4,本地缺失-需云端补录,
+V059,奇瑞,皮卡,RELY（瑞麟）R8,奇瑞皮卡(RELY（瑞麟）R8),混动,前机盖电池负极,3,image125.jpeg;image126.jpeg;image127.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
+V060,奇瑞,捷途JETOUR,X50,奇瑞捷途JETOUR(X50),混动,前机盖电池负极,3,image128.jpeg;image129.jpeg;image130.jpeg,0,1,奇瑞捷途JETOUR_X50.mp4,本地缺失-需云端补录,
+V061,奇瑞,捷途JETOUR,X70,奇瑞捷途JETOUR(X70),混动,前机盖电池负极,3,image131.jpeg;image132.jpeg;image130.jpeg,0,1,奇瑞捷途JETOUR_X70.mp4,本地缺失-需云端补录,
+V062,奇瑞,捷途JETOUR,DASHENG,奇瑞捷途JETOUR(DASHENG),混动,前机盖电池负极,3,image133.jpeg;image134.jpeg;image135.jpeg,0,1,奇瑞捷途JETOUR_DASHENG.mp4,本地缺失-需云端补录,
+V063,奇瑞,捷途JETOUR,T1 I-DM,奇瑞捷途JETOUR(T1 I-DM),混动,后备箱电池负极,3,image136.jpeg;image137.jpeg;image138.jpeg,0,1,奇瑞捷途JETOUR_T1_I_DM.mp4,本地缺失-需云端补录,
+V064,奇瑞,捷途JETOUR,T2 I-DM,奇瑞捷途JETOUR(T2 I-DM),混动,后备箱电池负极,3,image139.jpeg;image140.jpeg;image141.jpeg,0,1,奇瑞捷途JETOUR_T2_I_DM.mp4,本地缺失-需云端补录,
+V065,奇瑞,捷途JETOUR,T2 XWD,奇瑞捷途JETOUR(T2 XWD),混动,前机盖电池负极,3,image139.jpeg;image142.jpeg;image141.jpeg,0,1,奇瑞捷途JETOUR_T2_XWD.mp4,本地缺失-需云端补录,
+V066,奇瑞,捷途JETOUR,G700-GAIA,奇瑞捷途JETOUR(G700-GAIA),混动,后备箱右后方,3,image143.jpeg;image144.jpeg;image73.jpeg,0,0,,无视频引用,
+V067,奇瑞,东南SOUEAST,S06DM,奇瑞东南SOUEAST(S06DM),混动,后备箱电池负极,3,image145.jpeg;image146.jpeg;image147.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
+V068,奇瑞,东南SOUEAST,S07,奇瑞东南SOUEAST(S07),混动,前机盖电池负极,3,image148.jpeg;image149.jpeg;image150.jpeg,0,1,奇瑞东南SOUEAST_S07.mp4,本地缺失-需云端补录,
+V069,奇瑞,东南SOUEAST,S08DM,奇瑞东南SOUEAST(S08DM),混动,后备箱电池负极,3,image151.jpeg;image152.jpeg;image153.jpeg,0,1,奇瑞东南SOUEAST_S08DM.mp4,本地缺失-需云端补录,
+V070,奇瑞,东南SOUEAST,S09-AWD,奇瑞东南SOUEAST(S09-AWD),混动,前机盖电池负极,3,image154.jpeg;image155.jpeg;image156.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
+V071,零跑,零跑,零跑B10,零跑零跑(零跑B10),纯电,前机盖电池负极,2,image157.png;image158.png,0,1,零跑零跑_零跑B10.mp4,本地缺失-需云端补录,
+V072,零跑,零跑,零跑C10,零跑零跑(零跑C10),纯电,后备箱盖板下方,3,image157.png;image158.png;image159.png,0,1,通用断电视频.mp4,本地缺失-需云端补录,
+V073,广汽,AION（埃安）,AION-V/AION-UT,广汽AION（埃安）(AION-V/AION-UT),纯电,前机盖电池负极,3,image160.jpeg;image161.jpeg;image162.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
