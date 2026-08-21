@@ -148,12 +148,36 @@ jobs:
             echo "keyPassword=$KS_PASSWORD"
           } > platforms/android/release-signing.properties
           echo "release-signing.properties 已生成(密码来自 Secrets)"
+          # 双保险: build.json 显式声明 packageType=apk(覆盖 cordova-android@13 默认bundle)
+          cat > build.json <<'BJ'
+          {
+            "android": {
+              "release": {
+                "packageType": "apk"
+              }
+            }
+          }
+          BJ
+          echo "build.json 已生成(packageType=apk)"
 
       # ---------- 全量构建(全新Runner, 天然清理缓存) ----------
+      # V5.3.2关键修复: cordova-android@13 默认产出AAB bundle而非APK
+      # (Gradle执行bundleRelease而非assembleRelease), 三重保险确保APK产出:
+      #   1) build.json 显式声明 packageType=apk
+      #   2) 命令行 --packageType=apk
+      #   3) 若仍未产出APK, 直接调用 Gradle assembleRelease 兜底
       - name: 构建 Release APK
         working-directory: tcg_app
         run: |
-          npx cordova build android --release --no-telemetry
+          npx cordova build android --release --buildConfig=build.json -- --packageType=apk || true
+          # 检查是否产出 APK, 未产出则 Gradle 直接构建
+          if ! find platforms -name '*.apk' -type f 2>/dev/null | grep -q .; then
+            echo "=== cordova build 未产出 APK, Gradle 直接 assembleRelease 兜底 ==="
+            cd platforms/android
+            chmod +x gradlew
+            ./gradlew assembleRelease --no-daemon
+            cd ../..
+          fi
           echo "=== 构建完成, 输出诊断 ==="
           echo "--- cordova-android 版本 ---"
           cat platforms/android/cordova/version 2>/dev/null || echo "未知"
