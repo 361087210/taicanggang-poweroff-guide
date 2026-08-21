@@ -74,6 +74,27 @@ def upload_all(token, folder, name, content):
         return {'code': e.code, 'msg': e.read().decode()[:200]}
 
 
+def list_all_files(token, folder):
+    """全量列出文件夹文件(自动翻页)
+    分页缺陷修复: 飞书files接口响应分页字段为 next_page_token(非page_token),
+    目录超200项时单页请求会静默截断, 导致旧档漏删(重复文件累积)与校验失真。
+    """
+    files, page_token, page_no = [], '', 0
+    while True:
+        path = f'/drive/v1/files?folder_token={folder}&page_size=200'
+        if page_token:
+            path += f'&page_token={page_token}'
+        resp = api('GET', path, token)
+        d = resp.get('data', {})
+        files.extend(d.get('files', []))
+        page_no += 1
+        page_token = d.get('next_page_token', '')
+        if not page_token or not d.get('has_more'):
+            break
+    print(f'    [分页] {page_no}页共{len(files)}项')
+    return files
+
+
 def main():
     print('=== 1. 获取tenant_access_token ===')
     t = api('POST', '/auth/v3/tenant_access_token/internal', body={'app_id': APP_ID, 'app_secret': APP_SECRET})
@@ -82,9 +103,9 @@ def main():
         sys.exit(1)
 
     print('=== 2. 验证/创建 APP数据备份 数据区 ===')
-    children = api('GET', f'/drive/v1/files?folder_token={PROJECT_FOLDER}&page_size=200', token)
+    children = list_all_files(token, PROJECT_FOLDER)
     data_folder = None
-    for f in children.get('data', {}).get('files', []):
+    for f in children:
         if f.get('name') == 'APP数据备份' and f.get('type') == 'folder':
             data_folder = f.get('token')
             break
@@ -115,8 +136,7 @@ def main():
             check(f'上传 {remote}', False, f'超过20MB上限({len(content)}字节)')
             continue
         # 幂等保障: 上传前删除同名旧档(含历史重复档), 避免重跑产生重复文件
-        olds = [f for f in children.get('data', {}).get('files', [])
-                if f.get('name') == remote]
+        olds = [f for f in children if f.get('name') == remote]
         for o in olds:
             try:
                 api('DELETE', f"/drive/v1/files/{o['token']}?type=file", token)
@@ -128,9 +148,10 @@ def main():
         check(f'上传 {remote} ({len(content)//1024}KB)', bool(ok), str(r)[:150])
 
     print('=== 4. 分离校验: 数据区不含产物,产物区不含用户数据 ===')
-    prod_files = [f.get('name') for f in children.get('data', {}).get('files', []) if f.get('type') != 'folder']
-    data_children = api('GET', f'/drive/v1/files?folder_token={data_folder}&page_size=200', token)
-    data_files = [f.get('name') for f in data_children.get('data', {}).get('files', [])]
+    # 重新全量列出(上传后最新状态)
+    final_children = list_all_files(token, PROJECT_FOLDER)
+    prod_files = [f.get('name') for f in final_children if f.get('type') != 'folder']
+    data_files = [f.get('name') for f in list_all_files(token, data_folder)]
     check('产物区无用户JSON(approved_users/pending_registrations)',
           not any('approved_users' in n or 'pending_registrations' in n or 'vehicle_backup' in n for n in prod_files))
     check('数据区无APK/文档产物',
