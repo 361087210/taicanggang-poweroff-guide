@@ -187,6 +187,21 @@ POST体:  按类型自动切换 json/utf8 序列化器</code></pre>
 <p class="warn">真机人工验证清单(装包后10分钟): ①任意车辆详情照片可看可缩放 ②视频显示"待补充"(组长可见上传按钮) ③Word/PDF分享到微信文件可接收 ④硬件返回键逐级回退 ⑤双机不同网络注册审批闭环 ⑥飞行模式下UI/导出/照片完整可用。</p>
 </div>
 
+<h2>四点五、V5.3.1 增补: 审批闭环接线修复(2026-08-21)</h2>
+<div class="card">
+<p><b>问题现象</b>: 用户报告"两台手机不在同一网络下,组员注册申请,组长端始终收不到"。</p>
+<p><b>根因</b>: V5.3实现了跨设备审批的全部零件——组长轮询器<code>startPendingPolling()</code>、审批结果上传<code>pushApprovedUsersToFeishu()</code>、组员状态拉取<code>pullApprovedStatusFromFeishu()</code>——但这三个函数<b>均为死代码,从未被任何调用点接入</b>。审批数据链路的"管道"铺好了,却没有接上"水龙头": 申请能上传,但组长端不会主动轮询;审批能在本地生效,但结果不会上云;组员端也永远拉不到"已通过"状态。</p>
+<table>
+<tr><th>修复点</th><th>位置</th><th>行为</th></tr>
+<tr><td>登录接线</td><td><code>doLogin()</code></td><td>组长登录成功即启动60秒静默轮询;待审核组员登录时先查云端审批结果,组长已通过则立即放行(不再被本地旧状态永久拦截)</td></tr>
+<tr><td>会话恢复接线</td><td>启动<code>restoreSession()</code></td><td>免登录恢复会话的组长同样启动轮询,重启APP后审批通知不中断</td></tr>
+<tr><td>审批动作接线</td><td><code>approveMember/rejectMember/deleteMember/resetMemberPass</code></td><td>通过/拒绝/删除/重置密码四个动作在<code>saveUsers</code>后即时推送<code>approved_users.json</code>到飞书数据仓</td></tr>
+<tr><td>登出清理</td><td><code>doLogout()</code></td><td>退出登录停止轮询器,避免登出后仍以旧身份拉取</td></tr>
+<tr><td>参数化拉取</td><td><code>pullApprovedStatusFromFeishu(userParam)</code></td><td>支持传入待查用户(登录前<code>state.currentUser</code>尚未赋值的场景),内部<code>who=userParam||state.currentUser</code>兜底</td></tr>
+</table>
+<p><b>验证</b>: 新增<code>tests/test_v531_approval_loop.py</code>(12项断言: 登录/登出生命周期×4、审批动作推送×4、拉取健壮性×2、语法与空catch×2),连同V5.3套件修正视频引用正则后合计<b>71项全绿</b>。版本号保持V5.3不变,APK重新构建签名。</p>
+</div>
+
 <h2>五、构建与签名</h2>
 <div class="card">
 <h3>签名证书(Release)</h3>

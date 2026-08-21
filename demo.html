@@ -1029,7 +1029,7 @@ function goBack(){
  * 登录成功后保存用户信息到localStorage,下次启动自动恢复
  * 使用JSON序列化避免引用问题,退出时清除会话
  */
-function doLogin(){
+async function doLogin(){
   const phone=document.getElementById('login-phone').value.trim();
   const pass=document.getElementById('login-pass').value.trim();
   if(!phone||!pass){showToast('请输入手机号和密码');return;}
@@ -1037,7 +1037,12 @@ function doLogin(){
   const user=USERS.find(u=>u.phone===phone);
   if(!user){showToast('账号不存在，请先注册');return;}
   if(user.password!==pass){showToast('密码错误');return;}
-  if(user.status==='pending'){showToast('您的账号正在审核中，请等待组长审核');return;}
+  // V5.3.1跨设备审批闭环修复: 待审核用户登录时先从飞书拉取最新审批结果,
+  // 组长在另一台设备/另一网络已通过时,组员本机立即放行,不再被本地旧状态永久拦截
+  if(user.status==='pending'){
+    const approved=await pullApprovedStatusFromFeishu(user);
+    if(!approved){showToast('您的账号正在审核中，请等待组长审核');return;}
+  }
   if(user.status==='rejected'){showToast('您的注册申请未通过审核');return;}
   state.currentUser=user;
   // 持久化登录会话: 保存用户ID和密码哈希,下次启动自动登录
@@ -1046,7 +1051,11 @@ function doLogin(){
   renderBrandTags();
   showToast('登录成功');
   updateMyInfo();
-  if(user.role==='admin'){pullPendingFromFeishu().then(()=>{renderMemberList();});}
+  if(user.role==='admin'){
+    pullPendingFromFeishu().then(()=>{renderMemberList();});
+    // V5.3.1: 启动60秒静默轮询,跨网络/跨设备实时接收新注册申请
+    startPendingPolling();
+  }
 }
 
 /**
@@ -1118,6 +1127,8 @@ function doForgotPassword(){
  * 退出登录 - 清除持久化会话,确保下次需重新登录
  */
 function doLogout(){
+  // V5.3.1: 退出时停止轮询器,避免登出后仍以旧身份拉取申请
+  stopPendingPolling();
   localStorage.removeItem('tcg_session');
   state.currentUser=null;
   showScreen('screen-login');
@@ -2109,16 +2120,18 @@ async function pushApprovedUsersToFeishu(){
  * 登录/启动时调用:从飞书拉取approved_users.json,若自己状态从pending→active则提示可登录
  * @returns {Promise<boolean>} 自己是否被批准
  */
-async function pullApprovedStatusFromFeishu(){
+async function pullApprovedStatusFromFeishu(userParam){
+  // V5.3.1: 支持传入待查用户(登录前state.currentUser尚未赋值),默认查当前登录用户
+  const who=userParam||state.currentUser;
   const cfg=getFeishuCfg();
-  if(!cfg.appId||!state.currentUser)return false;
+  if(!cfg.appId||!who)return false;
   try{
     const token=await getFeishuToken(cfg);
     const dataFolder=await getDataFolderToken(token);
     if(!dataFolder)return false;
     const data=await downloadJsonFromDataFeishu(token,'approved_users.json');
     if(!data||!data.users)return false;
-    const me=data.users.find(u=>u.phone===state.currentUser.phone);
+    const me=data.users.find(u=>u.phone===who.phone);
     if(me&&me.status==='active'){
       const local=USERS.find(u=>u.phone===me.phone);
       if(local&&local.status!=='active'){
@@ -2127,6 +2140,7 @@ async function pullApprovedStatusFromFeishu(){
         showToast('🎉 您的注册申请已被组长通过,现已可正常使用');
         return true;
       }
+      return local&&local.status==='active';
     }
     return false;
   }catch(err){return false;}
@@ -2964,26 +2978,27 @@ function addMember(){
 
 function approveMember(id){
   const u=USERS.find(x=>x.id===id);
-  if(u){u.status='active';saveUsers(USERS);renderMemberList();showToast('已通过审核');}
+  // V5.3.1: 审批结果即时推送到飞书,否则组员设备永远拉不到"已通过"状态
+  if(u){u.status='active';saveUsers(USERS);renderMemberList();showToast('已通过审核');pushApprovedUsersToFeishu();}
 }
 
 function rejectMember(id){
   showConfirm('拒绝注册','确定拒绝该注册申请？',()=>{
     const idx=USERS.findIndex(u=>u.id===id);
-    if(idx>-1){USERS[idx].status='rejected';saveUsers(USERS);renderMemberList();showToast('已拒绝');}
+    if(idx>-1){USERS[idx].status='rejected';saveUsers(USERS);renderMemberList();showToast('已拒绝');pushApprovedUsersToFeishu();}
   });
 }
 
 function deleteMember(id){
   showConfirm('删除组员','确定删除该组员账号？',()=>{
     const idx=USERS.findIndex(u=>u.id===id);
-    if(idx>-1){USERS.splice(idx,1);saveUsers(USERS);renderMemberList();showToast('删除成功');}
+    if(idx>-1){USERS.splice(idx,1);saveUsers(USERS);renderMemberList();showToast('删除成功');pushApprovedUsersToFeishu();}
   });
 }
 
 function resetMemberPass(id){
   const u=USERS.find(x=>x.id===id);
-  if(u){u.password='123456';saveUsers(USERS);showToast(`已重置${u.name}的密码为123456`);}
+  if(u){u.password='123456';saveUsers(USERS);showToast(`已重置${u.name}的密码为123456`);pushApprovedUsersToFeishu();}
 }
 
 // ===================== PASSWORD =====================
@@ -3231,6 +3246,8 @@ if(restoreSession()){
   updateMyInfo();
   if(state.currentUser&&state.currentUser.role==='admin'){
     pullPendingFromFeishu().then(()=>{renderMemberList();});
+    // V5.3.1: 会话恢复同样启动轮询,重启APP后跨网络审批通知不中断
+    startPendingPolling();
   }
 }else{
   showScreen('screen-login');
