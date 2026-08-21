@@ -147,18 +147,28 @@ jobs:
             echo "keyAlias=${KS_ALIAS:-tcg_release}"
             echo "keyPassword=$KS_PASSWORD"
           } > platforms/android/release-signing.properties
-          echo "release-signing.properties 已生成(密码来自 Secrets)"
-          # 双保险: build.json 显式声明 packageType=apk(覆盖 cordova-android@13 默认bundle)
-          cat > build.json <<'BJ'
+          echo "release-signing.properties 已生成(密码来自 Secrets, Gradle原生通道)"
+          # V5.3.3签名修复(关键): cordova build --buildConfig=build.json 模式下,
+          # 签名配置必须直接写在 build.json 的 android.release 内;
+          # 此前签名只写 release-signing.properties, 被 buildConfig 模式忽略,
+          # 构建日志告警 "'keystore' and 'alias' need to be specified to generate a signed archive",
+          # 导致 V5.3.2-b3 / V5.3.3-b4 两个CI产物实际未签名(真机安装报"应用未安装")。
+          # 现在build.json同时携带 签名四要素 + packageType, 密码经环境变量注入, 不落仓库。
+          cat > build.json <<BJ
           {
             "android": {
               "release": {
+                "keystore": "$KS_FILE",
+                "storePassword": "$KS_PASSWORD",
+                "alias": "${KS_ALIAS:-tcg_release}",
+                "password": "$KS_PASSWORD",
+                "keystoreType": "jks",
                 "packageType": "apk"
               }
             }
           }
           BJ
-          echo "build.json 已生成(packageType=apk)"
+          echo "build.json 已生成(含签名四要素 + packageType=apk)"
 
       # ---------- 全量构建(全新Runner, 天然清理缓存) ----------
       # V5.3.2关键修复: cordova-android@13 默认产出AAB bundle而非APK
@@ -226,6 +236,29 @@ jobs:
           echo "产物来源: $APK"
           echo "产物: ${{ steps.buildno.outputs.apk_name }} ($(du -h ${{ steps.buildno.outputs.apk_name }} | cut -f1))"
           ls -lh *.apk
+
+      # ---------- V5.3.3签名关卡: 拒绝发布未签名APK ----------
+      # 背景: V5.3.2-b3/V5.3.3-b4因签名配置未进build.json, 产出未签名包且被静默发布,
+      # 用户下载后真机安装失败("应用未安装")。此关卡从结构上杜绝同类事故再发:
+      # 校验 APK Signing Block v2/v3 魔数必须紧邻 Central Directory 之前, 否则构建直接失败。
+      # (v1 JAR签名在minSdk较新时可省略, v2/v3为Android 7+安装必需)
+      - name: 校验APK签名(未签名即失败)
+        run: |
+          set -e
+          APK_FILE="${{ steps.buildno.outputs.apk_name }}"
+          python3 - "$APK_FILE" <<'PY'
+          import struct, sys
+          path = sys.argv[1]
+          data = open(path, 'rb').read()
+          eocd = data.rfind(b'PK\x05\x06')
+          if eocd < 0:
+              sys.exit('FATAL: 无EOCD记录, 非法ZIP/APK')
+          cd_off = struct.unpack('<I', data[eocd+16:eocd+20])[0]
+          magic = data.rfind(b'APK Sig Block 42', 0, cd_off)
+          if magic != cd_off - 16:
+              sys.exit('FATAL: APK未签名! (magic_at=%s, cd_off=%s) 已阻止发布未签名产物' % (magic, cd_off))
+          print('PASS: APK Signing Block(v2/v3)紧邻CD之前, 签名有效: %s' % path)
+          PY
 
       # ---------- 回写构建号与安装包直链到 version.json(APP 远程版本探测数据源) ----------
       # V5.3.3: 直链URL在构建时即可预计算(与softprops/action-gh-release实际资产名严格一致),
