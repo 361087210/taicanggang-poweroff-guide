@@ -789,6 +789,56 @@ function getFeishuCfg(){
 }
 
 /**
+ * 飞书配置完整性校验 - V5.3.4修复(诊断报告根因1)
+ * 根因: 历史上所有飞书操作入口仅校验appId,而appId有内置默认值恒为真;
+ *       appSecret自V5.3.1安全加固后默认留空,带空Secret请求token必然返回
+ *       "app_id or app_secret is invalid",导致全部飞书功能静默失败,
+ *       用户只看到"视频待补充/云端无数据",无法定位真实原因。
+ * 修复: appId与appSecret缺一不可,未配置时给出明确指引而非静默跳过。
+ * @param {Object} cfg - 飞书配置(getFeishuCfg返回值)
+ * @param {boolean} [withToast] - 未配置时是否弹Toast提示用户
+ * @returns {boolean} 配置是否完整可用
+ */
+function feishuCfgReady(cfg,withToast){
+  const ok=!!(cfg&&cfg.appId&&cfg.appSecret);
+  if(!ok&&withToast)showToast('飞书配置不完整: 请在「设置→飞书配置」填写 App Secret 后保存');
+  return ok;
+}
+
+/**
+ * 二进制响应统一转Blob - V5.3.4修复(诊断报告根因4)
+ * 根因: cordova-plugin-advanced-http在部分Android/插件版本组合下,
+ *       responseType:'blob'实际返回ArrayBuffer而非Blob对象;
+ *       ArrayBuffer直接进URL.createObjectURL会抛TypeError,
+ *       被外层catch静默吞掉,用户只看到"视频待补充",无法定位。
+ * 修复: 统一在下载出口做类型归一,ArrayBuffer/TypedArray转真Blob。
+ * @param {*} data - 插件或fetch返回的二进制数据
+ * @param {string} [mimeType] - 目标MIME类型
+ * @returns {Blob|null} 归一化后的Blob,无法识别返回null
+ */
+function asBlob(data,mimeType){
+  if(!data)return null;
+  if(typeof Blob!=='undefined'&&data instanceof Blob)return data;
+  if(data instanceof ArrayBuffer)return new Blob([data],{type:mimeType||'application/octet-stream'});
+  if(typeof Uint8Array!=='undefined'&&(data instanceof Uint8Array))return new Blob([data],{type:mimeType||'application/octet-stream'});
+  return null;
+}
+
+/**
+ * 飞书云端源失败提示(节流) - V5.3.4修复(诊断报告根因5)
+ * 根因: 图片/视频飞书源失败只console.warn,用户完全无感知,
+ *       无法区分"飞书没配置/网络不通/文件不存在"。
+ * 修复: 失败时短暂Toast一次;30秒内多条失败合并为一条,避免刷屏。
+ */
+let _feishuFailToastAt=0;
+function feishuFailToast(reason){
+  const now=Date.now();
+  if(now-_feishuFailToastAt<30000)return; // 30秒节流
+  _feishuFailToastAt=now;
+  showToast('飞书云端源不可用('+reason+'),已尝试其他来源');
+}
+
+/**
  * 统一HTTP请求适配层 - V5.3核心修复
  *
  * 为什么需要: 飞书开放API响应头不携带Access-Control-Allow-Origin,
@@ -959,7 +1009,7 @@ async function getDataFolderToken(token){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.3.3';
+const APP_VERSION='5.3.4';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1842,7 +1892,7 @@ const _exportPhotoCache={}; // 照片路径/文件名 -> dataURL|null(含未命�
  */
 async function fetchFeishuPhotoDataURL(fileName){
   const cfg=getFeishuCfg();
-  if(!cfg.appId||!fileName)return null;
+  if(!feishuCfgReady(cfg)||!fileName)return null; // V5.3.4: Secret缺失直接跳过(诊断根因1)
   const cacheKey='feishu:'+fileName;
   if(_exportPhotoCache.hasOwnProperty(cacheKey))return _exportPhotoCache[cacheKey];
   let result=null;
@@ -1863,7 +1913,7 @@ async function fetchFeishuPhotoDataURL(fileName){
                 window.cordova.plugin.http.sendRequest(
                   `https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,
                   {method:'GET',headers:{Authorization:'Bearer '+token},responseType:'blob',timeout:60},
-                  res=>resolve(res.data),err=>reject(new Error(String(err.error||'图片下载失败'))));
+                  res=>resolve(asBlob(res.data,'image/jpeg')),err=>reject(new Error(String(err.error||'图片下载失败')))); // V5.3.4: ArrayBuffer→Blob归一(根因4)
               });
             }else{
               const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
@@ -2205,7 +2255,8 @@ async function exportSingle(format){
  */
 async function syncPendingToFeishu(user){
   const cfg=getFeishuCfg();
-  if(!cfg.appId)return;
+  // V5.3.4: appSecret缺失时跳过并提示,不再带空凭证静默失败(诊断根因1)
+  if(!feishuCfgReady(cfg,true))return;
   try{
     const pendingData={type:'pending_registration',user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
     const jsonStr=JSON.stringify(pendingData,null,2);
@@ -2231,7 +2282,7 @@ async function syncPendingToFeishu(user){
  */
 async function pullPendingFromFeishu(silent){
   const cfg=getFeishuCfg();
-  if(!cfg.appId)return 0;
+  if(!feishuCfgReady(cfg))return 0; // V5.3.4: Secret缺失直接跳过轮询,避免每60秒无效请求
   try{
     const token=await getFeishuToken(cfg);
     const dataFolder=await getDataFolderToken(token);
@@ -2287,7 +2338,7 @@ async function pullPendingFromFeishu(silent){
  */
 async function pushApprovedUsersToFeishu(){
   const cfg=getFeishuCfg();
-  if(!cfg.appId)return false;
+  if(!feishuCfgReady(cfg))return false; // V5.3.4: 配置不完整直接跳过(诊断根因1)
   try{
     const token=await getFeishuToken(cfg);
     const dataFolder=await getDataFolderToken(token);
@@ -2312,7 +2363,7 @@ async function pullApprovedStatusFromFeishu(userParam){
   // V5.3.1: 支持传入待查用户(登录前state.currentUser尚未赋值),默认查当前登录用户
   const who=userParam||state.currentUser;
   const cfg=getFeishuCfg();
-  if(!cfg.appId||!who)return false;
+  if(!feishuCfgReady(cfg)||!who)return false; // V5.3.4: Secret缺失跳过(诊断根因1)
   try{
     const token=await getFeishuToken(cfg);
     const dataFolder=await getDataFolderToken(token);
@@ -2363,7 +2414,7 @@ async function doBackup(){
     addSyncLog(`本地备份完成 · ${VEHICLES.length}条 · ${filename}`,'green');
   }else if(target==='feishu'){
     const cfg=getFeishuCfg();
-    if(!cfg.appId){showToast('飞书未配置，请先配置');return;}
+    if(!feishuCfgReady(cfg,true))return; // V5.3.4: 引导填写Secret而非静默失败(诊断根因1)
     showToast('正在上传备份到飞书...');
     try{
       // V5.3: 备份属用户操作数据,上传至"APP数据备份"子文件夹,与项目产物分离
@@ -2562,11 +2613,40 @@ async function downloadJsonFromFeishu(cfg,docName){
   throw lastErr;
 }
 
+/**
+ * 下载同步数据(带位置迁移兼容) - V5.3.4新增(诊断根因6)
+ * 为什么需要: V5.3.4起同步数据统一存入"APP数据备份"子文件夹,但存量设备
+ *           云端的历史数据仍在项目根目录;直接读新位置会误报"云端无数据"。
+ * 策略: ①优先读"APP数据备份"新位置 ②未命中回退项目根目录历史位置,
+ *       任何年代的云端数据都能读到,升级用户无感迁移。
+ * @param {Object} cfg - 飞书配置
+ * @returns {Promise<Object|null>} 同步数据JSON,两处均无返回null
+ */
+async function downloadSyncDataMigrated(cfg){
+  const token=await getFeishuToken(cfg,2);
+  let lastErr;
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      let data=null;
+      try{
+        data=await downloadJsonFromDataFeishu(token,'vehicle_sync_data.json');
+      }catch(e){console.warn('新位置(APP数据备份)读取失败,回退根目录:',e.message);}
+      if(!data)data=await downloadJsonFromFolder(token,cfg.folder,'vehicle_sync_data.json');
+      return data;
+    }catch(e){
+      lastErr=e;
+      console.warn('同步数据下载失败,重试'+(attempt+1)+'/3:',e.message);
+      if(attempt<2)await new Promise(r=>setTimeout(r,1500*(attempt+1)));
+    }
+  }
+  throw lastErr;
+}
+
 function doSyncUpload(){
   if(!canEdit()){showToast('组员无上传权限，请使用"从飞书获取数据"');return;}
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
   const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
-  if(!cfg.appId){showToast('请先配置飞书账号');return;}
+  if(!feishuCfgReady(cfg,true))return; // V5.3.4: appId+appSecret双查,缺失即引导填写(诊断根因1)
   showConfirm('确认上传','上传将覆盖飞书云端现有数据，请先确认已备份。',async()=>{
     showToast('正在连接飞书...');
     try{
@@ -2578,7 +2658,17 @@ function doSyncUpload(){
         vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
       };
       showToast('正在上传同步数据...');
-      await uploadJsonToFeishu(cfg,'vehicle_sync_data.json',JSON.stringify(syncData));
+      // V5.3.4: 同步数据统一存入"APP数据备份"子文件夹(诊断根因6),
+      // 与备份/审批数据同址;项目根目录(612项,大量历史垃圾)仅保留交付产物
+      const token=await getFeishuToken(cfg,2);
+      await uploadJsonToDataFeishu(token,'vehicle_sync_data.json',JSON.stringify(syncData));
+      // 迁移清理: 删除项目根目录历史同名旧档,防止双份数据漂移导致读到旧数据
+      try{
+        const rootOlds=(await feishuListFiles(token,cfg.folder)||[]).filter(f=>f.type==='file'&&f.name==='vehicle_sync_data.json');
+        for(const f of rootOlds){
+          await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+        }
+      }catch(e){console.warn('历史根目录旧档清理跳过:',e.message);}
       localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
       showToast(`数据已同步至飞书，共${VEHICLES.length}条车型数据`);
       addSyncLog(`上传同步完成 · ${VEHICLES.length}条车型数据 · 飞书`,'green');
@@ -2596,10 +2686,10 @@ function doSyncUpload(){
 async function doSyncDownload(){
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
   const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
-  if(!cfg.appId){showToast('请先配置飞书账号');return;}
+  if(!feishuCfgReady(cfg,true))return; // V5.3.4: appId+appSecret双查,缺失即引导填写(诊断根因1)
   showToast('正在从飞书获取数据...');
   try{
-    const syncData=await downloadJsonFromFeishu(cfg,'vehicle_sync_data.json');
+    const syncData=await downloadSyncDataMigrated(cfg); // V5.3.4: 新旧位置自动迁移读取(诊断根因6)
     if(syncData&&syncData.vehicles){
       // 智能合并: 云端新增的车辆添加到本地,已存在的按时间戳合并
       let addedCount=0,updatedCount=0;
@@ -2869,7 +2959,7 @@ function _imgPlaceholder(){
  */
 async function imgFromFeishuCloud(img,fileName){
   const cfg=getFeishuCfg();
-  if(!cfg.appId||!fileName)return false;
+  if(!feishuCfgReady(cfg)||!fileName)return false; // V5.3.4: Secret缺失跳过(诊断根因1)
   try{
     if(_feishuImgCache[fileName]){img.onerror=null;img.src=_feishuImgCache[fileName];return true;}
     const token=await getFeishuToken(cfg);
@@ -2889,7 +2979,7 @@ async function imgFromFeishuCloud(img,fileName){
         window.cordova.plugin.http.sendRequest(
           `https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,
           {method:'GET',headers:{Authorization:'Bearer '+token},responseType:'blob',timeout:60},
-          res=>resolve(res.data),err=>reject(new Error(String(err.error||'图片下载失败'))));
+          res=>resolve(asBlob(res.data,'image/jpeg')),err=>reject(new Error(String(err.error||'图片下载失败')))); // V5.3.4: ArrayBuffer→Blob归一(根因4)
       });
     }else{
       const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
@@ -2906,6 +2996,7 @@ async function imgFromFeishuCloud(img,fileName){
     return true;
   }catch(e){
     console.warn('[照片]飞书云端源不可用:',e.message||e);
+    feishuFailToast('图片'+(e.message||'加载失败')); // V5.3.4: 用户可见提示(诊断根因5)
     return false;
   }
 }
@@ -2921,7 +3012,7 @@ function thumbImgError(img){
 
 async function playFromFeishuCloud(video,fileName){
   const cfg=getFeishuCfg();
-  if(!cfg.appId)return false;
+  if(!feishuCfgReady(cfg))return false; // V5.3.4: Secret缺失跳过(诊断根因1)
   try{
     // 命中缓存直接复用(同一视频反复打开不再重复拉取分片)
     if(_feishuVideoCache.name===fileName&&_feishuVideoCache.url){
@@ -2935,22 +3026,33 @@ async function playFromFeishuCloud(video,fileName){
     const dataFiles=await feishuListFiles(token,dataFolder);
     if(!dataFiles)return false;
     const videoFolder=dataFiles.find(f=>f.type==='folder'&&f.name==='vehicle_videos');
-    if(!videoFolder)return false;
-    const allVideoFiles=await feishuListFiles(token,videoFolder.token);
-    if(!allVideoFiles)return false;
-    const cloudFiles=allVideoFiles.filter(f=>f.type==='file');
-    const target=cloudFiles.find(f=>f.name===fileName);
+    let cloudFiles=[];
+    if(videoFolder){
+      const allVideoFiles=await feishuListFiles(token,videoFolder.token);
+      cloudFiles=(allVideoFiles||[]).filter(f=>f.type==='file');
+    }
+    let target=cloudFiles.find(f=>f.name===fileName);
     // 分片形态: X.mp4.part001..NNN,按数字序重组
     const partPrefix=fileName+'.part';
     const parts=cloudFiles.filter(f=>f.name.startsWith(partPrefix))
       .sort((a,b)=>parseInt(a.name.slice(partPrefix.length),10)-parseInt(b.name.slice(partPrefix.length),10));
+    let rootHit=false;
+    // V5.3.4修复(诊断根因2): 子目录未命中时回退项目根文件夹搜完整mp4
+    // 根因: 云盘曾把17个完整MP4直接上传到项目根目录(而非vehicle_videos子目录),
+    //       文件名与车型videoPaths完全匹配,但旧版只搜子目录,永远找不到,
+    //       用户反复看到"视频待补充"而云端明明有视频。
+    if(!target&&parts.length===0){
+      const rootFiles=await feishuListFiles(token,cfg.folder);
+      const rootTarget=rootFiles&&rootFiles.find(f=>f.type==='file'&&f.name===fileName);
+      if(rootTarget){target=rootTarget;rootHit=true;}
+    }
     const downloadBlob=async(fileToken)=>{
       if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
         return await new Promise((resolve,reject)=>{
           window.cordova.plugin.http.sendRequest(
             `https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`,
             {method:'GET',headers:{Authorization:'Bearer '+token},responseType:'blob',timeout:120},
-            res=>resolve(res.data),err=>reject(new Error(String(err.error||'分片下载失败')))
+            res=>resolve(asBlob(res.data,'video/mp4')),err=>reject(new Error(String(err.error||'分片下载失败'))) // V5.3.4: ArrayBuffer→Blob归一(根因4)
           );
         });
       }
@@ -2959,7 +3061,7 @@ async function playFromFeishuCloud(video,fileName){
     };
     let blob;
     if(target){
-      // ① 完整文件直下
+      // ① 完整文件直下(子目录命中或根目录回退命中)
       blob=await downloadBlob(target.token);
     }else if(parts.length>0){
       // ② 分片序列: 逐片下载重组(全程提示进度,避免用户以为卡死)
@@ -2978,10 +3080,12 @@ async function playFromFeishuCloud(video,fileName){
     if(_feishuVideoCache.url)URL.revokeObjectURL(_feishuVideoCache.url); // 只保留最近1个,防内存膨胀
     _feishuVideoCache={name:fileName,url};
     tryPlaySource(video,url,()=>false);
-    console.log('[视频]飞书云端源命中:',fileName,target?'(完整文件)':`(分片重组${parts.length}片,${(blob.size/1048576).toFixed(1)}MB)`);
+    console.log('[视频]飞书云端源命中:',fileName,target?(rootHit?'(根目录回退完整文件)':'(完整文件)'):`(分片重组${parts.length}片,${(blob.size/1048576).toFixed(1)}MB)`);
+    if(rootHit)addSyncLog(`视频命中根目录回退源 · ${fileName}`,'blue'); // V5.3.4: 回退命中留痕,便于云盘整理后观察
     return true;
   }catch(e){
     console.warn('[视频]飞书云端源不可用:',e.message||e);
+    feishuFailToast('视频'+(e.message||'加载失败')); // V5.3.4: 用户可见提示(诊断根因5)
     return false;
   }
 }
@@ -3035,7 +3139,7 @@ function pickVideoFile(){
     showToast('视频上传中...');
     try{
       const cfg=getFeishuCfg();
-      if(!cfg.appId)throw new Error('未配置飞书同步');
+      if(!feishuCfgReady(cfg))throw new Error('飞书配置不完整: 请在设置中填写 App Secret'); // V5.3.4(诊断根因1)
       const token=await getFeishuToken(cfg);
       const dataFolder=await getDataFolderToken(token);
       if(!dataFolder)throw new Error('数据文件夹不可用');

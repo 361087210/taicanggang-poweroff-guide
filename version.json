@@ -1,9 +1,14 @@
 {
-  "version": "5.3.3",
-  "versionName": "V5.3.3",
+  "version": "5.3.4",
+  "versionName": "V5.3.4",
   "date": "2026-08-21",
   "apkSize": "14.4MB",
   "changelog": [
+    "【修复-配置校验V5.3.4】诊断报告根因1: 所有飞书操作此前仅校验appId(有内置默认值恒为真),appSecret为空时带空凭证请求token必然认证失败,全部飞书功能静默失效; 新增feishuCfgReady统一校验器,11处操作入口appId+appSecret双查,缺失即弹Toast引导「设置→飞书配置」填写",
+    "【修复-视频根目录回退V5.3.4】诊断报告根因2: 云盘曾把17个完整MP4直接上传到项目根目录而非vehicle_videos子目录,文件名与车型videoPaths完全匹配但旧版只搜子目录永远找不到; 播放器新增根文件夹回退搜索,云端视频命中率大幅提升",
+    "【修复-blob兼容V5.3.4】诊断报告根因4: cordova-plugin-advanced-http在部分Android版本responseType:'blob'实际返回ArrayBuffer,直接进URL.createObjectURL抛异常被静默吞掉; 新增asBlob归一转换器,图片/视频/导出照片三个下载出口统一ArrayBuffer→Blob",
+    "【修复-失败可感知V5.3.4】诊断报告根因5: 图片/视频飞书源失败只写console.warn用户完全无感知,无法区分'没配置/网络不通/文件不存在'; 新增feishuFailToast节流提示(30秒合并一条),失败原因用户可见",
+    "【修复-存储位置统一V5.3.4】诊断报告根因6: vehicle_sync_data.json此前存项目根目录(612项混大量历史垃圾),与备份数据(APP数据备份)不同址; 同步数据统一迁入APP数据备份文件夹,上传时自动清理根目录历史旧档,下载时新位置优先+根目录回退,存量云端数据无感迁移",
     "【修复-签名V5.3.3-b5】CI产出的V5.3.2-b3/V5.3.3-b4实为未签名包(签名配置未写入build.json被cordova忽略,下载后安装报'应用未安装'); 已修复签名注入并在发布前新增签名校验关卡,未签名包不再可能发布",
     "【新增-直链下载V5.3.3】更新弹窗新增「直接下载安装包」主按钮: 点击即经系统浏览器触发Android原生下载管理器直取GitHub Release安装包,无需仓库权限、无需翻找飞书云盘; version.json由CI发布时自动回写downloadUrl直链",
     "【修复-断链】version.json的apkUrl此前指向不存在的大写V5.3标签资产(404断链), 新增三级回退解析(downloadUrl→apkUrl→按命名规则推导),任何历史版本的version.json都能解出可用直链",
@@ -23,11 +28,11 @@
     "【优化-离线】Tailwind/SheetJS/jsPDF/html-docx全部本地化进APK,零外链CDN依赖,弱网/无网环境UI与导出功能完整可用",
     "【优化-更新检查】多源版本探测统一走httpFetch原生通道+8秒超时,弱网不再无限挂起"
   ],
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.3/taicanggang-V5.3.3-b5.apk",
-  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.3/taicanggang-V5.3.3-b5.apk",
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.4/taicanggang-V5.3.4-b1.apk",
+  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.4/taicanggang-V5.3.4-b1.apk",
   "pageUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases",
   "feishuFolder": "https://feishu.cn/drive/folder/WdXUfZPkClI1audQxIYc90XRnWc",
   "feishuDataFolder": "APP数据备份(用户数据专用,与产物分离)",
-  "buildNumber": 5,
+  "buildNumber": 1,
   "buildDate": "2026-08-21"
 }
