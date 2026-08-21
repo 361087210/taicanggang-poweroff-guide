@@ -1,4 +1,6 @@
 node_modules/
+__pycache__/
+*.pyc
 tcg_app/platforms/
 tcg_app/plugins/
 tcg_app/www/
