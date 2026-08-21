@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>太仓港断电指导APP开发文档 V5.3.3</title>
+<style>
+:root{--c1:#1a73e8;--c2:#e8f0fe;--ok:#188038;--okbg:#e6f4ea;--warn:#b06000;--warnbg:#fef7e0;--bg:#f8f9fa;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans CJK SC','Microsoft YaHei',sans-serif;background:var(--bg);color:#202124;line-height:1.75;font-size:14px;}
+.page{max-width:960px;margin:0 auto;padding:24px 20px 60px;}
+header{background:linear-gradient(135deg,#1a73e8,#174ea6);color:#fff;border-radius:14px;padding:28px;margin-bottom:24px;}
+header h1{font-size:24px;margin-bottom:8px;}
+header p{opacity:.92;font-size:13.5px;}
+.pills{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+.pill{background:rgba(255,255,255,.18);border-radius:20px;padding:5px 14px;font-size:12.5px;}
+h2{font-size:19px;margin:32px 0 14px;padding-left:12px;border-left:4px solid var(--c1);color:#174ea6;}
+h3{font-size:15.5px;margin:18px 0 8px;color:#202124;}
+.card{background:#fff;border-radius:12px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:14px;}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;margin:10px 0;}
+th{background:#f1f3f4;text-align:left;padding:9px 11px;font-size:12px;color:#5f6368;white-space:nowrap;}
+td{padding:8px 11px;border-top:1px solid #eee;vertical-align:top;}
+code{background:#f1f3f4;border-radius:4px;padding:1px 6px;font-size:12.5px;font-family:Consolas,'Courier New',monospace;}
+pre{background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;padding:14px;overflow-x:auto;font-size:12.5px;line-height:1.6;margin:10px 0;}
+pre code{background:none;padding:0;}
+ul,ol{padding-left:22px;}
+li{margin:5px 0;}
+.notice{border-radius:10px;padding:13px 16px;font-size:13px;margin:10px 0;}
+.notice.ok{background:var(--okbg);border-left:4px solid var(--ok);}
+.notice.warn{background:var(--warnbg);border-left:4px solid var(--warn);}
+.flow{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:13px;overflow-x:auto;white-space:nowrap;margin:10px 0;}
+.flow b{color:var(--c1);}
+footer{text-align:center;color:#5f6368;font-size:12px;margin-top:32px;line-height:1.8;}
+.toc{background:#fff;border-radius:12px;padding:18px 22px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:20px;columns:2;column-gap:30px;}
+.toc a{color:var(--c1);text-decoration:none;font-size:13px;display:block;padding:3px 0;}
+@media(max-width:640px){.toc{columns:1}table{font-size:12px}th,td{padding:6px 8px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>太仓港断电指导 APP 开发文档</h1>
+  <p>港口商品车断电操作指导系统 · 单文件 Cordova 混合应用 · GitHub + 飞书双端交付体系</p>
+  <div class="pills">
+    <span class="pill">版本 V5.3.3</span>
+    <span class="pill">2026-08-21</span>
+    <span class="pill">构建号 b4 · versionCode 50307</span>
+    <span class="pill">Cordova 12 / Android 13</span>
+  </div>
+</header>
+
+<div class="toc">
+  <a href="#s1">1. 系统概述与技术栈</a>
+  <a href="#s2">2. 目录结构与产物清单</a>
+  <a href="#s3">3. 核心架构设计</a>
+  <a href="#s4">4. V5.3.3 安装包直链下载机制</a>
+  <a href="#s5">5. 数据体系与飞书集成</a>
+  <a href="#s6">6. CI/CD 构建发布体系</a>
+  <a href="#s7">7. 安全体系</a>
+  <a href="#s8">8. 测试体系</a>
+  <a href="#s9">9. 版本演进史</a>
+  <a href="#s10">10. 二次开发指引</a>
+</div>
+
+<h2 id="s1">1. 系统概述与技术栈</h2>
+<div class="card">
+<p>面向太仓港商品车堆场作业人员的断电操作指导应用：离线优先的车型断电步骤查询、关键帧图片对照、教学视频播放、Word/PDF 工单导出，以及基于飞书云的多设备数据协同。</p>
+<table>
+  <tr><th style="width:22%">层</th><th>技术选型</th><th>说明</th></tr>
+  <tr><td>应用主程序</td><td>单文件 HTML(<code>demo.html</code>, ~250KB)</td><td>所有 UI/逻辑/样式自包含，同步进 Cordova <code>www/index.html</code></td></tr>
+  <tr><td>UI 框架</td><td>Tailwind CSS(本地化) + 原生 JS</td><td>零构建工具链，避免框架依赖带来的离线不可用</td></tr>
+  <tr><td>离线依赖</td><td>SheetJS / jsPDF / html-docx(全部本地 <code>vendor/</code>)</td><td>弱网/无网环境导出功能完整可用</td></tr>
+  <tr><td>容器</td><td>Cordova 12 + cordova-android@13</td><td>插件: InAppBrowser / advanced-http / file / media / app-version</td></tr>
+  <tr><td>云协同</td><td>飞书开放平台(drive v1)</td><td>产物区/数据区双文件夹分仓架构</td></tr>
+  <tr><td>分发</td><td>GitHub Release(正式) + 飞书云盘(内部)</td><td>V5.3.3 起更新弹窗直链下载 Release 资产</td></tr>
+</table>
+</div>
+
+<h2 id="s2">2. 目录结构与产物清单</h2>
+<div class="card">
+<pre><code>taicanggang-poweroff-guide/
+├── demo.html                  # 应用主程序(源码唯一真身)
+├── version.json               # 版本元数据(更新探测数据源,CI回写buildNumber/downloadUrl)
+├── config.xml                 # Cordova配置(version/versionCode/插件清单)
+├── vehicles_data.js           # 车型数据(49车型,含断电步骤/照片/视频引用)
+├── vehicle_images/            # 车型照片资产(压缩后二进制,随APK分发)
+├── vendor/                    # 本地化第三方库(tailwind/xlsx/jspdf/html-docx)
+├── tests/                     # 测试脚本(静态断言+运行时+专项)
+│   ├── test_v53_fixes.py          # 主静态测试(77项)
+│   ├── test_v532_export_images.js # 导出图片内嵌专项(19项)
+│   └── test_v533_direct_download.js # 直链下载专项(38项)
+├── scripts/
+│   ├── validate_web_assets.js     # CI资产与安全校验
+│   └── sync_feishu_v53.py         # 飞书产物同步
+├── .github/workflows/
+│   ├── ci.yml                      # push触发: 静态测试+资产校验
+│   ├── codeql.yml                  # 安全扫描
+│   └── android-release.yml         # tag触发: 签名构建+Release发布
+├── build_apk_v53.bat         # 本地手机构建脚本(备用)
+├── docs/                      # 文档(本文件/CICD使用说明)
+├── README.md / SECURITY.md
+└── tcg_app/                   # Cordova工程(www由CI同步生成)</code></pre>
+<div class="notice ok"><b>双端交付产物清单（V5.3.3-b5）：</b>应用主程序(demo.html) · 签名安装包(taicanggang-V5.3.3-b5.apk) · 开发文档(本文件) · 测试脚本(tests/ 三套) · version.json · config.xml · vehicles_data.js · README/SECURITY · CICD使用说明 · 重复文件清理清单 · 终验报告</div>
+</div>
+
+<h2 id="s3">3. 核心架构设计</h2>
+<div class="card">
+<h3>3.1 网络层统一适配（httpFetch）</h3>
+<p>所有飞书 API 请求经 <code>httpFetch()</code> 统一出口：APP 环境走 <code>cordova-plugin-advanced-http</code> 原生网络栈（绕过 WebView CORS 限制），浏览器环境回退 <code>fetch</code>。这是 V5.3 修复真机所有飞书请求静默失败的关键层。</p>
+<h3>3.2 多源版本探测（fetchUpdateInfo）</h3>
+<p>更新检查并发探测 4 个源后<b>取版本号最高</b>的一条：jsDelivr CDN → GitHub raw → GitHub Contents API(base64解码) → 飞书 version.json。不做"首个成功即返回"——CDN 缓存滞后会误判"已是最新"。每个源 8 秒超时防弱网挂起。</p>
+<h3>3.3 同名多档确定性读取（V5.3.2）</h3>
+<p>飞书产物区存在历史分页缺陷遗留的同名多档，<code>downloadJsonFromFolder()</code> 用 <code>reduce</code> 取 <code>modified_time</code> 最新一份，消除列表顺序不确定性。</p>
+<h3>3.4 硬件返回键统一路由（V5.3）</h3>
+<p>Android 返回键按优先级路由：关全屏查看器 → 关视频播放器 → 关弹层 → 登录保护(不退出) → 主Tab双击退出 → 子页面返回上一步，与页面内返回按钮行为完全一致。</p>
+<h3>3.5 数据分仓</h3>
+<p>飞书云端两个物理隔离的文件夹：产物区(文档/APK/代码，应用只读+幂等替换)与「APP数据备份」(账号/审批/备份，应用读写)。用户数据永不污染项目产物。</p>
+</div>
+
+<h2 id="s4">4. V5.3.3 安装包直链下载机制</h2>
+<div class="card">
+<h3>4.1 需求与方案</h3>
+<p>此前更新分发依赖"飞书云盘人工翻找"或标注"需仓库权限"的 GitHub 页面跳转，且 <code>version.json</code> 的 <code>apkUrl</code> 指向不存在的大写 <code>V5.3</code> 标签资产（404 断链）。V5.3.3 改为 <b>Release 资产直链一键下载</b>：公开仓库的 Release 下载 URL 无需任何鉴权，系统浏览器打开即触发 Android 原生下载管理器。</p>
+<h3>4.2 直链解析三级回退（resolveApkUrl）</h3>
+<pre><code>function resolveApkUrl(info){
+  // L1: CI按实际Release资产回写的downloadUrl(新标准字段)
+  if(info.downloadUrl &amp;&amp; /^https:\/\//.test(info.downloadUrl)) return info.downloadUrl;
+  // L2: 兼容旧字段apkUrl, 过滤已知V5.3大写tag断链
+  if(info.apkUrl &amp;&amp; /^https:\/\//.test(info.apkUrl) &amp;&amp; !info.apkUrl.includes('/download/V5.3/')) return info.apkUrl;
+  // L3: 按CI产物命名规则推导兜底: v{version}/taicanggang-V{version}-b{build}.apk
+  return `https://github.com/${GITHUB_REPO}/releases/download/v${info.version}/taicanggang-V${info.version}${info.buildNumber?('-b'+info.buildNumber):''}.apk`;
+}</code></pre>
+<p>三级回退保证<b>任何历史版本的 version.json</b> 都能解出可用直链——包括尚未升级到 V5.3.3 的存量设备。</p>
+<h3>4.3 更新弹窗交互</h3>
+<div class="flow">
+<b>发现新版本弹窗</b> → 主按钮「直接下载安装包(推荐)」(绿) → <code>downloadApkDirect()</code> → <code>openExternal(直链)</code> → 系统浏览器 → Android下载管理器 → 通知栏点击安装<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└ 备用按钮「飞书云盘下载」(蓝) → 打开产物区文件夹人工下载
+</div>
+<p>选择系统浏览器而非应用内 <code>cordova-plugin-file</code> 下载的原因：应用内下载需申请存储权限，且部分国产 ROM 分区存储策略下失败率高；系统通道零权限、断点续传、通知栏进度条均为原生体验。旧入口 <code>downloadUpdate()</code> 保留并入直链通道，向后兼容。</p>
+<h3>4.4 CI 自动回写直链</h3>
+<p><code>android-release.yml</code> 在构建产物重命名后回写 <code>version.json</code>：直链 URL 按规则预计算（<code>releases/download/{tag}/{apk_name}</code>），与 <code>softprops/action-gh-release</code> 实际上传的资产名严格一致；同时回写真实 <code>apkSize</code>。仅 tag 触发且非 dry-run 时写入，防止测试构建产生断链。</p>
+<div class="notice ok"><b>实测验证：</b>v5.3.2 已发布资产直链 HEAD 探测返回 200；v5.3.3 直链在 CI 发布后由专项测试 <code>test_v533_direct_download.js</code> D5 节复验可达性。</div>
+</div>
+
+<h2 id="s5">5. 数据体系与飞书集成</h2>
+<div class="card">
+<h3>5.1 车型数据</h3>
+<p><code>vehicles_data.js</code> 导出 <code>VEHICLES_DATA</code> 数组：49 个车型，每条含品牌/车系/配置/断电位置/分步步骤(steps)/关键帧(keyFrame)/备注/照片引用(photoPaths)/视频引用(videoPaths)。照片资产随 APK 分发(<code>vehicle_images/</code>)，视频走四源回退链。</p>
+<h3>5.2 媒体回退链</h3>
+<table>
+  <tr><th>类型</th><th>回退顺序</th></tr>
+  <tr><td>视频</td><td>本地APK资产 → 飞书云端(APP数据备份/vehicle_videos) → GitHub CDN → 诚实提示"待补充"</td></tr>
+  <tr><td>照片</td><td>本地缩略图/详情图/全屏 → 飞书云端(APP数据备份/vehicle_images) → 加载失败占位兜底</td></tr>
+</table>
+<h3>5.3 协同与审批</h3>
+<p>组员数据上传 <code>vehicle_sync_data.json</code> 至数据区；注册审批跨设备闭环：组员申请 → 组长60秒轮询+Toast提醒 → 审批结果上传云端 → 组员端拉取状态。登录鉴权与角色(组长/组员)本地管理，敏感操作双人确认。</p>
+<h3>5.4 飞书 API 要点</h3>
+<ul>
+<li>认证：<code>tenant_access_token</code>(internal app)，App Secret 由用户在设置页手动填写，零硬编码</li>
+<li>列目录：<code>drive/v1/files?folder_token=</code> 翻页字段为 <code>next_page_token</code>(非page_token)，超200项必须翻页</li>
+<li>上传：≤20MB 走 <code>upload_all</code> multipart 直传</li>
+<li>下载：<code>drive/v1/files/{token}/download</code>，原生HTTP通道需处理UTF-8 BOM与ArrayBuffer解码</li>
+<li>删除：应用身份仅能删除<b>应用自己上传</b>的文件(错误1062501=人为所有档无权)，故同步策略为"删自己旧档→传新档"幂等替换</li>
+</ul>
+</div>
+
+<h2 id="s6">6. CI/CD 构建发布体系</h2>
+<div class="card">
+<table>
+  <tr><th style="width:26%">流水线</th><th style="width:22%">触发</th><th>职责</th></tr>
+  <tr><td>CI (ci.yml)</td><td>push main</td><td>静态测试(test_v53_fixes 77项) + 资产安全校验(validate_web_assets)</td></tr>
+  <tr><td>CodeQL Advanced</td><td>push main</td><td>JavaScript 安全漏洞扫描</td></tr>
+  <tr><td>Android Release Build</td><td>push tag v*</td><td>签名构建APK → 回写version.json(buildNumber/downloadUrl/apkSize) → 提交main → 发布GitHub Release</td></tr>
+</table>
+<h3>6.1 构建号体系（独立递增）</h3>
+<p><code>android-versionCode = BASE_VERSION_CODE + run_number</code>，V5.3.3 起 BASE=50303。同名版本重发不冲突，CI 产物 versionCode 恒高于手机构建，安装升级永不被拒。产物命名 <code>taicanggang-V{版本}-b{run_number}.apk</code>。</p>
+<h3>6.2 APK 产出三重保险（V5.3.2 修复）</h3>
+<p>cordova-android@13 默认执行 <code>bundleRelease</code> 产出 AAB 而非 APK：① build.json 显式 <code>packageType=apk</code>；② 命令行 <code>--packageType=apk</code>；③ 未检出 APK 时 Gradle <code>assembleRelease</code> 兜底。产物路径多级回退探测。</p>
+<h3>6.3 签名安全（V5.3.3-b5 重大修复）</h3>
+<p>keystore 与密码全部走 GitHub Secrets（<code>KEYSTORE_BASE64/KEYSTORE_PASSWORD/KEY_ALIAS</code>），Runner 上解码注入，仓库与日志零明文。</p>
+<div class="notice warn"><b>签名注入修复（本次发布核心修复）：</b>cordova-android@13 在 <code>--buildConfig=build.json</code> 模式下<b>只认 build.json 内的 android.release 签名字段</b>，workflow 此前仅写 <code>release-signing.properties</code> 被静默忽略，构建日志告警 <code>'keystore' and 'alias' need to be specified</code>，导致 V5.3.2-b3 / V5.3.3-b4 两个 Release 产物<b>实际未签名</b>（下载后安装报"应用未安装"）。修复：① 签名四要素（keystore/storePassword/alias/password/keystoreType）经环境变量写入 build.json，不落仓库；② 新增「校验APK签名」发布关卡——检测 APK Signing Block v2/v3 魔数必须紧邻 Central Directory，未签名直接构建失败，从结构上杜绝坏包发布。</div>
+<h3>6.4 发布流程</h3>
+<pre><code>git tag v5.3.3 &amp;&amp; git push origin v5.3.3
+# → Android Release Build 自动: 构建→签名→回写直链→Release发布
+# → APP端: 检查更新 → 多源探测到5.3.3 → 弹窗「直接下载安装包」→ 一键升级</code></pre>
+</div>
+
+<h2 id="s7">7. 安全体系</h2>
+<div class="card">
+<ul>
+<li><b>凭证零硬编码</b>：App Secret 设置页手动填写(V5.3.1加固)；测试脚本环境变量读取；CI 密钥走 Secrets</li>
+<li><b>签名密钥</b>：release/ 目录 .gitignore 排除，仅 Secrets 分发；V1+V2 签名</li>
+<li><b>CodeQL</b> 每次推送自动扫描</li>
+<li><b>权限模型</b>：组员只读，上传/审批/数据管理限组长；敏感操作确认弹窗</li>
+<li><b>离线优先</b>：零外链 CDN 依赖，无网环境数据不出设备</li>
+</ul>
+</div>
+
+<h2 id="s8">8. 测试体系</h2>
+<div class="card">
+<table>
+  <tr><th style="width:34%">脚本</th><th style="width:12%">用例数</th><th>覆盖</th></tr>
+  <tr><td><code>tests/test_v53_fixes.py</code></td><td>77</td><td>T1-T10：语法完整性/导航栈/返回键路由/离线资产/飞书通道/审批闭环/版本一致性/直链下载(新增17项)</td></tr>
+  <tr><td><code>tests/test_v532_export_images.js</code></td><td>19</td><td>导出图片base64内嵌：预取命中/占位降级/单车8张上限/PDF分页</td></tr>
+  <tr><td><code>tests/test_v533_direct_download.js</code></td><td>38</td><td>直链解析三级回退沙箱求值/弹窗接线/version.json字段/CI回写/Release直链网络实测</td></tr>
+  <tr><td><code>scripts/validate_web_assets.js</code></td><td>6类</td><td>CI前置关卡：体积/完整性/外链/密钥泄漏</td></tr>
+</table>
+<div class="notice warn"><b>测试约定：</b>沙箱/受限网络下网络探测统一走 curl(自动读 HTTPS_PROXY)，node 原生 https 不感知代理会误报不可达——<code>test_v533_direct_download.js</code> D5 节已固化此实现。</div>
+</div>
+
+<h2 id="s9">9. 版本演进史</h2>
+<div class="card">
+<table>
+  <tr><th style="width:14%">版本</th><th style="width:18%">主题</th><th>关键变更</th></tr>
+  <tr><td>V5.3.3</td><td>直链下载</td><td>更新弹窗直链一键下载；resolveApkUrl三级回退；CI自动回写downloadUrl；修复V5.3断链</td></tr>
+  <tr><td>V5.3.2</td><td>导出图片</td><td>Word/PDF导出照片base64内嵌；CI修复AAB/APK产出；同名多档确定性读取</td></tr>
+  <tr><td>V5.3.1</td><td>审批接线</td><td>审批轮询/推送/拉取三处死代码接线；App Secret移出默认配置</td></tr>
+  <tr><td>V5.3</td><td>系统重构</td><td>原生HTTP适配层；硬件返回键路由；数据分仓；媒体四源回退；APK瘦身23.6→14.4MB</td></tr>
+  <tr><td>V5.2及以前</td><td>功能累积</td><td>车型库扩充/导出/分享/飞书同步/审批基础</td></tr>
+</table>
+</div>
+
+<h2 id="s10">10. 二次开发指引</h2>
+<div class="card">
+<h3>10.1 日常迭代</h3>
+<ol>
+<li>改 <code>demo.html</code>(唯一源码真身) + <code>version.json</code>(版本/changelog) + <code>config.xml</code>(versionCode)</li>
+<li>同步升 CI 工作流 <code>APP_VERSION</code> 与 <code>BASE_VERSION_CODE</code>(=主版本号×10000+次×100+修订)</li>
+<li>跑 <code>python3 tests/test_v53_fixes.py</code> 与专项测试全绿</li>
+<li>commit → push main(CI/CodeQL验证) → 打 tag <code>v{版本}</code> 触发 Release 构建</li>
+<li>运行 <code>scripts/sync_feishu_v53.py</code> 同步产物到飞书(或交付会话内一键同步)</li>
+</ol>
+<h3>10.2 新增车型</h3>
+<p>在 <code>vehicles_data.js</code> 追加条目；照片放 <code>vehicle_images/</code>(引用相对路径)；教学视频上传飞书数据区 <code>vehicle_videos/</code>(按文件名回退匹配)。</p>
+<h3>10.3 更新分发约定（必须遵守）</h3>
+<ul>
+<li>Release tag 一律小写 <code>v</code> 前缀(<code>v5.3.3</code>)，资产名含构建号</li>
+<li><code>version.json</code> 的 <code>downloadUrl</code> 由 CI 回写，手工发布时必须与资产名逐字符一致</li>
+<li>飞书产物区同名文件遵循"保留 modified_time 最新"约定，旧档删除见清理清单</li>
+</ul>
+</div>
+
+<footer>
+  太仓港断电指导 APP 开发文档 V5.3.3 · 2026-08-21 · GitHub + 飞书双端交付<br>
+  配套产物: taicanggang-V5.3.3-b4.apk · tests/ 三套测试 · 终验报告
+</footer>
+
+</div>
+</body>
+</html>

@@ -102,6 +102,14 @@ check('CI apkUrl同步冗余', /v\.apkUrl = v\.downloadUrl/.test(ciwf));
 check('CI仅tag触发时写入直链(防dry-run断链)', ciwf.includes("startsWith('refs/tags/v')"));
 check('CI回写apkSize(按实际产物)', /v\.apkSize = \(fs\.statSync/.test(ciwf));
 check('CI产物命名含独立构建号', /apk_name=taicanggang-V\$\{\{APP_VERSION\}\}-b\$\{\{ github\.run_number \}\}\.apk/.test(ciwf) || ciwf.includes('apk_name=taicanggang-V${APP_VERSION}-b'));
+// ---- V5.3.3-b5 签名修复(b4事故复盘): build.json必须携带签名四要素 + 发布前签名关卡 ----
+check('CI build.json注入keystore路径', /"keystore": "\$KS_FILE"/.test(ciwf));
+check('CI build.json注入storePassword', /"storePassword": "\$KS_PASSWORD"/.test(ciwf));
+check('CI build.json注入alias', /"alias": "\$\{KS_ALIAS/.test(ciwf));
+check('CI build.json注入key password', /"password": "\$KS_PASSWORD"/.test(ciwf));
+check('CI签名校验关卡存在(未签名即失败)', /校验APK签名\(未签名即失败\)/.test(ciwf));
+check('CI关卡检测APK Sig Block魔数', ciwf.includes("APK Sig Block 42"));
+check('CI关卡未签名走sys.exit阻断', /sys\.exit\('FATAL: APK未签名/.test(ciwf));
 
 // ==================== D5 GitHub Release 直链可达性(网络实测) ====================
 section('D5 Release 直链可达性(网络)');
@@ -128,20 +136,22 @@ function headProbe(url, timeoutMs = 20000) {
 }
 
 (async () => {
-  // D5.1 历史Release v5.3.2 直链可达(已发布资产)
-  const oldUrl = 'https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.2/taicanggang-V5.3.2-b3.apk';
-  const s1 = await headProbe(oldUrl);
-  check('v5.3.2已发布资产直链可达(200)', s1 === 200 || s1 === 302, `status=${s1}`);
-
-  // D5.2 v5.3.3 直链(打tag前为404属预期, 打tag并发布后为200/302)
-  const s2 = await headProbe(vj.downloadUrl);
-  if (s2 === 404) {
-    console.log('  [INFO] v5.3.3直链尚未发布(预期: CI构建中), status=404, 构建完成后复验');
-  } else if (s2 === 200 || s2 === 302) {
-    check('v5.3.3直链已发布可达', true, `status=${s2}`);
+  // D5.1 v5.3.3-b5 直链可达(b4未签名已随Release删除, b5为签名重建产物)
+  const s1 = await headProbe(vj.downloadUrl);
+  if (s1 === 404) {
+    console.log('  [INFO] v5.3.3-b5直链尚未发布(预期: CI构建中), status=404, 构建完成后复验');
   } else {
-    check('v5.3.3直链探测异常', false, `status=${s2}`);
+    check('v5.3.3-b5签名产物直链可达(200/302)', s1 === 200 || s1 === 302, `status=${s1}`);
   }
+
+  // D5.2 b4未签名坏包资产已清除(应404, 防止误下载不可安装的包)
+  const badUrl = 'https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.3/taicanggang-V5.3.3-b4.apk';
+  const s2 = await headProbe(badUrl);
+  check('b4未签名坏包资产已随Release删除(404)', s2 === 404, `status=${s2}`);
+
+  // D5.3 发布页可达
+  const s3 = await headProbe(vj.pageUrl);
+  check('GitHub Releases发布页可达', s3 === 200 || s3 === 302, `status=${s3}`);
 
   // ==================== 汇总 ====================
   console.log('\n' + '='.repeat(52));
