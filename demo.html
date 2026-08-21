@@ -958,7 +958,7 @@ async function getDataFolderToken(token){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.3.0';
+const APP_VERSION='5.3.2';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1823,17 +1823,137 @@ function generateExcel(vehicles){
 }
 
 /**
+ * ===================== 导出图片嵌入 (V5.3.2 问题4根源修复) =====================
+ * 缺陷: generateWord/generatePDF此前仅写入相对路径(vehicle_images/image1.jpeg),
+ *       导出的.docx/.pdf在Word/阅读器中无图——相对路径在离线文档里不可解析。
+ * 方案: 导出前把照片解析为base64数据流内嵌进文档(与展示层同源回退链):
+ *       ①data:URL(用户现拍照片本就是base64) ②本地APK内/www目录文件
+ *       ③飞书云端"APP数据备份/vehicle_images"
+ */
+const _exportPhotoCache={}; // 照片路径/文件名 -> dataURL|null(含未命中负缓存,防重复探测)
+
+/**
+ * 从飞书云端vehicle_images目录下载单张照片并转为base64数据流
+ * 与imgFromFeishuCloud共用目录约定,但返回dataURL供文档内嵌(objectURL
+ * 无法写入离线文档,Word/PDF阅读器解析不了blob:协议)
+ * @param {string} fileName - 照片文件名(如image1.jpeg)
+ * @returns {Promise<string|null>} dataURL,未命中返回null
+ */
+async function fetchFeishuPhotoDataURL(fileName){
+  const cfg=getFeishuCfg();
+  if(!cfg.appId||!fileName)return null;
+  const cacheKey='feishu:'+fileName;
+  if(_exportPhotoCache.hasOwnProperty(cacheKey))return _exportPhotoCache[cacheKey];
+  let result=null;
+  try{
+    const token=await getFeishuToken(cfg);
+    const dataFolder=await getDataFolderToken(token);
+    if(dataFolder){
+      const dataFiles=await feishuListFiles(token,dataFolder);
+      if(dataFiles){
+        const imgFolder=dataFiles.find(f=>f.type==='folder'&&f.name==='vehicle_images');
+        if(imgFolder){
+          const imgFiles=await feishuListFiles(token,imgFolder.token);
+          const target=imgFiles&&imgFiles.find(f=>f.type==='file'&&f.name===fileName);
+          if(target){
+            let blob;
+            if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
+              blob=await new Promise((resolve,reject)=>{
+                window.cordova.plugin.http.sendRequest(
+                  `https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,
+                  {method:'GET',headers:{Authorization:'Bearer '+token},responseType:'blob',timeout:60},
+                  res=>resolve(res.data),err=>reject(new Error(String(err.error||'图片下载失败'))));
+              });
+            }else{
+              const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
+              blob=await r.blob();
+            }
+            if(blob&&blob.size>100)result=await blobToDataURL(blob);
+          }
+        }
+      }
+    }
+  }catch(e){
+    console.warn('[导出]飞书云端照片不可用:',fileName,e.message||e);
+  }
+  _exportPhotoCache[cacheKey]=result;
+  return result;
+}
+
+/**
+ * 解析单条photoPath为base64数据流(带正/负缓存)
+ * @param {string} path - data:URL或相对路径(vehicle_images/image1.jpeg)
+ * @returns {Promise<string|null>} dataURL,全源未命中返回null
+ */
+async function fetchPhotoDataURL(path){
+  if(!path)return null;
+  if(/^data:image\//i.test(path))return path; // 用户现拍照片本就是base64,直接内嵌
+  if(_exportPhotoCache.hasOwnProperty(path))return _exportPhotoCache[path];
+  let result=null;
+  const fileName=path.split('/').pop();
+  // 源①: 本地文件(浏览器预览取仓库目录;APK内取打包进www/的资源)
+  try{
+    const r=await fetch(path);
+    if(r.ok){
+      const blob=await r.blob();
+      if(blob&&blob.size>100)result=await blobToDataURL(blob);
+    }
+  }catch(e){/* 本地未命中,继续云端回退 */}
+  // 源②: 飞书云端(组长上传的真实照片)
+  if(!result)result=await fetchFeishuPhotoDataURL(fileName);
+  _exportPhotoCache[path]=result;
+  if(result)console.log('[导出]照片命中:',fileName);
+  return result;
+}
+
+/**
+ * 导出前批量预取车辆照片为base64映射表
+ * 为什么串行而非Promise.all: 飞书下载接口对并发敏感,串行+缓存最稳,
+ * 且单车最多4-8张照片,耗时可接受(有Toast进度提示)。
+ * @param {Array} vehicles - 待导出车辆
+ * @param {number} perVehicleLimit - 单车最多嵌入张数(防文档体积失控)
+ * @returns {Promise<Object>} {photoPath: dataURL} 仅含命中项
+ */
+async function preparePhotoMap(vehicles,perVehicleLimit){
+  const limit=perVehicleLimit||8;
+  const paths=[];
+  vehicles.forEach(v=>{(v.photoPaths||[]).slice(0,limit).forEach(p=>{
+    if(paths.indexOf(p)<0)paths.push(p);
+  });});
+  const map={};
+  let hit=0;
+  for(const p of paths){
+    const url=await fetchPhotoDataURL(p);
+    if(url){map[p]=url;hit++;}
+  }
+  console.log(`[导出]照片预取完成: ${hit}/${paths.length}张命中`);
+  return map;
+}
+
+/** jsPDF addImage格式探测(dataURL前缀→jsPDF格式常量) */
+function _jspdfImgFmt(dataUrl){
+  if(/^data:image\/png/i.test(dataUrl))return 'PNG';
+  if(/^data:image\/webp/i.test(dataUrl))return 'WEBP';
+  return 'JPEG';
+}
+
+/**
  * 生成Word文档 - 支持html-docx-js库和HTML Blob降级方案
+ * V5.3.2: 照片以base64内嵌(photoMap由preparePhotoMap预取),修复离线文档无图缺陷
  * @param {Array} vehicles - 车辆数据数组
+ * @param {Object} [photoMap] - photoPath→dataURL映射(缺省时退化为文字占位)
  * @returns {Blob} Word文档Blob对象
  */
-function generateWord(vehicles){
+function generateWord(vehicles,photoMap){
   const isSingle=vehicles.length===1;
   const v=vehicles[0];
   let html;
   if(isSingle){
-    const photoHtml=(v.photoPaths||[]).map((p,i)=>{
-      return `<img src="${p}" style="width:200px;height:150px;object-fit:cover;margin:5px;"/>`;
+    // V5.3.2: 内嵌base64照片;未命中的照片降级为文字占位而非破图
+    const photoHtml=(v.photoPaths||[]).map(p=>{
+      const dataUrl=photoMap&&photoMap[p];
+      if(dataUrl)return `<img src="${dataUrl}" style="width:200px;height:150px;object-fit:cover;margin:5px;"/>`;
+      return `<p style="color:#999;font-size:9pt;">[照片未能内嵌: ${String(p).split('/').pop()}]</p>`;
     }).join('');
     const videoHtml=(v.videoPaths||[]).map(vp=>`<p>视频: ${vp}</p>`).join('');
     html=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -1883,7 +2003,13 @@ function generateWord(vehicles){
   return new Blob(['\ufeff'+html],{type:'application/msword'});
 }
 
-function generatePDF(vehicles){
+/**
+ * 生成PDF文档 - V5.3.2照片以base64内嵌(修复此前仅打印路径文字的缺陷)
+ * @param {Array} vehicles - 车辆数据数组
+ * @param {Object} [photoMap] - photoPath→dataURL映射(preparePhotoMap预取)
+ * @returns {Blob} PDF文档Blob对象
+ */
+function generatePDF(vehicles,photoMap){
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF('p','mm','a4');
   const isSingle=vehicles.length===1;
@@ -1918,8 +2044,33 @@ function generatePDF(vehicles){
     if(v.photoPaths&&v.photoPaths.length){
       doc.setFontSize(10);doc.setTextColor(100,100,100);
       doc.text('照片: '+v.photoPaths.length+'张',14,y+5);
-      v.photoPaths.forEach((p,i)=>{doc.text(`  [${i+1}] ${p}`,14,y+10+i*5);});
-      y+=10+v.photoPaths.length*5;
+      y+=10;
+      // V5.3.2: 真实图片内嵌(3列×60×45mm网格,逐行推进坐标+自动分页);
+      // 未命中的照片打印文件名占位,保持信息完整可追溯
+      const labels=['前脸','车尾','钥匙','断电位'];
+      let ty=y;
+      v.photoPaths.forEach((p,i)=>{
+        const dataUrl=photoMap&&photoMap[p];
+        const col=i%3;
+        if(col===0&&ty+50>282){doc.addPage();ty=20;}
+        const x=14+col*64;
+        if(dataUrl){
+          try{
+            doc.addImage(dataUrl,_jspdfImgFmt(dataUrl),x,ty,60,45);
+            doc.setFontSize(7);doc.setTextColor(150,150,150);
+            doc.text(`${i+1}.${labels[i]||''}`,x,ty+48);
+          }catch(e){
+            console.warn('PDF内嵌图片失败:',e);
+            doc.setFontSize(8);doc.setTextColor(150,150,150);
+            doc.text(`[${i+1}] ${String(p).split('/').pop()}(嵌入失败)`,x,ty+5);
+          }
+        }else{
+          doc.setFontSize(8);doc.setTextColor(150,150,150);
+          doc.text(`[${i+1}] ${String(p).split('/').pop()}(未能内嵌)`,x,ty+5);
+        }
+        if(col===2||i===v.photoPaths.length-1)ty+=50;
+      });
+      y=ty+5;
     }
     if(v.videoPaths&&v.videoPaths.length){
       doc.text('视频: '+v.videoPaths.join(', '),14,y+5);
@@ -1996,10 +2147,15 @@ function exportData(format){
         const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
         await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       }else if(format==='pdf'){
-        const blob=generatePDF(selectedVehicles);
+        // V5.3.2: 先预取照片(本地→飞书云端)转base64,再生成内嵌图片的PDF
+        showToast('正在获取车辆照片...');
+        const photoMap=await preparePhotoMap(selectedVehicles);
+        const blob=generatePDF(selectedVehicles,photoMap);
         await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.pdf`,'application/pdf');
       }else if(format==='word'){
-        const blob=generateWord(selectedVehicles);
+        showToast('正在获取车辆照片...');
+        const photoMap=await preparePhotoMap(selectedVehicles);
+        const blob=generateWord(selectedVehicles,photoMap);
         const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
         const ext=mimeType.includes('msword')?'doc':'docx';
         await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.${ext}`,mimeType);
@@ -2023,10 +2179,15 @@ async function exportSingle(format){
       const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       await shareFile(blob,`${v.display}_断电指导.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }else if(format==='pdf'){
-      const blob=generatePDF([v]);
+      // V5.3.2: 预取照片转base64后内嵌(与批量导出同一回退链)
+      showToast('正在获取车辆照片...');
+      const photoMap=await preparePhotoMap([v]);
+      const blob=generatePDF([v],photoMap);
       await shareFile(blob,`${v.display}_断电指导.pdf`,'application/pdf');
     }else if(format==='word'){
-      const blob=generateWord([v]);
+      showToast('正在获取车辆照片...');
+      const photoMap=await preparePhotoMap([v]);
+      const blob=generateWord([v],photoMap);
       const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       const ext=mimeType.includes('msword')?'doc':'docx';
       await shareFile(blob,`${v.display}_断电指导.${ext}`,mimeType);

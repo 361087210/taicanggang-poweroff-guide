@@ -183,7 +183,7 @@ for lib in ['tailwind.js', 'xlsx.full.min.js', 'jspdf.umd.min.js', 'jspdf.plugin
     check(f'本地化vendor/{lib}', ok, f'{os.path.getsize(p) if os.path.exists(p) else 0}B')
 cdn_refs = re.findall(r'src=["\'](https?://[^"\']+)["\']', html)
 check('无外链CDN脚本依赖(离线可用)', len(cdn_refs) == 0, f'残留: {cdn_refs[:2]}')
-check('APP_VERSION=5.3.0', "APP_VERSION='5.3.0'" in html)
+check('APP_VERSION=5.3.2(V5.3.2导出图片内嵌修复)', "APP_VERSION='5.3.2'" in html)
 
 # ============================================================
 # 汇总
