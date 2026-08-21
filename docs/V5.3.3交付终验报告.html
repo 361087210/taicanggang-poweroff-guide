@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>太仓港断电指导APP V5.3.3-b5 交付终验报告</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'PingFang SC','Microsoft YaHei',sans-serif; background:#f1f5f9; color:#1e293b; line-height:1.75; padding:16px; }
+  .wrap { max-width:960px; margin:0 auto; }
+  header { background:linear-gradient(135deg,#0f766e,#115e59); color:#fff; border-radius:14px; padding:32px 28px; margin-bottom:20px; }
+  header h1 { font-size:24px; margin-bottom:8px; }
+  header .meta { font-size:13px; opacity:.85; display:flex; flex-wrap:wrap; gap:16px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); border-radius:999px; padding:2px 12px; font-size:12px; margin-right:8px; }
+  .card { background:#fff; border-radius:12px; padding:22px 24px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  h2 { font-size:18px; color:#0f766e; margin-bottom:12px; padding-left:10px; border-left:4px solid #0f766e; }
+  h3 { font-size:15px; margin:14px 0 8px; color:#334155; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; }
+  th { background:#f0fdfa; color:#0f766e; text-align:left; }
+  th,td { padding:8px 10px; border:1px solid #e2e8f0; vertical-align:top; }
+  code { background:#f1f5f9; padding:1px 6px; border-radius:4px; font-size:12.5px; color:#b91c1c; font-family:ui-monospace,Consolas,monospace; word-break:break-all; }
+  .ok { color:#15803d; font-weight:600; }
+  .bad { color:#b91c1c; font-weight:600; }
+  .warn { color:#b45309; font-weight:600; }
+  .notice { border-radius:8px; padding:12px 14px; font-size:13px; margin:10px 0; }
+  .notice.red { background:#fef2f2; border:1px solid #fecaca; }
+  .notice.green { background:#f0fdf4; border:1px solid #bbf7d0; }
+  .notice.amber { background:#fffbeb; border:1px solid #fde68a; }
+  ul { padding-left:20px; }
+  li { margin:4px 0; font-size:13.5px; }
+  .kpi { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin:6px 0 4px; }
+  .kpi .item { background:#f0fdfa; border:1px solid #99f6e4; border-radius:10px; padding:12px; text-align:center; }
+  .kpi .num { font-size:22px; font-weight:700; color:#0f766e; }
+  .kpi .lbl { font-size:12px; color:#475569; }
+  footer { text-align:center; font-size:12px; color:#94a3b8; padding:16px 0 4px; }
+  a { color:#0d9488; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>太仓港断电指导APP · V5.3.3-b5 交付终验报告</h1>
+  <div class="meta">
+    <span>交付日期：2026-08-21</span>
+    <span>构建：CI run#5（b5·已签名）</span>
+    <span>终验结论：<b style="color:#6ee7b7">全部通过 · 准予交付</b></span>
+  </div>
+  <div style="margin-top:12px">
+    <span class="badge">直链下载</span><span class="badge">签名修复</span><span class="badge">双端同步</span><span class="badge">143项测试全绿</span>
+  </div>
+</header>
+
+<!-- KPI -->
+<div class="card">
+  <div class="kpi">
+    <div class="item"><div class="num">143</div><div class="lbl">测试项全绿</div></div>
+    <div class="item"><div class="num">14.4MB</div><div class="lbl">签名APK体积</div></div>
+    <div class="item"><div class="num">2端</div><div class="lbl">GitHub+飞书同步</div></div>
+    <div class="item"><div class="num">3源</div><div class="lbl">直链三级回退</div></div>
+    <div class="item"><div class="num">1关卡</div><div class="lbl">CI签名校验</div></div>
+  </div>
+</div>
+
+<!-- 1 需求落实 -->
+<div class="card">
+<h2>1. 本次需求落实：更新弹窗安装包直链下载</h2>
+<table>
+  <tr><th style="width:30%">交付点</th><th>实现与验证</th></tr>
+  <tr><td>「直接下载安装包（推荐）」主按钮</td><td>更新弹窗主通道：点击经系统浏览器触发 Android 原生下载管理器直取 GitHub Release 安装包，免仓库权限、免翻飞书云盘；下载完成通知栏直接点击安装</td></tr>
+  <tr><td>直链三级回退解析 <code>resolveApkUrl</code></td><td>downloadUrl（CI 回写）→ apkUrl（兼容旧字段，过滤已知断链）→ 按命名规则推导；任何历史 version.json 均可解出可用地址</td></tr>
+  <tr><td>CI 自动回写直链</td><td>tag 发布时自动将实际资产直链写入 version.json 并提交 main，APP 多源探测（raw / jsDelivr / 飞书）均能命中</td></tr>
+  <tr><td>直链可达性实测</td><td><span class="ok">200</span>（HEAD 探测，302→CDN→200）；发布页可达；旧断链（大写 V5.3 tag）已修复</td></tr>
+</table>
+</div>
+
+<!-- 2 签名事故 -->
+<div class="card">
+<h2>2. 签名事故发现与修复（本次交付最重要修复）</h2>
+<div class="notice red"><b>事故：</b>Cordova CI 在 <code>--buildConfig=build.json</code> 模式下只认 build.json 内的签名字段，此前 workflow 仅写 <code>release-signing.properties</code> 被静默忽略，构建日志告警 <code>'keystore' and 'alias' need to be specified</code> —— <b>V5.3.2-b3 与 V5.3.3-b4 两个 Release 产物实际未签名，真机安装必失败（"应用未安装"）</b>。此缺陷在本轮交付终验的 APK 结构核验中被发现（ZIP 中无 APK Signing Block）。</div>
+<h3>修复措施（commit <code>7aff707</code>）</h3>
+<ul>
+  <li><b>签名注入修复</b>：签名四要素（keystore/storePassword/alias/password/keystoreType）经环境变量写入 build.json，密码零明文落仓库</li>
+  <li><b>新增发布关卡</b>：「校验APK签名」步骤检测 APK Signing Block v2/v3 魔数必须紧邻 Central Directory，<b>未签名直接构建失败</b>，从结构上杜绝坏包再发布</li>
+  <li><b>坏包清除</b>：GitHub 端删除 v5.3.3-b4 资产与 v5.3.2-b3 资产（v5.3.2 Release 已挂警示说明）；飞书端清理未签名旧 APK</li>
+  <li><b>重建发布</b>：v5.3.3 tag 重打到修复 commit，CI run#5 产出 <b>b5 签名包</b>并重新发布 Release</li>
+</ul>
+<h3>b5 签名核验（本地结构级验证）</h3>
+<table>
+  <tr><th style="width:40%">核验项</th><th style="width:18%">结果</th><th>说明</th></tr>
+  <tr><td>APK Signing Block v2/v3</td><td><span class="ok">PASS</span></td><td>魔数紧邻 CD，签名块结构完整</td></tr>
+  <tr><td>sha256 与 GitHub digest 比对</td><td><span class="ok">一致</span></td><td><code>949dcb51…d41a0</code>，字节级无损</td></tr>
+  <tr><td>内嵌 APP_VERSION</td><td><span class="ok">5.3.3</span></td><td>assets/www/index.html 提取确认</td></tr>
+  <tr><td>直链可达（b5）</td><td><span class="ok">200</span></td><td>CI 校验关卡 + 本地双重验证</td></tr>
+</table>
+</div>
+
+<!-- 3 双端产物 -->
+<div class="card">
+<h2>3. 双端交付产物清单（同步完成）</h2>
+<h3>GitHub 端（源码与正式发布）</h3>
+<table>
+  <tr><th style="width:34%">产物</th><th>位置与状态</th></tr>
+  <tr><td>应用主程序 <code>demo.html</code></td><td>main 分支 <code>aea9cb3</code>（直链下载+三级回退）</td></tr>
+  <tr><td>签名安装包 <code>taicanggang-V5.3.3-b5.apk</code></td><td><span class="ok">Release v5.3.3 已发布</span> · 14.4MB · versionCode 50308</td></tr>
+  <tr><td><code>version.json</code></td><td>CI 已回写 buildNumber=5 / downloadUrl(b5) 并提交 main</td></tr>
+  <tr><td>测试脚本三套</td><td>tests/ 目录（77+19+47 项）</td></tr>
+  <tr><td>开发文档 V5.3.3</td><td>docs/开发文档V5.3.3.html（含签名修复章节）</td></tr>
+  <tr><td>CI 工作流</td><td>android-release.yml（签名修复+签名关卡）</td></tr>
+</table>
+<h3>飞书端（内部测试产物区，15/15 项同步通过）</h3>
+<table>
+  <tr><th style="width:34%">产物</th><th>说明</th></tr>
+  <tr><td>太仓港断电指导V5.3.3.apk(签名CI版-b5)</td><td><span class="ok">14.4MB 签名包</span>，未签名坏包已清零</td></tr>
+  <tr><td>开发文档V5.3.3.html</td><td>与 GitHub 端同源</td></tr>
+  <tr><td>test_v53_fixes.py / test_v532_export_images.js / test_v533_direct_download.js</td><td>三套测试脚本</td></tr>
+  <tr><td>version.json / demo.html / vehicles_data.js / README.md</td><td>APP 探测源与主程序同步更新</td></tr>
+</table>
+<div class="notice amber"><b>历史坏包处置：</b>v5.3.2 Release 资产 b3（未签名）已删除并挂警示；飞书产物区已确认无未签名 APK 残留，现存历史 APK（V5.2 及更早手机构建版）均为签名包。</div>
+</div>
+
+<!-- 4 测试 -->
+<div class="card">
+<h2>4. 测试终验（143 项全绿）</h2>
+<table>
+  <tr><th style="width:38%">套件</th><th style="width:14%">结果</th><th>覆盖</th></tr>
+  <tr><td><code>test_v53_fixes.py</code></td><td><span class="ok">77/77</span></td><td>语法/媒体迁移/视频四源/返回键/分享/飞书通道/审批闭环/版本一致性/直链下载</td></tr>
+  <tr><td><code>test_v532_export_images.js</code></td><td><span class="ok">19/19</span></td><td>Word/PDF 导出图片 base64 内嵌/占位降级/上限控制</td></tr>
+  <tr><td><code>test_v533_direct_download.js</code></td><td><span class="ok">47/47</span></td><td>三级回退沙箱求值/弹窗接线/version.json 字段/CI 回写/<b>签名四要素+签名关卡（新增7项）</b>/b5 直链实测/b4 坏包清除验证</td></tr>
+</table>
+<div class="notice green"><b>CI 流水线状态：</b>Android Release Build（run#5）success · CI（main）success · CodeQL Advanced success。签名关卡在 run#5 中实测拦截逻辑就位（对 b4 样本验证为 FAIL 拦截，对 b5 验证为 PASS 放行）。</div>
+</div>
+
+<!-- 5 升级指引 -->
+<div class="card">
+<h2>5. 用户升级指引</h2>
+<ul>
+  <li><b>老版本用户（V5.3.2 及更早）</b>：打开 APP → 设置 → 检查更新 → 弹窗点「<b>直接下载安装包（推荐）</b>」→ 通知栏下载完成点击安装（需授权"未知来源"一次）</li>
+  <li><b>手动下载</b>：<a href="https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.3/taicanggang-V5.3.3-b5.apk">taicanggang-V5.3.3-b5.apk 直链</a> 或 <a href="https://github.com/361087210/taicanggang-poweroff-guide/releases">Releases 页</a></li>
+  <li><b>飞书端</b>：产物区「太仓港断电指导V5.3.3.apk(签名CI版-b5)」</li>
+  <li><b>直链失效兜底</b>：APP 内置三级回退（downloadUrl→apkUrl→命名规则推导）+ 飞书云盘备用通道，永不死链</li>
+</ul>
+</div>
+
+<footer>太仓港断电指导APP V5.3.3-b5 交付终验报告 · 生成于 2026-08-21 · 终验执行：CI流水线核验 + APK结构级签名验证 + 143项自动化测试 + 双端产物比对</footer>
+</div>
+</body>
+</html>
