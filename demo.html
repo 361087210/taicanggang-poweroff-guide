@@ -2478,8 +2478,12 @@ async function uploadJsonToFolder(token,folderToken,docName,jsonStr){
 async function downloadJsonFromFolder(token,folderToken,docName){
   const files=await feishuListFiles(token,folderToken);
   if(!files)throw new Error('获取文件列表失败');
-  const target=files.find(f=>f.name===docName);
-  if(!target)return null;
+  // V5.3.2防御性修复: 产物区可能存在同名多档(历史同步缺陷遗留),
+  // 飞书列表接口不保证返回顺序, find取首个会不确定地命中旧档;
+  // 改为取 modified_time 最新一份, 与"保留最新"的清理约定一致
+  const matches=files.filter(f=>f.name===docName);
+  if(!matches.length)return null;
+  const target=matches.reduce((a,b)=>((parseInt(b.modified_time||0,10)||0)>(parseInt(a.modified_time||0,10)||0)?b:a));
   // 统一的健壮JSON解析: 兼容 原生插件自动解析对象 / 字符串(含UTF-8 BOM) / ArrayBuffer(二进制流按UTF-8解码)
   // 修复: 中文JSON经原生HTTP下载后字符串错乱/解析失败被误报为"云端无数据"
   const robustParse=(raw)=>{
