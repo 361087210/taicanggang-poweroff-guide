@@ -904,6 +904,33 @@ function writeBlobToCache(fileName,blob){
 }
 
 /**
+ * 列出飞书文件夹全部文件(自动翻页聚合) - 分页缺陷修复
+ * 根因: files接口分页字段为next_page_token(而非page_token), 目录超过200项时
+ *       单页请求会静默截断——视频分片/云端图片/备份/审批文件漏读, 同名幂等删除也会漏删旧档。
+ *       (数据区vehicle_videos已156项, 逼近上限, 此修复为必要兜底)
+ * @param {string} token - tenant_access_token
+ * @param {string} folderToken - 文件夹token
+ * @returns {Promise<Array|null>} 全量文件数组; 任一页请求失败返回null(由调用方兜底)
+ */
+async function feishuListFiles(token,folderToken){
+  const all=[];
+  let pageToken='';
+  for(let page=0;page<50;page++){ // 上限50页(约1万项)防御异常翻页死循环
+    let url=`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${folderToken}&page_size=200`;
+    if(pageToken)url+='&page_token='+encodeURIComponent(pageToken);
+    const res=await httpFetch(url,{method:'GET',headers:{Authorization:'Bearer '+token}});
+    let data;
+    try{data=typeof res==='string'?JSON.parse(res):res;}catch(e){return null;}
+    if(!data||data.code!==0)return null;
+    const d=data.data||{};
+    all.push(...(d.files||[]));
+    pageToken=d.next_page_token||'';
+    if(!d.has_more||!pageToken)break;
+  }
+  return all;
+}
+
+/**
  * 获取APP数据文件夹token - 懒加载并缓存
  * 优先读localStorage缓存;无缓存时在项目根目录下按名称查找子文件夹,不存在则创建
  * @param {string} token - 飞书tenant_access_token
@@ -913,9 +940,7 @@ async function getDataFolderToken(token){
   const cached=localStorage.getItem('tcg_data_folder');
   if(cached)return cached;
   const cfg=getFeishuCfg();
-  const listRes=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${cfg.folder}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
-  const listData=typeof listRes==='string'?JSON.parse(listRes):listRes;
-  const folders=((listData.data||{}).files||[]).filter(f=>f.type==='folder'&&f.name==='APP数据备份');
+  const folders=(await feishuListFiles(token,cfg.folder)||[]).filter(f=>f.type==='folder'&&f.name==='APP数据备份');
   let folderToken=null;
   if(folders.length>0){
     folderToken=folders[0].token;
@@ -2049,9 +2074,8 @@ async function pullPendingFromFeishu(silent){
     const token=await getFeishuToken(cfg);
     const dataFolder=await getDataFolderToken(token);
     if(!dataFolder)return 0;
-    const listData=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${dataFolder}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
-    if(listData.code!==0)throw new Error(listData.msg||'获取文件列表失败');
-    const files=(listData.data&&listData.data.files)||[];
+    const files=await feishuListFiles(token,dataFolder);
+    if(!files)throw new Error('获取文件列表失败');
     const pendingFiles=files.filter(f=>f.name&&f.name.startsWith('pending_reg_')&&f.name.endsWith('.json'));
     let newCount=0;
     for(const file of pendingFiles){
@@ -2262,8 +2286,7 @@ async function getFeishuToken(cfg,retries){
 async function uploadJsonToFolder(token,folderToken,docName,jsonStr){
   // 清理云端旧文件(同名)
   try{
-    const listData=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${folderToken}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
-    const olds=((listData.data||{}).files||[]).filter(f=>f.name===docName);
+    const olds=(await feishuListFiles(token,folderToken)||[]).filter(f=>f.name===docName);
     for(const f of olds){
       await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
     }
@@ -2292,9 +2315,9 @@ async function uploadJsonToFolder(token,folderToken,docName,jsonStr){
  * @param {string} docName - 文件名
  */
 async function downloadJsonFromFolder(token,folderToken,docName){
-  const listData=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${folderToken}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
-  if(listData.code!==0)throw new Error(listData.msg||'获取文件列表失败');
-  const target=((listData.data||{}).files||[]).find(f=>f.name===docName);
+  const files=await feishuListFiles(token,folderToken);
+  if(!files)throw new Error('获取文件列表失败');
+  const target=files.find(f=>f.name===docName);
   if(!target)return null;
   // 统一的健壮JSON解析: 兼容 原生插件自动解析对象 / 字符串(含UTF-8 BOM) / ArrayBuffer(二进制流按UTF-8解码)
   // 修复: 中文JSON经原生HTTP下载后字符串错乱/解析失败被误报为"云端无数据"
@@ -2686,13 +2709,13 @@ async function imgFromFeishuCloud(img,fileName){
     const token=await getFeishuToken(cfg);
     const dataFolder=await getDataFolderToken(token);
     if(!dataFolder)return false;
-    const listRes=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${dataFolder}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
-    if(listRes.code!==0)return false;
-    const imgFolder=((listRes.data||{}).files||[]).find(f=>f.type==='folder'&&f.name==='vehicle_images');
+    const dataFiles=await feishuListFiles(token,dataFolder);
+    if(!dataFiles)return false;
+    const imgFolder=dataFiles.find(f=>f.type==='folder'&&f.name==='vehicle_images');
     if(!imgFolder)return false;
-    const ifList=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${imgFolder.token}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
-    if(ifList.code!==0)return false;
-    const target=((ifList.data||{}).files||[]).find(f=>f.type==='file'&&f.name===fileName);
+    const imgFiles=await feishuListFiles(token,imgFolder.token);
+    if(!imgFiles)return false;
+    const target=imgFiles.find(f=>f.type==='file'&&f.name===fileName);
     if(!target)return false;
     let blob;
     if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
@@ -2743,13 +2766,13 @@ async function playFromFeishuCloud(video,fileName){
     const dataFolder=await getDataFolderToken(token);
     if(!dataFolder)return false;
     // 在数据文件夹下查找vehicle_videos子目录(懒创建仅查询)
-    const listRes=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${dataFolder}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
-    if(listRes.code!==0)return false;
-    const videoFolder=((listRes.data||{}).files||[]).find(f=>f.type==='folder'&&f.name==='vehicle_videos');
+    const dataFiles=await feishuListFiles(token,dataFolder);
+    if(!dataFiles)return false;
+    const videoFolder=dataFiles.find(f=>f.type==='folder'&&f.name==='vehicle_videos');
     if(!videoFolder)return false;
-    const vfList=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${videoFolder.token}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
-    if(vfList.code!==0)return false;
-    const cloudFiles=((vfList.data||{}).files||[]).filter(f=>f.type==='file');
+    const allVideoFiles=await feishuListFiles(token,videoFolder.token);
+    if(!allVideoFiles)return false;
+    const cloudFiles=allVideoFiles.filter(f=>f.type==='file');
     const target=cloudFiles.find(f=>f.name===fileName);
     // 分片形态: X.mp4.part001..NNN,按数字序重组
     const partPrefix=fileName+'.part';
@@ -2851,9 +2874,8 @@ function pickVideoFile(){
       const dataFolder=await getDataFolderToken(token);
       if(!dataFolder)throw new Error('数据文件夹不可用');
       // 确保vehicle_videos子目录存在(先查后建)
-      const listRes=await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${dataFolder}&page_size=200`,{method:'GET',headers:{Authorization:'Bearer '+token}});
       let vfToken=null;
-      const exist=((listRes.data||{}).files||[]).find(f=>f.type==='folder'&&f.name==='vehicle_videos');
+      const exist=(await feishuListFiles(token,dataFolder)||[]).find(f=>f.type==='folder'&&f.name==='vehicle_videos');
       if(exist)vfToken=exist.token;
       if(!vfToken){
         const cr=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({name:'vehicle_videos',folder_token:dataFolder})});
