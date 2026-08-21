@@ -1,9 +1,16 @@
 // Real Feishu API roundtrip test for the fixed upload/download logic
+// 安全加固: 凭证从环境变量读取, 不硬编码在代码中
+//   用法: FEISHU_APP_ID=xxx FEISHU_APP_SECRET=xxx FEISHU_FOLDER=xxx node tests/test_feishu_roundtrip.js
 const CFG = {
-  appId: 'cli_aa0ce4fd91f85be8',
-  appSecret: '9LLgk9WBTIPZmddpuFCYicamFdDdGoKC',
-  folder: 'WdXUfZPkClI1audQxIYc90XRnWc'
+  appId: process.env.FEISHU_APP_ID || '',
+  appSecret: process.env.FEISHU_APP_SECRET || '',
+  folder: process.env.FEISHU_FOLDER || ''
 };
+
+if (!CFG.appId || !CFG.appSecret || !CFG.folder) {
+  console.error('缺少环境变量: FEISHU_APP_ID / FEISHU_APP_SECRET / FEISHU_FOLDER');
+  process.exit(1);
+}
 
 async function getToken() {
   const res = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
