@@ -592,11 +592,12 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 </div>
 <div class="text-xs text-gray-400 text-center mb-3" id="update-size"></div>
 <div class="flex flex-col gap-2">
-<button onclick="downloadFromFeishu()" class="w-full py-3 bg-green-600 text-white rounded-xl text-sm font-medium">从飞书云盘下载新版</button>
-<button onclick="downloadUpdate()" class="w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium">GitHub 下载（需仓库权限）</button>
+<button onclick="downloadApkDirect()" class="w-full py-3 bg-green-600 text-white rounded-xl text-sm font-bold">直接下载安装包（推荐）</button>
+<button onclick="downloadFromFeishu()" class="w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium">飞书云盘下载（备用）</button>
 <button onclick="skipUpdate()" class="w-full py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">稍后再说</button>
 </div>
-<div class="text-xs text-blue-500 text-center mt-3">
+<div class="text-xs text-gray-400 text-center mt-2 leading-relaxed">直链来自 GitHub Release，无需仓库权限；<br>下载完成后请下拉通知栏点击安装</div>
+<div class="text-xs text-blue-500 text-center mt-2">
 <a href="javascript:void(0)" onclick="openUpdatePage()" id="update-page-link">查看发布页面</a>
 </div>
 </div>
@@ -958,7 +959,7 @@ async function getDataFolderToken(token){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.3.2';
+const APP_VERSION='5.3.3';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -3305,7 +3306,7 @@ async function checkUpdate(silent){
   const clEl=document.getElementById('update-changelog');
   const items=Array.isArray(info.changelog)?info.changelog:[];
   clEl.innerHTML=items.map(c=>'<div class="flex items-start gap-2"><span class="text-blue-500 mt-0.5">•</span><span>'+esc(c)+'</span></div>').join('')||'<div class="flex items-start gap-2"><span class="text-blue-500 mt-0.5">•</span><span>性能优化与问题修复</span></div>';
-  document.getElementById('update-size').textContent=info.apkSize?('安装包大小：'+info.apkSize):'';
+  document.getElementById('update-size').textContent=info.apkSize?('安装包大小：'+info.apkSize+' · 直链下载已就绪'):'直链下载已就绪';
   openModal('modal-update');
 }
 
@@ -3319,10 +3320,45 @@ function openExternal(url){
   }catch(e){window.open(url,'_blank');}
 }
 
+/**
+ * 解析当前版本的安装包直链(V5.3.3)
+ * 为什么字段三级回退: 旧版version.json只有apkUrl(且V5.3断链), 新版由CI回写downloadUrl;
+ * 兜底规则保证任何历史版本的version.json都能解出可用地址
+ * @returns {string|null} 可直接下载的APK直链
+ */
+function resolveApkUrl(info){
+  if(!info)return null;
+  // 1) 新字段: CI按实际Release资产回写的直链
+  if(info.downloadUrl&&/^https:\/\//.test(info.downloadUrl))return info.downloadUrl;
+  // 2) 兼容旧字段apkUrl: 过滤掉已知断链(V5.3大写tag, 资产实际不存在)
+  if(info.apkUrl&&/^https:\/\//.test(info.apkUrl)&&!info.apkUrl.includes('/download/V5.3/'))return info.apkUrl;
+  // 3) 按tag命名规则推导(与CI产物命名约定一致: taicanggang-V{ver}-b{build}.apk)
+  if(info.version){
+    const b=info.buildNumber?('b'+info.buildNumber):'';
+    return `https://github.com/${GITHUB_REPO}/releases/download/v${info.version}/taicanggang-V${info.version}${b?('-'+b):''}.apk`;
+  }
+  return null;
+}
+
+/**
+ * 直链下载安装包 - V5.3.3主下载通道
+ * 为什么走系统浏览器而非应用内下载: APK直链经系统浏览器触发Android原生下载管理器,
+ * 无需APP申请存储权限, 下载完成通知栏直接点击安装(要求"未知来源"授权一次);
+ * 应用内cordova-plugin-file下载路径在部分国产ROM上因分区存储策略失败率高
+ */
+function downloadApkDirect(){
+  const url=resolveApkUrl(latestUpdateInfo);
+  if(!url){showToast('下载地址无效,请使用飞书云盘下载');return;}
+  openExternal(url);
+  addSyncLog('用户触发直链下载: '+url,'blue');
+  showToast('已开始下载,请在通知栏查看进度');
+}
+
+/**
+ * 兼容旧入口(V5.3.2及以前版本界面调用) - 统一并入直链通道
+ */
 function downloadUpdate(){
-  if(!latestUpdateInfo||!latestUpdateInfo.apkUrl){showToast('下载地址无效');return;}
-  openExternal(latestUpdateInfo.apkUrl);
-  showToast('正在打开下载页面');
+  downloadApkDirect();
 }
 
 function downloadFromFeishu(){

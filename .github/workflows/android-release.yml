@@ -39,8 +39,8 @@ permissions:
   contents: write
 
 env:
-  APP_VERSION: '5.3.2'
-  BASE_VERSION_CODE: 50302
+  APP_VERSION: '5.3.3'
+  BASE_VERSION_CODE: 50303
 
 jobs:
   build:
@@ -227,19 +227,28 @@ jobs:
           echo "产物: ${{ steps.buildno.outputs.apk_name }} ($(du -h ${{ steps.buildno.outputs.apk_name }} | cut -f1))"
           ls -lh *.apk
 
-      # ---------- 回写构建号到 version.json(APP 远程版本探测数据源) ----------
-      - name: 回写 buildNumber 到 version.json
+      # ---------- 回写构建号与安装包直链到 version.json(APP 远程版本探测数据源) ----------
+      # V5.3.3: 直链URL在构建时即可预计算(与softprops/action-gh-release实际资产名严格一致),
+      # tag触发时写入 downloadUrl/apkUrl, APP更新弹窗「直接下载安装包」按钮即读此字段;
+      # 手动workflow_dispatch(非tag)不覆盖, 避免dry-run产生断链
+      - name: 回写 buildNumber 与 downloadUrl 到 version.json
         run: |
           node -e "
             const fs = require('fs');
             const v = JSON.parse(fs.readFileSync('version.json', 'utf8'));
             v.buildNumber = ${{ github.run_number }};
             v.buildDate = new Date().toISOString().slice(0, 10);
+            v.apkSize = (fs.statSync('${{ steps.buildno.outputs.apk_name }}').size / 1024 / 1024).toFixed(1) + 'MB';
+            if ('${{ github.ref }}'.startsWith('refs/tags/v') && '${{ inputs.dry_run }}' !== 'true') {
+              v.downloadUrl = 'https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ steps.buildno.outputs.apk_name }}';
+              v.apkUrl = v.downloadUrl;
+              v.pageUrl = 'https://github.com/${{ github.repository }}/releases';
+            }
             fs.writeFileSync('version.json', JSON.stringify(v, null, 2) + '\n');
-            console.log('version.json 已回写 buildNumber=${{ github.run_number }}');
+            console.log('version.json 已回写 buildNumber=${{ github.run_number }} downloadUrl=' + (v.downloadUrl || '(非tag构建,保留原值)'));
           "
 
-      - name: 提交构建号(App 远程多源版本探测需读取)
+      - name: 提交构建号与直链(App 远程多源版本探测需读取)
         if: ${{ !inputs.dry_run }}
         run: |
           git config user.name "github-actions[bot]"
