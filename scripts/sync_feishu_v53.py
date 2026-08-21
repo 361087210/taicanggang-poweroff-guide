@@ -95,13 +95,15 @@ def main():
     check('数据区APP数据备份就绪', bool(data_folder))
     print(f'    数据区token: {data_folder}')
 
-    print('=== 3. 上传产物到产物区(与数据区物理分离) ===')
+    print('=== 3. 上传产物到产物区(与数据区物理分离, 幂等替换) ===')
     artifacts = [
         ('docs/太仓港断电指导APP开发文档V5.3.html', '太仓港断电指导APP开发文档V5.3.html'),
         ('docs/V5.4迭代计划.html', 'V5.4迭代计划.html'),
         ('version.json', 'version.json'),
         ('README.md', 'README.md'),
         ('release/太仓港断电指导V5.3.apk', '太仓港断电指导V5.3.apk(签名版)'),
+        ('demo.html', 'demo.html'),
+        ('vehicles_data.js', 'vehicles_data.js'),
     ]
     for local, remote in artifacts:
         p = os.path.join(ROOT, local)
@@ -112,6 +114,15 @@ def main():
         if len(content) > 20 * 1024 * 1024:
             check(f'上传 {remote}', False, f'超过20MB上限({len(content)}字节)')
             continue
+        # 幂等保障: 上传前删除同名旧档(含历史重复档), 避免重跑产生重复文件
+        olds = [f for f in children.get('data', {}).get('files', [])
+                if f.get('name') == remote]
+        for o in olds:
+            try:
+                api('DELETE', f"/drive/v1/files/{o['token']}?type=file", token)
+                print(f'    已删除旧档 {remote}')
+            except Exception as e:
+                print(f'    旧档删除失败(继续上传): {str(e)[:80]}')
         r = upload_all(token, PROJECT_FOLDER, remote, content)
         ok = r.get('data', {}).get('file_token') or r.get('file_token')
         check(f'上传 {remote} ({len(content)//1024}KB)', bool(ok), str(r)[:150])
