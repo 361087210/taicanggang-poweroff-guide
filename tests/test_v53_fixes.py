@@ -96,7 +96,8 @@ check('组长上传视频功能', 'function pickVideoFile' in html)
 check('20MB飞书上限校验', '20*1024*1024' in html)
 check('8秒源加载超时保护', '8000' in html and 'setTimeout(onErr' in html)
 # 数据层: 视频引用与实际文件状态(设计如此:云端补传)
-video_refs = re.findall(r"'vehicle_videos/([^']+)'", vdata)
+# V5.3.1修正: 兼容单/双引号两种序列化风格(实测vehicles_data.js为双引号)
+video_refs = re.findall(r"""['"]vehicle_videos/([^'"]+)['"]""", vdata)
 check('43辆车视频引用完整(待组长上传补源)', len(video_refs) >= 40, f'实际{len(video_refs)}条引用')
 
 # ============================================================
