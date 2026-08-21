@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V5.5 迭代规划 · 8 项能力升级</title>
+<style>
+  :root {
+    --primary: #0f4c81; --primary-light: #e8f1f8; --accent: #c9a227;
+    --ok: #1e8e5a; --ok-bg: #e8f6ef; --warn: #b7791f; --warn-bg: #fdf3e3;
+    --low: #64748b; --low-bg: #eef2f7; --danger: #c0392b;
+    --text: #1f2937; --muted: #6b7280; --border: #e5e7eb; --bg: #f5f7fa; --card: #fff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); padding-bottom: 60px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  header { background: linear-gradient(135deg, #1a1f2e, #2c3e5d); color: #fff; padding: 28px 16px 24px; }
+  header .inner { max-width: 1100px; margin: 0 auto; }
+  header h1 { font-size: 21px; font-weight: 800; }
+  header h1 em { color: var(--accent); font-style: normal; }
+  header .sub { font-size: 12px; opacity: .82; margin-top: 8px; line-height: 1.8; }
+  .badge { display: inline-block; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 3px 11px; font-size: 11px; margin: 10px 6px 0 0; }
+
+  .panel { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-top: 14px; overflow: hidden; }
+  .panel-head { padding: 13px 15px; border-bottom: 1px solid var(--border); }
+  .panel-head h2 { font-size: 14px; font-weight: 700; }
+  .panel-head .hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .panel-body { padding: 15px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: var(--primary-light); color: var(--primary); text-align: left; padding: 9px 10px; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  @media(max-width: 720px) { .hide-m { display: none; } }
+  .tag { display: inline-block; border-radius: 5px; padding: 2px 8px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .tag-hi { background: var(--danger); color: #fff; }
+  .tag-mid { background: var(--warn-bg); color: var(--warn); }
+  .tag-lo { background: var(--low-bg); color: var(--low); }
+
+  .card { border: 1px solid var(--border); border-radius: 11px; padding: 14px; margin-bottom: 12px; background: #fff; }
+  .card .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .card .num { width: 28px; height: 28px; border-radius: 8px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+  .card h3 { font-size: 15px; font-weight: 700; flex: 1; }
+  .card .row { display: flex; gap: 8px; margin-top: 10px; font-size: 12px; line-height: 1.75; }
+  .card .row .k { color: var(--primary); font-weight: 700; min-width: 58px; flex-shrink: 0; }
+  .card .meta { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+  .meta span { font-size: 11px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; color: var(--muted); }
+
+  .phases { display: grid; gap: 10px; }
+  @media(min-width: 860px) { .phases { grid-template-columns: repeat(3, 1fr); } }
+  .phase { border-radius: 10px; padding: 13px; border: 1px solid var(--border); background: #fff; }
+  .phase.p1 { border-top: 3px solid var(--danger); }
+  .phase.p2 { border-top: 3px solid var(--warn); }
+  .phase.p3 { border-top: 3px solid var(--low); }
+  .phase .t { font-size: 13px; font-weight: 800; }
+  .phase .w { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .phase ul { margin: 9px 0 0 16px; font-size: 12px; line-height: 1.9; }
+
+  .note { background: var(--primary-light); border-radius: 9px; padding: 12px 14px; font-size: 12px; line-height: 1.8; color: #23405c; }
+  footer { text-align: center; font-size: 11px; color: var(--muted); margin-top: 24px; line-height: 1.8; }
+</style>
+</head>
+<body>
+<header>
+  <div class="inner">
+    <h1>V5.5 迭代规划 · <em>8 项能力升级</em></h1>
+    <div class="sub">依据优化方案「下一版本迭代计划」原文 8 项逐条落地：每项先对照 V5.3.1 代码库现状评估差距，再给出贴合"单 HTML + localStorage + 飞书云（无自建后端）"架构的可执行方案。V5.4 聚焦安全与稳定性收尾，V5.5 承接体验与治理升级。</div>
+    <span class="badge">衔接 V5.4 安全收尾</span><span class="badge">8 项能力</span><span class="badge">3 期滚动交付</span><span class="badge">无自建后端架构</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="panel">
+    <div class="panel-head"><h2>总览：8 项能力优先级与分期</h2><div class="hint">优先级依据：安全欠账 &gt; 审批体验 &gt; 离线可用 &gt; 治理与统计</div></div>
+    <div class="panel-body">
+      <table>
+        <thead><tr><th>#</th><th>能力</th><th class="hide-m">一句话方案</th><th>优先级</th><th>工作量</th><th>分期</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><b>离线模式</b></td><td class="hide-m">云数据快照 + stale-while-revalidate 启动刷新</td><td><span class="tag tag-hi">高</span></td><td>5 人日</td><td>P1</td></tr>
+          <tr><td>2</td><td><b>断点续传</b></td><td class="hide-m">飞书分片上传 API + 本地断点记录队列</td><td><span class="tag tag-mid">中</span></td><td>4 人日</td><td>P2</td></tr>
+          <tr><td>3</td><td><b>服务端生成缩略图</b></td><td class="hide-m">无后端 → CI 构建期 sharp 批量产缩略图，APK 双份内置</td><td><span class="tag tag-lo">中低</span></td><td>2 人日</td><td>P3</td></tr>
+          <tr><td>4</td><td><b>消息中心</b></td><td class="hide-m">统一消息表 + 红点徽标 + 已读状态云同步</td><td><span class="tag tag-hi">高</span></td><td>4 人日</td><td>P1</td></tr>
+          <tr><td>5</td><td><b>数据看板</b></td><td class="hide-m">本地行为计数 + 映射表聚合，ECharts 本地化</td><td><span class="tag tag-mid">中</span></td><td>3 人日</td><td>P2</td></tr>
+          <tr><td>6</td><td><b>操作日志</b></td><td class="hide-m">结构化事件环形缓冲 + 定期上传飞书数据备份</td><td><span class="tag tag-mid">中</span></td><td>3 人日</td><td>P2</td></tr>
+          <tr><td>7</td><td><b>权限分级</b></td><td class="hide-m">新增管理员角色 + 权限矩阵 + 路由守卫统一</td><td><span class="tag tag-lo">低</span></td><td>3 人日</td><td>P3</td></tr>
+          <tr><td>8</td><td><b>数据加密</b></td><td class="hide-m">SHA-256 盐值哈希(V5.4) + WebCrypto AES-GCM 本地加密</td><td><span class="tag tag-hi">高</span></td><td>5 人日</td><td>P1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>逐项方案详情</h2><div class="hint">现状均基于 V5.3.1 代码库实测核对，非泛化描述</div></div>
+    <div class="panel-body">
+
+      <div class="card"><div class="head"><div class="num">1</div><h3>离线模式</h3><span class="tag tag-hi">高 · P1</span></div>
+        <div class="row"><span class="k">现状</span><span>UI 层已零 CDN 本地化（Tailwind/SheetJS/jsPDF 均入 vendor/），断网可浏览 73 车型本地数据；但<b>用户数据（审批状态/备份/账号）每次都实时拉飞书</b>，断网即不可用，视频云端回退链同样依赖网络。</span></div>
+        <div class="row"><span class="k">方案</span><span>① 云数据快照：飞书拉取成功后写入 localStorage 快照（账号表/审批结果/待审列表），启动时<b>先渲染快照再后台刷新</b>（stale-while-revalidate），网络异常时顶部展示"离线数据 · 更新于 HH:mm"横幅；② 视频按需缓存：播放成功的云端视频用 cordova-plugin-file 落盘本地，二次播放零流量；③ 快照版本号与数据分仓目录对齐，避免新旧格式冲突。</span></div>
+        <div class="meta"><span>涉及: demo.html 数据层</span><span>风险: 快照体积(账号表&约50KB)</span><span>验收: 飞行模式下审批状态/视频可查看</span></div>
+      </div>
+
+      <div class="card"><div class="head"><div class="num">2</div><h3>断点续传</h3><span class="tag tag-mid">中 · P2</span></div>
+        <div class="row"><span class="k">现状</span><span>组长上传教学视频（≤20MB）与照片为<b>整包一次性传输</b>，弱网中断即全部重来；20MB 已逼近飞书单文件上限，成功率受网络制约。</span></div>
+        <div class="row"><span class="k">方案</span><span>① 接入飞书云文档<b>分片上传</b>（upload_all → upload_prepare/upload_part/upload_finish 序列）；② 本地维护断点记录表（文件指纹 + 已传分片偏移），中断后重进自动从断点继续；③ advanced-http 原生通道透传分片，复用现有 CORS 修复成果；④ 上传进度条细化到分片粒度。</span></div>
+        <div class="meta"><span>涉及: 上传模块</span><span>依赖: 飞书分片API配额</span><span>验收: 弱网中断3次仍能续传成功</span></div>
+      </div>
+
+      <div class="card"><div class="head"><div class="num">3</div><h3>服务端生成缩略图</h3><span class="tag tag-lo">中低 · P3</span></div>
+        <div class="row"><span class="k">现状</span><span>照片压缩在<b>客户端</b>完成（最长边 800px / 质量 70%），列表缩略图与详情图同源加载；无任何服务端，链接原文方案在本架构下需变形。</span></div>
+        <div class="row"><span class="k">方案</span><span>替代路径（AI 时代无后端解法）：在 <b>CI 流水线构建期</b>用 sharp 对 vehicle_images/ 批量生成 240px 列表缩略图目录（thumbs/），随 APK 内置双份图——列表加载缩略图、详情按需加载原图；APK 增量约 2MB，换列表滚动内存占用降 60%。云上传照片仍走客户端压缩，保持上传链路不变。</span></div>
+        <div class="meta"><span>涉及: android-release.yml + demo.html</span><span>收益: 列表流畅度</span><span>验收: 低内存机型滚动不掉帧</span></div>
+      </div>
+
+      <div class="card"><div class="head"><div class="num">4</div><h3>消息中心</h3><span class="tag tag-hi">高 · P1</span></div>
+        <div class="row"><span class="k">现状</span><span>组员申请通知靠 <b>60 秒轮询 + Toast</b>，提示即逝、错过无痕；审批结果、同步失败、版本更新各自为政，无统一入口。</span></div>
+        <div class="row"><span class="k">方案</span><span>① 统一消息表：类型枚举（注册申请/审批结果/同步失败/版本更新/视频上传完成），结构 {type, title, body, bizId, read, createdAt}；② localStorage 持久化 + 飞书「APP数据备份/messages.json」增量合并，跨设备已读同步；③ 底部 Tab 增消息入口 + 未读红点徽标；④ 轮询命中新事件改写为消息落库而非 Toast，Toast 仅作即时补充。</span></div>
+        <div class="meta"><span>涉及: 轮询器 + 新消息页</span><span>依赖: 离线模式快照</span><span>验收: 错过轮询窗口仍可回看全部消息</span></div>
+      </div>
+
+      <div class="card"><div class="head"><div class="num">5</div><h3>数据看板</h3><span class="tag tag-mid">中 · P2</span></div>
+        <div class="row"><span class="k">现状</span><span>无任何统计视图；车型数/匹配率数据实际已在映射表（73 车型 / 64 视频引用 / 0 照片缺失）中就绪，缺的只是展示层。</span></div>
+        <div class="row"><span class="k">方案</span><span>① 组长可见看板页：车型总数、品牌分布、<b>视频匹配完成率</b>（读 vehicle_media_mapping.json，映射表已是 CI 自动生成的可信数据源）；② 行为计数：视频播放次数/分享次数/导出次数本地累计（localStorage 计数器），隐私敏感不上云；③ ECharts 本地化进 vendor/，延续零 CDN 原则；④ 看板作为组长端首页可选模块。</span></div>
+        <div class="meta"><span>涉及: 新看板页 + vendor</span><span>数据源: 映射表(问题4产物)</span><span>验收: 匹配率与映射表数字一致</span></div>
+      </div>
+
+      <div class="card"><div class="head"><div class="num">6</div><h3>操作日志</h3><span class="tag tag-mid">中 · P2</span></div>
+        <div class="row"><span class="k">现状</span><span>数据增删改无审计痕迹，出问题无法回溯"谁在何时改了什么"；审批动作虽上云但无完整操作链路记录。</span></div>
+        <div class="row"><span class="k">方案</span><span>① 结构化事件 {who, role, action, target, before, after, device, ts}，统一由操作总线发射（所有写操作过同一入口）；② 本地环形缓冲（最近 500 条）+ 每日增量上传飞书「APP数据备份/audit_logs/」；③ 组长端日志查询页（按人/按时间/按动作筛选）；④ 日志写入失败不阻塞业务主流程。</span></div>
+        <div class="meta"><span>涉及: 操作总线 + 查询页</span><span>依赖: 消息中心同期建设</span><span>验收: 删除车辆后日志可查前后值</span></div>
+      </div>
+
+      <div class="card"><div class="head"><div class="num">7</div><h3>权限分级</h3><span class="tag tag-lo">低 · P3</span></div>
+        <div class="row"><span class="k">现状</span><span>已有组长/组员两级（approved_users.json + 角色字段），功能边界基本清晰；链接原文设想的"管理员"层级当前场景<b>暂无真实需求方</b>。</span></div>
+        <div class="row"><span class="k">方案</span><span>① 按需新增管理员角色：可管理组长账号、全局参数（轮询频率/备份目录）、查看全量操作日志；② 权限矩阵表驱动（功能 × 角色布尔矩阵），替代散落各处的 if(role) 判断；③ 路由守卫统一收口，未授权跳转登录而非白屏。仅当出现"多班组隔离"需求时升级，避免过度设计。</span></div>
+        <div class="meta"><span>涉及: 账号体系 + 路由</span><span>原则: 不过度设计</span><span>验收: 越权访问被守卫拦截</span></div>
+      </div>
+
+      <div class="card"><div class="head"><div class="num">8</div><h3>数据加密</h3><span class="tag tag-hi">高 · P1</span></div>
+        <div class="row"><span class="k">现状</span><span>账号密码<b>明文</b>存于飞书云端 approved_users.json（V5.4 已排期 SHA-256 + 盐）；localStorage 中 Secret、离线快照均为明文；传输侧已是 HTTPS + 飞书 tenant_token。</span></div>
+        <div class="row"><span class="k">方案</span><span>① 密码：SHA-256 + 每用户随机盐（V5.4 承接，存量明文首登强制迁移）；② 本地敏感字段：WebCrypto AES-GCM 加密 localStorage（密钥由设备指纹派生），覆盖 Secret/账号快照/消息表；③ 传输：保持 HTTPS，禁用任何明文回退；④ 加密层做成统一 crypto util，供离线模式与消息中心复用。</span></div>
+        <div class="meta"><span>涉及: crypto util + 账号体系</span><span>依赖: V5.4 密码哈希先行</span><span>验收: 反编译/localStorage均无明文敏感数据</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>分期路线图（3 期滚动交付）</h2><div class="hint">每期结束跑一轮多维度测试矩阵（docs/测试矩阵V1.0.html），全绿才进入下期</div></div>
+    <div class="panel-body">
+      <div class="phases">
+        <div class="phase p1"><div class="t">P1 · 安全与体验基座</div><div class="w">第 1-2 周 · 14 人日</div>
+          <ul><li>数据加密（承接 V5.4 密码哈希）</li><li>离线模式（快照 + 视频缓存）</li><li>消息中心（统一消息表 + 红点）</li></ul>
+        </div>
+        <div class="phase p2"><div class="t">P2 · 传输与治理</div><div class="w">第 3-4 周 · 10 人日</div>
+          <ul><li>断点续传（飞书分片上传）</li><li>数据看板（映射表聚合 + 行为计数）</li><li>操作日志（审计链路）</li></ul>
+        </div>
+        <div class="phase p3"><div class="t">P3 · 性能与扩展</div><div class="w">第 5 周 · 5 人日</div>
+          <ul><li>CI 构建期缩略图（sharp）</li><li>权限分级（按需启用管理员）</li><li>全量回归 + 测试矩阵双轮全绿</li></ul>
+        </div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="note"><b>依赖链：</b>数据加密 → 离线模式（快照需加密）→ 消息中心（已读状态入快照）；断点续传独立可并行；看板依赖问题4映射表（已交付）；权限分级待真实需求触发。V5.4（服务端代理评估/密码哈希）与本计划 P1 首尾相接，不重叠。</div>
+    </div>
+  </div>
+
+  <footer>太仓港商品车断电操作标准化指导平台 · V5.5 迭代规划 V1.0（2026-08-21）<br>依据外部优化方案「下一版本迭代计划」8 项原文逐条落地评估</footer>
+</div>
+</body>
+</html>

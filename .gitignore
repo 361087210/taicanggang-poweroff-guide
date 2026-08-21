@@ -7,3 +7,11 @@ tests/test_screenshots/
 *.log
 build_err*.txt
 build_log*.txt
+
+# ===== V5.3.1 CI/CD规范化: 签名密钥与二进制产物不入库(安全红线) =====
+# 正式产物走 GitHub Release, 内部测试产物走飞书云文件夹, 源码仓库不放二进制
+release/keystore/
+*.keystore
+*.jks
+release/*.apk
+platforms/android/release-signing.properties
