@@ -23,5 +23,7 @@
   "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/V5.3/taicanggang-V5.3.apk",
   "pageUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases",
   "feishuFolder": "https://feishu.cn/drive/folder/WdXUfZPkClI1audQxIYc90XRnWc",
-  "feishuDataFolder": "APP数据备份(用户数据专用,与产物分离)"
+  "feishuDataFolder": "APP数据备份(用户数据专用,与产物分离)",
+  "buildNumber": 3,
+  "buildDate": "2026-08-21"
 }
