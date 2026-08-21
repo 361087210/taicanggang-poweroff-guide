@@ -175,20 +175,22 @@ POST体:  按类型自动切换 json/utf8 序列化器</code></pre>
    vehicle_videos(组长上传)                版本分发(jsDelivr多源)</code></pre>
 </div>
 
-<h2>四、测试报告</h2>
+<h2>五、测试报告</h2>
 <div class="card">
 <table>
 <tr><th>套件</th><th>文件</th><th>覆盖</th><th>结果</th></tr>
 <tr><td>静态检查(59项)</td><td><code>tests/test_v53_fixes.py</code></td><td>语法/八项问题修复点/规范符合性/vendor完整性/死链零残留</td><td class="ok">59/59 通过</td></tr>
 <tr><td>运行时仿真(21项)</td><td><code>tests/test_v53_runtime.js</code></td><td>真实VEHICLES数据执行迁移/返回键六级状态机/视频源链逐级回退/导航栈行为</td><td class="ok">21/21 通过</td></tr>
 <tr><td>飞书E2E(10项)</td><td><code>tests/test_v53_feishu_e2e.py</code></td><td>真实API: token/双仓分离/数据上传下载/注册申请闭环/产物区零污染/测试自清理</td><td class="ok">10/10 通过</td></tr>
+<tr><td>审批闭环(12项)</td><td><code>tests/test_v531_approval_loop.py</code></td><td>V5.3.1新增: 登录/登出生命周期×4、审批动作推送×4、拉取健壮性×2、语法与空catch×2</td><td class="ok">12/12 通过</td></tr>
 </table>
-<p>三套件合计<b>90项断言全绿</b>。飞书E2E使用真实租户凭证验证,与APP运行时调用链完全一致(multipart上传/列表发现/下载回读/删除清理)。</p>
-<p class="warn">真机人工验证清单(装包后10分钟): ①任意车辆详情照片可看可缩放 ②视频显示"待补充"(组长可见上传按钮) ③Word/PDF分享到微信文件可接收 ④硬件返回键逐级回退 ⑤双机不同网络注册审批闭环 ⑥飞行模式下UI/导出/照片完整可用。</p>
+<p>四套件合计<b>102项断言全绿</b>。飞书E2E使用真实租户凭证验证,与APP运行时调用链完全一致(multipart上传/列表发现/下载回读/删除清理)。</p>
+<p class="warn">真机人工验证清单(装包后10分钟): ①任意车辆详情照片可看可缩放 ②视频显示"待补充"(组长可见上传按钮) ③Word/PDF分享到微信文件可接收 ④硬件返回键逐级回退 ⑤双机不同网络注册审批闭环 ⑥飞行模式下UI/导出/照片完整可用 ⑦Secret手动填写后飞书同步正常。</p>
 </div>
 
-<h2>四点五、V5.3.1 增补: 审批闭环接线修复(2026-08-21)</h2>
+<h2>四、V5.3.1 增补: 审批闭环接线 + 安全加固(2026-08-21)</h2>
 <div class="card">
+<h3><span class="tag t-fix">修复</span>4.1 审批闭环接线修复</h3>
 <p><b>问题现象</b>: 用户报告"两台手机不在同一网络下,组员注册申请,组长端始终收不到"。</p>
 <p><b>根因</b>: V5.3实现了跨设备审批的全部零件——组长轮询器<code>startPendingPolling()</code>、审批结果上传<code>pushApprovedUsersToFeishu()</code>、组员状态拉取<code>pullApprovedStatusFromFeishu()</code>——但这三个函数<b>均为死代码,从未被任何调用点接入</b>。审批数据链路的"管道"铺好了,却没有接上"水龙头": 申请能上传,但组长端不会主动轮询;审批能在本地生效,但结果不会上云;组员端也永远拉不到"已通过"状态。</p>
 <table>
@@ -199,10 +201,24 @@ POST体:  按类型自动切换 json/utf8 序列化器</code></pre>
 <tr><td>登出清理</td><td><code>doLogout()</code></td><td>退出登录停止轮询器,避免登出后仍以旧身份拉取</td></tr>
 <tr><td>参数化拉取</td><td><code>pullApprovedStatusFromFeishu(userParam)</code></td><td>支持传入待查用户(登录前<code>state.currentUser</code>尚未赋值的场景),内部<code>who=userParam||state.currentUser</code>兜底</td></tr>
 </table>
-<p><b>验证</b>: 新增<code>tests/test_v531_approval_loop.py</code>(12项断言: 登录/登出生命周期×4、审批动作推送×4、拉取健壮性×2、语法与空catch×2),连同V5.3套件修正视频引用正则后合计<b>71项全绿</b>。版本号保持V5.3不变,APK重新构建签名。</p>
+<p><b>验证</b>: 新增<code>tests/test_v531_approval_loop.py</code>(12项断言),V5.3+V5.3.1合计<b>102项自动化测试全绿</b>。版本号保持V5.3不变,APK重新构建签名。</p>
 </div>
 
-<h2>五、构建与签名</h2>
+<div class="card">
+<h3><span class="tag t-fix">修复</span>4.2 安全加固: 凭证硬编码清除</h3>
+<p><b>问题现象</b>: 飞书 App Secret 硬编码在 <code>demo.html</code> 前端代码中,APK可被反编译提取,且老版开发文档/测试脚本中也有明文凭证。</p>
+<p><b>根因</b>: 为了"开箱即用"的体验,最初将飞书凭证直接写入默认配置,忽略了前端代码可被逆向提取的风险。</p>
+<p><b>修复方案</b>:</p>
+<ul>
+<li>默认配置中<code>appSecret</code>留空,首次使用需在「设置 → 飞书配置」手动填写,保存于<code>localStorage</code></li>
+<li>清除代码库所有明文凭证: demo.html、2份老版开发文档、测试脚本共4处硬编码全部移除</li>
+<li>测试脚本改为环境变量读取凭证(<code>FEISHU_APP_SECRET</code>)</li>
+<li>飞书同步脚本改命令行参数传入,不写入版本控制</li>
+</ul>
+<p><b>用户影响</b>: 升级V5.3.1后,已配置过Secret的老用户不受影响(localStorage仍在);新安装用户需手动填写Secret。Secret轮换无需重新发版,用户在设置页更新即可。</p>
+</div>
+
+<h2>六、构建与签名</h2>
 <div class="card">
 <h3>签名证书(Release)</h3>
 <table>
@@ -226,7 +242,7 @@ cd tcg_app  &  cordova build android --release -- --packageType=apk ^
 <p class="warn">注意: V5.3起<b>必须</b>同步<code>vendor/</code>目录到www,否则白屏;<b>必须</b>包含cordova-plugin-advanced-http插件(config.xml已声明,新增插件后需<code>cordova prepare</code>)。</p>
 </div>
 
-<h2>六、双端同步结构</h2>
+<h2>七、双端同步结构</h2>
 <div class="card">
 <table>
 <tr><th>端</th><th>位置</th><th>V5.3同步内容</th></tr>
@@ -236,7 +252,7 @@ cd tcg_app  &  cordova build android --release -- --packageType=apk ^
 </table>
 </div>
 
-<h2>七、下一版本迭代计划(V5.4建议)</h2>
+<h2>八、下一版本迭代计划(V5.4建议)</h2>
 <div class="card">
 <table>
 <tr><th>#</th><th>方向</th><th>说明</th><th>优先级</th></tr>
@@ -251,26 +267,30 @@ cd tcg_app  &  cordova build android --release -- --packageType=apk ^
 </table>
 </div>
 
-<h2>八、文件清单</h2>
+<h2>九、文件清单</h2>
 <div class="card">
 <table>
 <tr><th>文件</th><th>说明</th></tr>
-<tr><td><code>demo.html</code></td><td>应用主程序(V5.3全部逻辑,内联73条车辆数据)</td></tr>
+<tr><td><code>demo.html</code></td><td>应用主程序(V5.3全部逻辑,内联73条车辆数据,Secret默认留空)</td></tr>
 <tr><td><code>vendor/*</code></td><td>本地化依赖库×5(离线可用)</td></tr>
-<tr><td><code>vehicle_images/*</code></td><td>车辆实拍图118张(死链已清洗)</td></tr>
+<tr><td><code>vehicle_images/*</code></td><td>车辆实拍图162张(死链已清洗,飞书云端全量同步)</td></tr>
 <tr><td><code>vehicles_data.js</code></td><td>数据源文件(备份/同步用,已清洗)</td></tr>
 <tr><td><code>config.xml</code></td><td>Cordova配置(V5.3: 版本50300+advanced-http插件)</td></tr>
-<tr><td><code>keystore/tcg_release.keystore</code></td><td>签名证书(30年)</td></tr>
-<tr><td><code>build_apk_v53.sh</code></td><td>一键签名构建脚本</td></tr>
+<tr><td><code>keystore/tcg_release.keystore</code></td><td>签名证书(30年,RSA-2048)</td></tr>
+<tr><td><code>build_apk_v53.bat</code></td><td>一键签名构建脚本(Windows)</td></tr>
 <tr><td><code>tests/test_v53_fixes.py</code></td><td>静态检查套件(59项)</td></tr>
 <tr><td><code>tests/test_v53_runtime.js</code></td><td>运行时仿真套件(21项)</td></tr>
 <tr><td><code>tests/test_v53_feishu_e2e.py</code></td><td>飞书E2E套件(10项)</td></tr>
-<tr><td><code>release/太仓港断电指导V5.3.apk</code></td><td>签名安装包</td></tr>
+<tr><td><code>tests/test_v531_approval_loop.py</code></td><td>审批闭环专项套件(12项,V5.3.1新增)</td></tr>
+<tr><td><code>tests/test_feishu_roundtrip.js</code></td><td>飞书上传下载往返测试(环境变量传凭证)</td></tr>
+<tr><td><code>release/太仓港断电指导V5.3.apk</code></td><td>签名安装包(14.4MB)</td></tr>
 <tr><td><code>version.json</code></td><td>版本清单(APP内更新通道数据源)</td></tr>
+<tr><td><code>docs/太仓港断电指导APP开发文档V5.3.html</code></td><td>本开发文档</td></tr>
+<tr><td><code>docs/V5.4迭代计划.html</code></td><td>下一版本迭代计划(9项,含优先级和工作量评估)</td></tr>
 </table>
 </div>
 
-<footer>太仓港断电指导APP V5.3 · 开发文档 · 2026-08-20 · 90项自动化测试全绿交付</footer>
+<footer>太仓港断电指导APP V5.3.1 · 开发文档 · 2026-08-21 · 102项自动化测试全绿交付</footer>
 </div>
 </body>
 </html>
