@@ -4,6 +4,7 @@
   "date": "2026-08-21",
   "apkSize": "14.4MB",
   "changelog": [
+    "【修复-签名V5.3.3-b5】CI产出的V5.3.2-b3/V5.3.3-b4实为未签名包(签名配置未写入build.json被cordova忽略,下载后安装报'应用未安装'); 已修复签名注入并在发布前新增签名校验关卡,未签名包不再可能发布",
     "【新增-直链下载V5.3.3】更新弹窗新增「直接下载安装包」主按钮: 点击即经系统浏览器触发Android原生下载管理器直取GitHub Release安装包,无需仓库权限、无需翻找飞书云盘; version.json由CI发布时自动回写downloadUrl直链",
     "【修复-断链】version.json的apkUrl此前指向不存在的大写V5.3标签资产(404断链), 新增三级回退解析(downloadUrl→apkUrl→按命名规则推导),任何历史版本的version.json都能解出可用直链",
     "【修复-导出图片V5.3.2】Word/PDF导出内嵌真实照片: 导出前预取照片(本地APK→飞书云端vehicle_images)转base64数据流写入文档,修复此前仅写入相对路径导致Word/PDF打开无图; 未命中照片以文件名文字占位保持可追溯",
@@ -22,11 +23,11 @@
     "【优化-离线】Tailwind/SheetJS/jsPDF/html-docx全部本地化进APK,零外链CDN依赖,弱网/无网环境UI与导出功能完整可用",
     "【优化-更新检查】多源版本探测统一走httpFetch原生通道+8秒超时,弱网不再无限挂起"
   ],
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.3/taicanggang-V5.3.3-b4.apk",
-  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.3/taicanggang-V5.3.3-b4.apk",
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.3/taicanggang-V5.3.3-b5.apk",
+  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.3/taicanggang-V5.3.3-b5.apk",
   "pageUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases",
   "feishuFolder": "https://feishu.cn/drive/folder/WdXUfZPkClI1audQxIYc90XRnWc",
   "feishuDataFolder": "APP数据备份(用户数据专用,与产物分离)",
-  "buildNumber": 4,
+  "buildNumber": 5,
   "buildDate": "2026-08-21"
 }
