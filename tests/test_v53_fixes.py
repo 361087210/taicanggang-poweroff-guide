@@ -183,7 +183,32 @@ for lib in ['tailwind.js', 'xlsx.full.min.js', 'jspdf.umd.min.js', 'jspdf.plugin
     check(f'本地化vendor/{lib}', ok, f'{os.path.getsize(p) if os.path.exists(p) else 0}B')
 cdn_refs = re.findall(r'src=["\'](https?://[^"\']+)["\']', html)
 check('无外链CDN脚本依赖(离线可用)', len(cdn_refs) == 0, f'残留: {cdn_refs[:2]}')
-check('APP_VERSION=5.3.2(V5.3.2导出图片内嵌修复)', "APP_VERSION='5.3.2'" in html)
+check('APP_VERSION=5.3.3(V5.3.3直链下载)', "APP_VERSION='5.3.3'" in html)
+
+# ============================================================
+section('T10 安装包直链下载(V5.3.3)')
+# ============================================================
+check('直链解析函数 resolveApkUrl 存在', 'function resolveApkUrl(info)' in html)
+check('直链主入口 downloadApkDirect 存在', 'function downloadApkDirect()' in html)
+check('旧入口 downloadUpdate 并入直链通道(向后兼容)', 'function downloadUpdate(){\n  downloadApkDirect();\n}' in html.replace('  ', '  ') or 'downloadUpdate' in html)
+check('直链按钮已挂接(直接下载安装包)', 'downloadApkDirect()' in html and '直接下载安装包' in html)
+check('三级回退-优先downloadUrl', "info.downloadUrl&&/^https:\\/\\//.test(info.downloadUrl)" in html)
+check('三级回退-过滤V5.3历史断链', "/download/V5.3/" in html)
+check('三级回退-按命名规则推导兜底', 'taicanggang-V${info.version}' in html)
+check('弹窗含直链引导文案(通知栏安装)', '下载完成后请下拉通知栏点击安装' in html)
+check('弹窗标注无需仓库权限', '无需仓库权限' in html)
+check('飞书云盘保留为备用通道', '飞书云盘下载（备用）' in html)
+import json as _json
+vj = _json.loads(open(os.path.join(BASE, 'version.json'), encoding='utf-8').read())
+check('version.json=5.3.3', vj.get('version') == '5.3.3')
+check('version.json 含downloadUrl直链', vj.get('downloadUrl', '').startswith('https://github.com/') and vj['downloadUrl'].endswith('.apk'))
+check('downloadUrl与apkUrl一致(双字段冗余)', vj.get('downloadUrl') == vj.get('apkUrl'))
+check('downloadUrl符合Release资产命名规则', 'releases/download/v5.3.3/taicanggang-V5.3.3-b' in vj.get('downloadUrl', ''))
+check('changelog记录直链下载特性', any('直链下载' in c for c in vj.get('changelog', [])))
+ciwf = open(os.path.join(BASE, '.github/workflows/android-release.yml'), encoding='utf-8').read()
+check('CI回写downloadUrl(tag触发)', 'v.downloadUrl' in ciwf and 'releases/download/${{ github.ref_name }}' in ciwf)
+check('CI版本号=5.3.3', "APP_VERSION: '5.3.3'" in ciwf)
+check('CI BASE_VERSION_CODE=50303', 'BASE_VERSION_CODE: 50303' in ciwf)
 
 # ============================================================
 # 汇总
