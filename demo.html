@@ -761,10 +761,12 @@ let USERS=loadUsers();
 
 // ===================== FEISHU DEFAULT CONFIG =====================
 // V5.3: 双文件夹分离 - folder=项目产物目录(版本更新检查), dataFolder=APP用户数据目录(备份/注册申请/审批结果)
+// V5.3.1安全加固: appSecret默认留空, 首次使用请在「设置 → 飞书配置」中手动填写, 保存于localStorage
+//   原因: Secret硬编码在APK中可被反编译提取, 存在泄露风险; 按需手动填写更安全
 // 目的: 项目交付产物与用户操作产生的数据互不污染,便于各自管理与清理
 const DEFAULT_FEISHU_CONFIG={
   appId:'cli_aa0ce4fd91f85be8',
-  appSecret:'9LLgk9WBTIPZmddpuFCYicamFdDdGoKC',
+  appSecret:'',
   folder:'WdXUfZPkClI1audQxIYc90XRnWc',
   dataFolder:'APP数据备份',   // 首次同步时自动在该名称子文件夹下定位/创建,token缓存于localStorage
   interval:30
