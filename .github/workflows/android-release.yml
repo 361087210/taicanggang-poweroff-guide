@@ -107,8 +107,15 @@ jobs:
       - name: 添加 Android 平台(插件随 config.xml 自动装配)
         working-directory: tcg_app
         run: |
+          set -e
+          # 初始化 package.json(无则 cordova 某些子命令行为不确定)
+          [ -f package.json ] || echo '{"name":"tcg_app","version":"1.0.0","private":true}' > package.json
           npx cordova platform add android@13 --no-telemetry || npx cordova platform add android --no-telemetry
           npx cordova prepare android --no-telemetry
+          echo "=== 平台版本 ==="
+          cat platforms/android/cordova/version 2>/dev/null || echo "未知"
+          echo "=== 平台目录结构 ==="
+          ls -la platforms/android/ 2>/dev/null | head -20
 
       # ---------- 签名配置: 密钥与密码全部来自 Secrets ----------
       - name: 解码签名密钥
@@ -145,14 +152,54 @@ jobs:
       # ---------- 全量构建(全新Runner, 天然清理缓存) ----------
       - name: 构建 Release APK
         working-directory: tcg_app
-        run: npx cordova build android --release --no-telemetry
+        run: |
+          npx cordova build android --release --no-telemetry
+          echo "=== 构建完成, 输出诊断 ==="
+          echo "--- cordova-android 版本 ---"
+          cat platforms/android/cordova/version 2>/dev/null || echo "未知"
+          echo "--- 搜索所有 APK ---"
+          find platforms -name '*.apk' -type f 2>/dev/null || echo "(无 APK 文件)"
+          echo "--- outputs 目录 ---"
+          find platforms/android -path '*/outputs*' -type d 2>/dev/null | head -20 || echo "(无 outputs 目录)"
 
       - name: 重命名产物(独立构建号)
         run: |
           set -e
-          APK=$(find tcg_app/platforms/android/app/build/outputs/apk/release -name '*.apk' | head -1)
-          [ -z "$APK" ] && { echo "::error::未找到构建产物 APK"; exit 1; }
+          # 多路径探测APK(cordova-android 12/13 输出路径可能因 AGP 版本不同而异)
+          APK=""
+          for p in \
+            "tcg_app/platforms/android/app/build/outputs/apk/release" \
+            "tcg_app/platforms/android/app/build/outputs/apk/app/release" \
+            "tcg_app/platforms/android/build/outputs/apk/release" \
+            "tcg_app/platforms/android/app/build/outputs/bundle/release"; do
+            if [ -d "$p" ]; then
+              found=$(find "$p" -name '*.apk' -type f 2>/dev/null | head -1 || true)
+              if [ -n "$found" ]; then APK="$found"; echo "APK 命中路径: $found"; break; fi
+            fi
+          done
+          # 回退1: 全 platforms 搜索, 优先 release
+          if [ -z "$APK" ]; then
+            APK=$(find tcg_app/platforms -name '*.apk' -type f 2>/dev/null | grep -i 'release' | head -1 || true)
+            [ -n "$APK" ] && echo "APK 回退命中(release): $APK"
+          fi
+          # 回退2: 任何 APK
+          if [ -z "$APK" ]; then
+            APK=$(find tcg_app/platforms -name '*.apk' -type f 2>/dev/null | head -1 || true)
+            [ -n "$APK" ] && echo "APK 最终回退命中: $APK"
+          fi
+          if [ -z "$APK" ]; then
+            echo "::error::未找到构建产物 APK"
+            echo "=== 完整诊断 ==="
+            echo "--- platforms/android 目录树(前30层) ---"
+            find tcg_app/platforms/android -maxdepth 4 -type d 2>/dev/null | head -30 || echo "(不存在)"
+            echo "--- 全仓库 APK 搜索 ---"
+            find tcg_app -name '*.apk' -type f 2>/dev/null || echo "(无)"
+            echo "--- build.gradle 关键配置 ---"
+            grep -n 'output\|apk\|applicationVariants' tcg_app/platforms/android/app/build.gradle 2>/dev/null | head -10 || echo "(无匹配)"
+            exit 1
+          fi
           cp "$APK" "${{ steps.buildno.outputs.apk_name }}"
+          echo "产物来源: $APK"
           echo "产物: ${{ steps.buildno.outputs.apk_name }} ($(du -h ${{ steps.buildno.outputs.apk_name }} | cut -f1))"
           ls -lh *.apk
 
