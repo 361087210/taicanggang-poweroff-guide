@@ -1,21 +1,65 @@
-# Security Policy
+# 安全策略
 
-## Supported Versions
+## 支持版本
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+当前仅支持以下版本的安全更新：
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| 版本 | 支持状态 | 说明 |
+| ---- | -------- | ---- |
+| V5.3.x | ✅ 支持 | 当前活跃版本，含 V5.3.1 安全加固 |
+| V5.2.x | ❌ 不再支持 | 存在飞书 CORS 真机适配问题 |
+| V5.0.x / V4.x | ❌ 不再支持 | 历史版本，建议升级至 V5.3+ |
 
-## Reporting a Vulnerability
+## 凭证安全（V5.3.1 加固）
 
-Use this section to tell people how to report a vulnerability.
+### 飞书 App Secret
+- **默认不留存**：`demo.html` 中 `DEFAULT_FEISHU_CONFIG.appSecret` 为空字符串
+- **手动填写**：首次使用需在「设置 → 飞书配置」手动填写，保存于 `localStorage`
+- **本地存储**：Secret 仅存于本机，不随 APK 分发
+- **代码库零明文**：源码、文档、测试脚本中均不含明文凭证
+- **测试脚本**：通过环境变量 `FEISHU_APP_SECRET` 传递
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+### 密码存储
+- 当前版本密码以明文存储于 `approved_users.json`（飞书云端）
+- **V5.4 计划**：升级为 SHA-256 + 盐值哈希存储，详见 [V5.4迭代计划](docs/V5.4迭代计划-深度重构版.html)
+
+## 报告安全漏洞
+
+如发现安全漏洞，请通过以下方式报告：
+
+1. **优先渠道**：GitHub Issues 提交（标记 `security` 标签）
+2. **紧急情况**：联系项目维护者
+
+报告时请包含：
+- 漏洞类型（凭证泄露 / 越权访问 / 数据泄露 / 其他）
+- 影响范围（版本 / 模块）
+- 复现步骤
+- 严重程度评估（高 / 中 / 低）
+
+## 安全最佳实践
+
+### 部署侧
+- 定期轮换飞书 App Secret
+- 不要将 Secret 写入版本控制或 CI 配置文件
+- 生产环境建议使用服务端代理，不建议客户端直连飞书 API
+
+### 使用侧
+- 组长账号密码不要与个人账号共用
+- 定期清理离职人员账号
+- 首次安装后立即在设置页填写飞书 Secret，不要分享给无关人员
+
+## 已知安全限制
+
+| 限制项 | 说明 | 计划修复版本 |
+| ------ | ---- | ------------ |
+| 密码明文存储 | 审批账号密码以明文存储于飞书云端 | V5.4（SHA-256 哈希） |
+| 客户端直连飞书 | App Secret 存在于客户端，APK 反编译可获取 | V5.5（服务端代理 / Bitable） |
+| 无传输加密 | 数据上传下载走 HTTPS，但本地存储无加密 | V5.4+（评估中） |
+
+## 安全更新历史
+
+| 版本 | 日期 | 安全变更 |
+| ---- | ---- | -------- |
+| V5.3.1 | 2026-08-21 | 飞书 App Secret 从默认配置移除，代码库零明文凭证 |
+| V5.3 | 2026-08-20 | 数据分仓（项目产物与用户数据物理隔离） |
+| V4.0 | 2026-06-15 | 账号系统与角色权限（组长/组员） |
