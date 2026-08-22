@@ -1,9 +1,9 @@
 {
-  "version": "5.4",
-  "versionCode": 50400,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.4/tcg_poweroff_v5.4.apk",
+  "version": "5.6",
+  "versionCode": 50600,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.6/tcg_poweroff_v5.6.apk",
   "releaseNotes": [
-    "V5.4 密码安全加固",
+    "V5.6 密码安全加固",
     "- 新增: SHA-256+盐值密码哈希化（本地存储），飞书云端不再同步密码",
     "- 新增: 启动时自动幂等迁移明文旧密码为哈希格式",
     "- 新增: 登录时自动将明文旧密码升级为哈希，零用户感知",
