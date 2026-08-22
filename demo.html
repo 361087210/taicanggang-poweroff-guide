@@ -1009,7 +1009,7 @@ async function getDataFolderToken(token){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.3.4';
+const APP_VERSION='5.3.5';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1017,6 +1017,50 @@ const UPDATE_SOURCES=[
   `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/version.json`
 ];
 const UPDATE_API_SOURCE=`https://api.github.com/repos/${GITHUB_REPO}/contents/version.json?ref=${GITHUB_BRANCH}`;
+
+/* ===================== 教学视频直链映射 (V5.3.5新增) =====================
+ * 为什么存在: 23个真实断电教学视频已重组上传至GitHub Release(media-videos标签),
+ * Release资产URL免鉴权可公网访问且支持HTTP Range —— video.src可直接流式播放,
+ * 支持进度条拖动秒开, 体验远优于飞书云端"全量下载后才可播"的方案。
+ * asset名为内容MD5前缀(规避GitHub资产名中文归一化冲突), 由同步工具生成。
+ * 未在此映射中的视频(如组长后上传的新视频)自动走飞书云端回退链。
+ */
+const MEDIA_RELEASE_BASE=`https://github.com/${GITHUB_REPO}/releases/download/media-videos`;
+const MEDIA_DIRECT_ASSETS={
+  '上汽名爵_ZS_HS_EHS_PHEV_.mp4':'tcgv_104bb1ef84.mp4',
+  '上汽名爵_赛博斯特.mp4':'tcgv_0267256ec1.mp4',
+  '东风VIGO_VIGO_纳米06海外版__纳米06国内版.mp4':'tcgv_f543b57fde.mp4',
+  '东风锐棋_RICH__RICH6.mp4':'tcgv_2390f2570f.mp4',
+  '东风风度_帕拉丁_PALADIN_.mp4':'tcgv_dc3fd70d32.mp4',
+  '吉利沃尔沃_S60.mp4':'tcgv_454b6bb506.mp4',
+  '奇瑞欧萌达_欧萌达5.mp4':'tcgv_6f0841a530.mp4',
+  '比亚迪元_元UP.mp4':'tcgv_22119c21b2.mp4',
+  '比亚迪唐_ATTO8.mp4':'tcgv_1a4e8e380c.mp4',
+  '比亚迪宋_宋PLUS_DM_I.mp4':'tcgv_c8f5274b15.mp4',
+  '比亚迪海豚_低配.mp4':'tcgv_31d9a7e1f6.mp4',
+  '比亚迪海豹_海豹DM_I.mp4':'tcgv_3cbf27c326.mp4',
+  '比亚迪腾势_方程豹B5.mp4':'tcgv_e01aad92b9.mp4',
+  '江淮E_JS1_4_E_JS1_4.mp4':'tcgv_3af4ec1480.mp4',
+  '通用断电视频.mp4':'tcgv_b5fc668c92.mp4',
+  '长安UNI__UNI_T.mp4':'tcgv_cea9e0e51f.mp4',
+  '长安启源_CS55PLUS_2026款_.mp4':'tcgv_592deb3e23.mp4',
+  '长安启源_EADO_PLUS.mp4':'tcgv_24411bae03.mp4',
+  '长安悦翔_CS15_CS35MAX_CS75_CS55PLUS_2025款_.mp4':'tcgv_572084283f.mp4',
+  '长安深蓝_G318.mp4':'tcgv_a93a5f2ac6.mp4',
+  '长安深蓝_S7_S5.mp4':'tcgv_b1cd814e4b.mp4',
+  '长安糯米_糯米.mp4':'tcgv_5f94195e59.mp4',
+  '长安长安之星_小货车.mp4':'tcgv_3a9d541a72.mp4'
+};
+
+/**
+ * 查询视频的GitHub Release直链(V5.3.5)
+ * @param {string} fileName - 视频文件名(如"通用断电视频.mp4")
+ * @returns {string|null} 直链URL, 未映射返回null走后续回退链
+ */
+function mediaDirectUrl(fileName){
+  const asset=MEDIA_DIRECT_ASSETS[fileName];
+  return asset?`${MEDIA_RELEASE_BASE}/${asset}`:null;
+}
 
 // HTML escape helper to prevent XSS
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -2858,11 +2902,13 @@ function resetZoom(){state.photoZoom=1;document.getElementById('photo-viewer-img
 
 // ===================== VIDEO PLAYER =====================
 /**
- * 视频播放器 - V5.3多源回退链(问题1视频根源修复)
+ * 视频播放器 - V5.3.5五源回退链(视频根源修复迭代)
  * 为什么重构: 43辆车的videoPaths引用vehicle_videos/*.mp4,但视频文件从未随
  * 项目分发(本地无/GitHub仓库无),CDN回退链接也必然404,真机上必然播放失败。
- * V5.3源链: ①本地APK内 → ②飞书云端"APP数据备份/vehicle_videos"(组长通过APP上传) 
- *          → ③GitHub CDN → ④诚实提示"视频待上传"+组长上传入口
+ * V5.3.5源链: ①本地APK内 → ②GitHub Release直链(免鉴权+Range流式,秒开可拖动)
+ *          → ③飞书云端"APP数据备份/vehicle_videos"(组长通过APP上传的新视频)
+ *          → ④GitHub jsDelivr CDN → ⑤诚实提示"视频待上传"+组长上传入口
+ * ②优于③的原因: Release直链支持HTTP Range边下边播, 飞书方案需全量下载完才能播。
  * 不伪造视频: AI生成的假断电操作视频会误导现场作业,宁可明确提示待补充。
  */
 async function openVideoPlayer(){
@@ -2888,14 +2934,33 @@ async function openVideoPlayer(){
 
   // 源①: 本地APK内路径
   tryPlaySource(video,v.videoPaths[0],()=>{
-    // 源②: 飞书云端(组长上传的真实视频)
-    playFromFeishuCloud(video,fileName).then(ok=>{
-      if(ok)return;
-      // 源③: GitHub jsDelivr CDN(视频曾同步到仓库时可用)
-      tryPlaySource(video,cdnBase+'/'+v.videoPaths[0],()=>{
-        // 源④: 全部失败 → 诚实提示 + 组长上传入口
-        showVideoMissing(fileName,video);
-      });
+    // 源②: GitHub Release直链(V5.3.5, 免鉴权+Range流式秒开)
+    const directUrl=mediaDirectUrl(fileName);
+    if(directUrl){
+      tryPlaySource(video,directUrl,()=>tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0]));
+    }else{
+      // 未映射的视频(组长新上传)直接走飞书云端
+      tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0]);
+    }
+  });
+}
+
+/**
+ * 飞书云端视频源 + CDN回退链(V5.3.5从openVideoPlayer拆出)
+ * 为什么拆分: 五源链嵌套过深违反单一职责,拆出后openVideoPlayer保持可读。
+ * @param {HTMLVideoElement} video - 播放器元素
+ * @param {string} fileName - 视频文件名
+ * @param {string} cdnBase - jsDelivr CDN基址
+ * @param {string} videoPath - 车型数据中的相对视频路径
+ */
+function tryFeishuVideoSource(video,fileName,cdnBase,videoPath){
+  // 源③: 飞书云端(组长上传的真实视频)
+  playFromFeishuCloud(video,fileName).then(ok=>{
+    if(ok)return;
+    // 源④: GitHub jsDelivr CDN(视频曾同步到仓库时可用)
+    tryPlaySource(video,cdnBase+'/'+videoPath,()=>{
+      // 源⑤: 全部失败 → 诚实提示 + 组长上传入口
+      showVideoMissing(fileName,video);
     });
   });
 }

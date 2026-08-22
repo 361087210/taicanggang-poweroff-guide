@@ -130,23 +130,41 @@ check('doSyncDownload 调用迁移读取', /downloadSyncDataMigrated\(cfg\)/.tes
 check('旧通用入口 uploadJsonToFeishu 保留(其他调用方兼容)', html.includes('async function uploadJsonToFeishu(cfg,docName,jsonStr)'));
 check('迁移读取带3次重试', /downloadSyncDataMigrated[\s\S]{0,700}attempt<3/.test(html));
 
-// ==================== F6 版本一致性 ====================
-section('F6 版本一致性 V5.3.4');
+// ==================== F6 版本一致性(动态: 四处版本同源+不低于5.3.4) ====================
+// V5.3.5起改为动态一致性检查: 硬编码版本号会在每次升版时误报, 改为校验
+// demo/config/version.json/CI四处版本互相一致且 >= 5.3.4(根因修复不被回退)。
+section('F6 版本一致性(动态)');
 
-check('demo.html APP_VERSION=5.3.4', /const APP_VERSION='5\.3\.4'/.test(html));
-check('version.json version=5.3.4', vj.version === '5.3.4');
-check('version.json versionName=V5.3.4', vj.versionName === 'V5.3.4');
+const mHtml = html.match(/const APP_VERSION='([\d.]+)'/);
+const mCfg = cfgXml.match(/version="([\d.]+)"\s+android-versionCode="(\d+)"/);
+const mCi = ciwf.match(/APP_VERSION: '([\d.]+)'/);
+const mCiBase = ciwf.match(/BASE_VERSION_CODE: (\d+)/);
+const htmlVer = mHtml ? mHtml[1] : '';
+const cfgVer = mCfg ? mCfg[1] : '';
+const ciVer = mCi ? mCi[1] : '';
+const vjVer = vj.version || '';
+
+function verNum(v) { return v.split('.').map(Number).reduce((a, b) => a * 100 + b, 0); }
+check(`四处版本互相一致 (${htmlVer}/${vjVer}/${cfgVer}/${ciVer})`,
+  htmlVer === vjVer && vjVer === cfgVer && cfgVer === ciVer);
+check('版本不低于5.3.4(根因修复未被回退)', verNum(htmlVer) >= verNum('5.3.4'));
+check('config.xml versionCode = major*10000+minor*100+patch', (() => {
+  // 5.3.5 → 5*10000 + 3*100 + 5 = 50305 (与CI BASE_VERSION_CODE同源)
+  const [maj, min, pat] = cfgVer.split('.').map(Number);
+  return mCfg && Number(mCfg[2]) === maj * 10000 + min * 100 + pat
+    && mCiBase && Number(mCiBase[1]) === Number(mCfg[2]);
+})());
+check('version.json versionName=V' + vjVer, vj.versionName === 'V' + vjVer);
 check('version.json 更新日志覆盖根因1', vj.changelog.some(c => c.includes('配置校验V5.3.4') && c.includes('根因1')));
 check('version.json 更新日志覆盖根因2', vj.changelog.some(c => c.includes('根目录回退V5.3.4') && c.includes('根因2')));
 check('version.json 更新日志覆盖根因4', vj.changelog.some(c => c.includes('blob兼容V5.3.4') && c.includes('根因4')));
 check('version.json 更新日志覆盖根因5', vj.changelog.some(c => c.includes('失败可感知V5.3.4') && c.includes('根因5')));
 check('version.json 更新日志覆盖根因6', vj.changelog.some(c => c.includes('存储位置统一V5.3.4') && c.includes('根因6')));
-check('config.xml version=5.3.4', /version="5\.3\.4"/.test(cfgXml));
-check('config.xml android-versionCode=50304', /android-versionCode="50304"/.test(cfgXml));
-check('CI workflow APP_VERSION=5.3.4', /APP_VERSION: '5\.3\.4'/.test(ciwf));
-check('CI workflow BASE_VERSION_CODE=50304', /BASE_VERSION_CODE: 50304/.test(ciwf));
-check('version.json 直链指向v5.3.4', (vj.downloadUrl || '').includes('/v5.3.4/'));
-check('直链命名与CI产物规则一致(b{run_number}由CI回写)', /taicanggang-V5\.3\.4-b\d+\.apk/.test(vj.downloadUrl || ''));
+check(`直链tag不超前于当前版本(CI发布时回写v${vjVer})`, (() => {
+  const tag = (vj.downloadUrl || '').match(/\/v([\d.]+)\//);
+  return !tag || verNum(tag[1]) <= verNum(vjVer); // 无直链或历史tag均可,超前即错
+})());
+check('直链命名与CI产物规则一致(b{run_number}由CI回写)', /taicanggang-V[\d.]+-b\d+\.apk/.test(vj.downloadUrl || ''));
 check('CI签名校验关卡仍在(回归保护)', ciwf.includes('校验APK签名(未签名即失败)'));
 check('CI build.json签名注入仍在(回归保护)', /"keystore": "\$KS_FILE"/.test(ciwf));
 check('CI version.json回写downloadUrl仍在(直链机制)', ciwf.includes('回写 buildNumber 与 downloadUrl 到 version.json'));
