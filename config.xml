@@ -1,66 +1,78 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.taicanggang.poweroff" version="5.3.5" android-versionCode="50305" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+<widget id="com.taicanggang.poweroff" version="5.3.6" android-versionCode="50306" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>太仓港断电指导</name>
     <description>太仓港商品车断电操作标准化指导平台</description>
     <author email="dev@taicanggang.com" href="https://github.com/361087210/taicanggang-poweroff-guide">Taicanggang Dev Team</author>
-    <content src="index.html" />
+    <content src="demo.html" />
     <access origin="*" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
     <allow-intent href="tel:*" />
+    <allow-intent href="sms:*" />
     <allow-intent href="mailto:*" />
-    <allow-navigation href="*" />
-    <allow-navigation href="https://cdn.jsdelivr.net/*" />
-    <allow-navigation href="https://cdn.tailwindcss.com/*" />
-
-    <!-- Platform: Android -->
+    <allow-intent href="geo:*" />
     <platform name="android">
+        <allow-intent href="market:*" />
+        <preference name="AndroidXEnabled" value="true" />
+        <preference name="GradlePluginKotlinEnabled" value="true" />
         <preference name="android-minSdkVersion" value="24" />
         <preference name="android-targetSdkVersion" value="34" />
-        <preference name="AndroidXEnabled" value="true" />
-        <preference name="android-edge-to-edge" value="true" />
-        <preference name="StatusBarOverlaysWebView" value="false" />
-        <preference name="StatusBarBackgroundColor" value="#1e3a5f" />
-        <preference name="StatusBarStyle" value="darkcontent" />
-        <preference name="DisallowOverscroll" value="true" />
-
-        <!-- Camera permissions -->
-        <config-file target="AndroidManifest.xml" parent="/manifest">
-            <uses-permission android:name="android.permission.CAMERA" />
-            <uses-feature android:name="android.hardware.camera" android:required="false" />
-            <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-        </config-file>
-
-        <!-- Storage permissions: READ/WRITE_EXTERNAL_STORAGE由media-capture插件自动注入,此处仅声明插件未覆盖的媒体权限,避免Manifest合并冲突 -->
-        <config-file target="AndroidManifest.xml" parent="/manifest">
-            <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-            <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-            <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
-        </config-file>
-
-        <!-- Network permissions -->
-        <config-file target="AndroidManifest.xml" parent="/manifest">
+        <preference name="android-compileSdkVersion" value="34" />
+        <preference name="AndroidPersistentFileLocation" value="Compatibility" />
+        <preference name="AndroidInsecureFileModeEnabled" value="true" />
+        <preference name="loadUrlTimeoutValue" value="60000" />
+        <preference name="android-windowSoftInputMode" value="adjustResize" />
+        <preference name="SplashScreenDelay" value="0" />
+        <preference name="FadeSplashScreen" value="false" />
+        <preference name="ShowSplashScreen" value="false" />
+        <edit-config file="app/src/main/AndroidManifest.xml" mode="merge" target="/manifest/application">
+            <application android:usesCleartextTraffic="true" android:requestLegacyExternalStorage="true" android:allowBackup="false" />
+        </edit-config>
+        <config-file parent="/*" target="AndroidManifest.xml">
             <uses-permission android:name="android.permission.INTERNET" />
             <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-            <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+            <uses-permission android:name="android.permission.CAMERA" />
+            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+            <uses-permission android:name="android.permission.WAKE_LOCK" />
+            <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+            <uses-permission android:name="android.permission.VIBRATE" />
+            <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+            <uses-feature android:name="android.hardware.camera" android:required="false" />
+            <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+            <uses-feature android:name="android.hardware.location" android:required="false" />
+            <uses-feature android:name="android.hardware.location.gps" android:required="false" />
         </config-file>
-
+        <config-file parent="/manifest/application" target="AndroidManifest.xml">
+            <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">
+                <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+            </provider>
+        </config-file>
     </platform>
-
-    <!-- Cordova Plugins -->
-    <plugin name="cordova-plugin-camera" />
-    <plugin name="cordova-plugin-file" />
-    <plugin name="cordova-plugin-media-capture" />
-    <plugin name="cordova-plugin-statusbar" />
-    <plugin name="cordova-plugin-edge-to-edge" />
-    <!-- 原生社交分享: 调起系统分享面板,Word/PDF/Excel文件可分享到微信/QQ/钉钉等主流应用 -->
-    <plugin name="cordova-plugin-x-socialsharing" />
-    <!-- 原生HTTP(V5.3核心): 绕过WebView CORS限制,飞书API真机直连的唯一通道 -->
-    <plugin name="cordova-plugin-advanced-http">
-        <variable name="ANDROID_BLACKLIST_SECURE_PROTOCOL" value="false" />
+    <plugin name="cordova-plugin-whitelist" spec="1.3.5" />
+    <plugin name="cordova-plugin-device" spec="3.0.0" />
+    <plugin name="cordova-plugin-network-information" spec="3.0.0" />
+    <plugin name="cordova-plugin-dialogs" spec="3.0.0" />
+    <plugin name="cordova-plugin-inappbrowser" spec="6.0.0" />
+    <plugin name="cordova-plugin-file" spec="8.1.0" />
+    <plugin name="cordova-plugin-file-transfer" spec="2.0.0" />
+    <plugin name="cordova-plugin-camera" spec="7.0.0">
+        <variable name="ANDROIDX_CORE_VERSION" value="1.8.+" />
     </plugin>
-
-    <preference name="BackupStorage" value="none" />
-    <preference name="SplashScreenDelay" value="1000" />
-    <preference name="ShowSplashScreenSpinner" value="false" />
+    <plugin name="cordova-plugin-media-capture" spec="5.0.0" />
+    <plugin name="cordova-plugin-geolocation" spec="5.0.0" />
+    <plugin name="cordova-plugin-advanced-http" spec="3.3.1" />
+    <plugin name="cordova-plugin-x-socialsharing" spec="6.0.7" />
+    <plugin name="cordova-plugin-qrscanner" spec="3.0.1" />
+    <plugin name="cordova-plugin-screen-orientation" spec="3.0.3" />
+    <plugin name="cordova-plugin-statusbar" spec="4.0.0" />
+    <plugin name="cordova-plugin-splashscreen" spec="6.0.2" />
+    <plugin name="cordova-plugin-app-version" spec="0.1.14" />
+    <plugin name="cordova-plugin-android-permissions" spec="1.1.5" />
+    <plugin name="cordova-plugin-local-notification" spec="1.2.3" />
+    <plugin name="cordova-plugin-file-opener2" spec="4.0.0" />
+    <hook type="after_prepare" src="scripts/patch_projectbuilder.js" />
 </widget>
