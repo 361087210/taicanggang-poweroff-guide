@@ -67,7 +67,7 @@ jobs:
           cordova plugin add cordova-plugin-whitelist@1.3.5
           cordova plugin add cordova-plugin-device@3.0.0
           cordova plugin add cordova-plugin-network-information@3.0.0
-          cordova plugin add cordova-plugin-dialogs@3.0.0
+          cordova plugin add cordova-plugin-dialogs@2.0.2
           cordova plugin add cordova-plugin-inappbrowser@6.0.0
           cordova plugin add cordova-plugin-file@8.1.0
           cordova plugin add cordova-plugin-file-transfer@2.0.0
