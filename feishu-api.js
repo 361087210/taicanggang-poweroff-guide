@@ -11,8 +11,8 @@ const FeishuAPI = (function() {
 
   // ---------- 默认配置 ----------
   const DEFAULTS = {
-    appId: 'cli_aa0ce4fd91f85be8',
-    appSecret: 's35nEpUBk8KtxN3Kwl2AEgUNnwXQHABb',
+    appId: '',
+    appSecret: '',
     folderToken: 'WdXUfZPkClI1audQxIYc90XRnWc',      // 云文档根文件夹
     dataFolderName: 'APP数据备份',                      // 数据备份子文件夹
     bitableAppToken: '',                                // 多维表格 AppToken（可选）
