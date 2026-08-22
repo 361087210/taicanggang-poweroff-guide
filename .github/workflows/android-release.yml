@@ -15,6 +15,7 @@ env:
   APP_VERSION: 5.3.6
   BASE: 50306
   JAVA_VERSION: '17'
+  ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT || '/usr/local/lib/android/sdk' }}
 
 jobs:
   build:
@@ -48,6 +49,13 @@ jobs:
           cp vehicles_data.js tcg_app/www/
           mkdir -p tcg_app/scripts
           cp scripts/patch_projectbuilder.js tcg_app/scripts/
+
+      - name: Accept Android SDK licenses
+        run: |
+          mkdir -p $HOME/.android
+          touch $HOME/.android/repositories.cfg
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
 
       - name: Add Android platform
         working-directory: ./tcg_app
