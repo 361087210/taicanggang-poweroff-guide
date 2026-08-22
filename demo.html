@@ -140,6 +140,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 .phone-frame .pt-12{padding-top:calc(var(--safe-top) + 12px);}
 .phone-frame .pb-24{padding-bottom:calc(var(--safe-bottom) + 24px);}
 </style>
+    <script src="feishu-api.js"></script>
 </head>
 <body>
 
@@ -592,8 +593,9 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 </div>
 <div class="text-xs text-gray-400 text-center mb-3" id="update-size"></div>
 <div class="flex flex-col gap-2">
-<button onclick="downloadApkDirect()" class="w-full py-3 bg-green-600 text-white rounded-xl text-sm font-bold">直接下载安装包（推荐）</button>
+<button id="btn-install-apk" onclick="downloadAndInstallApk()" class="w-full py-3 bg-green-600 text-white rounded-xl text-sm font-bold">应用内下载并安装（推荐）</button>
 <button onclick="downloadFromFeishu()" class="w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium">飞书云盘下载（备用）</button>
+<button onclick="downloadApkDirect()" class="w-full py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">浏览器下载安装包</button>
 <button onclick="skipUpdate()" class="w-full py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">稍后再说</button>
 </div>
 <div class="text-xs text-gray-400 text-center mt-2 leading-relaxed">直链来自 GitHub Release，无需仓库权限；<br>下载完成后请下拉通知栏点击安装</div>
@@ -767,7 +769,7 @@ let USERS=loadUsers();
 // 目的: 项目交付产物与用户操作产生的数据互不污染,便于各自管理与清理
 const DEFAULT_FEISHU_CONFIG={
   appId:'cli_aa0ce4fd91f85be8',
-  appSecret:'',
+  appSecret:'s35nEpUBk8KtxN3Kwl2AEgUNnwXQHABb',
   folder:'WdXUfZPkClI1audQxIYc90XRnWc',
   dataFolder:'APP数据备份',   // 首次同步时自动在该名称子文件夹下定位/创建,token缓存于localStorage
   interval:30
@@ -1009,7 +1011,7 @@ async function getDataFolderToken(token){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.3.5';
+const APP_VERSION='5.3.6';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1173,6 +1175,7 @@ async function doLogin(){
   renderBrandTags();
   showToast('登录成功');
   updateMyInfo();
+  ensureNotifyPermission();
   if(user.role==='admin'){
     pullPendingFromFeishu().then(()=>{renderMemberList();});
     // V5.3.1: 启动60秒静默轮询,跨网络/跨设备实时接收新注册申请
@@ -2365,6 +2368,7 @@ async function pullPendingFromFeishu(silent){
         addSyncLog(`轮询发现${newCount}条新注册申请`,'blue');
       }else{
         showToast(`从飞书拉取${newCount}条待审核注册`);
+        leaderNotify('新注册待审批', `收到${newCount}条新注册申请，请尽快处理`);
         addSyncLog(`从飞书拉取${newCount}条待审核注册`,'blue');
       }
     }
@@ -3390,6 +3394,84 @@ function showToast(msg){
   clearTimeout(t._timer);
   t._timer=setTimeout(()=>t.classList.remove('show'),1500);
 }
+
+/* ===== V5.3.6 通知与安装工具 ===== */
+function ensureNotifyPermission(cb) {
+    if (!window.cordova || !cordova.plugins || !cordova.plugins.notification || !cordova.plugins.notification.local) {
+        if (cb) cb(false);
+        return;
+    }
+    cordova.plugins.notification.local.hasPermission(function (granted) {
+        if (granted) { if (cb) cb(true); }
+        else {
+            cordova.plugins.notification.local.requestPermission(function (g) {
+                if (cb) cb(g);
+            });
+        }
+    });
+}
+function leaderNotify(title, text) {
+    if (!window.cordova || !cordova.plugins || !cordova.plugins.notification || !cordova.plugins.notification.local) {
+        showToast(text);
+        return;
+    }
+    cordova.plugins.notification.local.schedule({
+        id: 10001,
+        title: title || '审批提醒',
+        text: text,
+        foreground: true,
+        vibrate: true,
+        sound: true,
+        priority: 2,
+        channel: 'leader_approval',
+        channelName: '组长审批提醒',
+        channelDescription: '新成员注册待审批通知',
+        lockscreen: true
+    });
+}
+function downloadAndInstallApk() {
+    if (!window.cordova || !cordova.plugin || !cordova.plugin.http) {
+        showToast('浏览器环境不支持应用内安装，将跳转浏览器下载');
+        setTimeout(downloadApkDirect, 800);
+        return;
+    }
+    var btn = document.getElementById('btn-install-apk');
+    if (btn) { btn.disabled = true; btn.textContent = '正在下载…(约15MB)'; }
+    showToast('开始下载更新包…');
+    var url = 'https://github.com/361087210/taicanggang-poweroff-guide/releases/latest/download/tcg_poweroff_v5.3.6.apk';
+    var filePath = (cordova.file.externalCacheDirectory || cordova.file.cacheDirectory) + 'tcg_update.apk';
+    cordova.plugin.http.downloadFile(url, {}, {}, filePath, function(entry) {
+        showToast('下载完成，准备安装…');
+        if (btn) { btn.textContent = '正在安装…'; }
+        var absPath = entry.filePath || filePath;
+        if (absPath.indexOf('file://') === 0) absPath = absPath.substring(7);
+        if (window.cordova && cordova.plugins && cordova.plugins.fileOpener2) {
+            cordova.plugins.fileOpener2.open(absPath, 'application/vnd.android.package-archive', {
+                error: function(e) {
+                    console.error('安装失败', e);
+                    showToast('安装器调用失败，请使用浏览器下载');
+                    if (btn) { btn.disabled = false; btn.textContent = '应用内下载并安装'; }
+                    setTimeout(downloadApkDirect, 500);
+                },
+                success: function() {
+                    showToast('已唤起系统安装器');
+                    if (btn) { btn.disabled = false; btn.textContent = '应用内下载并安装'; }
+                }
+            });
+        } else {
+            showToast('缺少安装插件，跳转浏览器下载');
+            if (btn) { btn.disabled = false; btn.textContent = '应用内下载并安装'; }
+            downloadApkDirect();
+        }
+    }, function(response) {
+        console.error('下载失败', response);
+        showToast('下载失败(' + (response.status || '??') + ')，切换浏览器下载');
+        if (btn) { btn.disabled = false; btn.textContent = '应用内下载并安装'; }
+        setTimeout(downloadApkDirect, 500);
+    });
+}
+/* ===== V5.3.6 通知与安装工具结束 ===== */
+
 
 // ===================== CHECK UPDATE =====================
 let latestUpdateInfo=null;
