@@ -15,7 +15,7 @@ env:
   APP_VERSION: 5.3.6
   BASE: 50306
   JAVA_VERSION: '17'
-  ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT || '/usr/local/lib/android/sdk' }}
+
 
 jobs:
   build:
