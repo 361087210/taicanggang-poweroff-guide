@@ -762,6 +762,42 @@ function loadUsers(){
 function saveUsers(users){localStorage.setItem('tcg_users',JSON.stringify(users));}
 let USERS=loadUsers();
 
+// ===================== PASSWORD HASHING (V5.4 安全加固) =====================
+// 使用 SHA-256 + 随机盐值哈希密码，不再明文存储
+// 哈希结果格式: "salt$hash" (salt 为 16 位随机字符串，hash 为 64 位十六进制)
+async function hashPassword(password, salt) {
+  const data = new TextEncoder().encode(salt + password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return salt + '$' + hashHex;
+}
+
+function genSalt() {
+  const arr = new Uint8Array(8);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyPassword(password, stored) {
+  if (!stored || !stored.includes('$')) return false;
+  const salt = stored.split('$')[0];
+  const hash = await hashPassword(password, salt);
+  return hash === stored;
+}
+
+async function hashUserPasswords() {
+  // 一次性迁移：将所有明文密码哈希化（V5.4 初始化时执行一次）
+  let changed = false;
+  for (const u of USERS) {
+    if (u.password && !u.password.includes('$')) {
+      const salt = genSalt();
+      u.password = await hashPassword(u.password, salt);
+      changed = true;
+    }
+  }
+  if (changed) saveUsers(USERS);
+}
+
 // ===================== FEISHU DEFAULT CONFIG =====================
 // V5.3: 双文件夹分离 - folder=项目产物目录(版本更新检查), dataFolder=APP用户数据目录(备份/注册申请/审批结果)
 // V5.3.1安全加固: appSecret默认留空, 首次使用请在「设置 → 飞书配置」中手动填写, 保存于localStorage
@@ -1160,7 +1196,20 @@ async function doLogin(){
   if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
   const user=USERS.find(u=>u.phone===phone);
   if(!user){showToast('账号不存在，请先注册');return;}
-  if(user.password!==pass){showToast('密码错误');return;}
+  // V5.4: 密码哈希验证，兼容明文旧密码（首次登录时自动迁移）
+  let passOk = false;
+  if (user.password && user.password.includes('$')) {
+    passOk = await verifyPassword(pass, user.password);
+  } else {
+    // 兼容明文旧密码：首次登录时自动升级为哈希
+    if (user.password === pass) {
+      const salt = genSalt();
+      user.password = await hashPassword(pass, salt);
+      saveUsers(USERS);
+      passOk = true;
+    }
+  }
+  if (!passOk) { showToast('密码错误'); return; }
   // V5.3.1跨设备审批闭环修复: 待审核用户登录时先从飞书拉取最新审批结果,
   // 组长在另一台设备/另一网络已通过时,组员本机立即放行,不再被本地旧状态永久拦截
   if(user.status==='pending'){
@@ -1214,7 +1263,7 @@ function restoreSession(){
   }
 }
 
-function doRegister(){
+async function doRegister(){
   const name=document.getElementById('reg-name').value.trim();
   const phone=document.getElementById('reg-phone').value.trim();
   const pass=document.getElementById('reg-pass').value.trim();
@@ -1224,15 +1273,18 @@ function doRegister(){
   if(pass.length<6){showToast('密码至少6位');return;}
   if(pass!==pass2){showToast('两次密码不一致');return;}
   if(USERS.find(u=>u.phone===phone)){showToast('该手机号已注册');return;}
+  // V5.4: 密码哈希化存储
+  const salt = genSalt();
+  const hashedPass = await hashPassword(pass, salt);
   const isLeader=phone===LEADER_PHONE;
-  const newUser={id:Date.now(),name,phone,password:pass,role:isLeader?'admin':'user',status:isLeader?'active':'pending',created:new Date().toLocaleDateString()};
+  const newUser={id:Date.now(),name,phone,password:hashedPass,role:isLeader?'admin':'user',status:isLeader?'active':'pending',created:new Date().toLocaleDateString()};
   USERS.push(newUser);
   saveUsers(USERS);
   if(isLeader){showToast('组长账号注册成功');}else{showToast('注册申请已提交，请等待组长审核');syncPendingToFeishu(newUser);}
   showScreen('screen-login');
 }
 
-function doForgotPassword(){
+async function doForgotPassword(){
   const phone=document.getElementById('forgot-phone').value.trim();
   const pass=document.getElementById('forgot-pass').value.trim();
   const pass2=document.getElementById('forgot-pass2').value.trim();
@@ -1242,7 +1294,9 @@ function doForgotPassword(){
   if(pass!==pass2){showToast('两次密码不一致');return;}
   const user=USERS.find(u=>u.phone===phone);
   if(!user){showToast('该手机号未注册');return;}
-  user.password=pass;
+  // V5.4: 新密码哈希化存储
+  const salt = genSalt();
+  user.password = await hashPassword(pass, salt);
   saveUsers(USERS);
   showToast('密码重置成功');
   showScreen('screen-login');
@@ -2305,6 +2359,8 @@ async function syncPendingToFeishu(user){
   // V5.3.4: appSecret缺失时跳过并提示,不再带空凭证静默失败(诊断根因1)
   if(!feishuCfgReady(cfg,true))return;
   try{
+    // V5.4: 注册申请上传飞书时含哈希密码（组长审批后需同步给组员）
+    // 密码已在本地注册时哈希化（salt$hash格式），同步到飞书安全无明文泄露风险
     const pendingData={type:'pending_registration',user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
     const jsonStr=JSON.stringify(pendingData,null,2);
     const blob=new Blob([jsonStr],{type:'application/json'});
@@ -2391,7 +2447,8 @@ async function pushApprovedUsersToFeishu(){
     const token=await getFeishuToken(cfg);
     const dataFolder=await getDataFolderToken(token);
     if(!dataFolder)return false;
-    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>({id:u.id,name:u.name,phone:u.phone,password:u.password,role:u.role,status:u.status,created:u.created}))};
+    // V5.4: 上传审批结果时剔除密码（密码仅存本地哈希，飞书云端不存明文）
+    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>{const {password,...safe}=u;return safe;})};
     await uploadJsonToDataFeishu(token,'approved_users.json',JSON.stringify(payload));
     addSyncLog('审批结果已同步到飞书','green');
     return true;
@@ -3322,7 +3379,7 @@ function renderMemberList(){
   }
 }
 
-function addMember(){
+async function addMember(){
   const name=document.getElementById('mem-name').value.trim();
   const phone=document.getElementById('mem-phone').value.trim();
   const pass=document.getElementById('mem-pass').value.trim();
@@ -3330,7 +3387,10 @@ function addMember(){
   if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
   if(pass.length<6){showToast('密码至少6位');return;}
   if(USERS.find(u=>u.phone===phone)){showToast('该手机号已注册');return;}
-  USERS.push({id:Date.now(),name,phone,password:pass,role:'user',status:'active',created:new Date().toLocaleDateString()});
+  // V5.4: 密码哈希化存储
+  const salt = genSalt();
+  const hashedPass = await hashPassword(pass, salt);
+  USERS.push({id:Date.now(),name,phone,password:hashedPass,role:'user',status:'active',created:new Date().toLocaleDateString()});
   saveUsers(USERS);
   document.getElementById('mem-name').value='';
   document.getElementById('mem-phone').value='';
@@ -3359,13 +3419,19 @@ function deleteMember(id){
   });
 }
 
-function resetMemberPass(id){
+async function resetMemberPass(id){
   const u=USERS.find(x=>x.id===id);
-  if(u){u.password='123456';saveUsers(USERS);showToast(`已重置${u.name}的密码为123456`);pushApprovedUsersToFeishu();}
+  if(u){
+    // V5.4: 重置密码时哈希化存储
+    const salt = genSalt();
+    u.password = await hashPassword('123456', salt);
+    saveUsers(USERS);
+    showToast(`已重置${u.name}的密码为123456`);pushApprovedUsersToFeishu();
+  }
 }
 
 // ===================== PASSWORD =====================
-function changePassword(){
+async function changePassword(){
   const o=document.getElementById('pw-old').value.trim();
   const n=document.getElementById('pw-new').value.trim();
   const c=document.getElementById('pw-confirm').value.trim();
@@ -3373,11 +3439,19 @@ function changePassword(){
   if(n.length<6){showToast('新密码至少6位');return;}
   if(n!==c){showToast('两次输入的新密码不一致');return;}
   if(!state.currentUser){showToast('请先登录');return;}
-  if(state.currentUser.password!==o){showToast('原密码错误');return;}
-  state.currentUser.password=n;
+  // V5.4: 验证原密码（兼容明文旧密码和哈希新密码）
+  let oldOk = false;
+  if (state.currentUser.password && state.currentUser.password.includes('$')) {
+    oldOk = await verifyPassword(o, state.currentUser.password);
+  } else {
+    oldOk = (state.currentUser.password === o);
+  }
+  if (!oldOk) { showToast('原密码错误'); return; }
+  const salt = genSalt();
+  const hashedNew = await hashPassword(n, salt);
+  state.currentUser.password = hashedNew;
   const u=USERS.find(x=>x.id===state.currentUser.id);
-  if(u){u.password=n;saveUsers(USERS);}
-  // 更新会话时间戳,保持登录有效
+  if(u){u.password=hashedNew;saveUsers(USERS);}
   localStorage.setItem('tcg_session',JSON.stringify({uid:state.currentUser.id,phone:state.currentUser.phone,ts:Date.now()}));
   showToast('密码修改成功');
   showScreen('screen-my');
@@ -3714,6 +3788,8 @@ function migrateLegacyMedia(){
 }
 
 // ===================== INIT =====================
+// V5.4: 启动时自动迁移明文密码为哈希（幂等，已哈希的不重复处理）
+hashUserPasswords().then(()=>{});
 // 启动时检查是否有已保存的登录会话,实现免重复登录
 migrateLegacyMedia();
 if(restoreSession()){
