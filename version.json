@@ -30,11 +30,11 @@
     "【优化-离线】Tailwind/SheetJS/jsPDF/html-docx全部本地化进APK,零外链CDN依赖,弱网/无网环境UI与导出功能完整可用",
     "【优化-更新检查】多源版本探测统一走httpFetch原生通道+8秒超时,弱网不再无限挂起"
   ],
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.4/taicanggang-V5.3.4-b6.apk",
-  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.4/taicanggang-V5.3.4-b6.apk",
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.5/taicanggang-V5.3.5-b7.apk",
+  "apkUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.3.5/taicanggang-V5.3.5-b7.apk",
   "pageUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases",
   "feishuFolder": "https://feishu.cn/drive/folder/WdXUfZPkClI1audQxIYc90XRnWc",
   "feishuDataFolder": "APP数据备份(用户数据专用,与产物分离)",
-  "buildNumber": 6,
-  "buildDate": "2026-08-21"
+  "buildNumber": 7,
+  "buildDate": "2026-08-22"
 }
