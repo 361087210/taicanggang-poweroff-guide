@@ -98,7 +98,7 @@ jobs:
           cordova plugin add cordova-plugin-media-capture@5.0.0
           cordova plugin add cordova-plugin-geolocation@5.0.0
           cordova plugin add cordova-plugin-advanced-http@3.3.1
-          cordova plugin add cordova-plugin-x-socialsharing@6.0.7
+          cordova plugin add cordova-plugin-x-socialsharing@6.0.4
           cordova plugin add cordova-plugin-qrscanner@3.0.1
           cordova plugin add cordova-plugin-screen-orientation@3.0.3
           cordova plugin add cordova-plugin-statusbar@4.0.0

@@ -3831,7 +3831,9 @@ function downloadAndInstallApk() {
     var btn = document.getElementById('btn-install-apk');
     if (btn) { btn.disabled = true; btn.textContent = '正在下载…(约15MB)'; }
     showToast('开始下载更新包…');
-    var url = 'https://github.com/361087210/taicanggang-poweroff-guide/releases/latest/download/tcg_poweroff_v5.3.6.apk';
+    // V5.7.1: 旧版硬编码 v5.3.6 资产名, 版本一升即断链; 改为动态解析 version.json 直链
+    var url = (typeof resolveApkUrl === 'function' && resolveApkUrl(latestUpdateInfo)) ||
+               'https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.7/tcg_poweroff_v5.7.0.apk';
     var filePath = (cordova.file.externalCacheDirectory || cordova.file.cacheDirectory) + 'tcg_update.apk';
     cordova.plugin.http.downloadFile(url, {}, {}, filePath, function(entry) {
         showToast('下载完成，准备安装…');
