@@ -55,6 +55,30 @@ if (fs.existsSync(platformsDir)) {
   console.log('platforms/android 不存在, 跳过gradle清洗');
 }
 
+// ---------- V5.7.1 补齐 FileProvider 资源 ----------
+// 背景: config.xml 在 <manifest/application> 声明了 androidx FileProvider 并引用
+// @xml/file_paths, 但历史构建中该资源由某旧版插件提供, 现插件组合无人提供,
+// AAPT 资源链接报 "resource xml/file_paths not found"。此处构建前确保资源存在,
+// 覆盖外部存储/缓存/应用文件三类共享路径(导出文档与照片分享所需)。
+const resXmlDir = path.join(platformsDir, 'app/src/main/res/xml');
+const filePathsXml = path.join(resXmlDir, 'file_paths.xml');
+if (!fs.existsSync(filePathsXml)) {
+  fs.mkdirSync(resXmlDir, { recursive: true });
+  fs.writeFileSync(filePathsXml, [
+    '<?xml version="1.0" encoding="utf-8"?>',
+    '<paths xmlns:android="http://schemas.android.com/apk/res/android">',
+    '    <external-path name="external_files" path="." />',
+    '    <external-files-path name="external_app_files" path="." />',
+    '    <external-cache-path name="external_cache" path="." />',
+    '    <cache-path name="internal_cache" path="." />',
+    '    <files-path name="internal_files" path="." />',
+    '</paths>'
+  ].join('\n'));
+  console.log('[资源补齐] 已生成 res/xml/file_paths.xml (FileProvider共享路径)');
+} else {
+  console.log('[资源补齐] res/xml/file_paths.xml 已存在');
+}
+
 // ---------- V5.7.1 AndroidManifest 归一化与去重 ----------
 // 背景: 多插件对同一权限/特性重复声明且属性不同(如 camera/media-capture 声明
 // WRITE_EXTERNAL_STORAGE 带 maxSdkVersion=32, 而 socialsharing/file-opener2 声明不带;
