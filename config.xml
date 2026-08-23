@@ -44,7 +44,8 @@
             <uses-feature android:name="android.hardware.camera" android:required="false" />
             <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
             <uses-feature android:name="android.hardware.location" android:required="false" />
-            <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+            <!-- V5.7.1: 移除本行——geolocation插件会再声明一次location.gps, 双重声明
+                 属性不一致(required)导致AGP8 Manifest merger崩溃; 统一由插件的GPS_REQUIRED=false提供 -->
         </config-file>
         <config-file parent="/manifest/application" target="AndroidManifest.xml">
             <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">
@@ -63,7 +64,9 @@
         <variable name="ANDROIDX_CORE_VERSION" value="1.8.+" />
     </plugin>
     <plugin name="cordova-plugin-media-capture" spec="5.0.0" />
-    <plugin name="cordova-plugin-geolocation" spec="5.0.0" />
+    <plugin name="cordova-plugin-geolocation" spec="5.0.0">
+        <variable name="GPS_REQUIRED" value="false" />
+    </plugin>
     <plugin name="cordova-plugin-advanced-http" spec="3.3.1" />
     <plugin name="cordova-plugin-x-socialsharing" spec="6.0.4" />
     <!-- V5.7.1: 移除 cordova-plugin-qrscanner —— APP从未使用扫码功能, 且其qrscanner.gradle
