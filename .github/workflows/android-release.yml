@@ -7,15 +7,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (e.g. 5.3.6)'
+        description: 'Version to build (e.g. 5.7.0)'
         required: true
-        default: '5.3.6'
+        default: '5.7.0'
 
 env:
-  APP_VERSION: 5.3.6
-  BASE: 50306
   JAVA_VERSION: '17'
-
 
 jobs:
   build:
@@ -25,6 +22,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # V5.7: 版本号统一从 config.xml 读取, 杜绝 env 硬编码与 APK versionCode 漂移
+      - name: Derive version from config.xml
+        id: ver
+        run: |
+          APP_VERSION=$(grep -oP 'version="\K[0-9.]+' config.xml | head -1)
+          VERSION_CODE=$(grep -oP 'android-versionCode="\K[0-9]+' config.xml | head -1)
+          echo "APP_VERSION=${APP_VERSION}" >> $GITHUB_ENV
+          echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_ENV
+          echo "Detected version=${APP_VERSION} code=${VERSION_CODE}"
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
@@ -40,6 +47,8 @@ jobs:
           npm install -g cordova@12
           cordova --version
 
+      # V5.7 关键修复: 打包 vendor 导出库(html-docx/jspdf/xlsx)与车辆图片
+      # 此前 CI 遗漏两者, 导致 APK 内 Word/PDF/Excel 导出与图片展示全部失效
       - name: Prepare build environment
         run: |
           mkdir -p tcg_app/www
@@ -47,8 +56,22 @@ jobs:
           cp demo.html tcg_app/www/
           cp feishu-api.js tcg_app/www/
           cp vehicles_data.js tcg_app/www/
+          cp -r vendor tcg_app/www/vendor
+          cp -r vehicle_images tcg_app/www/vehicle_images
           mkdir -p tcg_app/scripts
           cp scripts/patch_projectbuilder.js tcg_app/scripts/
+
+      # V5.7 防御: 校验导出库与图片真实存在, 缺一即失败, 防止问题再次回归
+      - name: Verify bundled web assets
+        run: |
+          for f in tailwind.js xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js html-docx.js; do
+            test -s "tcg_app/www/vendor/$f" || { echo "MISSING vendor/$f"; exit 1; }
+          done
+          IMG_COUNT=$(ls tcg_app/www/vehicle_images/*.jpeg 2>/dev/null | wc -l)
+          echo "vehicle_images count: $IMG_COUNT"
+          [ "$IMG_COUNT" -ge 100 ] || { echo "vehicle_images incomplete (<100)"; exit 1; }
+          grep -q "vendor/html-docx.js" tcg_app/www/demo.html || { echo "demo.html lost vendor refs"; exit 1; }
+          echo "All export libraries and images verified."
 
       - name: Accept Android SDK licenses
         run: |
@@ -93,12 +116,30 @@ jobs:
         working-directory: ./tcg_app
         run: cordova build android --release -- --packageType=apk
 
-      - name: Sign APK
+      # V5.7 根治: 旧版引用不存在的 secrets.KEYSTORE_PATH 文件路径导致 v5.4 起签名全失败
+      # 现改为 KEYSTORE_BASE64 解码 + apksigner (v1+v2 签名方案, 兼容 Android 7-14)
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+          ls -la release.keystore
+
+      - name: Sign APK (zipalign + apksigner)
         working-directory: ./tcg_app
         run: |
           mkdir -p ../release
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256             -keystore ${{ secrets.KEYSTORE_PATH }}             -storepass ${{ secrets.KEYSTORE_PASSWORD }}             -keypass ${{ secrets.KEY_PASSWORD }}             platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk             ${{ secrets.KEY_ALIAS }}
-          zipalign -v 4             platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk             ../release/tcg_poweroff_v${{ env.APP_VERSION }}.apk
+          APK_IN=platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          APK_ALIGNED=platforms/android/app/build/outputs/apk/release/app-release-aligned.apk
+          APK_OUT=../release/tcg_poweroff_v${APP_VERSION}.apk
+          zipalign -f -p 4 "$APK_IN" "$APK_ALIGNED"
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            --ks ../release.keystore \
+            --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
+            --ks-pass "pass:${{ secrets.KEYSTORE_PASSWORD }}" \
+            --key-pass "pass:${{ secrets.KEY_PASSWORD }}" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --out "$APK_OUT" "$APK_ALIGNED"
+          $ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs "$APK_OUT"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -115,16 +156,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # V5.7: versionCode 与 APK 内实际值(config.xml)严格一致, 修复旧版 BASE+run_number
+      # 导致 version.json 与 APK 不一致进而误报更新的问题
       - name: Update version.json download URL
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           TAG=${GITHUB_REF#refs/tags/}
-          BUILD_NUM=${{ github.run_number }}
-          VERSION_CODE=$((BASE + BUILD_NUM))
-          sed -i "s|\"downloadUrl\": \".*\"|\"downloadUrl\": \"https://github.com/361087210/taicanggang-poweroff-guide/releases/download/${TAG}/tcg_poweroff_v${{ env.APP_VERSION }}.apk\"|" version.json
+          sed -i "s|\"downloadUrl\": \".*\"|\"downloadUrl\": \"https://github.com/361087210/taicanggang-poweroff-guide/releases/download/${TAG}/tcg_poweroff_v${APP_VERSION}.apk\"|" version.json
           sed -i "s|\"versionCode\": [0-9]*|\"versionCode\": ${VERSION_CODE}|" version.json
+          sed -i "s|\"version\": \"[0-9.]*\"|\"version\": \"${APP_VERSION}\"|" version.json
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add version.json
-          git commit -m "ci: update version.json downloadUrl for ${TAG} [skip ci]" || true
+          git commit -m "ci: update version.json for ${TAG} [skip ci]" || true
           git push || true

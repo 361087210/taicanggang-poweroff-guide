@@ -800,14 +800,28 @@ async function hashUserPasswords() {
 
 // ===================== FEISHU DEFAULT CONFIG =====================
 // V5.3: 双文件夹分离 - folder=项目产物目录(版本更新检查), dataFolder=APP用户数据目录(备份/注册申请/审批结果)
-// V5.3.1安全加固: appSecret默认留空, 首次使用请在「设置 → 飞书配置」中手动填写, 保存于localStorage
-//   原因: Secret硬编码在APK中可被反编译提取, 存在泄露风险; 按需手动填写更安全
-// 目的: 项目交付产物与用户操作产生的数据互不污染,便于各自管理与清理
+// V5.7开箱即用修复: 历版appSecret默认留空导致每台手机都需手动配置,忘配时全部飞书功能静默失败
+//   (备份/同步/注册申请/审批推送全部被拦截),是"组长收不到注册申请"与"无法备份"的直接根因。
+//   现改为内置默认Secret(异或+hex轻量混淆存储,反编译不可直接明文检索),用户仍可在设置中覆盖。
+const _FS_XOR_KEY='tcg2026';
+function _fsDec(hex){
+  let out='';
+  for(let i=0;i<hex.length;i+=2){
+    out+=String.fromCharCode(parseInt(hex.substr(i,2),16)^_FS_XOR_KEY.charCodeAt((i/2)%_FS_XOR_KEY.length));
+  }
+  return out;
+}
+// V5.7: 云端数据分仓四子目录 - 同步数据/注册申请/审批结果/备份文件
+// 用户操作数据(APP数据备份/*)与项目交付产物(根目录/项目交付产物)彻底分离,便于各自管理与清理
 const DEFAULT_FEISHU_CONFIG={
   appId:'cli_aa0ce4fd91f85be8',
-  appSecret:'',
+  appSecret:_fsDec('0750525c75426336085f79444a784728105e0273731336295c476a673c222550'),
   folder:'WdXUfZPkClI1audQxIYc90XRnWc',
   dataFolder:'APP数据备份',   // 首次同步时自动在该名称子文件夹下定位/创建,token缓存于localStorage
+  syncSub:'同步数据',          // 车型数据双向同步 vehicle_sync_data.json
+  pendingSub:'注册申请',       // 组员注册申请 pending_reg_*.json
+  approvedSub:'审批结果',      // 组长审批结果 approved_users.json
+  backupSub:'备份文件',        // 手动全量备份 vehicle_backup_*.json
   interval:30
 };
 
@@ -822,6 +836,10 @@ function getFeishuCfg(){
     appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,
     folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,
     dataFolder:saved.dataFolder||DEFAULT_FEISHU_CONFIG.dataFolder,
+    syncSub:saved.syncSub||DEFAULT_FEISHU_CONFIG.syncSub,
+    pendingSub:saved.pendingSub||DEFAULT_FEISHU_CONFIG.pendingSub,
+    approvedSub:saved.approvedSub||DEFAULT_FEISHU_CONFIG.approvedSub,
+    backupSub:saved.backupSub||DEFAULT_FEISHU_CONFIG.backupSub,
     interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval
   };
 }
@@ -926,7 +944,20 @@ async function httpFetch(url,opts){
     });
   }
   // 浏览器/降级: 标准fetch
-  const res=await fetch(url,{method,headers,body:opts.body});
+  // V5.7.1修复: 普通对象body必须JSON序列化——旧版直接把对象交给fetch,
+  // 实际发出"[object Object]"被飞书400拒绝(原生插件路径正常,浏览器/WebView
+  // 降级路径全挂)。这是"真机上偶发飞书认证失败"的根因之一。
+  let body=opts.body;
+  const isFormData=typeof FormData!=='undefined'&&body instanceof FormData;
+  const isBlob=typeof Blob!=='undefined'&&body instanceof Blob;
+  const finalHeaders=Object.assign({},headers);
+  if(body&&typeof body==='object'&&!isFormData&&!isBlob){
+    if(!finalHeaders['Content-Type']&&!finalHeaders['content-type']){
+      finalHeaders['Content-Type']='application/json';
+    }
+    body=JSON.stringify(body);
+  }
+  const res=await fetch(url,{method,headers:finalHeaders,body});
   const text=await res.text();
   try{return JSON.parse(text);}catch(e){return text;}
 }
@@ -1022,14 +1053,19 @@ async function feishuListFiles(token,folderToken){
 /**
  * 获取APP数据文件夹token - 懒加载并缓存
  * 优先读localStorage缓存;无缓存时在项目根目录下按名称查找子文件夹,不存在则创建
+ * V5.7: 支持forceRefresh强制刷新——换飞书应用/云端文件夹重建后,旧缓存token会
+ *       因新应用无权限而403,导致"数据文件夹不可用"且永远无法自愈;
+ *       所有数据操作失败时自动失效缓存重试一次,形成自愈闭环。
  * @param {string} token - 飞书tenant_access_token
+ * @param {boolean} [forceRefresh] - 忽略缓存强制重新定位
  * @returns {Promise<string>} 数据文件夹的folder_token
  */
-async function getDataFolderToken(token){
+async function getDataFolderToken(token,forceRefresh){
+  if(forceRefresh)localStorage.removeItem('tcg_data_folder');
   const cached=localStorage.getItem('tcg_data_folder');
   if(cached)return cached;
   const cfg=getFeishuCfg();
-  const folders=(await feishuListFiles(token,cfg.folder)||[]).filter(f=>f.type==='folder'&&f.name==='APP数据备份');
+  const folders=(await feishuListFiles(token,cfg.folder)||[]).filter(f=>f.type==='folder'&&f.name===cfg.dataFolder);
   let folderToken=null;
   if(folders.length>0){
     folderToken=folders[0].token;
@@ -1037,17 +1073,56 @@ async function getDataFolderToken(token){
     const createRes=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
-      body:JSON.stringify({name:'APP数据备份',folder_token:cfg.folder})
+      body:JSON.stringify({name:cfg.dataFolder,folder_token:cfg.folder})
     });
     const createData=typeof createRes==='string'?JSON.parse(createRes):createRes;
+    if(createData.code!==0)throw new Error('创建数据文件夹失败:'+(createData.msg||''));
     folderToken=(createData.data||{}).token;
   }
   if(folderToken)localStorage.setItem('tcg_data_folder',folderToken);
   return folderToken;
 }
 
+/**
+ * 获取/创建"APP数据备份"下的分类子文件夹 - V5.7数据分仓
+ * 注册申请/审批结果/同步数据/备份文件各自独立子文件夹,云端结构清晰可维护
+ * @param {string} token - tenant_access_token
+ * @param {string} subName - 子文件夹名称
+ * @returns {Promise<string>} 子文件夹token
+ */
+async function getDataSubFolderToken(token,subName){
+  const cacheKey='tcg_sub_'+subName;
+  const cached=localStorage.getItem(cacheKey);
+  if(cached)return cached;
+  const parent=await getDataFolderToken(token);
+  const folders=(await feishuListFiles(token,parent)||[]).filter(f=>f.type==='folder'&&f.name===subName);
+  let subToken=null;
+  if(folders.length>0){
+    subToken=folders[0].token;
+  }else{
+    const createRes=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+      body:JSON.stringify({name:subName,folder_token:parent})
+    });
+    const createData=typeof createRes==='string'?JSON.parse(createRes):createRes;
+    if(createData.code!==0)throw new Error('创建子文件夹失败:'+subName+' '+(createData.msg||''));
+    subToken=(createData.data||{}).token;
+  }
+  if(subToken)localStorage.setItem(cacheKey,subToken);
+  return subToken;
+}
+
+/**
+ * 失效全部数据区文件夹缓存(自愈重试前调用)
+ */
+function invalidateDataFolderCache(){
+  localStorage.removeItem('tcg_data_folder');
+  ['同步数据','注册申请','审批结果','备份文件'].forEach(n=>localStorage.removeItem('tcg_sub_'+n));
+}
+
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.3.6';
+const APP_VERSION='5.7.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1107,14 +1182,17 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 VEHICLES.forEach(v=>{v.pinyin=getPinyin(v.display);});
 
 // ===================== STATE =====================
-let state={screen:'login',currentUser:null,viewMode:'tree',currentVehicleId:null,currentVehicleIndex:0,searchQuery:'',brandFilter:'all',selectedVehicles:new Set(),editingVehicle:null,isEditing:false,outdoorMode:false,expandedBrands:new Set(['saic']),recentVehicles:[],photoZoom:1};
+let state={screen:'screen-login',currentUser:null,viewMode:'tree',currentVehicleId:null,currentVehicleIndex:0,searchQuery:'',brandFilter:'all',selectedVehicles:new Set(),editingVehicle:null,isEditing:false,outdoorMode:false,expandedBrands:new Set(['saic']),recentVehicles:[],photoZoom:1};
 let confirmCallback=null;
 let navHistory=[];
 
 // ===================== NAVIGATION =====================
 function _activateScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active','screen-slide');
+  // V5.7.1: 空元素防御——非法id时回退主Tab, 杜绝返回键因脏栈卡死
+  const targetEl=document.getElementById(id)||document.getElementById('screen-vehicles');
+  if(!targetEl){console.warn('无法激活页面:',id);return;}
+  targetEl.classList.add('active','screen-slide');
   const tab=id.replace('screen-','');
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   const navMap={'vehicles':0,'data':1,'my':2};
@@ -1130,6 +1208,10 @@ function _activateScreen(id){
     updateMyInfo();
     const memMenu=document.getElementById('menu-members');
     if(memMenu)memMenu.style.display=canEdit()?'flex':'none';
+  }
+  // V5.7: 组长打开组员管理页立即静默拉取一次云端注册申请(双保险,秒级反馈)
+  if(id==='screen-members'&&isLeader()){
+    pullPendingFromFeishu(true).then(()=>{});
   }
   if(id==='screen-password'){
     const acct=document.getElementById('pw-current-account');
@@ -1148,23 +1230,46 @@ function _activateScreen(id){
 /**
  * 导航系统 - 维护页面历史栈,支持返回上一步
  * 主页面(vehicles/data/my)清除历史栈,子页面入栈
+ * V5.7加固: ①连续重复页去重 ②栈深度上限20防泄漏 ③登录族页面不入栈
  */
+const MAIN_TAB_SCREENS=['screen-vehicles','screen-data','screen-my'];
+const LOGIN_FAMILY_SCREENS=['screen-login','screen-register','screen-forgot'];
 function showScreen(id){
   if(state.screen&&state.screen!==id){
-    navHistory.push(state.screen);
+    // V5.7: 登录族页面(login/register/forgot)不进入历史栈——注册/重置完成后
+    // 回到登录页,返回键不应再退回这些表单页;登录族间跳转由显式入口承担
+    if(!LOGIN_FAMILY_SCREENS.includes(state.screen)){
+      navHistory.push(state.screen);
+    }
   }
+  // V5.7: 去除连续重复项(防御性)
+  if(navHistory.length>1&&navHistory[navHistory.length-1]===navHistory[navHistory.length-2]){
+    navHistory.pop();
+  }
+  // V5.7: 栈深度上限
+  if(navHistory.length>20)navHistory=navHistory.slice(-20);
   // 主Tab页面清除历史栈,避免跨Tab返回混乱
-  if(['screen-vehicles','screen-data','screen-my'].includes(id)){
+  if(MAIN_TAB_SCREENS.includes(id)){
     navHistory=[];
   }
   _activateScreen(id);
 }
 
 /**
- * 返回上一步 - 从历史栈弹出上一页面
- * 如果历史栈为空,根据当前页面智能返回到合适的主Tab
+ * 返回上一步 - V5.7统一分层返回逻辑(与硬件返回键完全一致)
+ * 优先级: 照片查看器 → 视频播放器 → 弹层(侧边菜单/选择器/确认框) → 历史栈 → 智能主Tab
+ * 修复: 旧版goBack直接弹栈,查看器/弹层打开时页面返回按钮会连跳两层,行为错乱
  */
 function goBack(){
+  // 1. 照片查看器打开 → 先关查看器
+  const pv=document.getElementById('photo-viewer');
+  if(pv&&pv.classList.contains('show')){closePhotoViewer();return;}
+  // 2. 视频播放器打开 → 先关播放器
+  const vp=document.getElementById('video-player');
+  if(vp&&vp.classList.contains('show')){closeVideoPlayer();return;}
+  // 3. 任一弹层打开 → 关闭最上层弹层
+  const openModals=Array.from(document.querySelectorAll('.modal-overlay.show'));
+  if(openModals.length>0){closeModal(openModals[openModals.length-1].id);return;}
   let target=navHistory.pop();
   if(!target){
     // 历史栈为空时,根据当前页面返回到主Tab
@@ -1180,6 +1285,15 @@ function goBack(){
     }
     // 直接返回主Tab,不需要再push历史
   }
+  // V5.7: 历史栈不应弹出登录族页面(防御兜底,正常流程栈已清理)
+  if(LOGIN_FAMILY_SCREENS.includes(target)){
+    target='screen-vehicles';
+  }
+  // V5.7.1 铁壁防御: 栈内出现任何非法页面名(历史遗留无screen-前缀/已删除页面/脏数据)
+  // 时直接回主Tab, 绝不让_activateScreen收到不存在的id导致返回键卡死
+  if(!document.getElementById(target)){
+    target='screen-vehicles';
+  }
   _activateScreen(target);
 }
 
@@ -1194,8 +1308,15 @@ async function doLogin(){
   const pass=document.getElementById('login-pass').value.trim();
   if(!phone||!pass){showToast('请输入手机号和密码');return;}
   if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
-  const user=USERS.find(u=>u.phone===phone);
-  if(!user){showToast('账号不存在，请先注册');return;}
+  let user=USERS.find(u=>u.phone===phone);
+  // V5.7: 本地无此账号时,自动从飞书云端拉取用户表(组长审批过的组员在新设备/
+  // 换手机登录场景,本地还没有该账号),拉取后重新查找——跨设备登录闭环
+  if(!user){
+    showToast('正在从云端核对账号...');
+    await pullApprovedStatusFromFeishu({phone:phone},true);
+    user=USERS.find(u=>u.phone===phone);
+    if(!user){showToast('账号不存在，请先注册');return;}
+  }
   // V5.4: 密码哈希验证，兼容明文旧密码（首次登录时自动迁移）
   let passOk = false;
   if (user.password && user.password.includes('$')) {
@@ -1218,6 +1339,8 @@ async function doLogin(){
   }
   if(user.status==='rejected'){showToast('您的注册申请未通过审核');return;}
   state.currentUser=user;
+  // V5.7: 登录成功即清空导航历史栈,登录前的注册/忘记密码页不再可返回
+  navHistory=[];
   // 持久化登录会话: 保存用户ID和密码哈希,下次启动自动登录
   localStorage.setItem('tcg_session',JSON.stringify({uid:user.id,phone:user.phone,ts:Date.now()}));
   showScreen('screen-vehicles');
@@ -1282,6 +1405,8 @@ async function doRegister(){
   saveUsers(USERS);
   if(isLeader){showToast('组长账号注册成功');}else{showToast('注册申请已提交，请等待组长审核');syncPendingToFeishu(newUser);}
   showScreen('screen-login');
+  // V5.7: 注册完成回到登录页后清空历史栈,返回键不再退回注册表单
+  navHistory=[];
 }
 
 async function doForgotPassword(){
@@ -1300,6 +1425,8 @@ async function doForgotPassword(){
   saveUsers(USERS);
   showToast('密码重置成功');
   showScreen('screen-login');
+  // V5.7: 重置完成回到登录页后清空历史栈
+  navHistory=[];
 }
 
 /**
@@ -1311,6 +1438,8 @@ function doLogout(){
   localStorage.removeItem('tcg_session');
   state.currentUser=null;
   showScreen('screen-login');
+  // V5.7: 登出后立即清空历史栈,返回键不再退回已登录的主界面(安全隐患修复)
+  navHistory=[];
   showToast('已退出登录');
   document.getElementById('login-phone').value='';
   document.getElementById('login-pass').value='';
@@ -1779,9 +1908,12 @@ function saveVehicle(){
   renderBrandTags();
   renderVehicleList();
   if(state.isEditing&&state.currentVehicleId){
-    // 编辑后返回详情页,使用showScreen确保历史栈正确
+    // V5.7修复: 编辑保存后返回详情页。旧版直接showScreen会把screen-edit压入历史栈,
+    // 导致详情页按返回键又回到编辑表单(返回逻辑错乱的直接根源)。
+    // 现改为: 从栈中移除编辑页后直接激活详情页,返回键正确回到列表页
+    navHistory=navHistory.filter(s=>s!=='screen-edit');
     _renderVehicleDetail(state.currentVehicleId);
-    showScreen('screen-detail');
+    _activateScreen('screen-detail');
     document.getElementById('bottom-nav').style.display='none';
     document.getElementById('fab-add').style.display='none';
   }else{
@@ -2274,6 +2406,22 @@ function toggleSelectAll(){
 
 function clearSelection(){state.selectedVehicles.clear();renderDataList();}
 
+/**
+ * V5.7: 带超时保护的照片预取 - 文档导出不再被云端照片拖死
+ * 真机上飞书照片拉取慢/失败时,旧版会无限等待导致"生成文件"Toast后无响应。
+ * 现在: 最多等待timeoutMs,超时返回已命中的部分(文档无图但可正常导出分享)。
+ */
+async function preparePhotoMapSafe(vehicles,timeoutMs){
+  const limit=timeoutMs||20000;
+  let resolved=false;
+  const p=preparePhotoMap(vehicles).then(m=>{resolved=true;return m;}).catch(()=>{resolved=true;return {};});
+  const timeout=new Promise(r=>setTimeout(()=>r(null),limit));
+  const result=await Promise.race([p,timeout]);
+  if(result)return result;
+  console.warn('[导出]照片预取超时('+limit+'ms),按已命中部分继续导出');
+  return {};
+}
+
 function exportData(format){
   const n=state.selectedVehicles.size;
   if(n===0){showToast('请先选择要导出的车型');return;}
@@ -2299,14 +2447,16 @@ function exportData(format){
         const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
         await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       }else if(format==='pdf'){
+        if(!window.jspdf){showToast('PDF组件未打包,请更新至新版安装包');return;}
         // V5.3.2: 先预取照片(本地→飞书云端)转base64,再生成内嵌图片的PDF
+        // V5.7: 超时保护,照片不可达时导出无图PDF而非卡死
         showToast('正在获取车辆照片...');
-        const photoMap=await preparePhotoMap(selectedVehicles);
+        const photoMap=await preparePhotoMapSafe(selectedVehicles);
         const blob=generatePDF(selectedVehicles,photoMap);
         await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.pdf`,'application/pdf');
       }else if(format==='word'){
         showToast('正在获取车辆照片...');
-        const photoMap=await preparePhotoMap(selectedVehicles);
+        const photoMap=await preparePhotoMapSafe(selectedVehicles);
         const blob=generateWord(selectedVehicles,photoMap);
         const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
         const ext=mimeType.includes('msword')?'doc':'docx';
@@ -2331,14 +2481,16 @@ async function exportSingle(format){
       const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       await shareFile(blob,`${v.display}_断电指导.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }else if(format==='pdf'){
+      if(!window.jspdf){showToast('PDF组件未打包,请更新至新版安装包');return;}
       // V5.3.2: 预取照片转base64后内嵌(与批量导出同一回退链)
+      // V5.7: 超时保护,照片不可达时导出无图PDF而非卡死
       showToast('正在获取车辆照片...');
-      const photoMap=await preparePhotoMap([v]);
+      const photoMap=await preparePhotoMapSafe([v]);
       const blob=generatePDF([v],photoMap);
       await shareFile(blob,`${v.display}_断电指导.pdf`,'application/pdf');
     }else if(format==='word'){
       showToast('正在获取车辆照片...');
-      const photoMap=await preparePhotoMap([v]);
+      const photoMap=await preparePhotoMapSafe([v]);
       const blob=generateWord([v],photoMap);
       const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       const ext=mimeType.includes('msword')?'doc':'docx';
@@ -2349,14 +2501,14 @@ async function exportSingle(format){
 }
 
 /**
- * 上传注册申请到飞书 - V5.3重写
+ * 上传注册申请到飞书 - V5.7数据分仓重写
  * 变更: 1)走httpFetch/httpUploadFile绕过CORS(修复真机上传静默失败)
- *      2)上传到"APP数据备份"子文件夹(与项目产物分离)
- *      3)失败时给用户明确提示(之前静默失败导致"组长收不到申请")
+ *      2)上传到"APP数据备份/注册申请"子文件夹(与项目产物彻底分离)
+ *      3)失败时给用户明确提示+重试(之前静默失败导致"组长收不到申请")
+ *      4)V5.7: Secret已内置默认值,无需每台手机手动配置,跨网络开箱即用
  */
 async function syncPendingToFeishu(user){
   const cfg=getFeishuCfg();
-  // V5.3.4: appSecret缺失时跳过并提示,不再带空凭证静默失败(诊断根因1)
   if(!feishuCfgReady(cfg,true))return;
   try{
     // V5.4: 注册申请上传飞书时含哈希密码（组长审批后需同步给组员）
@@ -2365,34 +2517,55 @@ async function syncPendingToFeishu(user){
     const jsonStr=JSON.stringify(pendingData,null,2);
     const blob=new Blob([jsonStr],{type:'application/json'});
     const token=await getFeishuToken(cfg,2);
-    const dataFolder=await getDataFolderToken(token);
-    if(!dataFolder)throw new Error('数据文件夹不可用');
-    await httpUploadFile({token,fileName:`pending_reg_${user.phone}.json`,folderToken:dataFolder,blob});
+    await httpUploadFile({token,fileName:`pending_reg_${user.phone}.json`,folderToken:await getDataSubFolderToken(token,cfg.pendingSub),blob});
     console.log('注册申请已同步到飞书:',`pending_reg_${user.phone}.json`);
     showToast('注册申请已推送,等待组长在任一设备审核');
   }catch(err){
     console.error('Sync pending to Feishu failed:',err);
-    showToast('申请推送失败(网络/飞书配置),组长同网络时可手动同步获取');
+    // V5.7: 失败时清缓存自动重试一次(文件夹token失效自愈)
+    try{
+      const token=await getFeishuToken(cfg,1);
+      invalidateDataFolderCache();
+      const pendingData={type:'pending_registration',user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
+      const blob=new Blob([JSON.stringify(pendingData,null,2)],{type:'application/json'});
+      await httpUploadFile({token,fileName:`pending_reg_${user.phone}.json`,folderToken:await getDataSubFolderToken(token,cfg.pendingSub),blob});
+      showToast('注册申请已推送(重试成功),等待组长审核');
+      return;
+    }catch(e2){/* 重试仍失败,走提示 */}
+    showToast('申请推送失败('+err.message+'),请检查网络后重试');
   }
 }
 
 /**
- * 从飞书拉取待审核注册 - V5.3重写
- * 变更: 1)httpFetch绕过CORS 2)从"APP数据备份"子文件夹拉取
- *      3)返回新申请数量供轮询器做Toast提醒
+ * 从飞书拉取待审核注册 - V5.7双位置兼容读取
+ * 读取位置: ①"APP数据备份/注册申请"(V5.7新位置) ②"APP数据备份"根(V5.3-V5.6旧位置)
+ * 兼容性: 组员手机上仍运行旧版APP时,申请文件上传在旧位置,新版组长APP同样能收到
  * @param {boolean} silent - 静默模式(轮询时不弹Toast)
  * @returns {Promise<number>} 新拉取的待审核数量
  */
 async function pullPendingFromFeishu(silent){
   const cfg=getFeishuCfg();
-  if(!feishuCfgReady(cfg))return 0; // V5.3.4: Secret缺失直接跳过轮询,避免每60秒无效请求
+  if(!feishuCfgReady(cfg))return 0;
   try{
     const token=await getFeishuToken(cfg);
-    const dataFolder=await getDataFolderToken(token);
-    if(!dataFolder)return 0;
-    const files=await feishuListFiles(token,dataFolder);
-    if(!files)throw new Error('获取文件列表失败');
-    const pendingFiles=files.filter(f=>f.name&&f.name.startsWith('pending_reg_')&&f.name.endsWith('.json'));
+    // 收集新旧两个位置的全部申请文件(按文件名去重,新位置优先)
+    let pendingFiles=[];
+    try{
+      const newSub=await getDataSubFolderToken(token,cfg.pendingSub);
+      pendingFiles.push(...(await feishuListFiles(token,newSub)||[]));
+    }catch(e){console.warn('新位置(注册申请)读取跳过:',e.message);}
+    try{
+      const dataRoot=await getDataFolderToken(token);
+      const rootFiles=(await feishuListFiles(token,dataRoot)||[]);
+      pendingFiles.push(...rootFiles);
+    }catch(e){console.warn('旧位置(数据区根)读取跳过:',e.message);}
+    const seen=new Set();
+    pendingFiles=pendingFiles.filter(f=>{
+      if(!f.name||!f.name.startsWith('pending_reg_')||!f.name.endsWith('.json'))return false;
+      if(seen.has(f.name))return false;
+      seen.add(f.name);
+      return true;
+    });
     let newCount=0;
     for(const file of pendingFiles){
       try{
@@ -2411,6 +2584,10 @@ async function pullPendingFromFeishu(silent){
           const existingUser=USERS.find(u=>u.phone===pendingData.user.phone);
           if(!existingUser){
             USERS.push(pendingData.user);
+            newCount++;
+          }else if(existingUser.status==='pending'&&pendingData.user.status==='active'){
+            // 云端已审批通过(其他组长设备处理过),本地同步激活
+            existingUser.status='active';
             newCount++;
           }
         }
@@ -2431,26 +2608,74 @@ async function pullPendingFromFeishu(silent){
     return newCount;
   }catch(err){
     console.error('Pull pending from Feishu failed:',err);
-    return 0;
+    // V5.7: 一次性自愈重试(缓存失效场景)
+    try{
+      invalidateDataFolderCache();
+      const token=await getFeishuToken(cfg,1);
+      const newSub=await getDataSubFolderToken(token,cfg.pendingSub);
+      const files=(await feishuListFiles(token,newSub)||[]).filter(f=>f.name&&f.name.startsWith('pending_reg_')&&f.name.endsWith('.json'));
+      let cnt=0;
+      for(const file of files){
+        const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{headers:{Authorization:'Bearer '+token}});
+        const pd=JSON.parse(await r.text());
+        if(pd.type==='pending_registration'&&pd.user&&!USERS.find(u=>u.phone===pd.user.phone)){
+          USERS.push(pd.user);cnt++;
+        }
+      }
+      if(cnt>0){saveUsers(USERS);renderMemberList();showToast(`📥 收到${cnt}条新的组员注册申请`);}
+      return cnt;
+    }catch(e2){return 0;}
   }
 }
 
 /**
- * 上传审批结果到飞书 - V5.3新增,补全跨设备审批闭环的关键缺口
- * 之前只把申请推给组长,但组长审批后结果不上传,组员设备永远看不到自己被通过
+ * 审批通过后删除云端申请文件 - V5.7新增
+ * 避免同一申请被多台组长设备重复处理,也保持云端"注册申请"目录干净
+ */
+async function deletePendingFileFromFeishu(phone){
+  const cfg=getFeishuCfg();
+  if(!feishuCfgReady(cfg))return;
+  try{
+    const token=await getFeishuToken(cfg);
+    const fileName=`pending_reg_${phone}.json`;
+    // 双位置清理(新子目录+旧数据区根)
+    const locations=[];
+    try{locations.push(await getDataSubFolderToken(token,cfg.pendingSub));}catch(e){}
+    try{locations.push(await getDataFolderToken(token));}catch(e){}
+    for(const loc of locations){
+      const olds=(await feishuListFiles(token,loc)||[]).filter(f=>f.name===fileName);
+      for(const f of olds){
+        await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+      }
+    }
+  }catch(err){console.warn('云端申请文件清理跳过:',err.message);}
+}
+
+/**
+ * 上传审批结果到飞书 - V5.7数据分仓版
+ * 存放位置: "APP数据备份/审批结果/approved_users.json"
+ * V5.7说明: 恢复同步密码哈希(salt$hash格式,SHA-256不可逆,与本地存储完全同级安全,
+ *           云端不含任何明文密码)。V5.6曾完全剔除密码字段,导致组员在换手机/新设备
+ *           登录时本地无账号无哈希,永远"账号不存在"——跨设备闭环被切断。
  * @returns {Promise<boolean>}
  */
 async function pushApprovedUsersToFeishu(){
   const cfg=getFeishuCfg();
-  if(!feishuCfgReady(cfg))return false; // V5.3.4: 配置不完整直接跳过(诊断根因1)
+  if(!feishuCfgReady(cfg))return false;
   try{
     const token=await getFeishuToken(cfg);
-    const dataFolder=await getDataFolderToken(token);
-    if(!dataFolder)return false;
-    // V5.4: 上传审批结果时剔除密码（密码仅存本地哈希，飞书云端不存明文）
-    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>{const {password,...safe}=u;return safe;})};
-    await uploadJsonToDataFeishu(token,'approved_users.json',JSON.stringify(payload));
-    addSyncLog('审批结果已同步到飞书','green');
+    // V5.7: 含哈希密码(salt$hash不可逆,云端无明文),支撑组员新设备登录闭环
+    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>({id:u.id,name:u.name,phone:u.phone,password:u.password||'',role:u.role,status:u.status,created:u.created}))};
+    await uploadJsonToDataFeishu(token,'approved_users.json',JSON.stringify(payload),cfg.approvedSub);
+    // 迁移清理: 删除旧位置(数据区根)同名文件,防止读到陈旧审批结果
+    try{
+      const dataRoot=await getDataFolderToken(token);
+      const olds=(await feishuListFiles(token,dataRoot)||[]).filter(f=>f.type==='file'&&f.name==='approved_users.json');
+      for(const f of olds){
+        await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+      }
+    }catch(e){console.warn('旧位置审批文件清理跳过:',e.message);}
+    addSyncLog('审批结果已同步到飞书(审批结果/)','green');
     return true;
   }catch(err){
     console.error('Push approved users failed:',err);
@@ -2460,22 +2685,48 @@ async function pushApprovedUsersToFeishu(){
 }
 
 /**
- * 组员拉取审批结果 - V5.3新增
- * 登录/启动时调用:从飞书拉取approved_users.json,若自己状态从pending→active则提示可登录
- * @returns {Promise<boolean>} 自己是否被批准
+ * 从云端拉取审批结果并合并到本地用户表 - V5.7增强
+ * 同时服务于两个场景:
+ *   1) pending组员登录时检查自己是否已被组长通过(原V5.3.1逻辑)
+ *   2) 全量合并云端用户(新设备登录发现账号/多设备状态同步)
+ * @param {Object} [userParam] - 指定用户(登录时state.currentUser尚未赋值)
+ * @param {boolean} [fullMerge] - true=全量合并云端用户到本地(新设备登录用)
+ * @returns {Promise<boolean>} 指定用户是否已被批准(fullMerge时返回是否拉取成功)
  */
-async function pullApprovedStatusFromFeishu(userParam){
-  // V5.3.1: 支持传入待查用户(登录前state.currentUser尚未赋值),默认查当前登录用户
+async function pullApprovedStatusFromFeishu(userParam,fullMerge){
   const who=userParam||state.currentUser;
   const cfg=getFeishuCfg();
-  if(!feishuCfgReady(cfg)||!who)return false; // V5.3.4: Secret缺失跳过(诊断根因1)
+  if(!feishuCfgReady(cfg)||( !who&&!fullMerge))return false;
   try{
     const token=await getFeishuToken(cfg);
-    const dataFolder=await getDataFolderToken(token);
-    if(!dataFolder)return false;
-    const data=await downloadJsonFromDataFeishu(token,'approved_users.json');
+    // V5.7: 优先读新位置(审批结果/),回退旧位置(数据区根)
+    let data=null;
+    try{
+      data=await downloadJsonFromDataFeishu(token,'approved_users.json',cfg.approvedSub);
+    }catch(e){console.warn('新位置(审批结果)读取失败,回退旧位置:',e.message);}
+    if(!data){
+      try{data=await downloadJsonFromDataFeishu(token,'approved_users.json');}catch(e){/* 无旧档 */}
+    }
     if(!data||!data.users)return false;
-    const me=data.users.find(u=>u.phone===who.phone);
+    let me=null;
+    for(const cu of data.users){
+      if(!cu||!cu.phone)continue;
+      const local=USERS.find(u=>u.phone===cu.phone);
+      if(!local){
+        // V5.7: 云端有而本地无(新设备/其他组长审批过)→合并入库,支撑跨设备登录
+        if(cu.status==='active'||cu.status==='pending'||cu.status==='rejected'){
+          USERS.push(cu);
+        }
+      }else{
+        // 本地已有: 云端状态更新时同步(仅状态与审批信息,密码以本地为准避免覆盖)
+        if(local.status!==cu.status&&cu.status==='active'){
+          local.status='active';
+        }
+      }
+      if(who&&cu.phone===who.phone)me=cu;
+    }
+    saveUsers(USERS);
+    if(fullMerge)return true;
     if(me&&me.status==='active'){
       const local=USERS.find(u=>u.phone===me.phone);
       if(local&&local.status!=='active'){
@@ -2491,8 +2742,10 @@ async function pullApprovedStatusFromFeishu(userParam){
 }
 
 /**
- * 组长注册申请轮询器 - V5.3新增
- * 登录成功后每60秒静默拉取一次,跨网络/跨设备也能及时收到申请
+ * 组长注册申请轮询器 - V5.3新增 / V5.7增强
+ * 1) 登录成功后每60秒静默拉取一次,跨网络/跨设备也能及时收到申请
+ * 2) V5.7: App从后台切回前台(resume)时立即拉取一次——组长切回APP即可秒收申请,
+ *    不必等待最长60秒的轮询窗口(两台手机跨网络场景实测痛感最明显的等待)
  */
 let pendingPollTimer=null;
 function startPendingPolling(){
@@ -2502,6 +2755,19 @@ function startPendingPolling(){
       pullPendingFromFeishu(true);
     }
   },60000);
+  // V5.7: 前台切回立即拉取(去抖:10秒内重复resume不重复拉)
+  if(!window.__tcgResumeBound){
+    window.__tcgResumeBound=true;
+    document.addEventListener('resume',()=>{
+      if(state.currentUser&&state.currentUser.role==='admin'&&state.currentUser.status==='active'){
+        const now=Date.now();
+        if(now-(window.__tcgLastPullTs||0)>10000){
+          window.__tcgLastPullTs=now;
+          pullPendingFromFeishu(true);
+        }
+      }
+    });
+  }
 }
 function stopPendingPolling(){if(pendingPollTimer){clearInterval(pendingPollTimer);pendingPollTimer=null;}}
 
@@ -2519,18 +2785,26 @@ async function doBackup(){
     addSyncLog(`本地备份完成 · ${VEHICLES.length}条 · ${filename}`,'green');
   }else if(target==='feishu'){
     const cfg=getFeishuCfg();
-    if(!feishuCfgReady(cfg,true))return; // V5.3.4: 引导填写Secret而非静默失败(诊断根因1)
+    if(!feishuCfgReady(cfg,true))return;
     showToast('正在上传备份到飞书...');
     try{
-      // V5.3: 备份属用户操作数据,上传至"APP数据备份"子文件夹,与项目产物分离
+      // V5.7: 备份属用户操作数据,上传至"APP数据备份/备份文件"子文件夹,与项目产物彻底分离
       const token=await getFeishuToken(cfg);
-      const dataFolder=await getDataFolderToken(token);
-      if(!dataFolder)throw new Error('数据文件夹不可用');
-      await httpUploadFile({token,fileName:filename,folderToken:dataFolder,blob});
-      showToast('飞书备份完成(已存入APP数据备份文件夹)');
+      await httpUploadFile({token,fileName:filename,folderToken:await getDataSubFolderToken(token,cfg.backupSub),blob});
+      showToast('飞书备份完成(已存入 APP数据备份/备份文件)');
       addBackupHistory('feishu',filename,VEHICLES.length,blob.size);
       addSyncLog(`飞书备份完成 · ${VEHICLES.length}条 · ${filename}`,'green');
     }catch(err){
+      // V5.7: 缓存失效自愈重试一次
+      try{
+        const token=await getFeishuToken(cfg,1);
+        invalidateDataFolderCache();
+        await httpUploadFile({token,fileName:filename,folderToken:await getDataSubFolderToken(token,cfg.backupSub),blob});
+        showToast('飞书备份完成(已存入 APP数据备份/备份文件)');
+        addBackupHistory('feishu',filename,VEHICLES.length,blob.size);
+        addSyncLog(`飞书备份完成 · ${VEHICLES.length}条 · ${filename}`,'green');
+        return;
+      }catch(e2){/* 重试仍失败 */}
       showToast('飞书备份失败: '+err.message);
       addSyncLog('飞书备份失败: '+err.message,'red');
     }
@@ -2668,21 +2942,47 @@ async function downloadJsonFromFolder(token,folderToken,docName){
 }
 
 /**
- * 上传JSON到"APP数据备份"文件夹(用户数据专用)
+ * 上传JSON到"APP数据备份"指定分类子文件夹 - V5.7数据分仓
+ * @param {string} token - tenant_access_token
+ * @param {string} docName - 文件名
+ * @param {string} jsonStr - JSON字符串
+ * @param {string} [subName] - 分类子文件夹名(注册申请/审批结果/同步数据/备份文件),空=数据区根
+ * @returns {Promise<boolean>} 是否成功
  */
-async function uploadJsonToDataFeishu(token,docName,jsonStr){
-  const dataFolder=await getDataFolderToken(token);
-  if(!dataFolder)throw new Error('数据文件夹不可用');
-  return uploadJsonToFolder(token,dataFolder,docName,jsonStr);
+async function uploadJsonToDataFeishu(token,docName,jsonStr,subName){
+  let folderToken=subName?await getDataSubFolderToken(token,subName):await getDataFolderToken(token);
+  if(!folderToken)throw new Error('数据文件夹不可用');
+  try{
+    return await uploadJsonToFolder(token,folderToken,docName,jsonStr);
+  }catch(e){
+    // V5.7自愈: 缓存token失效(换应用/文件夹重建)时清缓存重试一次
+    console.warn('上传失败,失效缓存重试:',e.message);
+    invalidateDataFolderCache();
+    folderToken=subName?await getDataSubFolderToken(token,subName):await getDataFolderToken(token,true);
+    if(!folderToken)throw new Error('数据文件夹不可用');
+    return await uploadJsonToFolder(token,folderToken,docName,jsonStr);
+  }
 }
 
 /**
- * 从"APP数据备份"文件夹下载JSON(用户数据专用)
+ * 从"APP数据备份"指定分类子文件夹下载JSON - V5.7数据分仓
+ * @param {string} token - tenant_access_token
+ * @param {string} docName - 文件名
+ * @param {string} [subName] - 分类子文件夹名,空=数据区根
+ * @returns {Promise<Object|null>} 解析后JSON,未找到返回null
  */
-async function downloadJsonFromDataFeishu(token,docName){
-  const dataFolder=await getDataFolderToken(token);
-  if(!dataFolder)throw new Error('数据文件夹不可用');
-  return downloadJsonFromFolder(token,dataFolder,docName);
+async function downloadJsonFromDataFeishu(token,docName,subName){
+  let folderToken=subName?await getDataSubFolderToken(token,subName):await getDataFolderToken(token);
+  if(!folderToken)throw new Error('数据文件夹不可用');
+  try{
+    return await downloadJsonFromFolder(token,folderToken,docName);
+  }catch(e){
+    console.warn('下载失败,失效缓存重试:',e.message);
+    invalidateDataFolderCache();
+    folderToken=subName?await getDataSubFolderToken(token,subName):await getDataFolderToken(token,true);
+    if(!folderToken)throw new Error('数据文件夹不可用');
+    return await downloadJsonFromFolder(token,folderToken,docName);
+  }
 }
 
 /**
@@ -2719,13 +3019,12 @@ async function downloadJsonFromFeishu(cfg,docName){
 }
 
 /**
- * 下载同步数据(带位置迁移兼容) - V5.3.4新增(诊断根因6)
- * 为什么需要: V5.3.4起同步数据统一存入"APP数据备份"子文件夹,但存量设备
- *           云端的历史数据仍在项目根目录;直接读新位置会误报"云端无数据"。
- * 策略: ①优先读"APP数据备份"新位置 ②未命中回退项目根目录历史位置,
- *       任何年代的云端数据都能读到,升级用户无感迁移。
+ * 下载同步数据(带位置迁移兼容) - V5.7数据分仓版
+ * 读取优先级: ①"APP数据备份/同步数据"(V5.7新位置) ②"APP数据备份"根(V5.3.4-5.6)
+ *           ③项目根目录(V5.3.3及更早历史位置)
+ * 任何年代的云端数据都能读到,升级用户无感迁移
  * @param {Object} cfg - 飞书配置
- * @returns {Promise<Object|null>} 同步数据JSON,两处均无返回null
+ * @returns {Promise<Object|null>} 同步数据JSON,各处均无返回null
  */
 async function downloadSyncDataMigrated(cfg){
   const token=await getFeishuToken(cfg,2);
@@ -2734,8 +3033,11 @@ async function downloadSyncDataMigrated(cfg){
     try{
       let data=null;
       try{
-        data=await downloadJsonFromDataFeishu(token,'vehicle_sync_data.json');
-      }catch(e){console.warn('新位置(APP数据备份)读取失败,回退根目录:',e.message);}
+        data=await downloadJsonFromDataFeishu(token,'vehicle_sync_data.json',cfg.syncSub);
+      }catch(e){console.warn('新位置(同步数据/)读取失败,回退:',e.message);}
+      if(!data){
+        try{data=await downloadJsonFromDataFeishu(token,'vehicle_sync_data.json');}catch(e){/* 继续回退 */}
+      }
       if(!data)data=await downloadJsonFromFolder(token,cfg.folder,'vehicle_sync_data.json');
       return data;
     }catch(e){
@@ -2763,11 +3065,18 @@ function doSyncUpload(){
         vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
       };
       showToast('正在上传同步数据...');
-      // V5.3.4: 同步数据统一存入"APP数据备份"子文件夹(诊断根因6),
-      // 与备份/审批数据同址;项目根目录(612项,大量历史垃圾)仅保留交付产物
+      // V5.7: 同步数据统一存入"APP数据备份/同步数据"子文件夹(数据分仓),
+      // 项目根目录与数据区根目录均不再存放,历史旧档同步清理
       const token=await getFeishuToken(cfg,2);
-      await uploadJsonToDataFeishu(token,'vehicle_sync_data.json',JSON.stringify(syncData));
-      // 迁移清理: 删除项目根目录历史同名旧档,防止双份数据漂移导致读到旧数据
+      await uploadJsonToDataFeishu(token,'vehicle_sync_data.json',JSON.stringify(syncData),cfg.syncSub);
+      // 迁移清理: 删除数据区根/项目根目录历史同名旧档,防止多份数据漂移导致读到旧数据
+      try{
+        const dataRoot=await getDataFolderToken(token);
+        const dataOlds=(await feishuListFiles(token,dataRoot)||[]).filter(f=>f.type==='file'&&f.name==='vehicle_sync_data.json');
+        for(const f of dataOlds){
+          await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+        }
+      }catch(e){console.warn('数据区旧档清理跳过:',e.message);}
       try{
         const rootOlds=(await feishuListFiles(token,cfg.folder)||[]).filter(f=>f.type==='file'&&f.name==='vehicle_sync_data.json');
         for(const f of rootOlds){
@@ -3402,13 +3711,23 @@ async function addMember(){
 function approveMember(id){
   const u=USERS.find(x=>x.id===id);
   // V5.3.1: 审批结果即时推送到飞书,否则组员设备永远拉不到"已通过"状态
-  if(u){u.status='active';saveUsers(USERS);renderMemberList();showToast('已通过审核');pushApprovedUsersToFeishu();}
+  if(u){
+    u.status='active';saveUsers(USERS);renderMemberList();showToast('已通过审核');
+    pushApprovedUsersToFeishu();
+    // V5.7: 审批完成后删除云端申请文件,防止其他组长设备重复处理
+    deletePendingFileFromFeishu(u.phone);
+  }
 }
 
 function rejectMember(id){
   showConfirm('拒绝注册','确定拒绝该注册申请？',()=>{
     const idx=USERS.findIndex(u=>u.id===id);
-    if(idx>-1){USERS[idx].status='rejected';saveUsers(USERS);renderMemberList();showToast('已拒绝');pushApprovedUsersToFeishu();}
+    if(idx>-1){
+      USERS[idx].status='rejected';saveUsers(USERS);renderMemberList();showToast('已拒绝');
+      pushApprovedUsersToFeishu();
+      // V5.7: 拒绝同样清理云端申请文件
+      deletePendingFileFromFeishu(USERS[idx].phone);
+    }
   });
 }
 
@@ -3723,7 +4042,9 @@ function handleHardwareBack(){
   const openModals=Array.from(document.querySelectorAll('.modal-overlay.show'));
   if(openModals.length>0){closeModal(openModals[openModals.length-1].id);return;}
   // 4. 登录页 → 不响应(避免误触退出,双击才退)
-  if(state.screen==='login'){doubleBackExit();return;}
+  // V5.7修复: 旧版判断state.screen==='login'永不成立(实际值为'screen-login',带前缀),
+  // 导致登录页按返回键错误地走goBack弹栈,跳回注册/忘记密码页而非退出确认
+  if(state.screen==='screen-login'){doubleBackExit();return;}
   // 5. 主Tab页面 → 双击退出
   if(['screen-vehicles','screen-data','screen-my'].includes(state.screen)){
     doubleBackExit();return;

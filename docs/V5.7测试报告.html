@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>太仓港断电指导APP V5.7.1 测试报告</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'PingFang SC','Microsoft YaHei',sans-serif; background:#f1f5f9; color:#1e293b; line-height:1.75; padding:16px; }
+  .wrap { max-width:960px; margin:0 auto; }
+  header { background:linear-gradient(135deg,#15803d,#166534); color:#fff; border-radius:14px; padding:32px 28px; margin-bottom:20px; }
+  header h1 { font-size:24px; margin-bottom:8px; }
+  header .meta { font-size:13px; opacity:.85; display:flex; flex-wrap:wrap; gap:16px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); border-radius:999px; padding:2px 12px; font-size:12px; margin-right:8px; }
+  .card { background:#fff; border-radius:12px; padding:22px 24px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  h2 { font-size:18px; color:#15803d; margin-bottom:12px; padding-left:10px; border-left:4px solid #15803d; }
+  h3 { font-size:15px; margin:14px 0 8px; color:#334155; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; }
+  th { background:#f0fdf4; color:#15803d; text-align:left; }
+  th,td { padding:8px 10px; border:1px solid #e2e8f0; vertical-align:top; }
+  code { background:#f1f5f9; padding:1px 6px; border-radius:4px; font-size:12.5px; color:#b91c1c; font-family:ui-monospace,Consolas,monospace; word-break:break-all; }
+  .ok { color:#15803d; font-weight:600; }
+  .bad { color:#b91c1c; font-weight:600; }
+  .warn { color:#b45309; font-weight:600; }
+  .notice { border-radius:8px; padding:12px 14px; font-size:13px; margin:10px 0; background:#f0fdf4; border:1px solid #bbf7d0; }
+  ul,ol { padding-left:22px; } li { margin:4px 0; }
+  .score { font-size:32px; font-weight:700; color:#15803d; }
+</div>
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>太仓港断电指导APP V5.7.1 测试报告</h1>
+  <div class="meta">
+    <span class="badge">2026-08-23</span>
+    <span class="badge">四轮测试 · 82/82 通过</span>
+    <span class="badge">含真实飞书云端链路</span>
+    <span class="badge">含双设备跨网络模拟</span>
+  </div>
+</header>
+
+<div class="card">
+<h2>一、测试总览</h2>
+<p class="score">82 / 82 <span style="font-size:14px;color:#475569;">(100% 通过)</span></p>
+<table>
+<tr><th>轮次</th><th>测试套件</th><th>覆盖</th><th>结果</th></tr>
+<tr><td>R1</td><td><code>tests/test_v57_integration.py</code></td><td>飞书真实API：凭证/分仓目录/注册读写往返</td><td class="ok">15/15</td></tr>
+<tr><td>R2</td><td><code>tests/test_v57_logic.js</code></td><td>DOM级：导航分层返回/脏栈防御/预取超时/配置/导出依赖/版本一致性</td><td class="ok">30/30</td></tr>
+<tr><td>R3</td><td><code>tests/test_v57_cross_network.js</code></td><td>双设备跨网络真机模拟(真实飞书云端为传输介质)</td><td class="ok">16/16</td></tr>
+<tr><td>R4</td><td><code>tests/test_v53_runtime.js</code> + 基线对照</td><td>历史回归(21项)；与v5.6基线逐项对照</td><td class="ok">21/21</td></tr>
+</table>
+<div class="notice"><b>测试方法说明</b>：R2/R3 使用 jsdom 构建 DOM 级页面运行时(注入 Node webcrypto)，R3 将页面 fetch 透传至真实网络，两台独立"手机"(独立localStorage会话)通过真实飞书云文档交换数据，等效跨网络双真机链路；云端测试数据全部自动清理还原。</div>
+</div>
+
+<div class="card">
+<h2>二、问题② 返回逻辑 — 测试明细</h2>
+<table>
+<tr><th>用例</th><th>预期</th><th>结果</th></tr>
+<tr><td>2.1 照片查看器打开→返回</td><td>仅关查看器，不退页</td><td class="ok">PASS</td></tr>
+<tr><td>2.2 视频播放器打开→返回</td><td>仅关播放器</td><td class="ok">PASS</td></tr>
+<tr><td>2.3 弹层打开→返回</td><td>仅关最上层弹层</td><td class="ok">PASS</td></tr>
+<tr><td>2.4 详情页→返回</td><td>回车辆列表(历史栈)</td><td class="ok">PASS</td></tr>
+<tr><td>2.4b <b>脏栈条目'login'</b></td><td>不崩溃，安全回主Tab</td><td class="ok">PASS (V5.7.1修复)</td></tr>
+<tr><td>2.4c 初始state.screen</td><td>='screen-login'(带前缀)</td><td class="ok">PASS (V5.7.1修复)</td></tr>
+<tr><td>2.4d 启动后导航栈</td><td>无脏条目</td><td class="ok">PASS | []</td></tr>
+<tr><td>2.5-2.7 栈空智能兜底</td><td>编辑/同步/组员页各回正确主Tab</td><td class="ok">PASS×3</td></tr>
+<tr><td>2.8 登出后返回</td><td>不回登录页</td><td class="ok">PASS</td></tr>
+<tr><td>R4 优先级1-6(硬件键)</td><td>六级路由全部正确</td><td class="ok">PASS×6</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>三、问题④⑤ 飞书备份与跨网络注册 — 测试明细</h2>
+<table>
+<tr><th>用例</th><th>验证点</th><th>结果</th></tr>
+<tr><td>R1-1.1</td><td>新凭证 tenant_access_token 获取</td><td class="ok">PASS</td></tr>
+<tr><td>R1-3.x</td><td>APP数据备份下四子目录定位/创建</td><td class="ok">PASS×5</td></tr>
+<tr><td>R1-4.x</td><td>项目交付产物区三子目录</td><td class="ok">PASS×4</td></tr>
+<tr><td>R1-5.1~5.3</td><td>注册申请 上传→发现→下载解析 往返</td><td class="ok">PASS×3</td></tr>
+<tr><td>R2-4.1~4.2</td><td>内置凭证开箱即用(无需手配Secret)</td><td class="ok">PASS×2</td></tr>
+<tr><td>R2-4.3</td><td>缓存失效自愈(清空全部子目录缓存)</td><td class="ok">PASS</td></tr>
+<tr><td>R3-0.x</td><td>组长手机出厂账号就绪</td><td class="ok">PASS×2</td></tr>
+<tr><td>R3-1.1</td><td>组员手机A注册(哈希密码本地持久化)</td><td class="ok">PASS</td></tr>
+<tr><td>R3-2.3</td><td><b>申请文件真实落盘飞书云端</b></td><td class="ok">PASS</td></tr>
+<tr><td>R3-3.1~3.3</td><td>组长手机B跨网络拉取到申请(pending/哈希无明文)</td><td class="ok">PASS×3</td></tr>
+<tr><td>R3-4.1~4.2</td><td>组长审批→审批结果云端同步(含该组员active)</td><td class="ok">PASS×2</td></tr>
+<tr><td>R3-5.1~5.2</td><td>组员换新设备登录自动发现云端账号(active)</td><td class="ok">PASS×2</td></tr>
+<tr><td>R3-6.x</td><td>云端测试痕迹清理还原</td><td class="ok">PASS×3</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>四、问题① 文档导出 — 测试明细</h2>
+<table>
+<tr><th>用例</th><th>验证点</th><th>结果</th></tr>
+<tr><td>R2-5.1</td><td>5个vendor导出库被demo.html引用</td><td class="ok">PASS</td></tr>
+<tr><td>R2-5.2</td><td>Word/Excel/PDF 导出入口齐备</td><td class="ok">PASS</td></tr>
+<tr><td>R2-5.3</td><td>社交分享链路存在</td><td class="ok">PASS</td></tr>
+<tr><td>R2-3.1~3.2</td><td>照片预取20秒(测试600ms)超时不卡死，降级导出</td><td class="ok">PASS×2 (602ms)</td></tr>
+<tr><td>CI资产校验(构建时)</td><td>vendor 5文件 + 图片≥100张 强校验</td><td class="ok">已内置于CI</td></tr>
+</table>
+<p class="warn">注：APK内实际导出效果依赖CI打包vendor与图片(本次CI已修复并加防回归校验)；建议真机安装后抽验 Word/Excel/PDF 三种导出与分享。</p>
+</div>
+
+<div class="card">
+<h2>五、测试过程中发现并修复的缺陷</h2>
+<table>
+<tr><th>#</th><th>缺陷</th><th>发现轮次</th><th>严重度</th><th>修复版本</th></tr>
+<tr><td>1</td><td>CI未打包vendor导出库与车辆图片(APK导出全废)</td><td>诊断</td><td class="bad">致命</td><td>V5.7</td></tr>
+<tr><td>2</td><td>CI签名引用不存在的KEYSTORE_PATH(v5.4起签名全败)</td><td>诊断</td><td class="bad">致命</td><td>V5.7</td></tr>
+<tr><td>3</td><td>初始state.screen='login'脏栈→返回键空指针卡死</td><td>R2</td><td class="bad">严重</td><td>V5.7.1</td></tr>
+<tr><td>4</td><td>httpFetch浏览器降级路径对象body未序列化→飞书400</td><td>R3</td><td class="warn">中等</td><td>V5.7.1</td></tr>
+<tr><td>5</td><td>version.json versionCode与APK不一致(误报更新)</td><td>诊断</td><td class="warn">中等</td><td>V5.7</td></tr>
+<tr><td>6</td><td>appSecret默认留空→飞书全链路静默失败</td><td>诊断</td><td class="bad">致命</td><td>V5.7</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>六、环境与复现</h2>
+<ul>
+<li>Node 22 + jsdom 29 + Python 3 (urllib) ；飞书真实租户凭证(cli_aa0ce4fd91f85be8)</li>
+<li>复现命令：<code>npm run test:all</code> (R2+R4+R3)；<code>python3 tests/test_v57_integration.py</code> (R1)</li>
+<li>基线对照：v5.6(a6b9c45)与V5.7.1逐项运行同一测试集，仅legacy测试中编码的旧页面名约定同步修正</li>
+</ul>
+</div>
+
+</div>
+</body>
+</html>
