@@ -66,7 +66,8 @@
     <plugin name="cordova-plugin-geolocation" spec="5.0.0" />
     <plugin name="cordova-plugin-advanced-http" spec="3.3.1" />
     <plugin name="cordova-plugin-x-socialsharing" spec="6.0.4" />
-    <plugin name="cordova-plugin-qrscanner" spec="3.0.1" />
+    <!-- V5.7.1: 移除 cordova-plugin-qrscanner —— APP从未使用扫码功能, 且其qrscanner.gradle
+         使用AGP8已删除的compile配置+jcenter()已关停, 是v5.4以来构建崩溃的元凶之一 -->
     <plugin name="cordova-plugin-screen-orientation" spec="3.0.3" />
     <plugin name="cordova-plugin-statusbar" spec="4.0.0" />
     <plugin name="cordova-plugin-splashscreen" spec="6.0.2" />
