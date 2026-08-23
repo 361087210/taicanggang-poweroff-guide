@@ -11,6 +11,10 @@ on:
         required: true
         default: '5.7.0'
 
+# V5.7.1: 新仓库GITHUB_TOKEN默认只读, 创建Release需要显式contents:write权限
+permissions:
+  contents: write
+
 env:
   JAVA_VERSION: '17'
 
