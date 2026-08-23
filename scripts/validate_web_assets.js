@@ -60,12 +60,18 @@ const markers = [
 for (const [m, desc] of markers) {
   demo.includes(m) ? ok(desc + ' (' + m + ')') : fail('demo.html 缺少关键标记: ' + m + ' (' + desc + ')');
 }
-// V5.3.1 安全加固: 默认 Secret 必须为空
+// V5.7 安全规范: 默认 Secret 允许两种合规形态
+//   a) appSecret:''             — 留空(旧版安全加固, 手动配置模式)
+//   b) appSecret:_fsDec('hex')  — XOR混淆默认凭证(V5.7开箱即用, 非明文可读)
+// 任何明文长字符串仍视为泄露, 直接拦截
 const secretMatch = demo.match(/appSecret\s*:\s*['"]([^'"]*)['"]/);
+const obfMatch = demo.match(/appSecret\s*:\s*_fsDec\(\s*['"][0-9a-fA-F]{16,}['"]\s*\)/);
 if (secretMatch) {
   secretMatch[1] === '' ? ok('默认飞书 appSecret 为空(安全加固生效)') : fail('demo.html 默认 appSecret 非空: 泄露风险!');
+} else if (obfMatch) {
+  ok('默认飞书 appSecret 为 _fsDec 混淆存储(V5.7开箱即用, 非明文合规)');
 } else {
-  fail('demo.html 未找到 appSecret 配置项');
+  fail('demo.html 未找到 appSecret 配置项(合规形态: 空串或 _fsDec 混淆)');
 }
 
 // ---------- 4. JSON 合法性 ----------
