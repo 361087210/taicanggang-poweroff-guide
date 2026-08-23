@@ -119,7 +119,8 @@ registry['modal-share'].classList.add('show');
 vm.runInContext('handleHardwareBack()', ctx);
 check('优先级3: 弹层打开时关闭弹层', !registry['modal-share'].classList.contains('show'));
 _modalOverlayQuery = () => [];
-setScreen('login');
+// V5.7.1: 真实页面id为'screen-login'(state初始值曾为'login'无前缀,已修正为一致)
+setScreen('screen-login');
 const ts1 = vm.runInContext('lastBackPressTs=0;handleHardwareBack();lastBackPressTs', ctx);
 check('优先级4: 登录页不退出只提示', ts1 > 0);
 setScreen('screen-vehicles');

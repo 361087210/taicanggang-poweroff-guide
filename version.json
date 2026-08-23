@@ -1,15 +1,16 @@
 {
-  "version": "5.6",
-  "versionCode": 50600,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.6/tcg_poweroff_v5.6.apk",
+  "version": "5.7.0",
+  "versionCode": 50700,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.7/tcg_poweroff_v5.7.0.apk",
   "releaseNotes": [
-    "V5.6 密码安全加固",
-    "- 新增: SHA-256+盐值密码哈希化（本地存储），飞书云端不再同步密码",
-    "- 新增: 启动时自动幂等迁移明文旧密码为哈希格式",
-    "- 新增: 登录时自动将明文旧密码升级为哈希，零用户感知",
-    "- 修复: 注册/改密/重置密码全链路哈希化",
-    "- 修复: 飞书同步的 approved_users.json 不再含密码字段",
-    "- 优化: 所有密码操作函数 async 化，统一哈希验证逻辑"
+    "V5.7.0 四大问题根治版",
+    "- 修复: 文档分享——CI构建此前遗漏vendor导出库与车辆图片,APK内Word/PDF/Excel生成失效;现已完整打包,恢复V5.3级别的文档分享体验",
+    "- 修复: 返回上一步——编辑保存后不再退回编辑表单;登录页返回键正确触发双击退出;登出/注册后返回键不再退回已登录界面;弹层/查看器打开时返回键逐层关闭",
+    "- 修复: 飞书备份与更新——内置默认凭证(混淆存储)开箱即用;数据分仓:同步数据/注册申请/审批结果/备份文件各自独立子文件夹,与项目交付产物彻底分离",
+    "- 修复: 跨网络注册审批——组员申请秒传云端;组长60秒轮询+切回APP即拉取;审批结果云端秒同步;组员新设备登录自动发现云端账号",
+    "- 修复: CI签名构建——改用KEYSTORE_BASE64自动解码签名,v5.4以来构建全部失败的问题根治",
+    "- 新增: 文档导出照片预取20秒超时保护,云端照片不可达时导出无图文档而非卡死",
+    "- 新增: 文件夹token缓存失效自动重试自愈(换飞书应用/云端文件夹重建场景)"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
@@ -17,6 +18,7 @@
     "appId": "cli_aa0ce4fd91f85be8",
     "folderToken": "WdXUfZPkClI1audQxIYc90XRnWc",
     "dataFolderName": "APP数据备份",
+    "dataSubFolders": ["同步数据", "注册申请", "审批结果", "备份文件"],
     "bitableAppToken": "",
     "approvalCode": "",
     "chatId": ""

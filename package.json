@@ -1,5 +1,15 @@
 {
   "dependencies": {
     "cordova": "^13.0.0"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  },
+  "scripts": {
+    "test:logic": "node tests/test_v57_logic.js",
+    "test:cross": "node tests/test_v57_cross_network.js",
+    "test:integration": "python3 tests/test_v57_integration.py",
+    "test:runtime": "node tests/test_v53_runtime.js",
+    "test:all": "npm run test:logic && npm run test:runtime && npm run test:cross"
   }
 }

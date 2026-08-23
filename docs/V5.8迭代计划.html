@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>太仓港断电指导APP V5.8 迭代计划</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'PingFang SC','Microsoft YaHei',sans-serif; background:#f1f5f9; color:#1e293b; line-height:1.75; padding:16px; }
+  .wrap { max-width:960px; margin:0 auto; }
+  header { background:linear-gradient(135deg,#7c3aed,#5b21b6); color:#fff; border-radius:14px; padding:32px 28px; margin-bottom:20px; }
+  header h1 { font-size:24px; margin-bottom:8px; }
+  header .meta { font-size:13px; opacity:.85; display:flex; flex-wrap:wrap; gap:16px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); border-radius:999px; padding:2px 12px; font-size:12px; margin-right:8px; }
+  .card { background:#fff; border-radius:12px; padding:22px 24px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  h2 { font-size:18px; color:#7c3aed; margin-bottom:12px; padding-left:10px; border-left:4px solid #7c3aed; }
+  h3 { font-size:15px; margin:14px 0 8px; color:#334155; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; }
+  th { background:#f5f3ff; color:#7c3aed; text-align:left; }
+  th,td { padding:8px 10px; border:1px solid #e2e8f0; vertical-align:top; }
+  code { background:#f1f5f9; padding:1px 6px; border-radius:4px; font-size:12.5px; color:#b91c1c; font-family:ui-monospace,Consolas,monospace; word-break:break-all; }
+  .p0 { color:#b91c1c; font-weight:700; } .p1 { color:#b45309; font-weight:700; } .p2 { color:#15803d; font-weight:700; }
+  .notice { border-radius:8px; padding:12px 14px; font-size:13px; margin:10px 0; background:#f5f3ff; border:1px solid #ddd6fe; }
+  ul,ol { padding-left:22px; } li { margin:4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>太仓港断电指导APP V5.8 迭代计划</h1>
+  <div class="meta">
+    <span class="badge">基于 V5.7.1</span>
+    <span class="badge">对标市场同类现场作业类APP</span>
+    <span class="badge">2026-08-23</span>
+  </div>
+</header>
+
+<div class="card">
+<h2>一、优先级总览</h2>
+<table>
+<tr><th>#</th><th>方向</th><th>市场对标依据</th><th>优先级</th><th>预估工作量</th></tr>
+<tr><td>1</td><td>数据同步冲突解决(版本向量合并)</td><td>Notion/滴答清单等离线优先APP标配OT/CRDT思想</td><td class="p0">P0</td><td>3-5天</td></tr>
+<tr><td>2</td><td>注册审批推送实时化(替代60秒轮询)</td><td>企业微信/钉钉审批均为服务端推送秒达</td><td class="p0">P0</td><td>2-3天</td></tr>
+<tr><td>3</td><td>Secret服务端化(云函数代理)</td><td>业界共识:客户端永存Secret=可泄露;主流APP均走服务端签名</td><td class="p0">P0</td><td>2天</td></tr>
+<tr><td>4</td><td>飞书原生审批流对接</td><td>飞书审批API提供模板/状态机/通知,免自研</td><td class="p1">P1</td><td>3天</td></tr>
+<tr><td>5</td><td>工程化: 单文件拆分模块化构建</td><td>demo.html已达291KB,继续膨胀将不可维护;Vite分包为前端标配</td><td class="p1">P1</td><td>4-5天</td></tr>
+<tr><td>6</td><td>存储层升级 localStorage→SQLite</td><td>车型数据含112张图引用与媒体映射,localStorage 5MB上限临近</td><td class="p1">P1</td><td>3天</td></tr>
+<tr><td>7</td><td>APK加固与SSL Pinning</td><td>工具类APP分发渠道杂,防二次打包为上架企业应用市场门槛</td><td class="p1">P1</td><td>1-2天</td></tr>
+<tr><td>8</td><td>崩溃与行为可观测性</td><td>Sentry自建/Glide同类方案,现场问题远程定位</td><td class="p2">P2</td><td>2天</td></tr>
+<tr><td>9</td><td>视频离线包与预加载策略</td><td>现场弱网/无网是核心场景,B站/抖音式分级缓存</td><td class="p2">P2</td><td>2-3天</td></tr>
+<tr><td>10</td><td>深色模式与适老化</td><td>Android 10+系统级趋势,现场夜间作业实用</td><td class="p2">P2</td><td>1-2天</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>二、P0 详细方案</h2>
+<h3>1. 数据同步冲突解决</h3>
+<p><b>现状</b>：同步数据为JSON全量覆盖(后写赢)，组长与组员并发编辑会互相覆盖丢数据。</p>
+<ul>
+<li>每条车型记录增加 <code>rev</code> 修订号与 <code>updatedAt</code>；上传时服务端(飞书文件)按记录级合并：三方基础版以 <code>rev</code> 高者胜，同rev不同内容提示人工确认</li>
+<li>同步前先拉云端 → 本地三方合并 → 上传合并结果(两阶段提交)，失败自动回滚本地</li>
+<li>同步日志UI展示"本次合并: 新增x条/更新y条/冲突z条(已保留较新)"</li>
+</ul>
+<h3>2. 注册审批推送实时化</h3>
+<p><b>现状</b>：60秒轮询+resume即时拉取，最长等待60秒且持续耗电。</p>
+<ul>
+<li>方案A(推荐)：飞书开放平台事件订阅(云文档变更事件) + 轻量推送通道——服务端检测到"注册申请/"目录新增文件即向设备推送</li>
+<li>方案B：极光/个推等免费推送通道兜底；两者均保留现有轮询作为降级路径</li>
+<li>组长端新申请到达改为系统通知栏提醒(当前仅Toast)</li>
+</ul>
+<h3>3. Secret服务端化</h3>
+<p><b>现状</b>：Secret以XOR混淆内置APK，反编译可提取(轻度防护,非真安全)。</p>
+<ul>
+<li>部署飞书云函数/腾讯云函数作为代理：APP仅持有设备码，所有飞书API经代理转发，Secret只存云端环境变量</li>
+<li>代理层顺带实现接口级频控与审计日志，为后续多租户/多码头扩展铺路</li>
+<li>过渡期(未部署代理前)保留内置凭证作降级</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>三、P1/P2 摘要</h2>
+<ul>
+<li><b>飞书原生审批流</b>：注册走飞书审批定义(模板+多级审批)，APP内嵌审批卡片；审批结果自动回写用户表，免去文件模拟协议</li>
+<li><b>模块化构建</b>：demo.html拆为 <code>nav/data/export/feishu/media/auth</code> 六模块，Vite构建产出同名单文件(保持Cordova零配置兼容)，启用TypeScript逐步迁移</li>
+<li><b>SQLite存储</b>：cordova-sqlite-storage，车型/用户/日志三表；图片改文件系统存储，localStorage仅存配置与会话</li>
+<li><b>APK加固</b>：腾讯乐固/360加固免费版 + V2签名校验；高级别可选腾讯云加固企业版</li>
+<li><b>可观测性</b>：window.onerror+unhandledrejection聚合上报飞书多维表格(免自建服务器)，含设备型号/版本/操作路径</li>
+<li><b>视频离线包</b>：Wi-Fi下自动预载当前品牌视频至缓存目录，按LRU清理，总量上限500MB可配置</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>四、里程碑建议</h2>
+<table>
+<tr><th>版本</th><th>内容</th><th>目标</th></tr>
+<tr><td>V5.8</td><td>P0三项(冲突解决/推送实时化/Secret服务端化)</td><td>2026-09中旬</td></tr>
+<tr><td>V5.9</td><td>P1四项(审批流/模块化/SQLite/加固)</td><td>2026-10</td></tr>
+<tr><td>V6.0</td><td>P2三项 + 多码头/多租户架构评估</td><td>2026-Q4</td></tr>
+</table>
+<div class="notice"><b>建议</b>：V5.7.1先按"开发文档-升级指引"完成现网替换与真机验收(重点：两台手机不同网络注册审批、Word/PDF/Excel三格式导出分享、编辑保存后返回)，确认稳定后再启动V5.8。</div>
+</div>
+
+</div>
+</body>
+</html>
