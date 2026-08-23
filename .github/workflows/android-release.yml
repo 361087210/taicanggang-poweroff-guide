@@ -130,7 +130,8 @@ jobs:
           APK_IN=platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
           APK_ALIGNED=platforms/android/app/build/outputs/apk/release/app-release-aligned.apk
           APK_OUT=../release/tcg_poweroff_v${APP_VERSION}.apk
-          zipalign -f -p 4 "$APK_IN" "$APK_ALIGNED"
+          # zipalign 不在 PATH, 必须用 SDK build-tools 全路径(与 apksigner 同理)
+            $ANDROID_HOME/build-tools/34.0.0/zipalign -f -p 4 "$APK_IN" "$APK_ALIGNED"
           $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
             --ks ../release.keystore \
             --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
