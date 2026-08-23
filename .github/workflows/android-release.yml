@@ -99,7 +99,7 @@ jobs:
           cordova plugin add cordova-plugin-geolocation@5.0.0
           cordova plugin add cordova-plugin-advanced-http@3.3.1
           cordova plugin add cordova-plugin-x-socialsharing@6.0.4
-          cordova plugin add cordova-plugin-qrscanner@3.0.1
+          # V5.7.1: qrscanner已移除(APP零使用+其gradle与AGP8不兼容)
           cordova plugin add cordova-plugin-screen-orientation@3.0.3
           cordova plugin add cordova-plugin-statusbar@4.0.0
           cordova plugin add cordova-plugin-splashscreen@6.0.2
