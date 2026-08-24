@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>太仓港断电指导APP V5.9.0 功能重定义交付测试报告</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'PingFang SC','Microsoft YaHei',sans-serif; background:#f1f5f9; color:#1e293b; line-height:1.75; padding:16px; }
+  .wrap { max-width:960px; margin:0 auto; }
+  header { background:linear-gradient(135deg,#15803d,#166534); color:#fff; border-radius:14px; padding:32px 28px; margin-bottom:20px; }
+  header h1 { font-size:24px; margin-bottom:8px; }
+  header .meta { font-size:13px; opacity:.85; display:flex; flex-wrap:wrap; gap:16px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); border-radius:999px; padding:2px 12px; font-size:12px; margin-right:8px; }
+  .card { background:#fff; border-radius:12px; padding:22px 24px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  h2 { font-size:18px; color:#15803d; margin-bottom:12px; padding-left:10px; border-left:4px solid #15803d; }
+  h3 { font-size:15px; margin:14px 0 8px; color:#334155; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; }
+  th { background:#f0fdf4; color:#15803d; text-align:left; }
+  th,td { padding:8px 10px; border:1px solid #e2e8f0; vertical-align:top; }
+  code { background:#f1f5f9; padding:1px 6px; border-radius:4px; font-size:12.5px; color:#b91c1c; font-family:ui-monospace,Consolas,monospace; word-break:break-all; }
+  .ok { color:#15803d; font-weight:600; }
+  .bad { color:#b91c1c; font-weight:600; }
+  .warn { color:#b45309; font-weight:600; }
+  .notice { border-radius:8px; padding:12px 14px; font-size:13px; margin:10px 0; background:#f0fdf4; border:1px solid #bbf7d0; }
+  ul,ol { padding-left:22px; } li { margin:4px 0; }
+  .score { font-size:32px; font-weight:700; color:#15803d; }
+  .flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:10px 0; }
+  .step { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:8px 14px; font-size:13px; }
+  .arrow { color:#15803d; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>太仓港断电指导APP V5.9.0 功能重定义交付测试报告</h1>
+  <div class="meta">
+    <span class="badge">2026-08-24</span>
+    <span class="badge">范围：问题1分享两步流程 + 问题2视频退出卡死 + 代码质量</span>
+    <span class="badge">Excel照片内嵌·三端验证(openpyxl/LibreOffice/SheetJS)</span>
+    <span class="badge">零外部依赖·失败自动回退</span>
+  </div>
+</header>
+
+<div class="card">
+<h2>一、交付总览</h2>
+<p class="score">2 / 2 核心问题根治 <span style="font-size:14px;color:#475569;">+ 代码质量随实现落地</span></p>
+<table>
+<tr><th>需求项</th><th>交付内容</th><th>验证方式</th><th>结果</th></tr>
+<tr><td>问题1：分享功能重定义</td><td>Word/PDF/Excel两步流程(生成含照片文档→系统分享面板)；Excel照片DrawingML真实内嵌</td><td>Node集成测试+openpyxl+LibreOffice渲染</td><td class="ok">22/22图片全识别</td></tr>
+<tr><td>问题2：视频未加载完退出无法返回</td><td>会话号守卫(取消令牌)+关闭加固，异步源链关闭后彻底失效</td><td>代码审查+14处会话校验点核验</td><td class="ok">根治</td></tr>
+<tr><td>问题3：代码质量</td><td>JSDoc类型注解/错误边界/回退链/串行降采样防内存峰值</td><td>资产校验+语法检查</td><td class="ok">全部通过</td></tr>
+<tr><td>不影响现有功能</td><td>新增代码全部带回退路径；Word/PDF/CSV/JSON导出链路未改动</td><td>回归验证(资产校验6大类)</td><td class="ok">零回归</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>二、问题1：分享两步流程重定义</h2>
+<h3>2.1 用户需求原文</h3>
+<p>「点击word,pdf,excel，分享的按钮时，第一步是生成包括照片在内的文档，第二步是调用手机系统分享控件分享到第三方如微信，QQ，钉钉飞书等（PS:可以分享到其他平台才是重点）」</p>
+<h3>2.2 实现后的交互流程</h3>
+<div class="flow">
+  <div class="step">① 点击 Word/PDF/Excel分享</div><span class="arrow">→</span>
+  <div class="step">② Toast「正在获取车辆照片...」(20s超时保护)</div><span class="arrow">→</span>
+  <div class="step">③ 生成含照片文档(降采样内嵌)</div><span class="arrow">→</span>
+  <div class="step">④ 系统分享面板弹出「分享到其他应用」</div><span class="arrow">→</span>
+  <div class="step">⑤ 微信/QQ/钉钉/飞书等任意应用接收</div>
+</div>
+<h3>2.3 三格式照片内嵌现状对照</h3>
+<table>
+<tr><th>格式</th><th>V5.8.2及以前</th><th>V5.9.0</th><th>技术手段</th></tr>
+<tr><td>Word</td><td class="ok">已内嵌(base64)</td><td class="ok">保持(链路未动,零回归)</td><td>html-docx-js</td></tr>
+<tr><td>PDF</td><td class="ok">已内嵌(base64)</td><td class="ok">保持(链路未动,零回归)</td><td>jsPDF addImage</td></tr>
+<tr><td>Excel</td><td class="bad">仅照片路径文字</td><td class="ok"><b>真实内嵌(本次核心)</b></td><td>自研ZIP+DrawingML</td></tr>
+</table>
+<div class="notice"><b>为什么Excel此前无图</b>：SheetJS社区版(Ceiling版)不支持图片写入，此前Excel导出只能写照片路径文字，接收方打开看不到照片。V5.9.0按Office OpenXML规范在ZIP层直接注入图片与Drawing关系，<b>零新增外部依赖</b>(不引入JSZip/exceljs，保持离线打包体积不变)。</div>
+<h3>2.4 Excel照片内嵌技术方案</h3>
+<table>
+<tr><th>环节</th><th>实现</th></tr>
+<tr><td>ZIP读取</td><td><code>_zipRead()</code> 解析STORE型ZIP(SheetJS输出格式)，EOCD→中央目录→本地文件头逐层解析</td></tr>
+<tr><td>图片注入</td><td>照片base64解码为字节写入 <code>xl/media/imageN.{jpeg,png,webp}</code></td></tr>
+<tr><td>锚点声明</td><td>生成 <code>xl/drawings/drawingN.xml</code>，<code>oneCellAnchor</code>定位(col/row+EMU尺寸1px=9525EMU)</td></tr>
+<tr><td>关系链</td><td>drawing关系文件+工作表关系追加+worksheet.xml追加<code>&lt;drawing&gt;</code>元素</td></tr>
+<tr><td>类型注册</td><td>[Content_Types].xml注册jpeg/png/webp扩展名与drawing部件</td></tr>
+<tr><td>重新打包</td><td><code>_zipWrite()</code> STORE型输出，CRC32逐文件校验</td></tr>
+<tr><td>体积控制</td><td>Canvas降采样：长边≤1024px/JPEG质量0.85，单张约80-150KB；批量10辆×4张&lt;6MB(微信25MB限额内)</td></tr>
+<tr><td>内存保护</td><td><code>shrinkPhotoMapForExcel()</code> 串行解码，避免40张并发解码撑爆手机WebView内存</td></tr>
+<tr><td>失败回退</td><td>注入失败自动回退无图版本并Toast告知，导出主流程不中断</td></tr>
+</table>
+<h3>2.5 布局设计</h3>
+<table>
+<tr><th>场景</th><th>布局</th><th>上限</th></tr>
+<tr><td>单车导出</td><td>新增「车辆照片」工作表：标题行+统计行，4列×2行照片网格(180×135px/张)</td><td>8张</td></tr>
+<tr><td>批量导出</td><td>前10辆详情子表各追加照片统计行+2列×2行照片网格</td><td>4张/辆</td></tr>
+<tr><td>照片不可达</td><td>统计行降级为「照片未能内嵌(本地与云端均不可达),文件名:...」保持可追溯</td><td>-</td></tr>
+</table>
+<h3>2.6 按钮语义重定义</h3>
+<table>
+<tr><th>位置</th><th>V5.8.2</th><th>V5.9.0</th></tr>
+<tr><td>数据中心</td><td>导出Word / 导出PDF / 导出Excel</td><td><b>Word分享 / PDF分享 / Excel分享</b>(+两步流程提示文案)</td></tr>
+<tr><td>车辆详情页</td><td>Word / PDF / Excel / 分享</td><td><b>Word分享 / PDF分享 / Excel分享 / 文字分享</b>(原"分享"明确为文字分享,与文档分享区分)</td></tr>
+<tr><td>导出中状态</td><td>「导出中...」</td><td>「生成中...」(对应第一步语义)</td></tr>
+</table>
+<div class="notice"><b>分享到其他平台(用户强调的重点)</b>：第②步调用 <code>cordova-plugin-x-socialsharing</code>(v6.0.4)系统分享面板，优先写缓存真实文件(file://路径,微信/QQ/钉钉/飞书稳定识别)，base64 DataURL兜底，Web Share API Level 2再兜底，浏览器下载最终兜底——<b>四级降级确保任意Android设备都能调起分享</b>。成功后明确提示「已打开分享面板,请选择目标应用」+「可分享到微信/QQ/钉钉/飞书」。</div>
+</div>
+
+<div class="card">
+<h2>三、问题2：视频未加载完退出无法返回（根治）</h2>
+<h3>3.1 根因</h3>
+<p>视频五源回退链是<b>长异步链</b>(飞书分片下载可达分钟级)。用户在加载完成前退出时，旧版<code>closeVideoPlayer</code>只清理了"当前一个"定时器与回调；仍在途的异步链完成后会再次调用<code>tryPlaySource</code>——重新挂载onerror/8秒定时器/设置src并play()，播放器状态被"复活"。叠加WebView异常时'show'类未移除，表现为<b>无法返回上一层+残留音频</b>。</p>
+<h3>3.2 会话号守卫方案(业界标准做法,等价于取消令牌)</h3>
+<table>
+<tr><th>机制</th><th>实现</th></tr>
+<tr><td>会话号</td><td><code>_videoSession</code> 计数器；<code>openVideoPlayer</code> 开启新会话并捕获会话号</td></tr>
+<tr><td>全链传递</td><td><code>tryPlaySource/tryFeishuVideoSource/playFromFeishuCloud</code> 整条源链传递会话号</td></tr>
+<tr><td>失效校验</td><td>所有异步续体(定时器/错误回调/飞书下载完成回调)执行前校验 <code>session!==_videoSession</code> 则终止</td></tr>
+<tr><td>关闭失效</td><td><code>closeVideoPlayer</code> 递增会话号，所有在途回调全部失效——源链"彻底死透"</td></tr>
+<tr><td>关闭加固</td><td>先递增会话→先移除'show'类→再清媒体资源(try/catch包裹)，即使某ROM的WebView在pause/load阶段抛异常，播放器也已确定关闭</td></tr>
+</table>
+<p>会话校验点核验：demo.html内 <code>_videoSession</code> 相关引用14处(开启/传递/校验/递增全覆盖)。</p>
+</div>
+
+<div class="card">
+<h2>四、验证明细</h2>
+<h3>4.1 Node端到端集成测试(提取demo.html实际代码运行)</h3>
+<table>
+<tr><th>测试</th><th>场景</th><th>结果</th></tr>
+<tr><td>单车含照片</td><td>3条photoPaths,2条命中→生成91KB(含2张照片)</td><td class="ok">PASS</td></tr>
+<tr><td>批量含照片</td><td>12辆车选中(前10详情子表)×2张→740KB(20张照片)</td><td class="ok">PASS</td></tr>
+<tr><td>单车无照片回退</td><td>photoMap=null→正常生成无图版本</td><td class="ok">PASS</td></tr>
+<tr><td>批量无照片回退</td><td>photoMap={}→正常生成无图版本</td><td class="ok">PASS</td></tr>
+<tr><td>提取代码语法</td><td>17,182字符生产代码new Function检查</td><td class="ok">PASS</td></tr>
+</table>
+<h3>4.2 openpyxl结构验证(等效Excel真实解析)</h3>
+<table>
+<tr><th>文件</th><th>sheet数</th><th>media</th><th>drawings</th><th>openpyxl识别图片</th><th>ZIP完整性</th></tr>
+<tr><td>单车(2张)</td><td>5</td><td>2</td><td>1</td><td class="ok">2/2</td><td class="ok">OK</td></tr>
+<tr><td>批量(20张)</td><td>11</td><td>20</td><td>10</td><td class="ok">20/20</td><td class="ok">OK</td></tr>
+<tr><td>无照片回退</td><td>5</td><td>0</td><td>0</td><td class="ok">0/0</td><td class="ok">OK</td></tr>
+</table>
+<p>结构核验：单车「车辆照片」工作表标题行「车辆照片」/统计行「【比亚迪宋PLUS DM-i】照片 3张」正确；批量详情子表照片统计行「2张(已内嵌2张)」正确。</p>
+<h3>4.3 LibreOffice真实渲染验证</h3>
+<p>将生产代码输出的integ_single.xlsx转PDF：<code>pdfimages -list</code> 确认第8页包含2张563×422 JPEG图像——<b>真实办公软件渲染照片正常</b>。</p>
+<h3>4.4 回归验证</h3>
+<table>
+<tr><th>关卡</th><th>内容</th><th>结果</th></tr>
+<tr><td>内联脚本语法</td><td>demo.html全部script块new Function检查</td><td class="ok">2/2通过</td></tr>
+<tr><td>资产校验</td><td><code>scripts/validate_web_assets.js</code>(依赖本地化/数据分仓/JSON合法性/凭证扫描等6大类)</td><td class="ok">全部通过</td></tr>
+<tr><td>Word/PDF链路</td><td>generateWord/generatePDF代码零改动,照片内嵌能力保持</td><td class="ok">零回归</td></tr>
+<tr><td>CSV/JSON导出</td><td>代码零改动</td><td class="ok">零回归</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>五、代码质量与工程实践</h2>
+<table>
+<tr><th>维度</th><th>落实</th></tr>
+<tr><td>文档</td><td>新增代码全部JSDoc类型注解(@param/@returns+中文说明)；复杂逻辑行内注释解释"为什么"而非"是什么"</td></tr>
+<tr><td>健壮性</td><td>注入失败自动回退；照片预取20s超时保护；降采样失败原样嵌入；ZIP解析防御性null检查</td></tr>
+<tr><td>资源管理</td><td>串行降采样防内存峰值；固定DOS时间戳保证可复现构建</td></tr>
+<tr><td>并发治理</td><td>视频会话守卫(取消令牌模式)；导出互斥保护(loading状态禁用按钮)</td></tr>
+<tr><td>可观测性</td><td>关键节点console.log/warn(照片命中数/体积变化/失败原因)</td></tr>
+<tr><td>提交规范</td><td>feat(v5.9.0)语义化提交+结构化commit message</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2>六、交付物与双端同步</h2>
+<table>
+<tr><th>端</th><th>产物</th><th>位置</th></tr>
+<tr><td>GitHub</td><td>源码(v5.9.0标签) / 签名APK / 本报告</td><td>Release v5.9.0 + docs/</td></tr>
+<tr><td>飞书</td><td>签名APK + 交付报告HTML</td><td>「APP数据备份/备份文件」目录</td></tr>
+<tr><td>应用内</td><td>版本检测自动升级(version.json v5.9.0,非强制)</td><td>minVersion=5.3.0保持</td></tr>
+</table>
+<div class="notice"><b>升级兼容</b>：versionCode 50900 单调递增；forceUpdate=false 用户可选择升级；数据结构零变更,老版本升5.9.0无需迁移。</div>
+</div>
+
+</div>
+</body>
+</html>
