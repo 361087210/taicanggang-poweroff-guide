@@ -267,8 +267,9 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="sticky top-0 z-30 bg-white shadow-sm">
 <div class="pt-12 px-4 pb-2">
 <div class="flex items-center justify-between mb-2">
-<button onclick="goBack()" class="w-8 h-8 flex items-center justify-center">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M15 18l-6-6 6-6"/></svg>
+<button onclick="goBack()" class="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors" aria-label="返回上一页">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-6 h-6 text-gray-700"><path d="M15 18l-6-6 6-6"/></svg>
+<span class="text-sm text-gray-700 font-medium">返回</span>
 </button>
 <span class="text-sm font-bold text-gray-900">车辆详情</span>
 <div class="flex items-center gap-1">
@@ -499,7 +500,13 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 </div>
 </div>
 <div class="bg-white rounded-2xl p-4 shadow-sm">
-<div class="text-sm font-bold text-gray-700 mb-3">待审核注册 <span id="pending-count" class="text-xs text-orange-500 font-normal"></span></div>
+<div class="flex items-center justify-between mb-3">
+<div class="text-sm font-bold text-gray-700">待审核注册 <span id="pending-count" class="text-xs text-orange-500 font-normal"></span></div>
+<button onclick="refreshPending()" id="btn-refresh-pending" class="text-xs text-blue-500 font-medium flex items-center gap-1">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+刷新申请
+</button>
+</div>
 <div class="space-y-2" id="pending-list"></div>
 </div>
 <div class="bg-white rounded-2xl p-4 shadow-sm">
@@ -1129,7 +1136,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.8.0';
+const APP_VERSION='5.8.1';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1216,9 +1223,9 @@ function _activateScreen(id){
     const memMenu=document.getElementById('menu-members');
     if(memMenu)memMenu.style.display=canEdit()?'flex':'none';
   }
-  // V5.7: 组长打开组员管理页立即静默拉取一次云端注册申请(双保险,秒级反馈)
+  // V5.7: 组长打开组员管理页立即拉取云端注册申请(非静默,确保有反馈)
   if(id==='screen-members'&&isLeader()){
-    pullPendingFromFeishu(true).then(()=>{});
+    pullPendingFromFeishu(false).then(()=>{renderMemberList();}).catch(()=>{});
   }
   if(id==='screen-password'){
     const acct=document.getElementById('pw-current-account');
@@ -1666,6 +1673,44 @@ function openVehicleDetail(id){
   document.getElementById('fab-add').style.display='none';
 }
 
+/**
+ * V5.8.1 侧滑手势返回 - 车辆详情页专用
+ * 用户从屏幕左边缘向右滑动时触发goBack(),与Android原生侧滑返回一致
+ * 仅在screen-detail页面生效,不影响视频播放器/照片查看器(它们有自己的关闭逻辑)
+ */
+let _swipeStartX=0,_swipeStartY=0,_swipeActive=false;
+document.addEventListener('touchstart',e=>{
+  if(state.screen!=='screen-detail')return;
+  // 视频播放器/照片查看器打开时不拦截手势
+  const vp=document.getElementById('video-player');
+  const pv=document.getElementById('photo-viewer');
+  if((vp&&vp.classList.contains('show'))||(pv&&pv.classList.contains('show')))return;
+  const t=e.touches[0];
+  // 仅左边缘30px范围内触发
+  if(t.clientX<=30){
+    _swipeStartX=t.clientX;
+    _swipeStartY=t.clientY;
+    _swipeActive=true;
+  }
+},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(!_swipeActive)return;
+  // 纵向滑动不触发(避免与列表滚动冲突)
+  const t=e.touches[0];
+  if(Math.abs(t.clientY-_swipeStartY)>Math.abs(t.clientX-_swipeStartX))return;
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!_swipeActive){return;}
+  _swipeActive=false;
+  const t=e.changedTouches[0];
+  const dx=t.clientX-_swipeStartX;
+  const dy=Math.abs(t.clientY-_swipeStartY);
+  // 水平滑动>80px且纵向偏移<50px时触发返回
+  if(dx>80&&dy<50){
+    goBack();
+  }
+},{passive:true});
+
 function switchKeyTab(tab){
   const f=document.getElementById('ktab-frame'),c=document.getElementById('ktab-container');
   const fc=document.getElementById('key-frame-content'),cc=document.getElementById('key-container-content');
@@ -2032,11 +2077,12 @@ async function shareVehicleDetail(){
  * @param {string} [title] - 分享面板标题(缺省用文件名)
  */
 async function shareFile(blob,filename,mimeType,title){
-  // 原生分享插件未注入时主动等待deviceready(首次调用可能早于插件就绪)
+  // V5.8.1: 原生分享插件未注入时主动等待deviceready(首次调用可能早于插件就绪)
+  // 延长等待至3秒——部分低端Android设备插件注入较慢,2秒不够
   if(!hasNativeShare()&&window.cordova){
     await new Promise(res=>{
       let done=false;
-      const timer=setTimeout(()=>{if(!done){done=true;res();}},2000);
+      const timer=setTimeout(()=>{if(!done){done=true;res();}},3000);
       document.addEventListener('deviceready',()=>{if(!done){done=true;clearTimeout(timer);res();}},{once:true});
     });
   }
@@ -2058,8 +2104,9 @@ async function shareFile(blob,filename,mimeType,title){
           const safeName=filename.replace(/[\/\\:*?"<>|]/g,'_');
           const fileUrl=await writeBlobToCache(safeName,blob);
           shareFiles=[fileUrl];
+          console.log('[分享] 文件已写入缓存:',fileUrl);
         }catch(e){
-          console.warn('缓存文件写入失败,回退base64分享:',e);
+          console.warn('[分享] 缓存文件写入失败,回退base64分享:',e.message);
         }
       }
       if(!shareFiles){
@@ -2067,17 +2114,23 @@ async function shareFile(blob,filename,mimeType,title){
         const dataUrl=await blobToDataURL(blob);
         shareFiles=[dataUrl.replace(/^data:[^;]*;/,`data:${fixedMime};`)];
       }
+      console.log('[分享] 调用原生分享面板,文件:',filename,'大小:',(blob.size/1024).toFixed(1)+'KB');
       await new Promise((resolve,reject)=>{
         window.plugins.socialsharing.shareWithOptions(
-          // 对齐APK: title缺省回退为文件名(APK为 title:n||t),仅在批量JSON导出时显式传标题
-          {message:'',subject:filename,title:title||filename,dialogTitle:'选择保存或分享方式',files:shareFiles},
-          ()=>resolve(),err=>reject(err)
+          // V5.8.1: message传文件名便于接收方识别,dialogTitle更明确
+          {message:filename,subject:filename,title:title||filename,dialogTitle:'分享到其他应用',files:shareFiles},
+          ()=>{console.log('[分享] 原生分享成功');resolve();},
+          err=>{console.error('[分享] 原生分享失败:',JSON.stringify(err));reject(err);}
         );
       });
+      // V5.8.1: 原生分享成功后给明确提示(旧版静默return导致用户以为没反应)
+      showToast('已打开分享面板,请选择目标应用');
       return;
     }catch(e){
       if(e==='canceled')return; // 用户主动取消,静默处理
-      console.warn('原生分享失败,降级到Web Share API:',e);
+      console.warn('[分享] 原生分享失败,降级到Web Share API:',e);
+      // V5.8.1: 不静默降级,先提示用户
+      showToast('原生分享异常,尝试其他方式...');
     }
   }
   // 2. Web Share API Level 2: 系统分享面板(支持文件的浏览器/WebView)
@@ -3557,8 +3610,11 @@ function tryPlaySource(video,src,fallback){
   video.onerror=onErr;
   // 8秒超时保护: 部分ROM上onerror不触发,只有加载停滞
   const timer=setTimeout(onErr,8000);
+  // V5.8.1: 将timer存到video元素上,closeVideoPlayer可统一清理
+  video._currentTimer=timer;
   video.onloadeddata=()=>{
     clearTimeout(timer);settled=true;
+    video._currentTimer=null;
     const err=video.parentElement.querySelector('.video-error');
     if(err)err.remove();
   };
@@ -3810,8 +3866,14 @@ function pickVideoFile(){
 
 function closeVideoPlayer(){
   const video=document.getElementById('video-element');
+  // V5.8.1: 清理tryPlaySource的8秒超时定时器,防止关闭后异步回调重新设置src并播放
+  if(video._currentTimer){clearTimeout(video._currentTimer);video._currentTimer=null;}
+  // V5.8.1: 清除事件回调,防止onerror/onloadeddata在src清空后仍被触发
+  video.onerror=null;
+  video.onloadeddata=null;
   video.pause();
-  video.src='';
+  video.removeAttribute('src');
+  video.load(); // 触发unload,确保释放媒体资源(部分浏览器仅src=''不释放)
   // 清除视频错误提示
   const container=video.parentElement;
   const err=container?container.querySelector('.video-error'):null;
@@ -3883,11 +3945,18 @@ function renderMemberList(){
     const pcount=document.getElementById('pending-count');
     if(pcount)pcount.textContent=pending.length?`(${pending.length})`:'';
     pc.innerHTML=pending.map(u=>`
-      <div class="flex items-center justify-between py-2 px-2 bg-orange-50 rounded-lg">
-        <div><div class="text-sm text-gray-800">${esc(u.name)}</div><div class="text-xs text-gray-400">${esc(u.phone)} · ${esc(u.created)}</div></div>
-        <div class="flex gap-2">
-          <button onclick="approveMember(${u.id})" class="text-xs text-green-500 font-medium">通过</button>
-          <button onclick="rejectMember(${u.id})" class="text-xs text-red-400">拒绝</button>
+      <div class="py-3 px-3 bg-orange-50 rounded-lg">
+        <div class="flex items-start justify-between mb-2">
+          <div class="flex-1">
+            <div class="text-sm font-medium text-gray-800">${esc(u.name)}</div>
+            <div class="text-xs text-gray-500 mt-0.5">手机：${esc(u.phone)}</div>
+            <div class="text-xs text-gray-400 mt-0.5">申请时间：${esc(u.created||'未知')}</div>
+            ${u.remarks?`<div class="text-xs text-gray-400 mt-0.5">备注：${esc(u.remarks)}</div>`:''}
+          </div>
+          <div class="flex flex-col gap-1.5 ml-2">
+            <button onclick="approveMember(${u.id})" class="px-3 py-1 text-xs text-white bg-green-500 rounded-lg font-medium">通过</button>
+            <button onclick="rejectMember(${u.id})" class="px-3 py-1 text-xs text-red-500 bg-red-50 rounded-lg font-medium">拒绝</button>
+          </div>
         </div>
       </div>
     `).join('')||'<div class="text-center text-sm text-gray-400 py-4">暂无待审核注册</div>';
@@ -3914,15 +3983,32 @@ async function addMember(){
   showToast('组员创建成功');
 }
 
+// V5.8.1: 手动刷新注册申请
+async function refreshPending(){
+  const btn=document.getElementById('btn-refresh-pending');
+  if(btn){btn.disabled=true;btn.lastChild.textContent=' 拉取中...';}
+  try{
+    const cnt=await pullPendingFromFeishu(false);
+    renderMemberList();
+    if(cnt>0){showToast(`收到${cnt}条新申请`);}
+    else{showToast('暂无新申请');}
+  }catch(e){
+    showToast('拉取失败: '+(e.message||'网络异常'));
+  }finally{
+    if(btn){btn.disabled=false;btn.lastChild.textContent=' 刷新申请';}
+  }
+}
+
 function approveMember(id){
   const u=USERS.find(x=>x.id===id);
-  // V5.3.1: 审批结果即时推送到飞书,否则组员设备永远拉不到"已通过"状态
-  if(u){
+  if(!u){showToast('用户不存在');return;}
+  // V5.8.1: 通过也加确认,防止误触(审批操作不可撤销)
+  showConfirm('通过审核',`确认通过「${u.name}(${u.phone})」的注册申请？`,()=>{
     u.status='active';saveUsers(USERS);renderMemberList();showToast('已通过审核');
     pushApprovedUsersToFeishu();
     // V5.7: 审批完成后删除云端申请文件,防止其他组长设备重复处理
     deletePendingFileFromFeishu(u.phone);
-  }
+  });
 }
 
 function rejectMember(id){

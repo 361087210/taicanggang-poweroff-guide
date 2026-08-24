@@ -1,19 +1,14 @@
 {
-  "version": "5.8.0",
-  "versionCode": 50800,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.8/tcg_poweroff_v5.8.0.apk",
+  "version": "5.8.1",
+  "versionCode": 50801,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.8.1/tcg_poweroff_v5.8.1.apk",
   "releaseNotes": [
-    "V5.8.0 导出分享对齐版(基准:安装包V1.8)",
-    "- 对齐: 单车导出Excel四工作表结构(车辆信息/断电步骤/媒体资源/备注),缺失字段'未填写'兜底",
-    "- 对齐: 批量导出Excel汇总表(标题/导出时间/记录总数+11列标准表头)+前10辆详情子表",
-    "- 对齐: CSV导出11列标准表头+UTF-8 BOM+CRLF行尾,Windows Excel直接打开不乱码",
-    "- 对齐: JSON批量导出为带元信息结构{appVersion,backupAt,vehicles,users},非裸数组",
-    "- 对齐: 文件命名规范(单车{显示名}_断电指南.*/批量vehicle_poweroff_export_*/备份vehicle_poweroff_backup_*)",
-    "- 对齐: 分享标题策略——仅批量JSON传'车辆断电数据导出',其余场景原生面板标题回退为文件名",
-    "- 对齐: 配置导出固定命名cloud_sync_config.json,两端互认",
-    "- 新增: 数据中心'分享备份'一键通道,完整数据JSON经系统分享面板发微信/钉钉",
-    "- 新增: 全部导出按钮Loading互斥保护+导出中禁用,防重复提交;导出成功自动清空选择集",
-    "- 新增: 53项导出分享对齐测试套件(静态26+运行时27)"
+    "V5.8.1 四项问题修复版",
+    "- 修复: 分享导出——原生分享成功后增加明确提示(旧版静默返回致用户以为无反应);插件等待延长至3秒;分享参数优化(message传文件名便于接收方识别)",
+    "- 修复: 车辆详情页返回——返回按钮增大+加'返回'文字标签(旧版8x8px图标过小难辨识);新增左边缘侧滑手势返回(与Android原生侧滑一致)",
+    "- 修复: 视频音频残留——closeVideoPlayer清理tryPlaySource的8秒超时定时器+清除事件回调+removeAttribute('src')+load()触发unload(旧版仅pause+src=''不彻底释放,超时回调仍可重新设置src致音频残留)",
+    "- 修复: 注册审核——组长打开组员管理页改为非静默拉取+完成后渲染列表;新增'刷新申请'手动按钮;待审核列表增强显示(姓名/手机号/申请时间/备注分行展示);审批通过增加确认对话框防误触",
+    "- 优化: 分享面板标题改为'分享到其他应用'更明确;分享失败不再静默降级而是先提示用户"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
