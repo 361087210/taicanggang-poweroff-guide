@@ -1,14 +1,16 @@
 {
-  "version": "5.8.1",
-  "versionCode": 50801,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.8.1/tcg_poweroff_v5.8.1.apk",
+  "version": "5.8.2",
+  "versionCode": 50802,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.8.2/tcg_poweroff_v5.8.2.apk",
   "releaseNotes": [
-    "V5.8.1 四项问题修复版",
-    "- 修复: 分享导出——原生分享成功后增加明确提示(旧版静默返回致用户以为无反应);插件等待延长至3秒;分享参数优化(message传文件名便于接收方识别)",
-    "- 修复: 车辆详情页返回——返回按钮增大+加'返回'文字标签(旧版8x8px图标过小难辨识);新增左边缘侧滑手势返回(与Android原生侧滑一致)",
-    "- 修复: 视频音频残留——closeVideoPlayer清理tryPlaySource的8秒超时定时器+清除事件回调+removeAttribute('src')+load()触发unload(旧版仅pause+src=''不彻底释放,超时回调仍可重新设置src致音频残留)",
-    "- 修复: 注册审核——组长打开组员管理页改为非静默拉取+完成后渲染列表;新增'刷新申请'手动按钮;待审核列表增强显示(姓名/手机号/申请时间/备注分行展示);审批通过增加确认对话框防误触",
-    "- 优化: 分享面板标题改为'分享到其他应用'更明确;分享失败不再静默降级而是先提示用户"
+    "V5.8.2 增强版——输入验证+加载状态+错误处理+代码优化",
+    "- 增强: 分享功能——分享前输入验证(Blob有效性/文件名合法性/MIME类型修正);JSDoc类型注解",
+    "- 增强: 视频播放器——新增加载状态指示器(spinner+文字);preload=metadata;关闭时隐藏加载状态;错误提示UI",
+    "- 增强: 注册审核——组长权限验证(role=leader);审核操作错误分类处理(token过期/网络超时/通用错误);异步推送错误捕获+重试提示",
+    "- 增强: 返回按钮——ARIA可达性标签(role/tabindex);CSS最小点击区域44x44px",
+    "- 优化: 新增输入验证工具(sanitizeStr/isValidPhone);错误边界包装器(safeAsync);防抖函数(debounce)",
+    "- 优化: 关键函数JSDoc类型注解(shareFile/approveMember/rejectMember/refreshPending/tryPlaySource)",
+    "- 技术修正: 方案中URL.reconstruct/getBoundingClientRect().url为不存在的API,使用Blob/URL.createObjectURL替代;window.location.href改为SPA内部路由goBack()"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
