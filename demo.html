@@ -316,20 +316,21 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="text-xs text-gray-400 mb-2" id="selection-count">已选 0/73</div>
 <div class="space-y-1.5 max-h-60 overflow-y-auto scroll-y" id="data-vehicle-list"></div>
 <!-- Export buttons -->
+<!-- V5.8: 按钮带导出中状态+互斥禁用(对齐APK方案,防止异步导出期间重复提交) -->
 <div class="grid grid-cols-3 gap-2 mt-4">
-<button onclick="exportData('word')" class="py-2.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+<button onclick="exportData('word')" id="btn-export-word" class="py-2.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出Word
 </button>
-<button onclick="exportData('pdf')" class="py-2.5 bg-red-50 text-red-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+<button onclick="exportData('pdf')" id="btn-export-pdf" class="py-2.5 bg-red-50 text-red-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出PDF
 </button>
-<button onclick="exportData('excel')" class="py-2.5 bg-green-50 text-green-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+<button onclick="exportData('excel')" id="btn-export-excel" class="py-2.5 bg-green-50 text-green-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出Excel
 </button>
-<button onclick="exportData('csv')" class="py-2.5 bg-gray-50 text-gray-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+<button onclick="exportData('csv')" id="btn-export-csv" class="py-2.5 bg-gray-50 text-gray-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出CSV
 </button>
-<button onclick="exportData('json')" class="py-2.5 bg-purple-50 text-purple-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+<button onclick="exportData('json')" id="btn-export-json" class="py-2.5 bg-purple-50 text-purple-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出JSON
 </button>
 <div class="py-2.5 bg-gray-50 text-gray-400 rounded-lg text-xs text-center">更多格式</div>
@@ -341,6 +342,12 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg>
 <span class="text-sm font-bold text-gray-900">数据备份</span>
 </div>
+<!-- V5.8: 分享备份(对齐APK方案)——完整数据备份JSON经系统分享面板发微信/钉钉 -->
+<p class="text-xs text-gray-400 mb-3">生成完整数据备份文件，可通过微信、钉钉等方式分享到其他设备</p>
+<button onclick="shareBackup()" id="btn-share-backup" class="w-full py-2.5 mb-3 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg>
+分享备份
+</button>
 <p class="text-xs text-gray-400 mb-3">选择备份方式，生成完整数据备份文件</p>
 <div class="flex gap-3 mb-3">
 <label class="flex-1 flex items-center gap-2 p-2.5 rounded-xl border-2 border-blue-500 bg-blue-50 cursor-pointer">
@@ -1122,7 +1129,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.7.0';
+const APP_VERSION='5.8.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1182,7 +1189,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 VEHICLES.forEach(v=>{v.pinyin=getPinyin(v.display);});
 
 // ===================== STATE =====================
-let state={screen:'screen-login',currentUser:null,viewMode:'tree',currentVehicleId:null,currentVehicleIndex:0,searchQuery:'',brandFilter:'all',selectedVehicles:new Set(),editingVehicle:null,isEditing:false,outdoorMode:false,expandedBrands:new Set(['saic']),recentVehicles:[],photoZoom:1};
+let state={screen:'screen-login',currentUser:null,viewMode:'tree',currentVehicleId:null,currentVehicleIndex:0,searchQuery:'',brandFilter:'all',selectedVehicles:new Set(),editingVehicle:null,isEditing:false,outdoorMode:false,expandedBrands:new Set(['saic']),recentVehicles:[],photoZoom:1,detailExporting:null,batchExporting:null,backupExporting:false};
 let confirmCallback=null;
 let navHistory=[];
 
@@ -1641,9 +1648,9 @@ function _renderVehicleDetail(id){
     <!-- Export buttons -->
     <div class="px-4 mt-4 mb-6">
       <div class="grid grid-cols-5 gap-2">
-        <button onclick="exportSingle('word')" class="flex flex-col items-center gap-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-medium">Word</button>
-        <button onclick="exportSingle('pdf')" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-medium">PDF</button>
-        <button onclick="exportSingle('excel')" class="flex flex-col items-center gap-1 py-2.5 bg-green-50 text-green-600 rounded-xl text-xs font-medium">Excel</button>
+        <button onclick="exportSingle('word')" id="btn-detail-export-word" class="flex flex-col items-center gap-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-medium disabled:opacity-50">Word</button>
+        <button onclick="exportSingle('pdf')" id="btn-detail-export-pdf" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-medium disabled:opacity-50">PDF</button>
+        <button onclick="exportSingle('excel')" id="btn-detail-export-excel" class="flex flex-col items-center gap-1 py-2.5 bg-green-50 text-green-600 rounded-xl text-xs font-medium disabled:opacity-50">Excel</button>
         <button onclick="shareVehicleDetail()" class="flex flex-col items-center gap-1 py-2.5 bg-purple-50 text-purple-600 rounded-xl text-xs font-medium">分享</button>
         ${canEdit()?`<button onclick="openEditVehicle(${v.id})" class="flex flex-col items-center gap-1 py-2.5 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium">编辑</button><button onclick="confirmDeleteVehicle(${v.id})" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-500 rounded-xl text-xs font-medium">删除</button>`:'<div class="flex flex-col items-center gap-1 py-2.5 bg-gray-50 text-gray-300 rounded-xl text-xs">-</div>'}
 
@@ -2017,11 +2024,14 @@ async function shareVehicleDetail(){
  * 1. Cordova原生socialsharing插件: 直接调起系统分享面板(最可靠)
  * 2. Web Share API Level 2: 新版WebView支持的系统分享
  * 3. 浏览器下载: 兜底方案
+ * V5.8: 新增可选title参数(对齐APK方案)——原生分享面板标题统一为
+ *       "选择保存或分享方式"语境,与新版安装包(V1.8 React版)行为一致
  * @param {Blob} blob - 文件二进制数据
  * @param {string} filename - 文件名(含扩展名)
  * @param {string} mimeType - MIME类型
+ * @param {string} [title] - 分享面板标题(缺省用文件名)
  */
-async function shareFile(blob,filename,mimeType){
+async function shareFile(blob,filename,mimeType,title){
   // 原生分享插件未注入时主动等待deviceready(首次调用可能早于插件就绪)
   if(!hasNativeShare()&&window.cordova){
     await new Promise(res=>{
@@ -2059,7 +2069,8 @@ async function shareFile(blob,filename,mimeType){
       }
       await new Promise((resolve,reject)=>{
         window.plugins.socialsharing.shareWithOptions(
-          {message:'',subject:filename,title:'分享文件',files:shareFiles},
+          // 对齐APK: title缺省回退为文件名(APK为 title:n||t),仅在批量JSON导出时显式传标题
+          {message:'',subject:filename,title:title||filename,dialogTitle:'选择保存或分享方式',files:shareFiles},
           ()=>resolve(),err=>reject(err)
         );
       });
@@ -2072,7 +2083,7 @@ async function shareFile(blob,filename,mimeType){
   // 2. Web Share API Level 2: 系统分享面板(支持文件的浏览器/WebView)
   if(navigator.canShare&&navigator.canShare({files:[new File([blob],filename,{type:mimeType})]})){
     try{
-      await navigator.share({files:[new File([blob],filename,{type:mimeType})],title:filename});
+      await navigator.share({files:[new File([blob],filename,{type:mimeType})],title:title||filename});
     }catch(e){if(e.name!=='AbortError')showToast('分享取消');}
     return;
   }
@@ -2104,6 +2115,128 @@ function generateExcel(vehicles){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'断电指导数据');
   return XLSX.write(wb,{bookType:'xlsx',type:'array'});
+}
+
+/**
+ * ===================== V5.8 导出分享方案对齐(基准: 安装包V1.8 React版) =====================
+ * 背景: 车辆详情/数据中心导出需与新版安装包行为一致,老用户换机/混用两端时文档结构与文件名不混淆。
+ * 原则: 结构/命名/交互对齐APK,保留本项目vendor库(零CDN依赖)与照片内嵌回退链等既有优势。
+ */
+
+/**
+ * 单车Excel导出 - 四工作表结构(对齐APK jk函数)
+ * 为什么拆4个sheet: 汇总型单表在手机Excel里列宽拥挤,分表后"信息/步骤/媒体/备注"
+ * 各自独立成栏,现场查阅断电步骤时无需横向滚动。
+ * @param {Object} v - 车辆对象
+ * @returns {ArrayBuffer} xlsx二进制
+ */
+function generateExcelSingle(v){
+  if(!v||!v.id)throw new Error('车辆数据为空,无法导出');
+  const wb=XLSX.utils.book_new();
+  // Sheet1 车辆信息: 项目/内容两列,缺失字段填"未填写"(对齐APK,避免空单元格歧义)
+  const infoRows=[
+    ['项目','内容'],
+    ['品牌',v.brand],['车系',v.series],['配置',v.config],['显示名称',v.display],
+    ['车辆尺寸',v.size||'未填写'],['动力类型',v.powerType||'未填写'],['断电位置',v.position||'未填写'],
+    ['钥匙-框架',(v.keyFrame||[]).join('; ')||'未填写'],['钥匙-集装箱',(v.keyContainer||[]).join('; ')||'未填写']
+  ];
+  const wsInfo=XLSX.utils.aoa_to_sheet(infoRows);
+  wsInfo['!cols']=[{wch:16},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,wsInfo,'车辆信息');
+  // Sheet2 断电步骤: 序号/说明/注意事项,空步骤兜底"暂无步骤"
+  const stepRows=[['步骤序号','操作说明','注意事项']];
+  (v.steps||[]).forEach((s,i)=>stepRows.push([String(i+1),s,'']));
+  if(stepRows.length===1)stepRows.push(['','暂无步骤','']);
+  const wsSteps=XLSX.utils.aoa_to_sheet(stepRows);
+  wsSteps['!cols']=[{wch:10},{wch:60},{wch:40}];
+  XLSX.utils.book_append_sheet(wb,wsSteps,'断电步骤');
+  // Sheet3 媒体资源: 类型/路径说明,路径截断120字符(过长的blob路径会撑爆单元格)
+  // 对齐APK: 车辆图片每张一行,视频每条一行,无则单行"无"兜底
+  const mediaRows=[['类型','路径/说明']];
+  if((v.photoPaths||[]).length)v.photoPaths.forEach(p=>mediaRows.push(['车辆图片',String(p).slice(0,120)]));
+  else mediaRows.push(['车辆图片','无']);
+  if((v.videoPaths||[]).length)v.videoPaths.forEach(p=>mediaRows.push(['视频',String(p).slice(0,120)]));
+  else mediaRows.push(['视频','无']);
+  const wsMedia=XLSX.utils.aoa_to_sheet(mediaRows);
+  wsMedia['!cols']=[{wch:12},{wch:80}];
+  XLSX.utils.book_append_sheet(wb,wsMedia,'媒体资源');
+  // Sheet4 备注
+  const wsNotes=XLSX.utils.aoa_to_sheet([['备注'],[v.remarks||'无']]);
+  wsNotes['!cols']=[{wch:80}];
+  XLSX.utils.book_append_sheet(wb,wsNotes,'备注');
+  return XLSX.write(wb,{bookType:'xlsx',type:'array'});
+}
+
+/**
+ * 批量Excel导出 - 汇总表+前10辆详情子表结构(对齐APK Pk函数)
+ * 为什么详情子表只取前10: 超过10个sheet后Excel移动端打开明显卡顿,
+ * 汇总表已含全部记录的关键字段,深度详情可对单辆再导出。
+ * @param {Array} vehicles - 选中的车辆数组
+ * @returns {ArrayBuffer} xlsx二进制
+ */
+function generateExcelBatch(vehicles){
+  if(!Array.isArray(vehicles)||vehicles.length===0)throw new Error('未选择任何车辆,无法导出');
+  const wb=XLSX.utils.book_new();
+  // 汇总表: 标题/导出时间/记录总数 + 11列标准表头(对齐APK)
+  const summaryRows=[
+    ['车辆断电数据批量导出'],
+    ['导出时间',new Date().toLocaleString('zh-CN')],
+    ['记录总数',String(vehicles.length)],
+    [],
+    ['品牌','车系','配置','显示名称','车辆尺寸','动力类型','断电位置','钥匙-框架','钥匙-集装箱','步骤数','备注']
+  ];
+  vehicles.forEach(v=>{
+    summaryRows.push([
+      v.brand,v.series,v.config,v.display,v.size||'',v.powerType||'',v.position||'',
+      (v.keyFrame||[]).join('; '),(v.keyContainer||[]).join('; '),
+      String((v.steps||[]).length),v.remarks||''
+    ]);
+  });
+  const wsSummary=XLSX.utils.aoa_to_sheet(summaryRows);
+  wsSummary['!cols']=[{wch:12},{wch:14},{wch:20},{wch:24},{wch:14},{wch:10},{wch:20},{wch:14},{wch:14},{wch:8},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,wsSummary,'汇总');
+  // 前10辆: 每辆一个"项目/内容"详情子表(含步骤行),sheet名取显示名前20字符
+  vehicles.slice(0,10).forEach(v=>{
+    const rows=[['项目','内容'],
+      ['品牌',v.brand],['车系',v.series],['配置',v.config],['显示名称',v.display],
+      ['车辆尺寸',v.size||''],['动力类型',v.powerType||''],['断电位置',v.position||''],
+      ['钥匙-框架',(v.keyFrame||[]).join('; ')],['钥匙-集装箱',(v.keyContainer||[]).join('; ')]];
+    (v.steps||[]).forEach((s,i)=>rows.push([`步骤${i+1}`,s]));
+    if(v.remarks)rows.push(['备注',v.remarks]);
+    const wsDetail=XLSX.utils.aoa_to_sheet(rows);
+    wsDetail['!cols']=[{wch:16},{wch:60}];
+    const sheetName=(v.display||'').slice(0,20)||'未命名';
+    XLSX.utils.book_append_sheet(wb,wsDetail,sheetName);
+  });
+  return XLSX.write(wb,{bookType:'xlsx',type:'array'});
+}
+
+/**
+ * 批量/单车导出的按钮loading状态管理(V5.8对齐APK交互)
+ * 为什么需要: 导出是异步链(生成文件→写缓存→调分享面板),期间用户重复点击
+ * 会生成多个文件并连续弹分享面板,现场操作极易误触。
+ * @param {string} group - 'batch'(数据中心) | 'detail'(车辆详情)
+ * @param {string|null} format - 当前导出格式,'html'内文本切"导出中..."
+ */
+function setExportLoading(group,format){
+  const labels={'word':'Word','pdf':'PDF','excel':'Excel','csv':'CSV','json':'JSON'};
+  if(group==='batch'){
+    state.batchExporting=format;
+    ['word','pdf','excel','csv','json'].forEach(f=>{
+      const btn=document.getElementById('btn-export-'+f);
+      if(!btn)return;
+      btn.disabled=format!==null;
+      btn.lastChild.textContent=format===f?`导出中...`:`导出${labels[f]}`;
+    });
+  }else if(group==='detail'){
+    state.detailExporting=format;
+    ['word','pdf','excel'].forEach(f=>{
+      const btn=document.getElementById('btn-detail-export-'+f);
+      if(!btn)return;
+      btn.disabled=format!==null;
+      btn.textContent=format===f?'导出中...':labels[f];
+    });
+  }
 }
 
 /**
@@ -2422,64 +2555,96 @@ async function preparePhotoMapSafe(vehicles,timeoutMs){
   return {};
 }
 
-function exportData(format){
+/**
+ * 数据中心批量导出 - V5.8对齐安装包方案
+ * 对齐点: ①文件命名 vehicle_poweroff_export_* ②Excel汇总+详情双表结构
+ *         ③CSV 11列标准表头+CRLF ④JSON含appVersion/backupAt/vehicles/users
+ *         ⑤导出中按钮禁用 ⑥成功后清空选择 ⑦分享面板标题"选择保存或分享方式"
+ * @param {string} format - word|pdf|excel|csv|json
+ */
+async function exportData(format){
   const n=state.selectedVehicles.size;
   if(n===0){showToast('请先选择要导出的车型');return;}
+  if(state.batchExporting)return; // 互斥保护: 导出进行中忽略重复点击
   const names={'word':'Word','pdf':'PDF','excel':'Excel','csv':'CSV','json':'JSON'};
   if((format==='excel'&&!window.XLSX)||(format==='pdf'&&!window.jspdf)||(format==='word'&&!window._htmlDocxReady&&typeof htmlDocx==='undefined')){
     showToast(names[format]+'库加载失败，正在使用降级方案...');
   }
   const selectedVehicles=VEHICLES.filter(v=>state.selectedVehicles.has(v.id));
-  showToast(`正在生成 ${names[format]} 文件...`);
-  setTimeout(async()=>{
-    try{
-      if(format==='json'){
-        const blob=new Blob([JSON.stringify(selectedVehicles,null,2)],{type:'application/json'});
-        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.json`,'application/json');
-      }else if(format==='csv'){
-        const headers=['ID','品牌','车系','配置','显示名称','动力类型','断电位置','断电步骤','备注'];
-        const rows=selectedVehicles.map(v=>[v.id,v.brand,v.series,v.config,v.display,v.powerType,v.position,v.steps.map((s,i)=>(i+1)+'.'+s).join('|'),v.remarks||'']);
-        const csv='\uFEFF'+headers.join(',')+'\n'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
-        const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.csv`,'text/csv');
-      }else if(format==='excel'){
-        const buf=generateExcel(selectedVehicles);
-        const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      }else if(format==='pdf'){
-        if(!window.jspdf){showToast('PDF组件未打包,请更新至新版安装包');return;}
-        // V5.3.2: 先预取照片(本地→飞书云端)转base64,再生成内嵌图片的PDF
-        // V5.7: 超时保护,照片不可达时导出无图PDF而非卡死
-        showToast('正在获取车辆照片...');
-        const photoMap=await preparePhotoMapSafe(selectedVehicles);
-        const blob=generatePDF(selectedVehicles,photoMap);
-        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.pdf`,'application/pdf');
-      }else if(format==='word'){
-        showToast('正在获取车辆照片...');
-        const photoMap=await preparePhotoMapSafe(selectedVehicles);
-        const blob=generateWord(selectedVehicles,photoMap);
-        const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        const ext=mimeType.includes('msword')?'doc':'docx';
-        await shareFile(blob,`车辆断电数据_${n}条_${Date.now()}.${ext}`,mimeType);
-      }
-      showToast(`${names[format]} 导出成功 (${n}条)`);
-    }catch(err){showToast('导出失败: '+err.message);console.error(err);}
-  },300);
+  setExportLoading('batch',format);
+  try{
+    if(format==='json'){
+      // 对齐APK: JSON导出为带元信息的结构(非裸数组),接收方可识别来源与时间
+      const payload={appVersion:APP_VERSION,backupAt:new Date().toISOString(),vehicles:selectedVehicles,users:USERS};
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      await shareFile(blob,`vehicle_export_${n}_${Date.now()}.json`,'application/json','车辆断电数据导出');
+      showToast(`已导出 ${n} 条记录为 JSON`);
+    }else if(format==='csv'){
+      // 对齐APK: 11列标准表头(含钥匙-框架/集装箱/步骤数),CRLF行尾保证Windows Excel兼容
+      const headers=['品牌','车系','配置','显示名称','车辆尺寸','动力类型','断电位置','钥匙-框架','钥匙-集装箱','步骤数','备注'];
+      const rows=selectedVehicles.map(v=>[v.brand,v.series,v.config,v.display,v.size||'',v.powerType||'',v.position||'',
+        (v.keyFrame||[]).join('; '),(v.keyContainer||[]).join('; '),String((v.steps||[]).length),v.remarks||'']);
+      const csv='\uFEFF'+[headers,...rows].map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+      // 对齐APK: CSV不传分享标题(原生面板title回退为文件名)
+      await shareFile(blob,`vehicle_poweroff_export_${Date.now()}.csv`,'text/csv;charset=utf-8');
+      showToast(`已导出 ${n} 条记录为 CSV`);
+    }else if(format==='excel'){
+      const buf=generateExcelBatch(selectedVehicles);
+      const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      await shareFile(blob,`vehicle_poweroff_export_${n}_${Date.now()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      showToast(`已导出 ${n} 条记录为 Excel`);
+    }else if(format==='pdf'){
+      if(!window.jspdf){showToast('PDF组件未打包,请更新至新版安装包');return;}
+      // V5.3.2: 先预取照片(本地→飞书云端)转base64,再生成内嵌图片的PDF
+      // V5.7: 超时保护,照片不可达时导出无图PDF而非卡死
+      showToast('正在获取车辆照片...');
+      const photoMap=await preparePhotoMapSafe(selectedVehicles);
+      const blob=generatePDF(selectedVehicles,photoMap);
+      await shareFile(blob,`vehicle_poweroff_export_${n}_${Date.now()}.pdf`,'application/pdf');
+      showToast(`已导出 ${n} 条记录为 PDF`);
+    }else if(format==='word'){
+      showToast('正在获取车辆照片...');
+      const photoMap=await preparePhotoMapSafe(selectedVehicles);
+      const blob=generateWord(selectedVehicles,photoMap);
+      const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      const ext=mimeType.includes('msword')?'doc':'docx';
+      // 对齐APK批量Word命名: 车辆断电指南_批量_{n}_{ts}.docx
+      await shareFile(blob,`车辆断电指南_批量_${n}_${Date.now()}.${ext}`,mimeType);
+      showToast(`已导出 ${n} 条记录为 Word（含照片）`);
+    }
+    // 对齐APK: 导出成功后清空选择,避免二次导出重复携带旧选择集
+    state.selectedVehicles.clear();
+    renderDataList();
+  }catch(err){
+    console.error('批量导出失败:',err);
+    showToast(`导出 ${names[format]} 失败: `+(err&&err.message?err.message:'未知错误'));
+  }finally{
+    setExportLoading('batch',null);
+  }
 }
 
+/**
+ * 车辆详情单辆导出 - V5.8对齐安装包方案
+ * 对齐点: ①文件命名 {显示名}_断电指南.* ②Excel四工作表结构
+ *         ③导出中按钮禁用+文案"导出中..." ④失败提示明确格式名
+ * @param {string} format - word|pdf|excel
+ */
 async function exportSingle(format){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v)return;
+  if(state.detailExporting)return; // 互斥保护
   const names={'word':'Word','pdf':'PDF','excel':'Excel'};
   if((format==='excel'&&!window.XLSX)||(format==='pdf'&&!window.jspdf)||(format==='word'&&!window._htmlDocxReady&&typeof htmlDocx==='undefined')){
     showToast(names[format]+'库加载失败，正在使用降级方案...');
   }
-  showToast(`正在生成${names[format]}文件...`);
+  setExportLoading('detail',format);
   try{
     if(format==='excel'){
-      const buf=generateExcel([v]);
+      const buf=generateExcelSingle(v);
       const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-      await shareFile(blob,`${v.display}_断电指导.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      // 对齐APK: 单车导出不传分享标题(原生面板title回退为文件名)
+      await shareFile(blob,`${v.display}_断电指南.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }else if(format==='pdf'){
       if(!window.jspdf){showToast('PDF组件未打包,请更新至新版安装包');return;}
       // V5.3.2: 预取照片转base64后内嵌(与批量导出同一回退链)
@@ -2487,17 +2652,50 @@ async function exportSingle(format){
       showToast('正在获取车辆照片...');
       const photoMap=await preparePhotoMapSafe([v]);
       const blob=generatePDF([v],photoMap);
-      await shareFile(blob,`${v.display}_断电指导.pdf`,'application/pdf');
+      await shareFile(blob,`${v.display}_断电指南.pdf`,'application/pdf');
     }else if(format==='word'){
       showToast('正在获取车辆照片...');
       const photoMap=await preparePhotoMapSafe([v]);
       const blob=generateWord([v],photoMap);
       const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       const ext=mimeType.includes('msword')?'doc':'docx';
-      await shareFile(blob,`${v.display}_断电指导.${ext}`,mimeType);
+      await shareFile(blob,`${v.display}_断电指南.${ext}`,mimeType);
     }
     showToast(`${names[format]} 文件已生成`);
-  }catch(err){showToast('生成失败: '+err.message);console.error(err);}
+  }catch(err){
+    console.error('单车导出失败:',err);
+    showToast(`导出 ${names[format]} 失败: `+(err&&err.message?err.message:'未知错误'));
+  }finally{
+    setExportLoading('detail',null);
+  }
+}
+
+/**
+ * 分享备份 - V5.8新增,对齐安装包数据中心"数据备份"方案
+ * 为什么独立于doBackup: 原备份体系面向"本地下载/飞书云"落盘,而现场
+ * 组员换机/无公网场景最常用的是把完整备份JSON经微信/钉钉直接发给
+ * 对方,故提供一键"全量数据→系统分享面板"通道。
+ * 结构对齐APK: {appVersion, backupAt, vehicles, users} → vehicle_poweroff_backup_{ts}.json
+ */
+async function shareBackup(){
+  if(state.backupExporting)return; // 互斥保护
+  state.backupExporting=true;
+  const btn=document.getElementById('btn-share-backup');
+  if(btn){btn.disabled=true;btn.lastChild.textContent='生成备份中...';}
+  try{
+    const payload={appVersion:APP_VERSION,backupAt:new Date().toISOString(),vehicles:VEHICLES,users:USERS};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    // 对齐APK: 备份不传分享标题(原生面板title回退为文件名)
+    await shareFile(blob,`vehicle_poweroff_backup_${Date.now()}.json`,'application/json');
+    showToast('备份文件已生成，请选择分享方式');
+    addSyncLog(`分享备份完成 · ${VEHICLES.length}条车辆数据`,'blue');
+  }catch(err){
+    console.error('分享备份失败:',err);
+    showToast('备份文件生成失败: '+(err&&err.message?err.message:'未知错误'));
+  }finally{
+    state.backupExporting=false;
+    if(btn){btn.disabled=false;btn.lastChild.textContent='分享备份';}
+  }
 }
 
 /**
@@ -3190,11 +3388,18 @@ function renderBackupHistory(){
     '<span class="text-xs text-gray-300">'+h.time+'</span></div>').join('');
 }
 
+/**
+ * 导出同步配置 - V5.8对齐安装包命名方案
+ * 对齐点: ①文件名 cloud_sync_config.json(APK同名,便于两端互认)
+ *         ②payload顶层增加exportedAt字段 ③toast文案"导出配置已下载"
+ * 保留: 车辆数据随行导出(本项目自V5.3以来的配置+数据一体备份习惯,向后兼容)
+ */
 async function exportSyncConfig(){
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
   const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
   const exportData={
     type:'sync_config_backup',
+    exportedAt:new Date().toISOString(),
     version:'v'+APP_VERSION,
     timestamp:new Date().toISOString(),
     feishuConfig:{appId:cfg.appId,folder:cfg.folder,interval:cfg.interval},
@@ -3202,9 +3407,10 @@ async function exportSyncConfig(){
     vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
   };
   const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'});
-  const filename=`sync_config_${new Date().toISOString().slice(0,10)}.json`;
+  // 对齐APK: 固定文件名 cloud_sync_config.json(两端互认),不传分享标题(回退文件名)
+  const filename='cloud_sync_config.json';
   await shareFile(blob,filename,'application/json');
-  showToast('配置已导出');
+  showToast('导出配置已下载');
   addSyncLog(`配置导出完成 · ${VEHICLES.length}条 · ${filename}`,'blue');
 }
 
