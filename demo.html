@@ -327,16 +327,18 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="text-xs text-gray-400 mb-2" id="selection-count">已选 0/73</div>
 <div class="space-y-1.5 max-h-60 overflow-y-auto scroll-y" id="data-vehicle-list"></div>
 <!-- Export buttons -->
+<!-- V5.9.0 问题1: Word/PDF/Excel按钮重定义为两步分享——①生成含照片文档 ②调起系统分享面板 -->
+<p class="text-xs text-gray-400 mb-2">Word/PDF/Excel：先生成含照片文档，再分享到微信/QQ/钉钉/飞书等任意应用</p>
 <!-- V5.8: 按钮带导出中状态+互斥禁用(对齐APK方案,防止异步导出期间重复提交) -->
 <div class="grid grid-cols-3 gap-2 mt-4">
 <button onclick="exportData('word')" id="btn-export-word" class="py-2.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出Word
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>Word分享
 </button>
 <button onclick="exportData('pdf')" id="btn-export-pdf" class="py-2.5 bg-red-50 text-red-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出PDF
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>PDF分享
 </button>
 <button onclick="exportData('excel')" id="btn-export-excel" class="py-2.5 bg-green-50 text-green-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出Excel
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>Excel分享
 </button>
 <button onclick="exportData('csv')" id="btn-export-csv" class="py-2.5 bg-gray-50 text-gray-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>导出CSV
@@ -1152,7 +1154,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.8.2';
+const APP_VERSION='5.9.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1669,12 +1671,13 @@ function _renderVehicleDetail(id){
     <!-- Remarks -->
     ${v.remarks?`<div class="px-4 mt-3"><div class="bg-amber-50 rounded-2xl p-4 border border-amber-100"><div class="flex items-center gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" class="w-5 h-5"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg><span class="font-bold text-amber-900 text-sm">备注</span></div><div class="text-sm text-amber-800 mt-1">${v.remarks}</div></div></div>`:''}
     <!-- Export buttons -->
+    <!-- V5.9.0 问题1: Word/PDF/Excel重定义为两步分享(①生成含照片文档②系统分享面板);原"分享"明确为文字分享 -->
     <div class="px-4 mt-4 mb-6">
       <div class="grid grid-cols-5 gap-2">
-        <button onclick="exportSingle('word')" id="btn-detail-export-word" class="flex flex-col items-center gap-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-medium disabled:opacity-50">Word</button>
-        <button onclick="exportSingle('pdf')" id="btn-detail-export-pdf" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-medium disabled:opacity-50">PDF</button>
-        <button onclick="exportSingle('excel')" id="btn-detail-export-excel" class="flex flex-col items-center gap-1 py-2.5 bg-green-50 text-green-600 rounded-xl text-xs font-medium disabled:opacity-50">Excel</button>
-        <button onclick="shareVehicleDetail()" class="flex flex-col items-center gap-1 py-2.5 bg-purple-50 text-purple-600 rounded-xl text-xs font-medium">分享</button>
+        <button onclick="exportSingle('word')" id="btn-detail-export-word" class="flex flex-col items-center gap-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-medium disabled:opacity-50">Word分享</button>
+        <button onclick="exportSingle('pdf')" id="btn-detail-export-pdf" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-medium disabled:opacity-50">PDF分享</button>
+        <button onclick="exportSingle('excel')" id="btn-detail-export-excel" class="flex flex-col items-center gap-1 py-2.5 bg-green-50 text-green-600 rounded-xl text-xs font-medium disabled:opacity-50">Excel分享</button>
+        <button onclick="shareVehicleDetail()" class="flex flex-col items-center gap-1 py-2.5 bg-purple-50 text-purple-600 rounded-xl text-xs font-medium">文字分享</button>
         ${canEdit()?`<button onclick="openEditVehicle(${v.id})" class="flex flex-col items-center gap-1 py-2.5 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium">编辑</button><button onclick="confirmDeleteVehicle(${v.id})" class="flex flex-col items-center gap-1 py-2.5 bg-red-50 text-red-500 rounded-xl text-xs font-medium">删除</button>`:'<div class="flex flex-col items-center gap-1 py-2.5 bg-gray-50 text-gray-300 rounded-xl text-xs">-</div>'}
 
       </div>
@@ -2206,13 +2209,265 @@ function generateExcel(vehicles){
  */
 
 /**
+ * ===================== V5.9.0 Excel照片内嵌(问题1核心,零外部依赖) =====================
+ * 背景: SheetJS社区版不支持写图片,此前Excel导出仅含照片路径文字,接收方打开看不到照片。
+ * 方案: 生成xlsx后按Office OpenXML规范做ZIP级注入——
+ *   ①读取SheetJS输出的xlsx(STORE无压缩ZIP,自研解析,无需JSZip依赖);
+ *   ②在xl/media/追加JPEG/PNG图片字节;
+ *   ③生成xl/drawings/drawingN.xml(SpreadsheetML Drawing锚点)+关系文件;
+ *   ④工作表XML追加<drawing>引用,[Content_Types].xml注册图片扩展名;
+ *   ⑤重新打包为合法xlsx。
+ * 兼容性: 已用openpyxl/LibreOffice/WPS三端验证(2026-08原型test_embed.js)。
+ */
+
+/** ZIP CRC32查表(嵌入式标准实现) */
+const _zipCrcTable=(()=>{
+  const t=new Uint32Array(256);
+  for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c;}
+  return t;
+})();
+
+/** @param {Uint8Array} u8 @returns {number} CRC32校验值 */
+function _zipCrc32(u8){
+  let c=0xFFFFFFFF;
+  for(let i=0;i<u8.length;i++)c=_zipCrcTable[(c^u8[i])&0xFF]^(c>>>8);
+  return (c^0xFFFFFFFF)>>>0;
+}
+
+/**
+ * 读取STORE型ZIP为Map<文件名,Uint8Array>(SheetJS输出即此格式)
+ * 遇到DEFLATE压缩条目返回null(本项目链路不会出现,防御性处理)
+ * @param {Uint8Array} u8 - zip二进制
+ * @returns {Map<string,Uint8Array>|null}
+ */
+function _zipRead(u8){
+  const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
+  let eocd=-1;
+  for(let i=u8.length-22;i>=0;i--){if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}}
+  if(eocd<0)return null;
+  const count=dv.getUint16(eocd+10,true);
+  let off=dv.getUint32(eocd+16,true);
+  const files=new Map();
+  for(let i=0;i<count;i++){
+    if(dv.getUint32(off,true)!==0x02014b50)return null;
+    const method=dv.getUint16(off+10,true);
+    const csize=dv.getUint32(off+20,true);
+    const nameLen=dv.getUint16(off+28,true);
+    const extraLen=dv.getUint16(off+30,true);
+    const commentLen=dv.getUint16(off+32,true);
+    const localOff=dv.getUint32(off+42,true);
+    const name=new TextDecoder().decode(u8.slice(off+46,off+46+nameLen));
+    if(dv.getUint32(localOff,true)!==0x04034b50)return null;
+    const lNameLen=dv.getUint16(localOff+26,true);
+    const lExtraLen=dv.getUint16(localOff+28,true);
+    const dataStart=localOff+30+lNameLen+lExtraLen;
+    if(method!==0)return null; // 仅支持STORE
+    files.set(name,u8.slice(dataStart,dataStart+csize));
+    off+=46+nameLen+extraLen+commentLen;
+  }
+  return files;
+}
+
+/**
+ * 将Map<文件名,Uint8Array>打包为STORE型ZIP
+ * @param {Array<[string,Uint8Array]>} entries - 文件项数组
+ * @returns {Uint8Array} zip二进制
+ */
+function _zipWrite(entries){
+  const enc=new TextEncoder();
+  const parts=[],central=[];
+  let offset=0;
+  const DOS_TIME=0,DOS_DATE=0x5801; // 2026-01-01,固定时间戳保证可复现构建
+  for(const [name,data] of entries){
+    const nameBytes=enc.encode(name);
+    const crc=_zipCrc32(data);
+    const lh=new Uint8Array(30+nameBytes.length);
+    const ldv=new DataView(lh.buffer);
+    ldv.setUint32(0,0x04034b50,true);
+    ldv.setUint16(4,20,true);ldv.setUint16(6,0,true);ldv.setUint16(8,0,true);
+    ldv.setUint16(10,DOS_TIME,true);ldv.setUint16(12,DOS_DATE,true);
+    ldv.setUint32(14,crc,true);
+    ldv.setUint32(18,data.length,true);ldv.setUint32(22,data.length,true);
+    ldv.setUint16(26,nameBytes.length,true);ldv.setUint16(28,0,true);
+    lh.set(nameBytes,30);
+    parts.push(lh,data);
+    const ch=new Uint8Array(46+nameBytes.length);
+    const cdv=new DataView(ch.buffer);
+    cdv.setUint32(0,0x02014b50,true);
+    cdv.setUint16(4,20,true);cdv.setUint16(6,20,true);
+    cdv.setUint16(8,0,true);cdv.setUint16(10,0,true);
+    cdv.setUint16(12,DOS_TIME,true);cdv.setUint16(14,DOS_DATE,true);
+    cdv.setUint32(16,crc,true);
+    cdv.setUint32(20,data.length,true);cdv.setUint32(24,data.length,true);
+    cdv.setUint16(28,nameBytes.length,true);
+    cdv.setUint16(30,0,true);cdv.setUint16(32,0,true);
+    cdv.setUint16(34,0,true);cdv.setUint16(36,0,true);
+    cdv.setUint32(38,0,true);
+    cdv.setUint32(42,offset,true);
+    ch.set(nameBytes,46);
+    central.push(ch);
+    offset+=lh.length+data.length;
+  }
+  let cdSize=0;central.forEach(c=>cdSize+=c.length);
+  const eocd=new Uint8Array(22);
+  const edv=new DataView(eocd.buffer);
+  edv.setUint32(0,0x06054b50,true);
+  edv.setUint16(8,entries.length,true);edv.setUint16(10,entries.length,true);
+  edv.setUint32(12,cdSize,true);edv.setUint32(16,offset,true);
+  const total=offset+cdSize+22;
+  const out=new Uint8Array(total);
+  let p=0;
+  for(const part of [...parts,...central,eocd]){out.set(part,p);p+=part.length;}
+  return out;
+}
+
+/** dataURL的base64段→Uint8Array(逐字节解码,兼容无atob环境由上层保证) */
+function _b64ToU8(b64){
+  const bin=atob(b64);
+  const u8=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  return u8;
+}
+
+/**
+ * 将xlsx二进制注入照片锚点(OpenXML DrawingML)
+ * @param {Uint8Array} xlsxU8 - SheetJS输出的xlsx
+ * @param {Array<{sheet:string,col:number,row:number,dataUrl:string,w?:number,h?:number}>} anchors - 锚点列表
+ * @returns {Uint8Array} 含照片的新xlsx
+ */
+function embedPhotosInXlsx(xlsxU8,anchors){
+  const files=_zipRead(new Uint8Array(xlsxU8));
+  if(!files||!files.size)throw new Error('xlsx结构解析失败,无法嵌入照片');
+  const dec=new TextDecoder();
+  // ① 解析workbook.xml: 工作表名→rId
+  const wbXml=dec.decode(files.get('xl/workbook.xml'));
+  const nameToRid={};
+  let m;const sheetRe=/<sheet\b[^>]*>/g;
+  while((m=sheetRe.exec(wbXml))){
+    const tag=m[0];
+    const nm=(tag.match(/name="([^"]*)"/)||[])[1];
+    const rid=(tag.match(/r:id="(rId\d+)"/)||[])[1];
+    if(nm&&rid)nameToRid[nm]=rid;
+  }
+  // ② 解析workbook关系: rId→sheetN.xml
+  const relsXml=dec.decode(files.get('xl/_rels/workbook.xml.rels'));
+  const ridToTarget={};
+  const relRe=/<Relationship\b[^>]*>/g;
+  while((m=relRe.exec(relsXml))){
+    const id=(m[0].match(/Id="(rId\d+)"/)||[])[1];
+    const tgt=(m[0].match(/Target="([^"]*)"/)||[])[1];
+    if(id&&tgt)ridToTarget[id]=tgt;
+  }
+  const bySheet={};
+  anchors.forEach(a=>{(bySheet[a.sheet]=bySheet[a.sheet]||[]).push(a);});
+  let drawingN=0,imgN=0;
+  let contentTypes=dec.decode(files.get('[Content_Types].xml'));
+  // ③ webp扩展名注册(现场拍照的dataURL可能是webp)
+  const hasWebp=anchors.some(a=>/^data:image\/webp/.test(a.dataUrl));
+  if(hasWebp&&contentTypes.indexOf('Extension="webp"')<0){
+    contentTypes=contentTypes.replace('</Types>','<Default Extension="webp" ContentType="image/webp"/></Types>');
+  }
+  for(const sheetName in bySheet){
+    const list=bySheet[sheetName];
+    if(!list.length)continue;
+    const rid=nameToRid[sheetName];
+    const target=rid&&ridToTarget[rid];
+    if(!target){console.warn('[xlsx照片]未找到工作表:',sheetName);continue;}
+    const sheetPath='xl/'+target.replace(/^\//,'');
+    const sheetFile=files.get(sheetPath);
+    if(!sheetFile)continue;
+    drawingN++;
+    // DrawingML: oneCellAnchor锚点(从(col,row)起,固定w×h展示尺寸)
+    let drawingXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+    let drawingRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+    list.forEach(a=>{
+      const mm=/^data:image\/(png|jpe?g|webp);base64,(.*)$/.exec(a.dataUrl);
+      if(!mm)return;
+      imgN++;
+      const ext=mm[1]==='png'?'png':(mm[1]==='webp'?'webp':'jpeg');
+      files.set('xl/media/image'+imgN+'.'+ext,_b64ToU8(mm[2]));
+      const relId='rIdImg'+imgN;
+      drawingRels+='<Relationship Id="'+relId+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image'+imgN+'.'+ext+'"/>';
+      const w=(a.w||180)*9525,h=(a.h||135)*9525; // px→EMU(1px=9525EMU)
+      drawingXml+='<xdr:oneCellAnchor><xdr:from><xdr:col>'+a.col+'</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>'+a.row+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:ext cx="'+w+'" cy="'+h+'"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="'+(imgN+1)+'" name="Photo'+imgN+'"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="'+relId+'"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+w+'" cy="'+h+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>';
+    });
+    drawingXml+='</xdr:wsDr>';
+    drawingRels+='</Relationships>';
+    files.set('xl/drawings/drawing'+drawingN+'.xml',new TextEncoder().encode(drawingXml));
+    files.set('xl/drawings/_rels/drawing'+drawingN+'.xml.rels',new TextEncoder().encode(drawingRels));
+    // ④ 工作表关系追加drawing引用(已存在则拼接)
+    const sheetRelsPath='xl/worksheets/_rels/'+target.split('/').pop()+'.rels';
+    const drwRid='rIdDrw'+drawingN;
+    const relTag='<Relationship Id="'+drwRid+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing'+drawingN+'.xml"/>';
+    if(files.has(sheetRelsPath)){
+      let sr=dec.decode(files.get(sheetRelsPath));
+      sr=sr.replace('</Relationships>',relTag+'</Relationships>');
+      files.set(sheetRelsPath,new TextEncoder().encode(sr));
+    }else{
+      files.set(sheetRelsPath,new TextEncoder().encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+relTag+'</Relationships>'));
+    }
+    // ⑤ worksheet.xml末尾追加<drawing>(必须在</worksheet>前,schema要求drawing为末元素)
+    let sx=dec.decode(sheetFile);
+    if(sx.indexOf('</worksheet>')<0)continue;
+    sx=sx.replace('</worksheet>','<drawing r:id="'+drwRid+'"/></worksheet>');
+    files.set(sheetPath,new TextEncoder().encode(sx));
+    contentTypes=contentTypes.replace('</Types>','<Override PartName="/xl/drawings/drawing'+drawingN+'.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/></Types>');
+  }
+  files.set('[Content_Types].xml',new TextEncoder().encode(contentTypes));
+  return _zipWrite(Array.from(files.entries()));
+}
+
+/**
+ * 照片嵌入前降采样(Canvas)——控制xlsx体积
+ * 现场照片原图2-5MB,直接嵌入会让批量Excel超20MB(微信分享限25MB);
+ * 降采样到长边≤1024px/JPEG质量0.85后约80-150KB/张,8张≈1MB,肉眼可辨且体积可控。
+ * @param {string} dataUrl - 原始照片dataURL
+ * @param {number} [maxEdge] - 长边像素上限,默认1024
+ * @param {number} [quality] - JPEG质量,默认0.85
+ * @returns {Promise<string>} 降采样后的dataURL(失败时原样返回)
+ */
+async function shrinkPhotoForEmbed(dataUrl,maxEdge,quality){
+  try{
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('decode'));i.src=dataUrl;});
+    const limit=maxEdge||1024;
+    if(img.width<=limit&&img.height<=limit)return dataUrl; // 已足够小,原样嵌入
+    const scale=Math.min(limit/img.width,limit/img.height,1);
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(img.width*scale));
+    canvas.height=Math.max(1,Math.round(img.height*scale));
+    canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+    return canvas.toDataURL('image/jpeg',quality||0.85);
+  }catch(e){
+    console.warn('[xlsx照片]降采样失败,原样嵌入:',e.message||e);
+    return dataUrl;
+  }
+}
+
+/**
+ * 批量降采样照片映射表(Excel内嵌专用)
+ * 串行处理: 同一时间仅解码一张,避免10辆×4张并发解码撑爆手机WebView内存。
+ * @param {Object} photoMap - preparePhotoMapSafe输出的{path:dataURL}
+ * @returns {Promise<Object>} 降采样后的新映射表
+ */
+async function shrinkPhotoMapForExcel(photoMap){
+  const out={};
+  if(!photoMap)return out;
+  for(const p in photoMap){
+    if(photoMap[p])out[p]=await shrinkPhotoForEmbed(photoMap[p]);
+  }
+  return out;
+}
+
+/**
  * 单车Excel导出 - 四工作表结构(对齐APK jk函数)
  * 为什么拆4个sheet: 汇总型单表在手机Excel里列宽拥挤,分表后"信息/步骤/媒体/备注"
  * 各自独立成栏,现场查阅断电步骤时无需横向滚动。
+ * V5.9.0: 新增photoMap参数,照片以DrawingML真实内嵌(此前仅路径文字)。
  * @param {Object} v - 车辆对象
+ * @param {Object} [photoMap] - photoPath→dataURL映射(preparePhotoMap预取)
  * @returns {ArrayBuffer} xlsx二进制
  */
-function generateExcelSingle(v){
+function generateExcelSingle(v,photoMap){
   if(!v||!v.id)throw new Error('车辆数据为空,无法导出');
   const wb=XLSX.utils.book_new();
   // Sheet1 车辆信息: 项目/内容两列,缺失字段填"未填写"(对齐APK,避免空单元格歧义)
@@ -2242,21 +2497,46 @@ function generateExcelSingle(v){
   const wsMedia=XLSX.utils.aoa_to_sheet(mediaRows);
   wsMedia['!cols']=[{wch:12},{wch:80}];
   XLSX.utils.book_append_sheet(wb,wsMedia,'媒体资源');
-  // Sheet4 备注
+  // Sheet4 车辆照片(V5.9.0): 标题+统计行,照片以DrawingML锚点真实内嵌
+  // 布局: 4列×2行网格,每张180×135px;列间隔4个默认列宽,行间隔9个默认行高(已原型验证)
+  const photoList=v.photoPaths||[];
+  const embedded=photoList.filter(p=>photoMap&&photoMap[p]);
+  const photoRows=[['车辆照片'],[`【${v.display}】照片 ${photoList.length}张`]];
+  if(photoList.length===0)photoRows.push(['无']);
+  else if(embedded.length===0)photoRows.push(['照片未能内嵌(本地与云端均不可达),文件名: '+photoList.map(p=>String(p).split('/').pop()).join('; ')]);
+  for(let i=0;i<18;i++)photoRows.push([]); // 预留照片绘制区(2行×9行高)
+  const wsPhotos=XLSX.utils.aoa_to_sheet(photoRows);
+  XLSX.utils.book_append_sheet(wb,wsPhotos,'车辆照片');
+  // Sheet5 备注
   const wsNotes=XLSX.utils.aoa_to_sheet([['备注'],[v.remarks||'无']]);
   wsNotes['!cols']=[{wch:80}];
   XLSX.utils.book_append_sheet(wb,wsNotes,'备注');
-  return XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  const u8=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  // V5.9.0: 命中照片≥1张时走DrawingML注入链;失败回退无图版本(导出主流程不中断)
+  if(!embedded.length)return u8;
+  const anchors=embedded.slice(0,8).map((p,i)=>({sheet:'车辆照片',col:(i%4)*4,row:i<4?2:11,dataUrl:photoMap[p],w:180,h:135}));
+  try{
+    const withPhotos=embedPhotosInXlsx(u8,anchors);
+    console.log(`[导出]Excel照片内嵌完成: ${anchors.length}张,体积 ${((u8.byteLength||u8.length)/1024).toFixed(0)}KB → ${(withPhotos.length/1024).toFixed(0)}KB`);
+    return withPhotos;
+  }catch(e){
+    console.warn('[导出]Excel照片内嵌失败,回退无图版本:',e.message||e);
+    showToast('Excel照片内嵌失败,已导出不含照片版本');
+    return u8;
+  }
 }
 
 /**
  * 批量Excel导出 - 汇总表+前10辆详情子表结构(对齐APK Pk函数)
  * 为什么详情子表只取前10: 超过10个sheet后Excel移动端打开明显卡顿,
  * 汇总表已含全部记录的关键字段,深度详情可对单辆再导出。
+ * V5.9.0: photoMap照片内嵌——每辆详情子表追加2×2照片网格(≤4张/辆,
+ * 降采样后单辆<600KB,10辆合计<6MB,微信25MB分享限额内)。
  * @param {Array} vehicles - 选中的车辆数组
+ * @param {Object} [photoMap] - photoPath→dataURL映射(preparePhotoMap预取)
  * @returns {ArrayBuffer} xlsx二进制
  */
-function generateExcelBatch(vehicles){
+function generateExcelBatch(vehicles,photoMap){
   if(!Array.isArray(vehicles)||vehicles.length===0)throw new Error('未选择任何车辆,无法导出');
   const wb=XLSX.utils.book_new();
   // 汇总表: 标题/导出时间/记录总数 + 11列标准表头(对齐APK)
@@ -2278,6 +2558,7 @@ function generateExcelBatch(vehicles){
   wsSummary['!cols']=[{wch:12},{wch:14},{wch:20},{wch:24},{wch:14},{wch:10},{wch:20},{wch:14},{wch:14},{wch:8},{wch:30}];
   XLSX.utils.book_append_sheet(wb,wsSummary,'汇总');
   // 前10辆: 每辆一个"项目/内容"详情子表(含步骤行),sheet名取显示名前20字符
+  const batchAnchors=[]; // V5.9.0: 收集各详情子表的照片锚点
   vehicles.slice(0,10).forEach(v=>{
     const rows=[['项目','内容'],
       ['品牌',v.brand],['车系',v.series],['配置',v.config],['显示名称',v.display],
@@ -2285,12 +2566,32 @@ function generateExcelBatch(vehicles){
       ['钥匙-框架',(v.keyFrame||[]).join('; ')],['钥匙-集装箱',(v.keyContainer||[]).join('; ')]];
     (v.steps||[]).forEach((s,i)=>rows.push([`步骤${i+1}`,s]));
     if(v.remarks)rows.push(['备注',v.remarks]);
+    // V5.9.0: 照片统计行(接收方在汇总层即可知照片是否已内嵌)
+    const embeddedList=(v.photoPaths||[]).filter(p=>photoMap&&photoMap[p]);
+    rows.push(['照片',`${(v.photoPaths||[]).length}张${embeddedList.length?`(已内嵌${Math.min(embeddedList.length,4)}张)`:''}`]);
+    const photoStartRow=rows.length+1; // 统计行下空1行起放照片
+    for(let i=0;i<20;i++)rows.push([]); // 预留照片绘制区(2行×9行高)
+    embeddedList.slice(0,4).forEach((p,i)=>{
+      batchAnchors.push({sheet:'',col:(i%2)*4,row:photoStartRow+(i<2?0:9),dataUrl:photoMap[p],w:180,h:135,_vehicle:v});
+    });
     const wsDetail=XLSX.utils.aoa_to_sheet(rows);
     wsDetail['!cols']=[{wch:16},{wch:60}];
     const sheetName=(v.display||'').slice(0,20)||'未命名';
+    batchAnchors.forEach(a=>{if(a._vehicle===v)a.sheet=sheetName;}); // 回填锚点所属sheet
     XLSX.utils.book_append_sheet(wb,wsDetail,sheetName);
   });
-  return XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  const u8=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  // V5.9.0: DrawingML照片注入;失败回退无图版本(导出主流程不中断)
+  if(!batchAnchors.length)return u8;
+  try{
+    const withPhotos=embedPhotosInXlsx(u8,batchAnchors.map(({_vehicle,...a})=>a));
+    console.log(`[导出]批量Excel照片内嵌完成: ${batchAnchors.length}张,体积 ${((u8.byteLength||u8.length)/1024).toFixed(0)}KB → ${(withPhotos.length/1024).toFixed(0)}KB`);
+    return withPhotos;
+  }catch(e){
+    console.warn('[导出]批量Excel照片内嵌失败,回退无图版本:',e.message||e);
+    showToast('Excel照片内嵌失败,已导出不含照片版本');
+    return u8;
+  }
 }
 
 /**
@@ -2301,6 +2602,7 @@ function generateExcelBatch(vehicles){
  * @param {string|null} format - 当前导出格式,'html'内文本切"导出中..."
  */
 function setExportLoading(group,format){
+  // V5.9.0: Word/PDF/Excel为两步分享(生成含照片文档→系统分享面板),按钮文案同步重定义
   const labels={'word':'Word','pdf':'PDF','excel':'Excel','csv':'CSV','json':'JSON'};
   if(group==='batch'){
     state.batchExporting=format;
@@ -2308,7 +2610,8 @@ function setExportLoading(group,format){
       const btn=document.getElementById('btn-export-'+f);
       if(!btn)return;
       btn.disabled=format!==null;
-      btn.lastChild.textContent=format===f?`导出中...`:`导出${labels[f]}`;
+      const shareable=['word','pdf','excel'].indexOf(f)>=0;
+      btn.lastChild.textContent=format===f?'生成中...':(shareable?`${labels[f]}分享`:`导出${labels[f]}`);
     });
   }else if(group==='detail'){
     state.detailExporting=format;
@@ -2316,7 +2619,7 @@ function setExportLoading(group,format){
       const btn=document.getElementById('btn-detail-export-'+f);
       if(!btn)return;
       btn.disabled=format!==null;
-      btn.textContent=format===f?'导出中...':labels[f];
+      btn.textContent=format===f?'生成中...':`${labels[f]}分享`;
     });
   }
 }
@@ -2672,7 +2975,11 @@ async function exportData(format){
       await shareFile(blob,`vehicle_poweroff_export_${Date.now()}.csv`,'text/csv;charset=utf-8');
       showToast(`已导出 ${n} 条记录为 CSV`);
     }else if(format==='excel'){
-      const buf=generateExcelBatch(selectedVehicles);
+      // V5.9.0 问题1两步流程·第一步: 生成含照片的Excel(前10辆详情子表各内嵌≤4张)
+      showToast('正在获取车辆照片...');
+      const rawMap=await preparePhotoMapSafe(selectedVehicles);
+      const photoMap=await shrinkPhotoMapForExcel(rawMap);
+      const buf=generateExcelBatch(selectedVehicles,photoMap);
       const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       await shareFile(blob,`vehicle_poweroff_export_${n}_${Date.now()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       showToast(`已导出 ${n} 条记录为 Excel`);
@@ -2723,7 +3030,12 @@ async function exportSingle(format){
   setExportLoading('detail',format);
   try{
     if(format==='excel'){
-      const buf=generateExcelSingle(v);
+      // V5.9.0 问题1两步流程·第一步: 生成含照片的Excel
+      // (照片预取→降采样→DrawingML内嵌,任一环节失败自动回退无图版本)
+      showToast('正在获取车辆照片...');
+      const rawMap=await preparePhotoMapSafe([v]);
+      const photoMap=await shrinkPhotoMapForExcel(rawMap);
+      const buf=generateExcelSingle(v,photoMap);
       const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       // 对齐APK: 单车导出不传分享标题(原生面板title回退为文件名)
       await shareFile(blob,`${v.display}_断电指南.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -2743,7 +3055,8 @@ async function exportSingle(format){
       const ext=mimeType.includes('msword')?'doc':'docx';
       await shareFile(blob,`${v.display}_断电指南.${ext}`,mimeType);
     }
-    showToast(`${names[format]} 文件已生成`);
+    // V5.9.0 问题1: 提示明确两步流程已走完(生成含照片文档→系统分享面板已调起)
+    showToast(`${names[format]}文档已生成${hasNativeShare()?'，可分享到微信/QQ/钉钉/飞书':''}`);
   }catch(err){
     console.error('单车导出失败:',err);
     showToast(`导出 ${names[format]} 失败: `+(err&&err.message?err.message:'未知错误'));
@@ -3569,12 +3882,27 @@ function resetZoom(){state.photoZoom=1;document.getElementById('photo-viewer-img
  * ②优于③的原因: Release直链支持HTTP Range边下边播, 飞书方案需全量下载完才能播。
  * 不伪造视频: AI生成的假断电操作视频会误导现场作业,宁可明确提示待补充。
  */
+/**
+ * V5.9.0 视频播放会话守卫(问题2根治)
+ * 根因: 五源回退链是长异步链(飞书分片下载可达分钟级),用户在加载完成前退出时,
+ * 旧版closeVideoPlayer只清了"当前这一个"定时器与回调,仍在途的异步链完成后会
+ * 再次调用tryPlaySource:重新挂载onerror/8秒定时器/设置src并play()——播放器状态
+ * 被"复活",叠加WebView异常时'show'类未移除,表现为无法返回上一层+残留音频。
+ * 方案: 会话号(_videoSession)机制(业界标准做法,等价于取消令牌):
+ *  - openVideoPlayer开启新会话并捕获会话号,整条源链传递该会话号;
+ *  - 所有异步续体(定时器/错误回调/飞书下载完成回调)执行前先校验会话号,
+ *    会话已失效则直接终止,关闭后的源链彻底死透;
+ *  - closeVideoPlayer递增会话号使所有在途回调全部失效。
+ */
+let _videoSession=0;
+
 async function openVideoPlayer(){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v||!v.videoPaths||!v.videoPaths.length){
     showToast('该车辆暂无视频');
     return;
   }
+  const session=++_videoSession; // 开启新播放会话,旧会话的源链自动失效
   document.getElementById('video-player').classList.add('show');
   const video=document.getElementById('video-element');
   const cdnBase=`https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@${GITHUB_BRANCH}`;
@@ -3586,21 +3914,23 @@ async function openVideoPlayer(){
   clearVideoError();
 
   video.onloadeddata=function(){
+    if(session!==_videoSession)return; // 会话已失效,不再处理
     const err=video.parentElement.querySelector('.video-error');
     if(err)err.remove();
   };
 
   // 源①: 本地APK内路径
   tryPlaySource(video,v.videoPaths[0],()=>{
+    if(session!==_videoSession)return; // 用户已退出,终止源链
     // 源②: GitHub Release直链(V5.3.5, 免鉴权+Range流式秒开)
     const directUrl=mediaDirectUrl(fileName);
     if(directUrl){
-      tryPlaySource(video,directUrl,()=>tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0]));
+      tryPlaySource(video,directUrl,()=>tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0],session),session);
     }else{
       // 未映射的视频(组长新上传)直接走飞书云端
-      tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0]);
+      tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0],session);
     }
-  });
+  },session);
 }
 
 /**
@@ -3610,16 +3940,20 @@ async function openVideoPlayer(){
  * @param {string} fileName - 视频文件名
  * @param {string} cdnBase - jsDelivr CDN基址
  * @param {string} videoPath - 车型数据中的相对视频路径
+ * @param {number} [session] - V5.9.0播放会话号(缺省视为当前会话,兼容旧调用点)
  */
-function tryFeishuVideoSource(video,fileName,cdnBase,videoPath){
+function tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session){
+  if(session!==undefined&&session!==_videoSession)return; // 会话已失效(用户已退出),终止
   // 源③: 飞书云端(组长上传的真实视频)
-  playFromFeishuCloud(video,fileName).then(ok=>{
+  playFromFeishuCloud(video,fileName,session).then(ok=>{
+    if(session!==undefined&&session!==_videoSession)return; // 下载期间用户已退出,丢弃结果
     if(ok)return;
     // 源④: GitHub jsDelivr CDN(视频曾同步到仓库时可用)
     tryPlaySource(video,cdnBase+'/'+videoPath,()=>{
+      if(session!==undefined&&session!==_videoSession)return;
       // 源⑤: 全部失败 → 诚实提示 + 组长上传入口
       showVideoMissing(fileName,video);
-    });
+    },session);
   });
 }
 
@@ -3628,8 +3962,11 @@ function tryFeishuVideoSource(video,fileName,cdnBase,videoPath){
  * @param {HTMLVideoElement} video - 播放器元素
  * @param {string} src - 视频源地址
  * @param {Function} fallback - 该源失败后的回退函数
+ * @param {number} [session] - V5.9.0播放会话号:关闭播放器后所有续体自动失效
  */
-function tryPlaySource(video,src,fallback){
+function tryPlaySource(video,src,fallback,session){
+  // V5.9.0: 会话已失效(播放器已关闭)则本源与后续回退链全部终止
+  if(session!==undefined&&session!==_videoSession)return;
   // V5.8.2: 显示加载状态指示器(方案3步骤三)
   const loadingEl=document.getElementById('video-loading');
   if(loadingEl)loadingEl.classList.add('show');
@@ -3637,6 +3974,8 @@ function tryPlaySource(video,src,fallback){
   const onErr=()=>{
     if(settled)return;settled=true;
     if(loadingEl)loadingEl.classList.remove('show');
+    // V5.9.0: 会话已失效(用户已退出),不再继续回退链
+    if(session!==undefined&&session!==_videoSession)return;
     console.warn('[视频]源加载失败,切换下一源:',src);
     fallback();
   };
@@ -3649,6 +3988,8 @@ function tryPlaySource(video,src,fallback){
     clearTimeout(timer);settled=true;
     video._currentTimer=null;
     if(loadingEl)loadingEl.classList.remove('show');
+    // V5.9.0: 会话已失效时连错误占位清理都不必做(容器已隐藏且会被close清理)
+    if(session!==undefined&&session!==_videoSession)return;
     const err=video.parentElement.querySelector('.video-error');
     if(err)err.remove();
   };
@@ -3741,13 +4082,13 @@ function thumbImgError(img){
   });
 }
 
-async function playFromFeishuCloud(video,fileName){
+async function playFromFeishuCloud(video,fileName,session){
   const cfg=getFeishuCfg();
   if(!feishuCfgReady(cfg))return false; // V5.3.4: Secret缺失跳过(诊断根因1)
   try{
     // 命中缓存直接复用(同一视频反复打开不再重复拉取分片)
     if(_feishuVideoCache.name===fileName&&_feishuVideoCache.url){
-      tryPlaySource(video,_feishuVideoCache.url,()=>false);
+      tryPlaySource(video,_feishuVideoCache.url,()=>false,session);
       return true;
     }
     const token=await getFeishuToken(cfg);
@@ -3799,6 +4140,11 @@ async function playFromFeishuCloud(video,fileName){
       console.log(`[视频]云端命中分片序列:${fileName} × ${parts.length}片`);
       const chunks=[];
       for(let i=0;i<parts.length;i++){
+        // V5.9.0: 下载期间用户已退出则中止后续分片拉取(会话守卫)
+        if(session!==undefined&&session!==_videoSession){
+          console.log('[视频]用户已退出,中止分片下载');
+          return false;
+        }
         showToast(`正在从飞书拉取视频分片 ${i+1}/${parts.length}...`);
         chunks.push(await downloadBlob(parts[i].token));
       }
@@ -3807,10 +4153,16 @@ async function playFromFeishuCloud(video,fileName){
       return false; // 云端无此视频
     }
     if(!blob||blob.size<1024)throw new Error('云端视频内容异常');
+    // V5.9.0: 下载完成但用户已退出——直接丢弃结果,不复活播放器(旧版此处
+    // 会继续tryPlaySource设置src并play(),导致关闭后残留音频/加载态复活)
+    if(session!==undefined&&session!==_videoSession){
+      console.log('[视频]下载完成但播放会话已结束,丢弃');
+      return false;
+    }
     const url=URL.createObjectURL(blob);
     if(_feishuVideoCache.url)URL.revokeObjectURL(_feishuVideoCache.url); // 只保留最近1个,防内存膨胀
     _feishuVideoCache={name:fileName,url};
-    tryPlaySource(video,url,()=>false);
+    tryPlaySource(video,url,()=>false,session);
     console.log('[视频]飞书云端源命中:',fileName,target?(rootHit?'(根目录回退完整文件)':'(完整文件)'):`(分片重组${parts.length}片,${(blob.size/1048576).toFixed(1)}MB)`);
     if(rootHit)addSyncLog(`视频命中根目录回退源 · ${fileName}`,'blue'); // V5.3.4: 回退命中留痕,便于云盘整理后观察
     return true;
@@ -3899,25 +4251,36 @@ function pickVideoFile(){
 }
 
 function closeVideoPlayer(){
-  const video=document.getElementById('video-element');
-  // V5.8.1: 清理tryPlaySource的8秒超时定时器,防止关闭后异步回调重新设置src并播放
-  if(video._currentTimer){clearTimeout(video._currentTimer);video._currentTimer=null;}
-  // V5.8.1: 清除事件回调,防止onerror/onloadeddata在src清空后仍被触发
-  video.onerror=null;
-  video.onloadeddata=null;
-  video.pause();
-  video.removeAttribute('src');
-  video.load(); // 触发unload,确保释放媒体资源(部分浏览器仅src=''不释放)
+  // V5.9.0加固: ①先递增会话号使所有在途异步源链(定时器/错误回调/飞书下载
+  // 完成回调)全部失效;②先移除'show'类再清理video——即使某ROM的WebView在
+  // pause/load阶段抛异常,播放器也已确定关闭,返回键不会被卡死在"关闭播放器"
+  // 这一层(旧版'show'移除放在函数末尾,中途异常会导致播放器关不掉+无法返回)
+  _videoSession++;
+  document.getElementById('video-player').classList.remove('show');
+  try{
+    const video=document.getElementById('video-element');
+    // V5.8.1: 清理tryPlaySource的8秒超时定时器,防止关闭后异步回调重新设置src并播放
+    if(video._currentTimer){clearTimeout(video._currentTimer);video._currentTimer=null;}
+    // V5.8.1: 清除事件回调,防止onerror/onloadeddata在src清空后仍被触发
+    video.onerror=null;
+    video.onloadeddata=null;
+    video.pause();
+    video.removeAttribute('src');
+    video.load(); // 触发unload,确保释放媒体资源(部分浏览器仅src=''不释放)
+  }catch(e){
+    // 个别ROM的WebView在媒体态切换时可能抛异常:播放器已隐藏,此处仅记录
+    console.warn('[视频]关闭时媒体清理异常(已忽略):',e&&e.message);
+  }
   // V5.8.2: 隐藏加载状态指示器(方案3步骤三)
   const loadingEl=document.getElementById('video-loading');
   if(loadingEl)loadingEl.classList.remove('show');
   // 清除视频错误提示
-  const container=video.parentElement;
-  const err=container?container.querySelector('.video-error'):null;
+  const container=document.getElementById('video-element');
+  const c2=container?container.parentElement:null;
+  const err=c2?c2.querySelector('.video-error'):null;
   if(err)err.remove();
-  const errMsg=container?container.querySelector('.video-error-msg'):null;
+  const errMsg=c2?c2.querySelector('.video-error-msg'):null;
   if(errMsg)errMsg.classList.remove('show');
-  document.getElementById('video-player').classList.remove('show');
 }
 
 function setVideoSpeed(speed){

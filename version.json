@@ -1,16 +1,15 @@
 {
-  "version": "5.8.2",
-  "versionCode": 50802,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.8.2/tcg_poweroff_v5.8.2.apk",
+  "version": "5.9.0",
+  "versionCode": 50900,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.9.0/tcg_poweroff_v5.9.0.apk",
   "releaseNotes": [
-    "V5.8.2 增强版——输入验证+加载状态+错误处理+代码优化",
-    "- 增强: 分享功能——分享前输入验证(Blob有效性/文件名合法性/MIME类型修正);JSDoc类型注解",
-    "- 增强: 视频播放器——新增加载状态指示器(spinner+文字);preload=metadata;关闭时隐藏加载状态;错误提示UI",
-    "- 增强: 注册审核——组长权限验证(role=leader);审核操作错误分类处理(token过期/网络超时/通用错误);异步推送错误捕获+重试提示",
-    "- 增强: 返回按钮——ARIA可达性标签(role/tabindex);CSS最小点击区域44x44px",
-    "- 优化: 新增输入验证工具(sanitizeStr/isValidPhone);错误边界包装器(safeAsync);防抖函数(debounce)",
-    "- 优化: 关键函数JSDoc类型注解(shareFile/approveMember/rejectMember/refreshPending/tryPlaySource)",
-    "- 技术修正: 方案中URL.reconstruct/getBoundingClientRect().url为不存在的API,使用Blob/URL.createObjectURL替代;window.location.href改为SPA内部路由goBack()"
+    "V5.9.0 功能重定义版——分享两步流程+Excel照片内嵌+视频会话守卫",
+    "- 重定义: Word/PDF/Excel分享两步流程——①生成含照片文档 ②调起系统分享面板,微信/QQ/钉钉/飞书等任意第三方应用均可接收",
+    "- 新增: Excel照片真实内嵌(自研ZIP读写+OpenXML DrawingML注入,零外部依赖)——单车新增'车辆照片'工作表(≤8张),批量详情子表各内嵌≤4张;openpyxl/LibreOffice/WPS三端验证兼容",
+    "- 新增: 照片嵌入前Canvas降采样(长边≤1024px/JPEG 0.85),批量10辆合计<6MB,微信25MB分享限额内",
+    "- 修复: 视频未加载完退出后无法返回上一层——会话号守卫机制(等价取消令牌),关闭时使全部在途异步源链(定时器/错误回调/飞书下载回调)失效;关闭加固先移除'show'再清媒体资源,异常不阻断",
+    "- 优化: 车辆详情页'分享'按钮明确为'文字分享',与文档分享(Word/PDF/Excel)区分;导出按钮文案随两步流程同步重定义",
+    "- 兼容: Excel照片内嵌失败自动回退无图版本,导出主流程不中断;Word/PDF/Excel照片预取均带20秒超时保护"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
