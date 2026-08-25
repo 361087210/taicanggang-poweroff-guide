@@ -14,7 +14,7 @@
     # 预览模式(只报告不删除, 强烈建议先跑一遍):
     python scripts/cleanup_feishu_duplicates.py --dry-run
     # 实际清理:
-    python scripts/cleanup_feishu_duplicates.py
+    python scripts/cleanup_feishu_duplicates.py --apply
 
 安全设计:
     1. 默认dry-run语义需显式 --apply 才真删(双保险,防误删)
@@ -88,8 +88,12 @@ def main():
     parser = argparse.ArgumentParser(description="飞书产物区同名旧档清理")
     parser.add_argument("--apply", action="store_true",
                         help="实际执行删除(缺省为dry-run预览,只报告不删除)")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="显式预览模式(与缺省行为一致,只报告不删除)")
     parser.add_argument("--folder", default=ROOT_FOLDER, help="目标文件夹token(缺省为项目根目录)")
     args = parser.parse_args()
+    if args.dry_run:
+        args.apply = False
 
     if not APP_ID or not APP_SECRET:
         log("缺少环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET")
