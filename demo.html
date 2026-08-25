@@ -83,6 +83,14 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 .bs-item.selected{color:#2563eb;font-weight:600;}
 .bs-item.selected::after{content:'';width:20px;height:20px;background:#2563eb;border-radius:50%;display:flex;}
 
+/* V10.1 问题3修复: 组员管理红点通知——有待审核注册时入口显示红色数字角标 */
+.red-dot{position:absolute;top:8px;right:16px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#ef4444;color:#fff;font-size:11px;font-weight:600;line-height:18px;text-align:center;display:none;box-shadow:0 0 0 2px #fff;z-index:5;}
+.red-dot.show{display:inline-block;animation:badgePop .3s ease-out;}
+@keyframes badgePop{from{transform:scale(0);}to{transform:scale(1);}}
+
+/* V10.1 问题2修复: 批量导出折叠面板展开箭头 */
+.chevron-rotate{transition:transform .2s ease-out;}
+
 /* Photo viewer */
 .photo-viewer{position:absolute;inset:0;background:#000;z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;}
 .photo-viewer.show{display:flex;}
@@ -316,16 +324,25 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 </div>
 <div class="flex-1 scroll-y px-4 pb-24 space-y-4 pt-4">
 <!-- Batch export -->
+<!-- V10.1 问题2修复: 车型选择列表默认折叠——旧版73辆车列表常驻展开(max-h-60≈240px+说明文案),
+     挤占大量屏幕空间导致下方"数据备份/数据同步"区块被推出可视区,用户误以为同步功能丢失 -->
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-1.5 cursor-pointer select-none active:opacity-60" onclick="toggleExportList()">
+<svg id="export-list-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-400 chevron-rotate"><path d="M9 18l6-6-6-6"/></svg>
 <span class="text-sm font-bold text-gray-900">批量导出</span>
+<span class="text-xs text-gray-400" id="export-list-hint">选择车型 · 点击展开</span>
+</div>
 <div class="flex gap-2">
 <button onclick="toggleSelectAll()" id="btn-select-all" class="text-xs text-blue-500">全选</button>
 <button onclick="clearSelection()" class="text-xs text-gray-400">取消</button>
 </div>
 </div>
+<!-- 折叠面板: 收起时仅显示标题行+导出按钮,展开时显示车型选择列表 -->
+<div id="export-list-wrap" class="hidden">
 <div class="text-xs text-gray-400 mb-2" id="selection-count">已选 0/73</div>
 <div class="space-y-1.5 max-h-60 overflow-y-auto scroll-y" id="data-vehicle-list"></div>
+</div>
 <!-- Export buttons -->
 <!-- V5.9.0 问题1: Word/PDF/Excel按钮重定义为两步分享——①生成含照片文档 ②调起系统分享面板 -->
 <p class="text-xs text-gray-400 mb-2">Word/PDF/Excel：先生成含照片文档，再分享到微信/QQ/钉钉/飞书等任意应用</p>
@@ -488,7 +505,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg><div><div class="text-sm text-gray-800">高对比度户外模式</div><div class="text-xs text-gray-400 mt-0.5">强光环境下提升可读性</div></div></div>
 <div class="toggle" id="toggle-outdoor" onclick="toggleOutdoorMode()"><div class="knob"></div></div>
 </div>
-<div class="bs-item" id="menu-members" onclick="showScreen('screen-members')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span class="text-sm text-gray-800">组员管理</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="bs-item relative" id="menu-members" onclick="showScreen('screen-members')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span class="text-sm text-gray-800">组员管理</span><span class="red-dot" id="members-badge-my">0</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" id="menu-sync" onclick="showScreen('screen-sync')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据同步</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="checkUpdate()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 12a9 9 0 11-2.64-6.36M21 3v6h-6"/></svg><div><div class="text-sm text-gray-800">检查更新</div><div class="text-xs text-gray-400 mt-0.5" id="update-current-ver">当前版本 V4.1</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="doLogout()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="w-5 h-5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="text-sm text-red-500">退出登录</span></div></div>
@@ -667,7 +684,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="text-white/60 text-xs" id="side-role">-</div>
 </div>
 <div class="flex-1 py-2">
-<div class="bs-item" onclick="showScreen('screen-members');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="text-sm text-gray-800">组员管理</span></div></div>
+<div class="bs-item relative" onclick="showScreen('screen-members');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="text-sm text-gray-800">组员管理</span><span class="red-dot" id="members-badge-side">0</span></div></div>
 <div class="bs-item" onclick="showScreen('screen-data');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据中心</span></div></div>
 <div class="bs-item" onclick="showScreen('screen-sync');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></svg><span class="text-sm text-gray-800">数据同步</span></div></div>
 <div class="bs-item" onclick="showScreen('screen-my');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="text-sm text-gray-800">个人中心</span></div></div>
@@ -1154,7 +1171,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.0.0';
+const APP_VERSION='10.1.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1214,7 +1231,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 VEHICLES.forEach(v=>{v.pinyin=getPinyin(v.display);});
 
 // ===================== STATE =====================
-let state={screen:'screen-login',currentUser:null,viewMode:'tree',currentVehicleId:null,currentVehicleIndex:0,searchQuery:'',brandFilter:'all',selectedVehicles:new Set(),editingVehicle:null,isEditing:false,outdoorMode:false,expandedBrands:new Set(['saic']),recentVehicles:[],photoZoom:1,detailExporting:null,batchExporting:null,backupExporting:false};
+let state={screen:'screen-login',currentUser:null,viewMode:'tree',currentVehicleId:null,currentVehicleIndex:0,searchQuery:'',brandFilter:'all',selectedVehicles:new Set(),editingVehicle:null,isEditing:false,outdoorMode:false,expandedBrands:new Set(['saic']),recentVehicles:[],photoZoom:1,detailExporting:null,batchExporting:null,backupExporting:false,pendingDetailOpen:null};
 let confirmCallback=null;
 let navHistory=[];
 
@@ -1390,6 +1407,7 @@ async function doLogin(){
     // V5.3.1: 启动60秒静默轮询,跨网络/跨设备实时接收新注册申请
     startPendingPolling();
   }
+  updateMembersBadge(); // V10.1 问题3修复: 登录后立即刷新组员管理红点(本地缓存的待审核申请)
 }
 
 /**
@@ -2926,6 +2944,28 @@ function generatePDF(vehicles,photoMap){
 }
 
 // ===================== DATA CENTER =====================
+/**
+ * V10.1 问题2修复: 批量导出车型列表折叠状态管理
+ * 背景: 旧版73辆车选择列表常驻展开(约240px高度),把"数据备份/数据同步"区块
+ * 挤出屏幕可视区,用户反馈"数据同步显示不完全"。现默认折叠,点击标题行展开/收起,
+ * 全选时自动展开让用户看到选择结果,折叠态标题旁实时显示已选数量。
+ */
+const exportListState={expanded:false};
+function toggleExportList(force){
+  exportListState.expanded=(typeof force==='boolean')?force:!exportListState.expanded;
+  const wrap=document.getElementById('export-list-wrap');
+  const chevron=document.getElementById('export-list-chevron');
+  if(!wrap||!chevron)return;
+  wrap.classList.toggle('hidden',!exportListState.expanded);
+  chevron.style.transform=exportListState.expanded?'rotate(90deg)':'rotate(0deg)';
+  updateExportListHint();
+}
+function updateExportListHint(){
+  const hint=document.getElementById('export-list-hint');
+  if(!hint)return;
+  const n=state.selectedVehicles.size;
+  hint.textContent=exportListState.expanded?'收起':(n>0?`已选${n}辆 · 展开`:'选择车型 · 点击展开');
+}
 function renderDataList(){
   const c=document.getElementById('data-vehicle-list');
   c.innerHTML=VEHICLES.map(v=>`
@@ -2949,11 +2989,14 @@ function updateSelectionCount(){
   const n=state.selectedVehicles.size;
   document.getElementById('selection-count').textContent=`已选 ${n}/${VEHICLES.length}`;
   document.getElementById('btn-select-all').textContent=n===VEHICLES.length?'取消全选':'全选';
+  updateExportListHint(); // V10.1: 折叠态标题旁同步显示已选数量
 }
 
 function toggleSelectAll(){
   if(state.selectedVehicles.size===VEHICLES.length){state.selectedVehicles.clear();}else{VEHICLES.forEach(v=>state.selectedVehicles.add(v.id));}
   renderDataList();
+  // V10.1: 全选后自动展开列表,用户可直观确认选择结果
+  if(state.selectedVehicles.size>0)toggleExportList(true);
 }
 
 function clearSelection(){state.selectedVehicles.clear();renderDataList();}
@@ -2983,7 +3026,8 @@ async function preparePhotoMapSafe(vehicles,timeoutMs){
  */
 async function exportData(format){
   const n=state.selectedVehicles.size;
-  if(n===0){showToast('请先选择要导出的车型');return;}
+  // V10.1 问题2配套: 折叠态下未选车型直接点导出时,自动展开选择列表引导用户选择
+  if(n===0){showToast('请先选择要导出的车型');toggleExportList(true);return;}
   if(state.batchExporting)return; // 互斥保护: 导出进行中忽略重复点击
   const names={'word':'Word','pdf':'PDF','excel':'Excel','csv':'CSV','json':'JSON'};
   if((format==='excel'&&!window.XLSX)||(format==='pdf'&&!window.jspdf)||(format==='word'&&!window._htmlDocxReady&&typeof htmlDocx==='undefined')){
@@ -4369,29 +4413,85 @@ function renderMemberList(){
     const pcount=document.getElementById('pending-count');
     if(pcount)pcount.textContent=pending.length?`(${pending.length})`:'';
     // V10.0: 增强待审核列表UI——显示完整注册信息,组长可清楚看到申请人详情
+    // V10.1 问题3修复: 申请卡片支持点击展开完整详情(旧版无法查看申请详情),
+    //                  展开/收起状态本地记忆,操作按钮区与详情区互不遮挡
     pc.innerHTML=pending.map(u=>{
       const timeStr=u.created||'未知';
       const roleStr=u.role==='admin'?'组长':(u.role==='user'?'组员':u.role||'未知');
+      const expanded=state.pendingDetailOpen===u.id;
       return `
       <div class="py-3 px-3 bg-orange-50 rounded-lg border border-orange-200">
         <div class="flex items-start justify-between mb-2">
-          <div class="flex-1 min-w-0">
+          <div class="flex-1 min-w-0 cursor-pointer" onclick="togglePendingDetail(${u.id})">
             <div class="flex items-center gap-2 mb-1">
               <span class="text-sm font-bold text-gray-900">${esc(u.name)}</span>
               <span class="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-600 rounded">${esc(roleStr)}</span>
             </div>
             <div class="text-xs text-gray-600 mt-0.5">手机：${esc(u.phone)}</div>
             <div class="text-xs text-gray-400 mt-0.5">申请时间：${esc(timeStr)}</div>
-            ${u.remarks?`<div class="text-xs text-gray-400 mt-0.5">备注：${esc(u.remarks)}</div>`:''}
+            <div class="text-xs text-blue-500 mt-1.5 font-medium">${expanded?'收起详情 ▴':'点击展开详情 ▾'}</div>
           </div>
           <div class="flex flex-col gap-1.5 ml-2 flex-shrink-0">
             <button onclick="approveMember(${u.id})" class="px-3 py-1.5 text-xs text-white bg-green-500 rounded-lg font-medium active:bg-green-600">通过</button>
             <button onclick="rejectMember(${u.id})" class="px-3 py-1.5 text-xs text-red-600 bg-red-50 rounded-lg font-medium active:bg-red-100">拒绝</button>
           </div>
         </div>
+        <div class="${expanded?'':'hidden'} pt-2 mt-1 border-t border-orange-200 text-xs text-gray-600 space-y-1 bg-white/60 rounded-lg px-2">
+          <div class="font-medium text-gray-700 mb-1">注册申请详情</div>
+          <div>申请人姓名：${esc(u.name)}</div>
+          <div>联系电话：${esc(u.phone)}</div>
+          <div>申请身份：${esc(roleStr)}</div>
+          <div>申请时间：${esc(timeStr)}</div>
+          <div>备注说明：${esc(u.remarks||'无')}</div>
+          <div>申请来源：组员端APP自主注册（飞书云端推送）</div>
+        </div>
       </div>`;
     }).join('')||'<div class="text-center text-sm text-gray-400 py-4">暂无待审核注册</div>';
   }
+  updateMembersBadge(); // V10.1 问题3修复: 待审核数量变化时同步刷新入口红点
+}
+
+/**
+ * V10.1 问题3修复: 待审核申请详情展开/收起
+ * 旧版申请卡片信息固定展示且无详情入口,用户反馈"无法点击展开查看详情"。
+ * 现点击卡片信息区展开完整注册信息,再点收起;展开状态存于state,重渲染后保持。
+ * @param {number} id - 申请用户ID
+ */
+function togglePendingDetail(id){
+  state.pendingDetailOpen=(state.pendingDetailOpen===id)?null:id;
+  renderMemberList();
+}
+
+/**
+ * V10.1 问题3修复: 组员管理红点通知
+ * 有待审核注册时,「我的」页组员管理入口+侧边菜单组员管理入口显示红色数字角标,
+ * 组长无需进入组员管理页即可感知新申请(60秒轮询/手动刷新/进入页面拉取后自动更新)。
+ * 非组长账号强制隐藏角标。
+ */
+function updateMembersBadge(){
+  const ids=['members-badge-my','members-badge-side'];
+  if(!isLeader()){
+    ids.forEach(i=>{const el=document.getElementById(i);if(el)el.classList.remove('show');});
+    return;
+  }
+  const n=USERS.filter(u=>u.status==='pending').length;
+  const text=n>99?'99+':String(n);
+  ids.forEach(i=>{
+    const el=document.getElementById(i);
+    if(!el)return;
+    el.textContent=text;
+    el.classList.toggle('show',n>0);
+  });
+}
+
+/**
+ * V10.1 问题3修复: 审批操作触觉反馈(支持vibrate的Android设备)
+ * 通过/拒绝/删除操作时短震动30ms,给用户即时物理反馈("点击后没收到反馈"补强)
+ */
+function hapticFeedback(){
+  try{
+    if(typeof navigator!=='undefined'&&typeof navigator.vibrate==='function')navigator.vibrate(30);
+  }catch(e){/* 震动失败不影响主流程 */}
 }
 
 async function addMember(){
@@ -4461,7 +4561,10 @@ function approveMember(id){
   if(!u){showToast('用户不存在');return;}
   showConfirm('通过审核',`确认通过「${u.name}(${u.phone})」的注册申请？`,async()=>{
     try{
-      u.status='active';saveUsers(USERS);renderMemberList();showToast('已通过审核');
+      hapticFeedback(); // V10.1: 触觉反馈,操作即时可感知
+      u.status='active';saveUsers(USERS);renderMemberList();
+      showToast(`✅ 已通过「${u.name}」的注册申请`);
+      updateMembersBadge(); // V10.1: 审批后立即刷新红点
       await pushApprovedUsersToFeishu().catch(err=>{
         console.error('[审核] 推送审批结果失败:',err);
         showToast('已通过,但云端同步失败,稍后自动重试');
@@ -4487,10 +4590,13 @@ function rejectMember(id){
     showToast('权限不足: 仅组长可审核注册申请');
     return;
   }
-  showConfirm('拒绝注册','确定拒绝该注册申请？',async()=>{
+  showConfirm('拒绝注册',`确定拒绝「${USERS.find(x=>x.id===id)?.name||'该组员'}」的注册申请？`,async()=>{
     const idx=USERS.findIndex(u=>u.id===id);
     if(idx>-1){
-      USERS[idx].status='rejected';saveUsers(USERS);renderMemberList();showToast('已拒绝');
+      hapticFeedback(); // V10.1: 触觉反馈,操作即时可感知
+      USERS[idx].status='rejected';saveUsers(USERS);renderMemberList();
+      showToast(`已拒绝「${USERS[idx].name}」的注册申请`);
+      updateMembersBadge(); // V10.1: 拒绝后立即刷新红点
       pushApprovedUsersToFeishu().catch(err=>{
         console.error('[审核] 推送拒绝结果失败:',err);
       });
@@ -4503,9 +4609,20 @@ function rejectMember(id){
 }
 
 function deleteMember(id){
+  // V10.1: 纵深防御——删除组员同样校验组长权限(旧版仅靠入口隐藏,绕过入口即无防护)
+  if(!state.currentUser||!isLeader()){
+    showToast('权限不足: 仅组长可删除组员账号');
+    return;
+  }
   showConfirm('删除组员','确定删除该组员账号？',()=>{
     const idx=USERS.findIndex(u=>u.id===id);
-    if(idx>-1){USERS.splice(idx,1);saveUsers(USERS);renderMemberList();showToast('删除成功');pushApprovedUsersToFeishu();}
+    if(idx>-1){
+      hapticFeedback(); // V10.1: 触觉反馈,操作即时可感知
+      USERS.splice(idx,1);saveUsers(USERS);renderMemberList();
+      showToast('删除成功');
+      updateMembersBadge(); // V10.1: 删除后立即刷新红点
+      pushApprovedUsersToFeishu();
+    }
   });
 }
 
