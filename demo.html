@@ -466,7 +466,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.4.0</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.5.0</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -708,31 +708,18 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="space-y-2 mb-4 max-h-52 overflow-y-auto" id="cache-video-list"></div>
 <div class="text-sm font-bold text-gray-700 mb-2">已导出文档 <span class="text-xs text-gray-400 font-normal" id="cache-doc-count"></span></div>
 <div class="space-y-2 mb-4 max-h-52 overflow-y-auto" id="cache-doc-list"></div>
-<button onclick="deleteSelectedCache()" id="btn-del-cache" class="w-full py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-medium disabled:opacity-40" disabled>删除选中(0)</button>
-<div class="text-xs text-gray-400 text-center mt-2 leading-relaxed">缓存视频离线可播,删除后下次播放将重新加载</div>
+<!-- V10.5.0 问题1: 保存到本地(复制到公共Download目录)+删除选中 双操作 -->
+<div class="flex gap-2 mt-1">
+<button onclick="saveSelectedCacheToLocal()" id="btn-save-cache" class="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium disabled:opacity-40" disabled>保存到本地(0)</button>
+<button onclick="deleteSelectedCache()" id="btn-del-cache" class="flex-1 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-medium disabled:opacity-40" disabled>删除选中(0)</button>
+</div>
+<div class="text-xs text-gray-400 text-center mt-2 leading-relaxed">选中文件可保存到手机「下载」目录长期留存，或删除释放空间<br>缓存视频离线可播，删除后下次播放将重新加载</div>
 </div>
 </div>
 
-<!-- ===== SHARE SHEET ===== -->
-<div class="modal-overlay" id="modal-share">
-<div class="modal-sheet p-5">
-<div class="text-center mb-4">
-<div class="text-sm font-bold text-gray-900" id="share-filename">文件分享</div>
-</div>
-<div class="grid grid-cols-4 gap-3 mb-4">
-<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-xs">微信</div><span class="text-xs text-gray-500">微信</span></div>
-<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 text-xs">QQ</div><span class="text-xs text-gray-500">QQ</span></div>
-<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-xs">钉钉</div><span class="text-xs text-gray-500">钉钉</span></div>
-<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 text-xs">蓝牙</div><span class="text-xs text-gray-500">蓝牙</span></div>
-<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 text-xs">互传</div><span class="text-xs text-gray-500">小米互传</span></div>
-<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 text-xs">打印</div><span class="text-xs text-gray-500">打印</span></div>
-<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 text-xs">保存</div><span class="text-xs text-gray-500">本地</span></div>
-<div class="flex flex-col items-center gap-1"><div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 text-xs">更多</div><span class="text-xs text-gray-500">更多</span></div>
-</div>
-<div class="text-xs text-gray-400 text-center mb-2">正在发现附近的设备，对方需要在控制中心打开互传开关。</div>
-<button onclick="closeModal('modal-share')" class="w-full py-3 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">取消</button>
-</div>
-</div>
+<!-- V10.5.0 死代码清理: modal-share分享面板已删除——历史遗留的纯静态占位UI,
+     JS从未openModal('modal-share'),真实分享链路为 shareFile()→socialsharing原生面板/
+     Web Share API系统面板,此处仅造成维护噪音与包体冗余 -->
 
 <!-- ===== SIDE MENU ===== -->
 <div class="modal-overlay" id="modal-side-menu" style="align-items:stretch;justify-content:flex-start;">
@@ -1282,6 +1269,126 @@ async function cacheDeleteFiles(subDir,names){
   return deleted;
 }
 
+/* ===================== V10.5.0 问题1: 缓存保存到本地 =====================
+ * 需求: 清理缓存界面中检测到的视频和文档,提供"保存到本地"功能。
+ * 背景: 缓存位于App私有目录(dataDirectory/tcg_cache/),文件管理器不可见;
+ *   保存到本地=复制到公共下载目录(Download/太仓港断电指导/),用户可直接访问。
+ * 系统兼容矩阵:
+ *  - Android 11+: Scoped Storage下App可直接在公共Download创建文件(FUSE直写),无需权限
+ *  - Android 10: requestLegacyExternalStorage标志生效(config.xml已注入)+运行时写权限
+ *  - Android 6-9: WRITE_EXTERNAL_STORAGE运行时权限(已声明,保存前主动申请)
+ *  - 全版本降级: 公共Download不可写时回退App外部目录(文件管理器可见)
+ * 权限插件: cordova-plugin-android-permissions(已随CI安装)。
+ */
+const SAVE_DIR_NAME='太仓港断电指导';
+
+/**
+ * 解析"保存到本地"目标目录(公共Download优先,失败降级App外部目录)
+ * @returns {Promise<{dir:DirectoryEntry,label:string}|null>} 目标目录与展示名;环境不支持返回null
+ */
+function _resolveSaveDestDir(){
+  return new Promise(resolve=>{
+    if(!window.resolveLocalFileSystemURL||!window.cordova||!cordova.file){resolve(null);return;}
+    // 降级: App外部专用目录(/storage/emulated/0/Android/data/<pkg>/files/太仓港断电指导/)
+    const tryFallback=()=>{
+      const ext=cordova.file.externalDataDirectory;
+      if(!ext){resolve(null);return;}
+      window.resolveLocalFileSystemURL(ext,extEntry=>{
+        extEntry.getDirectory(SAVE_DIR_NAME,{create:true},
+          dest=>resolve({dir:dest,label:'手机存储/Android/data/'+SAVE_DIR_NAME}),
+          ()=>resolve(null));
+      },()=>resolve(null));
+    };
+    // 优先: 公共Download/太仓港断电指导/(/storage/emulated/0/Download/太仓港断电指导/)
+    const root=cordova.file.externalRootDirectory;
+    if(!root){tryFallback();return;}
+    window.resolveLocalFileSystemURL(root,rootEntry=>{
+      rootEntry.getDirectory('Download',{create:true},dlDir=>{
+        dlDir.getDirectory(SAVE_DIR_NAME,{create:true},
+          dest=>resolve({dir:dest,label:'下载/'+SAVE_DIR_NAME}),
+          ()=>tryFallback());
+      },()=>tryFallback());
+    },()=>tryFallback());
+  });
+}
+
+/**
+ * Android 10及以下主动申请写存储权限(11+系统免权限,跳过避免无谓弹窗)
+ * @returns {Promise<void>} 权限流程结束(拒绝不阻塞——后续写入失败走降级链)
+ */
+function _ensureSavePermission(){
+  return new Promise(resolve=>{
+    try{
+      const perms=window.cordova&&window.plugins&&window.plugins.permissions;
+      const ver=window.device&&parseInt(window.device.version,10);
+      if(!perms||!window.device||isNaN(ver)||ver>=11){resolve();return;} // 11+无需权限
+      perms.hasPermission(perms.WRITE_EXTERNAL_STORAGE,
+        st=>{
+          if(st&&st.hasPermission){resolve();return;}
+          perms.requestPermission(perms.WRITE_EXTERNAL_STORAGE,()=>resolve(),()=>resolve());
+        },
+        ()=>resolve());
+    }catch(e){resolve();}
+  });
+}
+
+/**
+ * 复制单个缓存文件到"保存到本地"目标目录
+ * @param {string} subDir - 缓存子目录(video_cache/exported_docs)
+ * @param {string} fileName - 文件名
+ * @param {Object} dest - _resolveSaveDestDir()结果
+ * @returns {Promise<void>} 失败抛错(调用方统计)
+ */
+async function saveCacheFileToLocal(subDir,fileName,dest){
+  const srcDir=await _cacheDirEntry(subDir);
+  if(!srcDir)throw new Error('缓存目录不可用');
+  if(!dest||!dest.dir)throw new Error('本地保存目录不可用');
+  // 读取源文件File对象(可直接作为Blob写入目标)
+  const srcFile=await new Promise((resolve,reject)=>{
+    srcDir.getFile(fileName,{create:false},
+      fe=>fe.file(f=>resolve(f),()=>reject(new Error('读取缓存文件失败'))),
+      ()=>reject(new Error('缓存文件不存在')));
+  });
+  await new Promise((resolve,reject)=>{
+    dest.dir.getFile(fileName,{create:true},fe=>{
+      fe.createWriter(w=>{
+        w.onwriteend=()=>resolve();
+        w.onerror=()=>reject(new Error('写入本地失败'));
+        w.write(srcFile);
+      },()=>reject(new Error('创建写入器失败')));
+    },()=>reject(new Error('创建目标文件失败')));
+  });
+  console.log('[保存] 已保存到本地:',dest.label+'/'+fileName);
+}
+
+/**
+ * 批量保存选中的缓存项到本地(缓存管理界面「保存到本地」入口)
+ * V10.5.0 问题1: 复制(App私有缓存→公共Download),源缓存不删除(保存≠清理)
+ */
+function saveSelectedCacheToLocal(){
+  if(!cacheSel.size)return;
+  const n=cacheSel.size;
+  showConfirm('保存到本地',`将选中的 ${n} 项保存到手机「下载/太仓港断电指导」目录？保存后可在文件管理器查看，不影响缓存。`,async()=>{
+    hapticFeedback();
+    await _ensureSavePermission();
+    const dest=await _resolveSaveDestDir();
+    if(!dest){showToast('保存失败：无法访问本地存储目录');return;}
+    const videoNames=[...cacheSel].filter(k=>k.startsWith('video|')).map(k=>k.slice(6));
+    const docNames=[...cacheSel].filter(k=>k.startsWith('doc|')).map(k=>k.slice(4));
+    let ok=0,fail=0;
+    for(const name of videoNames){
+      try{await saveCacheFileToLocal(CACHE_DIR_VIDEOS,name,dest);ok++;}
+      catch(e){console.warn('[保存]视频失败:',name,e.message);fail++;}
+    }
+    for(const name of docNames){
+      try{await saveCacheFileToLocal(CACHE_DIR_DOCS,name,dest);ok++;}
+      catch(e){console.warn('[保存]文档失败:',name,e.message);fail++;}
+    }
+    if(ok>0)showToast(`✅ 已保存 ${ok} 项到「${dest.label}」`+(fail>0?`，${fail} 项失败`:''));
+    else showToast('保存失败：无法写入本地目录');
+  });
+}
+
 /**
  * V10.4.0 问题2: 标记视频为已播放
  * 需求: "标记播放过的视频并缓存,清理缓存时索引标记过的缓存视频"——
@@ -1457,7 +1564,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.4.0';
+const APP_VERSION='10.5.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -2468,34 +2575,15 @@ async function shareFile(blob,filename,mimeType,title){
   if(ext==='csv')fixedMime='text/csv;charset=utf-8';
   console.log('[分享] 开始分享:',filename,'大小:',(blob.size/1024).toFixed(1)+'KB','MIME:',fixedMime);
 
-  // ① 优先: Web Share API with files (对齐V1.8: navigator.share等价于原生Intent.ACTION_SEND)
-  // 这是Android 7+ WebView的标准系统分享,调起原生分享面板(微信/QQ/钉钉/飞书等)
-  if(typeof navigator!=='undefined'&&typeof navigator.share==='function'){
-    try{
-      const file=new File([blob],filename,{type:fixedMime});
-      // canShare可用时检查,不可用时直接尝试(部分WebView支持share但不实现canShare)
-      if(typeof navigator.canShare==='function'){
-        if(navigator.canShare({files:[file]})){
-          await navigator.share({files:[file],title:title||filename,text:filename});
-          console.log('[分享] Web Share API成功');
-          return true; // 分享面板已调起
-        }
-      }else{
-        // 无canShare但share可用——直接尝试,AbortError=用户取消(面板已弹出)
-        await navigator.share({files:[file],title:title||filename,text:filename});
-        console.log('[分享] Web Share API成功(无canShare预检)');
-        return true;
-      }
-    }catch(e){
-      if(e&&e.name==='AbortError'){
-        console.log('[分享] 用户取消分享');
-        return true; // 面板弹出了但用户取消,仍算成功调起
-      }
-      console.warn('[分享] Web Share API失败,降级到原生插件:',e&&e.message);
-    }
-  }
-
-  // ② 降级: Cordova socialsharing插件 (写文件到缓存→file://URI→原生分享面板)
+  /* V10.5.0 问题2根因修复: 分享链路顺序反转(原生插件优先)
+   * 根因: 旧版Web Share API优先——Android WebView的navigator.share在多数版本仅
+   * 支持纯文本(Web Share Level 2文件分享在WebView中长期未开放),files参数被静默
+   * 丢弃,分享面板虽弹出但只带出text字段(文件名),第三方应用收不到文件本体——
+   * 即用户反馈的"只显示数据名称文本,没有真正把数据分享到第三方"。
+   * 修复: Cordova环境下原生socialsharing插件优先(真实文件落盘→file://URI→
+   * 原生Intent.ACTION_SEND带STREAM附件,微信/QQ/钉钉/飞书稳定接收);
+   * Web Share API降为浏览器环境主链路/Cordova原生失败后的保底,
+   * 且必须canShare({files})明确校验通过才调用,杜绝文本-only静默降级。 */
   if(window.cordova){
     // 等待deviceready(首次调用可能早于插件就绪)
     if(!hasNativeShare()){
@@ -2508,7 +2596,7 @@ async function shareFile(blob,filename,mimeType,title){
     if(hasNativeShare()){
       try{
         let shareFiles=null;
-        // 优先写真实文件分享(file://路径),微信/QQ/钉钉稳定识别
+        // 写真实文件分享(file://路径),微信/QQ/钉钉稳定识别
         if(window.resolveLocalFileSystemURL&&window.cordova&&window.cordova.file){
           try{
             const safeName=filename.replace(/[\/\\:*?"<>|]/g,'_');
@@ -2523,7 +2611,8 @@ async function shareFile(blob,filename,mimeType,title){
           const dataUrl=await blobToDataURL(blob);
           shareFiles=[dataUrl.replace(/^data:[^;]*;/,`data:${fixedMime};`)];
         }
-        console.log('[分享] 调用socialsharing,文件:',filename);
+        if(!shareFiles||!shareFiles[0]){throw new Error('无有效分享文件');}
+        console.log('[分享] 调用socialsharing(原生面板),文件:',filename);
         await new Promise((resolve,reject)=>{
           window.plugins.socialsharing.shareWithOptions(
             {message:filename,subject:filename,title:title||filename,dialogTitle:'选择分享方式',files:shareFiles},
@@ -2531,17 +2620,38 @@ async function shareFile(blob,filename,mimeType,title){
             err=>{console.error('[分享] socialsharing失败:',JSON.stringify(err));reject(err);}
           );
         });
-        return true; // 分享面板已调起
+        return true; // 分享面板已调起(文件已附带给第三方应用)
       }catch(e){
         if(e==='canceled'){console.log('[分享] 用户取消');return true;}
-        console.warn('[分享] socialsharing失败:',e);
+        console.warn('[分享] 原生插件失败,降级Web Share API:',e);
       }
     }
   }
 
-  // V10.3 问题1: 移除浏览器下载兜底——系统分享不可用时明确报错,
-  // 不准静默降级为"保存到本地"使用户误以为分享成功
-  console.error('[分享] 系统分享不可用: Web Share API与原生插件均未调起',filename);
+  // Web Share API(浏览器环境主链路/Cordova原生失败保底)
+  // V10.5.0: 必须canShare({files})明确校验文件可分享才调用——
+  // 旧版"无canShare直接盲调"分支正是文本-only分享的来源,已删除
+  if(typeof navigator.share==='function'&&typeof navigator.canShare==='function'){
+    try{
+      const file=new File([blob],filename,{type:fixedMime});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:title||filename,text:filename});
+        console.log('[分享] Web Share API成功(文件已校验可分享)');
+        return true;
+      }
+      // canShare({files})=false: 该环境不支持文件分享,不盲目调用(否则退化成纯文本分享)
+      console.warn('[分享] 当前环境Web Share API不支持文件分享,跳过');
+    }catch(e){
+      if(e&&e.name==='AbortError'){
+        console.log('[分享] 用户取消分享');
+        return true; // 面板弹出了但用户取消,仍算成功调起
+      }
+      console.warn('[分享] Web Share API失败:',e&&e.message);
+    }
+  }
+
+  // 全链路失败——明确报错,不准静默降级为纯文本分享
+  console.error('[分享] 系统分享不可用: 原生插件与Web Share API均未调起',filename);
   showToast('分享失败：系统分享面板不可用，请检查系统或升级应用');
   return false;
 }
@@ -5203,10 +5313,13 @@ function toggleCacheSel(kind,name){
   _updateDelBtn();
 }
 
-/** 更新"删除选中"按钮状态 */
+/** 更新"删除选中/保存到本地"按钮状态 */
 function _updateDelBtn(){
   const btn=document.getElementById('btn-del-cache');
   if(btn){btn.disabled=cacheSel.size===0;btn.textContent=`删除选中(${cacheSel.size})`;}
+  // V10.5.0 问题1: 保存到本地按钮与删除按钮同步启用/禁用
+  const saveBtn=document.getElementById('btn-save-cache');
+  if(saveBtn){saveBtn.disabled=cacheSel.size===0;saveBtn.textContent=`保存到本地(${cacheSel.size})`;}
 }
 
 /** 删除选中的缓存项(带确认+反馈) */

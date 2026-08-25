@@ -76,11 +76,11 @@ check('A22 问题5.2: 跨端仅日志留痕不弹通知', /跨端网格员申请
 check('A23 问题5.2: 组员列表「跨端」徽标', /跨端/.test(html) && /u\.crossPlatform[\s\S]{0,200}跨端/.test(html));
 check('A24 问题5.2: 本端申请保留人工审批流程(newCount通知)', /本端申请: 原有审批通知流程/.test(html));
 
-// 问题6: 版本一致性
-check('A25 问题6: APP_VERSION=10.4.0', /APP_VERSION='10\.4\.0'/.test(html));
-check('A26 问题6: config.xml version=10.4.0', /version="10\.4\.0" android-versionCode="100400"/.test(configXml));
-check('A27 问题6: version.json版本=10.4.0', versionJson.version === '10.4.0' && versionJson.versionCode === 100400);
-check('A28 问题6: 同步屏本地版本号v10.4.0', />v10\.4\.0</.test(html));
+// 问题6: 版本一致性(V10.5.0起改为动态校验,对齐v103模式: 三端同版本即可,发版免改测试)
+check(`A25 问题6: APP_VERSION=${versionJson.version} 与version.json一致`, new RegExp(`APP_VERSION='${versionJson.version.replace(/\./g,'\\.')}'`).test(html));
+check('A26 问题6: config.xml 与version.json版本一致', /version="([0-9.]+)"/.exec(configXml)[1]===versionJson.version, `config=${/version="([0-9.]+)"/.exec(configXml)[1]} json=${versionJson.version}`);
+check(`A27 问题6: version.json版本=${versionJson.version} code=${versionJson.versionCode}`, /^\d+\.\d+\.\d+$/.test(versionJson.version)&&Number.isInteger(versionJson.versionCode));
+check(`A28 问题6: 同步屏本地版本号v${versionJson.version}`, new RegExp(`>v${versionJson.version.replace(/\./g,'\\.')}<`).test(html));
 
 /* ============================================================
  * B. 运行时行为验证(jsdom)
