@@ -42,7 +42,8 @@ def get_token():
 
 
 def list_files(token, folder_token):
-    """列出文件夹下全部文件(V1接口, 自动翻页)"""
+    """列出文件夹下全部文件(V1接口, 自动翻页)
+    注意: 分页字段是 next_page_token(非page_token), 且单页上限200"""
     files, page_token = [], None
     while True:
         params = {"folder_token": folder_token, "page_size": 200}
@@ -52,19 +53,24 @@ def list_files(token, folder_token):
         data = resp.json()
         if data.get("code") != 0:
             raise Exception(f"列目录失败: {data.get('msg')}")
-        files.extend(data.get("data", {}).get("files", []))
-        page_token = data.get("data", {}).get("page_token")
-        if not page_token:
+        d = data.get("data", {})
+        files.extend(d.get("files", []))
+        page_token = d.get("next_page_token")
+        if not d.get("has_more") or not page_token:
             return files
 
 
 def delete_file(token, file_token):
-    resp = requests.delete(DELETE_URL.format(token=file_token),
+    # 注意: 必须带 ?type=file 查询参数, 否则飞书返回404且删除不生效(静默失败)
+    resp = requests.delete(f"{DELETE_URL.format(token=file_token)}?type=file",
                            headers={"Authorization": f"Bearer {token}"}, timeout=30)
     # 成功返回空body(HTTP 200), 失败返回JSON code!=0
     try:
         data = resp.json()
-        return data.get("code") == 0
+        if data.get("code") != 0:
+            log(f"  删除失败: {data.get('msg')}")
+            return False
+        return True
     except Exception:
         return resp.status_code == 200
 
