@@ -1,13 +1,15 @@
 {
-  "version": "10.5.0",
-  "versionCode": 100500,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.5.0/tcg_poweroff_v10.5.0.apk",
+  "version": "10.6.0",
+  "versionCode": 100600,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.6.0/tcg_poweroff_v10.6.0.apk",
   "releaseNotes": [
-    "V10.5.0 分享真实化+缓存留存版——一句话总结: 分享链路反转根治「只分享文件名文本」,缓存视频/文档支持保存到手机「下载」目录长期留存",
-    "- 修复(问题2根因): 导出分享只带出数据名称文本——旧版Web Share API优先,Android WebView的navigator.share长期不支持文件分享(files参数被静默丢弃,分享面板只带出文件名文本);V10.5.0反转链路:Cordova环境下socialsharing原生插件优先(文件落盘→file://URI→原生Intent.ACTION_SEND真实附件,微信/QQ/钉钉/飞书稳定接收文件本体),Web Share API降为浏览器主链路/原生失败保底,且必须canShare({files})校验通过才调用,杜绝文本-only静默降级",
-    "- 新增(问题1): 清理缓存界面「保存到本地」——缓存视频/文档原存储于App私有目录(文件管理器不可见),现支持一键复制到公共「下载/太仓港断电指导」目录长期留存;选中即保存,保存不删除源缓存(保存≠清理);Android 11+免权限直写,Android 10走legacy存储,Android 6-9保存前主动申请存储权限,公共目录不可写时自动降级App外部目录,全版本可用",
-    "- 清理(问题3): 移除死代码modal-share分享面板(纯静态占位UI,无任何JS引用,真实分享走系统原生面板),降低维护噪音与包体冗余",
-    "- 继承V10.4.0: cordova.js桥接层/缓存播放标记/全屏返回链路;继承V10.3.0: 系统级分享双链路/删号踢出;继承V10.2.0: 视频本地持久缓存+缓存管理"
+    "V10.6.0 文档真实化+数据闭环版——一句话总结: Word/PDF导出重做为真实可打开文档(中文零乱码),跨网络组员申请全自动隐形通过,本地备份不再弹分享面板,新增车型数据(含照片)可真实同步飞书且组员可拉取",
+    "- 修复(问题1根因): Word文档无法打开+PDF中文乱码——旧版Word是HTML伪装件(.doc后缀的HTML Blob,Word拒绝打开),PDF用jsPDF内置字体(无CJK字形,中文全部乱码方块);V10.6.0双重重做: ①Word改真OOXML docx生成器(ZIP封装标准word/document.xml,Word/WPS原生打开);②PDF改DOM→html2canvas→A4图像分页链路,中文以像素渲染从原理上杜绝乱码;详情页导出与批量导出同链路修复",
+    "- 修复(问题2): 跨网络组员每次更新重新申请注册且申请显示在组长端——V10.6.0升级为完全隐形: 跨网络申请默认即时通过(status=active+hidden标记),申请列表/通知/组员列表全UI过滤不显示,云端申请文件即消费即删防止反复处理,仅console留痕可审计",
+    "- 修复(问题3): 本地备份误调起系统分享面板——新增saveBlobToLocalFolder直存通道,备份文件直接写入「下载/太仓港断电指导」目录,全程不出现分享控件,备份语义回归纯本地留存",
+    "- 修复(问题4根因): 组长新增含照片车型无法同步飞书/组员拉不到新数据——双重根因: ①车辆数据纯内存态,重启即丢;②照片base64直传致JSON膨胀10MB+上传超时。V10.6.0方案: IndexedDB全量快照持久化(增删改/同步合并后自动落盘,重启不丢)+照片分离上传(降采样归一JPEG→单独上传vehicle_images目录→JSON仅存相对路径,幂等哈希去重),组员拉取后走既有云端照片展示链,数据完整闭环",
+    "- 新增(问题5): 飞书产物区同名旧档清理脚本scripts/cleanup_feishu_duplicates.py(dry-run预览+保留最新副本),配套真机冒烟验证方案docs/SMOKE_TEST_V1060.md(分享PDF至微信验证可打开/Android 10与11+各验保存到下载目录)",
+    "- 继承V10.5.0: 分享链路反转(原生插件优先真实附件)/缓存保存到本地;继承V10.4.0: cordova.js桥接/播放标记/全屏返回;继承V10.3.0: 系统级分享双链路/删号踢出"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
