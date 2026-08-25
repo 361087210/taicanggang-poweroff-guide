@@ -10,6 +10,9 @@
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="vendor/jspdf.plugin.autotable.min.js"></script>
 <script src="vendor/html-docx.js"></script>
+<!-- V10.6.0 问题1: html2canvas本地化打包——中文PDF走"DOM→Canvas→图像分页"链路,
+     根治jsPDF内置Helvetica字体无CJK字形导致的中文乱码(文字以图像呈现,所见即所得) -->
+<script src="vendor/html2canvas.min.js"></script>
 <!-- V10.4.0 根因修复: 加载Cordova桥接层(构建时由Cordova自动生成,www/cordova.js)。
      此前demo.html从未引用该文件,导致deviceready永不触发、window.plugins/
      resolveLocalFileSystemURL/cordova.file全部未注入,引发三大真机故障:
@@ -406,7 +409,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="flex gap-3 mb-3">
 <label class="flex-1 flex items-center gap-2 p-2.5 rounded-xl border-2 border-blue-500 bg-blue-50 cursor-pointer">
 <input type="radio" name="backup-dest" value="local" checked class="accent-blue-600">
-<div><div class="text-sm font-medium text-blue-700">本地备份</div><div class="text-xs text-blue-400">下载到设备</div></div>
+<div><div class="text-sm font-medium text-blue-700">本地备份</div><div class="text-xs text-blue-400">保存到手机「下载」目录</div></div>
 </label>
 <label class="flex-1 flex items-center gap-2 p-2.5 rounded-xl border-2 border-gray-200 cursor-pointer">
 <input type="radio" name="backup-dest" value="feishu" class="accent-blue-600">
@@ -466,7 +469,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.5.0</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.6.0</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -1362,6 +1365,48 @@ async function saveCacheFileToLocal(subDir,fileName,dest){
 }
 
 /**
+ * 将Blob直接写入本地「下载/太仓港断电指导」目录(不调起任何分享控件)
+ * V10.6.0 问题3核心函数: 本地备份等"仅保存"场景的统一落盘通道。
+ * 环境分流:
+ *  - Cordova(APP): 权限申请→公共Download目录解析→文件写入,失败返回null
+ *  - 浏览器预览: a[download]触发浏览器下载(等价"保存到本地",无分享面板)
+ * @param {Blob} blob - 要保存的文件内容
+ * @param {string} filename - 目标文件名(含扩展名)
+ * @returns {Promise<{label:string}|null>} 成功返回目录展示名,失败返回null
+ */
+async function saveBlobToLocalFolder(blob,filename){
+  if(!blob||!filename)return null;
+  if(window.cordova&&window.resolveLocalFileSystemURL){
+    await _ensureSavePermission();
+    const dest=await _resolveSaveDestDir();
+    if(!dest||!dest.dir)return null;
+    const safeName=filename.replace(/[\/\\:*?"<>|]/g,'_');
+    await new Promise((resolve,reject)=>{
+      dest.dir.getFile(safeName,{create:true},fe=>{
+        fe.createWriter(w=>{
+          w.onwriteend=()=>resolve();
+          w.onerror=()=>reject(new Error('写入本地失败'));
+          w.write(blob);
+        },()=>reject(new Error('创建写入器失败')));
+      },()=>reject(new Error('创建目标文件失败')));
+    });
+    console.log('[保存] 已直接写入本地目录:',dest.label+'/'+safeName);
+    return {label:dest.label};
+  }
+  // 浏览器环境: 下载即"保存到本地"(无系统分享控件可调,语义等价)
+  try{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    return {label:'浏览器下载目录'};
+  }catch(e){
+    console.warn('[保存] 浏览器下载失败:',e.message);
+    return null;
+  }
+}
+
+/**
  * 批量保存选中的缓存项到本地(缓存管理界面「保存到本地」入口)
  * V10.5.0 问题1: 复制(App私有缓存→公共Download),源缓存不删除(保存≠清理)
  */
@@ -1387,6 +1432,81 @@ function saveSelectedCacheToLocal(){
     if(ok>0)showToast(`✅ 已保存 ${ok} 项到「${dest.label}」`+(fail>0?`，${fail} 项失败`:''));
     else showToast('保存失败：无法写入本地目录');
   });
+}
+
+/* ===================== V10.6.0 问题4: 车辆数据本地持久化层(IndexedDB) =====================
+ * 根因: VEHICLES是内嵌于demo.html的const内存数组,新增/编辑/删除/同步合并的
+ *   车辆数据(含文字图片照片)从不落盘——APP重启即回退到内置数据,组长新增的
+ *   数据下次打开就丢了,自然"无法同步到飞书";组员拉取后同样只存内存,重启即丢,
+ *   表现为"组员也无法获取最新数据"。
+ * 选型: IndexedDB(而非localStorage)——照片为base64数据流,单车可达数MB,
+ *   localStorage的5MB配额必然爆仓;IndexedDB配额数百MB级,适合结构化大数据。
+ * 语义: 全量快照覆盖写(用户数据优先)——首次启动无快照用内置数据,
+ *   任何一次数据变更(增/删/改/同步合并)后持久化当前全量,下次启动以快照为准。
+ * 可靠性: 读写均静默降级(失败仅console告警),绝不阻塞主流程。 */
+
+/** 打开持久化数据库(单例缓存连接) */
+let _tcgDbConn=null;
+function _tcgDb(){
+  if(_tcgDbConn)return Promise.resolve(_tcgDbConn);
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB){reject(new Error('indexedDB不可用'));return;}
+    const req=indexedDB.open('tcg_poweroff',1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains('vehicles'))db.createObjectStore('vehicles');
+    };
+    req.onsuccess=()=>{_tcgDbConn=req.result;resolve(_tcgDbConn);};
+    req.onerror=()=>reject(req.error||new Error('IndexedDB打开失败'));
+  });
+}
+
+/**
+ * 持久化当前VEHICLES全量快照(增删改/同步合并后调用)
+ * fire-and-forget语义: 调用方可不await,失败仅告警不阻塞
+ * @returns {Promise<boolean>} 是否写入成功
+ */
+async function persistVehicles(){
+  try{
+    const db=await _tcgDb();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction('vehicles','readwrite');
+      tx.objectStore('vehicles').put({timestamp:new Date().toISOString(),appVersion:'v'+APP_VERSION,vehicles:VEHICLES},'user_data');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error||new Error('事务写入失败'));
+      tx.onabort=()=>reject(tx.error||new Error('事务中止'));
+    });
+    return true;
+  }catch(e){
+    console.warn('[持久化] 车辆数据写入失败:',e.message||e);
+    return false;
+  }
+}
+
+/**
+ * 启动时恢复持久化车辆数据(有快照则整体替换内存数组内容)
+ * 保持const VEHICLES引用不变(splice+push),全部既有代码零感知
+ * @returns {Promise<boolean>} 是否恢复了快照
+ */
+async function loadPersistedVehicles(){
+  try{
+    const db=await _tcgDb();
+    const data=await new Promise((resolve,reject)=>{
+      const tx=db.transaction('vehicles','readonly');
+      const rq=tx.objectStore('vehicles').get('user_data');
+      rq.onsuccess=()=>resolve(rq.result);
+      rq.onerror=()=>reject(rq.error||new Error('读取失败'));
+    });
+    if(data&&Array.isArray(data.vehicles)&&data.vehicles.length){
+      VEHICLES.length=0;
+      data.vehicles.forEach(v=>VEHICLES.push(v));
+      console.log('[持久化] 已恢复本地车辆数据:',VEHICLES.length,'条 (快照时间:'+(data.timestamp||'?')+')');
+      return true;
+    }
+  }catch(e){
+    console.warn('[持久化] 车辆数据读取失败(使用内置数据):',e.message||e);
+  }
+  return false;
 }
 
 /**
@@ -1560,11 +1680,12 @@ async function getDataSubFolderToken(token,subName){
  */
 function invalidateDataFolderCache(){
   localStorage.removeItem('tcg_data_folder');
-  ['同步数据','注册申请','审批结果','备份文件'].forEach(n=>localStorage.removeItem('tcg_sub_'+n));
+  // V10.6.0: vehicle_images(照片分离上传目录)纳入缓存失效清单
+  ['同步数据','注册申请','审批结果','备份文件','vehicle_images'].forEach(n=>localStorage.removeItem('tcg_sub_'+n));
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.5.0';
+const APP_VERSION='10.6.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -2414,6 +2535,8 @@ function saveVehicle(){
     VEHICLES.push({id:maxId+1,brandId:brandObj?brandObj.id:'custom',brand,series,config,display,powerType:powerType||'纯电',size,position,steps:steps.length?steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:keyFrame.length?keyFrame:['钥匙数量绑扎检查完'],keyContainer:keyContainer.length?keyContainer:['车辆进箱无需收钥匙'],remarks,photos:photoPaths.length,photoPaths,videos:videoPaths.length,videoPaths,pinyin:getPinyin(display)});
   }
   editPhotos=[];editVideos=[];
+  // V10.6.0 问题4: 车辆数据(含文字图片照片)立即持久化,重启不丢,可同步飞书
+  persistVehicles();
   showToast('保存成功');
   renderBrandTags();
   renderVehicleList();
@@ -2435,7 +2558,7 @@ function saveVehicle(){
 function confirmDeleteVehicle(id){
   showConfirm('删除车辆','确定删除该车辆信息？此操作不可撤销。',()=>{
     const idx=VEHICLES.findIndex(v=>v.id===id);
-    if(idx>-1){VEHICLES.splice(idx,1);showToast('删除成功');renderBrandTags();renderVehicleList();goBack();}
+    if(idx>-1){VEHICLES.splice(idx,1);persistVehicles();showToast('删除成功');renderBrandTags();renderVehicleList();goBack();} // V10.6.0 问题4: 删除同步持久化
   });
 }
 
@@ -3216,29 +3339,204 @@ function _jspdfImgFmt(dataUrl){
 }
 
 /**
- * 生成Word文档 - 支持html-docx-js库和HTML Blob降级方案
- * V5.3.2: 照片以base64内嵌(photoMap由preparePhotoMap预取),修复离线文档无图缺陷
- * @param {Array} vehicles - 车辆数据数组
- * @param {Object} [photoMap] - photoPath→dataURL映射(缺省时退化为文字占位)
- * @returns {Blob} Word文档Blob对象
+ * ===================== V10.6.0 问题1: 导出文档生成管线重构 =====================
+ * 根因诊断:
+ *  ① Word无法打开——旧版主链路html-docx-js产出MHTML伪docx(桌面Word可容错,
+ *    手机端WPS/Office按OOXML ZIP解析直接报"文件已损坏");降级链HTML Blob+.doc
+ *    在手机端同样无法识别。
+ *  ② PDF中文乱码——jsPDF内置Helvetica/Times字体无CJK字形,中文全部渲染为
+ *    乱码方块。
+ * 修复方案:
+ *  ① Word: 自研真OOXML docx生成器(复用_zipWrite),标准ZIP+wordprocessingML,
+ *    照片以DrawingML内嵌,字体按名称引用(微软雅黑),桌面/手机WPS全兼容;
+ *    htmlDocx降为二级保底,HTML Blob仅浏览器预览兜底。
+ *  ② PDF: html2canvas将同源HTML模板渲染为Canvas图像,按A4分页注入jsPDF——
+ *    中文以像素呈现,从原理上杜绝字形缺失;无html2canvas时回退旧版文本链路。
  */
-function generateWord(vehicles,photoMap){
+
+/** XML特殊字符转义(OOXML文本节点安全写入) */
+function _xmlEsc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/**
+ * 读取dataURL图像的自然像素尺寸(docx嵌入需按真实比例换算EMU)
+ * @param {string} dataUrl - 图像dataURL
+ * @returns {Promise<{w:number,h:number}>} 尺寸,解码失败返回4:3默认值
+ */
+function _imgNaturalSize(dataUrl){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>resolve({w:img.naturalWidth||400,h:img.naturalHeight||300});
+    img.onerror=()=>resolve({w:400,h:300});
+    img.src=dataUrl;
+  });
+}
+
+/**
+ * webp照片转码为JPEG dataURL(Word/PDF对webp解码不可靠,统一归一化)
+ * 非webp输入原样返回,不产生额外开销
+ * @param {string} dataUrl - 原始dataURL
+ * @returns {Promise<string>} JPEG dataURL(webp输入)或原值
+ */
+async function _webpToJpeg(dataUrl){
+  if(!/^data:image\/webp/i.test(dataUrl))return dataUrl;
+  try{
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('decode'));i.src=dataUrl;});
+    const c=document.createElement('canvas');
+    c.width=img.width;c.height=img.height;
+    c.getContext('2d').drawImage(img,0,0);
+    return c.toDataURL('image/jpeg',0.9);
+  }catch(e){
+    console.warn('[导出]webp转码失败,原样使用:',e.message||e);
+    return dataUrl;
+  }
+}
+
+/** docx段落构造器(字体按名称引用微软雅黑,中文由打开端本地字体渲染,天然无乱码) */
+function _docxPara(text,o){
+  o=o||{};
+  const sz=o.sizePt?Math.round(o.sizePt*2):21;
+  const rPr='<w:rPr><w:rFonts w:hint="eastAsia"/>'+(o.bold?'<w:b/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/></w:rPr>';
+  const pPr=o.spaceBefore?'<w:pPr><w:spacing w:before="'+o.spaceBefore+'"/></w:pPr>':'';
+  return '<w:p>'+pPr+'<w:r>'+rPr+'<w:t xml:space="preserve">'+_xmlEsc(text)+'</w:t></w:r></w:p>';
+}
+
+/** docx表格构造器(单元格数组的数组,边框统一浅灰) */
+function _docxTable(rows){
+  const borders=['top','left','bottom','right','insideH','insideV'].map(b=>'<w:'+b+' w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>').join('');
+  let xml='<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>'+borders+'</w:tblBorders></w:tblPr>';
+  rows.forEach(r=>{
+    xml+='<w:tr>'+r.map(c=>'<w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/></w:tcPr>'+_docxPara(c,{sizePt:10.5})+'</w:tc>').join('')+'</w:tr>';
+  });
+  return xml+'</w:tbl>';
+}
+
+/** docx内嵌图片段落构造器(DrawingML inline,EMU=px×9525) */
+function _docxImage(rid,wPx,hPx,docPrId){
+  const cx=Math.round(wPx*9525),cy=Math.round(hPx*9525);
+  return '<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="'+cx+'" cy="'+cy+'"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="'+docPrId+'" name="photo'+docPrId+'"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="'+docPrId+'" name="photo'+docPrId+'"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="'+rid+'"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+}
+
+/**
+ * 真OOXML docx生成器 - V10.6.0 问题1主链路
+ * 产出标准ZIP结构docx([Content_Types].xml/_rels/word/document.xml/styles.xml/
+ * word/media/*),桌面Word与手机WPS/Office均可直接打开;照片DrawingML内嵌,
+ * 中文按字体名引用,彻底替代MHTML伪docx。
+ * @param {Array} vehicles - 车辆数据数组(1条=单车详细文档,多条=批量汇总表)
+ * @param {Object} [photoMap] - photoPath→dataURL映射(preparePhotoMap预取)
+ * @returns {Promise<Blob>} 标准docx Blob
+ */
+async function generateDocxOOXML(vehicles,photoMap){
+  const enc=new TextEncoder();
+  const media=[];      // {name,u8} 图片二进制
+  const imgRels=[];    // {rid,target} 图片关系
+  let imgN=0,docPrId=1;
+  const body=[];
+
+  /** 内嵌单张照片: 归一化→量尺寸→限幅→写入media,返回绘制参数 */
+  const embedPhoto=async(dataUrl)=>{
+    const norm=await _webpToJpeg(dataUrl);
+    const mm=/^data:image\/(png|jpe?g);base64,(.*)$/.exec(norm);
+    if(!mm)return null;
+    const {w,h}=await _imgNaturalSize(norm);
+    const scale=Math.min(460/Math.max(w,1),620/Math.max(h,1),1); // 版心限幅
+    imgN++;
+    const ext=mm[1]==='png'?'png':'jpeg';
+    const name='media/image'+imgN+'.'+ext;
+    media.push({name,u8:_b64ToU8(mm[2])});
+    const rid='rIdImg'+imgN;
+    imgRels.push({rid,target:name});
+    return {rid,dw:Math.max(1,Math.round(w*scale)),dh:Math.max(1,Math.round(h*scale)),id:++docPrId};
+  };
+
+  if(vehicles.length===1){
+    const v=vehicles[0];
+    body.push(_docxPara(v.display+' 断电操作指导',{bold:true,sizePt:18,color:'1E40AF'}));
+    body.push(_docxTable([
+      ['品牌',v.brand,'车系',v.series],
+      ['配置',v.config,'动力类型',v.powerType],
+      ['断电位置',v.position,'',''],
+      ...(v.size?[['车辆尺寸',v.size,'','']]:[])
+    ]));
+    body.push(_docxPara('断电步骤',{bold:true,sizePt:14,color:'1E40AF',spaceBefore:'240'}));
+    (v.steps||[]).forEach((s,i)=>body.push(_docxPara((i+1)+'. '+s,{sizePt:11})));
+    body.push(_docxPara('钥匙处理方式',{bold:true,sizePt:14,color:'1E40AF',spaceBefore:'240'}));
+    body.push(_docxPara('框架: '+(v.keyFrame||[]).join('; '),{sizePt:11}));
+    body.push(_docxPara('集装箱: '+(v.keyContainer||[]).join('; '),{sizePt:11}));
+    if(v.remarks)body.push(_docxPara('备注: '+v.remarks,{sizePt:11,color:'D97706',spaceBefore:'120'}));
+    if((v.photoPaths||[]).length){
+      body.push(_docxPara('车辆照片',{bold:true,sizePt:14,color:'1E40AF',spaceBefore:'240'}));
+      for(const p of v.photoPaths){
+        const dataUrl=photoMap&&photoMap[p];
+        if(dataUrl){
+          const img=await embedPhoto(dataUrl);
+          if(img){body.push(_docxImage(img.rid,img.dw,img.dh,img.id));continue;}
+        }
+        body.push(_docxPara('[照片未能内嵌: '+String(p).split('/').pop()+']',{sizePt:9,color:'999999'}));
+      }
+    }
+    if((v.videoPaths||[]).length){
+      body.push(_docxPara('视频资源',{bold:true,sizePt:14,color:'1E40AF',spaceBefore:'240'}));
+      v.videoPaths.forEach(vp=>body.push(_docxPara('视频: '+vp,{sizePt:10})));
+    }
+    body.push(_docxPara('太仓港车辆断电指导APP · 生成于 '+new Date().toLocaleString('zh-CN'),{sizePt:9,color:'999999',spaceBefore:'360'}));
+  }else{
+    body.push(_docxPara('太仓港车辆断电指导 - 批量导出 ('+vehicles.length+'条)',{bold:true,sizePt:16,color:'1E40AF'}));
+    body.push(_docxTable([
+      ['ID','品牌','车系','配置','显示名称','动力','断电位置','步骤','照片','视频'],
+      ...vehicles.map(v=>[String(v.id),v.brand,v.series,v.config,v.display,v.powerType,v.position,String((v.steps||[]).length),String(v.photos||0),String(v.videos||0)])
+    ]));
+    body.push(_docxPara('太仓港车辆断电指导APP · 生成于 '+new Date().toLocaleString('zh-CN'),{sizePt:9,color:'999999',spaceBefore:'360'}));
+  }
+
+  // ===== OOXML包结构组装 =====
+  const documentXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>'+body.join('')+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="720" w:footer="720"/></w:sectPr></w:body></w:document>';
+  const stylesXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:eastAsia="微软雅黑" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr></w:rPrDefault><w:pPrDefault/></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>';
+  let contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>';
+  const rootRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>';
+  const docRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'+imgRels.map(r=>'<Relationship Id="'+r.rid+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="'+r.target+'"/>').join('')+'</Relationships>';
+  const nowIso=new Date().toISOString().replace(/\.\d+Z$/,'Z');
+  const coreXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>太仓港车辆断电指导</dc:title><dc:creator>太仓港车辆断电指导APP v'+APP_VERSION+'</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">'+nowIso+'</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">'+nowIso+'</dcterms:modified></cp:coreProperties>';
+
+  const entries=[
+    ['[Content_Types].xml',enc.encode(contentTypes)],
+    ['_rels/.rels',enc.encode(rootRels)],
+    ['word/document.xml',enc.encode(documentXml)],
+    ['word/styles.xml',enc.encode(stylesXml)],
+    ['word/_rels/document.xml.rels',enc.encode(docRels)],
+    ['docProps/core.xml',enc.encode(coreXml)]
+  ];
+  media.forEach(m=>entries.push(['word/'+m.name,m.u8]));
+  const u8=_zipWrite(entries);
+  console.log('[导出]OOXML docx生成完成: 图片'+imgN+'张, 体积'+(u8.length/1024).toFixed(0)+'KB');
+  return new Blob([u8],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+
+/**
+ * 构建导出文档的HTML模板(单车详情/批量汇总) - Word降级链与中文PDF共用
+ * V10.6.0: 从旧generateWord中抽出,成为generatePDFCanvas的渲染源,
+ * 保证PDF与Word内容结构一致
+ * @param {Array} vehicles - 车辆数据数组
+ * @param {Object} [photoMap] - photoPath→dataURL映射
+ * @returns {string} 完整HTML文档字符串
+ */
+function _buildExportHtml(vehicles,photoMap){
   const isSingle=vehicles.length===1;
-  const v=vehicles[0];
-  let html;
   if(isSingle){
+    const v=vehicles[0];
     // V5.3.2: 内嵌base64照片;未命中的照片降级为文字占位而非破图
     const photoHtml=(v.photoPaths||[]).map(p=>{
       const dataUrl=photoMap&&photoMap[p];
-      if(dataUrl)return `<img src="${dataUrl}" style="width:200px;height:150px;object-fit:cover;margin:5px;"/>`;
+      if(dataUrl)return `<img src="${dataUrl}" style="max-width:440px;max-height:330px;margin:5px 0;display:block;"/>`;
       return `<p style="color:#999;font-size:9pt;">[照片未能内嵌: ${String(p).split('/').pop()}]</p>`;
     }).join('');
     const videoHtml=(v.videoPaths||[]).map(vp=>`<p>视频: ${vp}</p>`).join('');
-    html=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-    body{font-family:'微软雅黑',sans-serif;font-size:12pt;}
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body{font-family:'微软雅黑','Noto Sans CJK SC',sans-serif;font-size:12pt;margin:24px;color:#111;}
     h1{color:#1e40af;font-size:18pt;}h2{color:#1e40af;font-size:14pt;margin-top:15px;}
     table{border-collapse:collapse;width:100%;}td,th{border:1px solid #ccc;padding:6px;font-size:11pt;}
-    .step{margin:5px 0;}.photo{display:inline-block;}.note{color:#d97706;}
+    .step{margin:5px 0;}.note{color:#d97706;}
     </style></head><body>
     <h1>${v.display} 断电操作指导</h1>
     <table><tr><td>品牌</td><td>${v.brand}</td><td>车系</td><td>${v.series}</td></tr>
@@ -3246,30 +3544,88 @@ function generateWord(vehicles,photoMap){
     <tr><td>断电位置</td><td colspan="3">${v.position}</td></tr>
     ${v.size?`<tr><td>车辆尺寸</td><td colspan="3">${v.size}</td></tr>`:''}
     </table>
-    <h2>断电步骤</h2>${v.steps.map((s,i)=>`<p class="step">${i+1}. ${s}</p>`).join('')}
+    <h2>断电步骤</h2>${(v.steps||[]).map((s,i)=>`<p class="step">${i+1}. ${s}</p>`).join('')}
     <h2>钥匙处理方式</h2>
     <p><strong>框架:</strong> ${(v.keyFrame||[]).join('; ')}</p>
     <p><strong>集装箱:</strong> ${(v.keyContainer||[]).join('; ')}</p>
     ${v.remarks?`<h2>备注</h2><p class="note">${v.remarks}</p>`:''}
-    ${photoHtml?`<h2>车辆照片</h2><div class="photo">${photoHtml}</div>`:''}
+    ${photoHtml?`<h2>车辆照片</h2>${photoHtml}`:''}
     ${videoHtml?`<h2>视频资源</h2>${videoHtml}`:''}
     <p style="margin-top:20px;color:#999;font-size:9pt;">太仓港车辆断电指导APP · 生成于 ${new Date().toLocaleString('zh-CN')}</p>
     </body></html>`;
-  }else{
-    const rows=vehicles.map(v=>`<tr><td>${v.id}</td><td>${v.brand}</td><td>${v.series}</td><td>${v.config}</td><td>${v.display}</td><td>${v.powerType}</td><td>${v.position}</td><td>${v.steps.length}</td><td>${v.photos||0}</td><td>${v.videos||0}</td></tr>`).join('');
-    html=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-    body{font-family:'微软雅黑',sans-serif;font-size:12pt;}
-    h1{color:#1e40af;font-size:18pt;}
-    table{border-collapse:collapse;width:100%;}td,th{border:1px solid #ccc;padding:6px;font-size:10pt;}
-    th{background:#1e40af;color:white;}
-    </style></head><body>
-    <h1>太仓港车辆断电指导 - 批量导出 (${vehicles.length}条)</h1>
-    <table><thead><tr><th>ID</th><th>品牌</th><th>车系</th><th>配置</th><th>显示名称</th><th>动力</th><th>断电位置</th><th>步骤数</th><th>照片</th><th>视频</th></tr></thead>
-    <tbody>${rows}</tbody></table>
-    <p style="margin-top:20px;color:#999;font-size:9pt;">太仓港车辆断电指导APP · 生成于 ${new Date().toLocaleString('zh-CN')}</p>
-    </body></html>`;
   }
-  // 优先使用html-docx-js库生成.docx,失败则降级为HTML Blob(.doc格式Word可打开)
+  const rows=vehicles.map(v=>`<tr><td>${v.id}</td><td>${v.brand}</td><td>${v.series}</td><td>${v.config}</td><td>${v.display}</td><td>${v.powerType}</td><td>${v.position}</td><td>${(v.steps||[]).length}</td><td>${v.photos||0}</td><td>${v.videos||0}</td></tr>`).join('');
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+  body{font-family:'微软雅黑','Noto Sans CJK SC',sans-serif;font-size:12pt;margin:24px;color:#111;}
+  h1{color:#1e40af;font-size:18pt;}
+  table{border-collapse:collapse;width:100%;}td,th{border:1px solid #ccc;padding:6px;font-size:10pt;}
+  th{background:#1e40af;color:white;}
+  </style></head><body>
+  <h1>太仓港车辆断电指导 - 批量导出 (${vehicles.length}条)</h1>
+  <table><thead><tr><th>ID</th><th>品牌</th><th>车系</th><th>配置</th><th>显示名称</th><th>动力</th><th>断电位置</th><th>步骤数</th><th>照片</th><th>视频</th></tr></thead>
+  <tbody>${rows}</tbody></table>
+  <p style="margin-top:20px;color:#999;font-size:9pt;">太仓港车辆断电指导APP · 生成于 ${new Date().toLocaleString('zh-CN')}</p>
+  </body></html>`;
+}
+
+/**
+ * 中文PDF生成 - V10.6.0 问题1主链路: DOM→html2canvas→A4图像分页→jsPDF
+ * 中文以像素图像呈现,彻底规避jsPDF内置字体无CJK字形的乱码问题;
+ * 照片在DOM渲染阶段即完成内嵌,分页算法按A4版心高度切片。
+ * @param {Array} vehicles - 车辆数据数组
+ * @param {Object} [photoMap] - photoPath→dataURL映射
+ * @returns {Promise<Blob>} PDF Blob
+ */
+async function generatePDFCanvas(vehicles,photoMap){
+  if(!window.html2canvas)throw new Error('html2canvas未加载');
+  const html=_buildExportHtml(vehicles,photoMap);
+  const holder=document.createElement('div');
+  // 离屏但保持渲染(display:none会导致html2canvas取不到布局)
+  holder.style.cssText='position:absolute;left:-10000px;top:0;width:794px;background:#ffffff;z-index:-1;pointer-events:none;';
+  holder.innerHTML=html.replace(/^<!DOCTYPE html>/,'').replace(/<\/?html>/g,'').replace(/<head>[\s\S]*?<\/head>/,'');
+  document.body.appendChild(holder);
+  let canvas;
+  try{
+    canvas=await html2canvas(holder,{scale:2,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false});
+  }finally{
+    holder.remove();
+  }
+  if(!canvas||!canvas.width)throw new Error('PDF画布渲染失败');
+  const{jsPDF}=window.jspdf;
+  const pdf=new jsPDF('p','mm','a4');
+  const pageWmm=210,pageHmm=297;
+  const pxPerMm=canvas.width/pageWmm;         // 画布像素↔毫米换算
+  const pagePx=Math.floor(pageHmm*pxPerMm);   // 单页画布高度
+  let y=0,pageNo=0;
+  while(y<canvas.height){
+    const sliceH=Math.min(pagePx,canvas.height-y);
+    const slice=document.createElement('canvas');
+    slice.width=canvas.width;slice.height=sliceH;
+    slice.getContext('2d').drawImage(canvas,0,y,canvas.width,sliceH,0,0,canvas.width,sliceH);
+    if(pageNo>0)pdf.addPage();
+    pdf.addImage(slice.toDataURL('image/jpeg',0.92),'JPEG',0,0,pageWmm,sliceH/pxPerMm);
+    y+=sliceH;pageNo++;
+  }
+  console.log('[导出]中文PDF生成完成: '+pageNo+'页, 画布'+canvas.width+'x'+canvas.height);
+  return pdf.output('blob');
+}
+
+/**
+ * 生成Word文档 - V10.6.0三级链路: 真OOXML(主) → htmlDocx MHTML(保底) → HTML Blob(兜底)
+ * V5.3.2: 照片以base64内嵌(photoMap由preparePhotoMap预取),修复离线文档无图缺陷
+ * @param {Array} vehicles - 车辆数据数组
+ * @param {Object} [photoMap] - photoPath→dataURL映射(缺省时退化为文字占位)
+ * @returns {Promise<Blob>} Word文档Blob对象
+ */
+async function generateWord(vehicles,photoMap){
+  // 主链路: 真OOXML docx(桌面/手机WPS全兼容)
+  try{
+    return await generateDocxOOXML(vehicles,photoMap);
+  }catch(e){
+    console.warn('[导出]OOXML生成失败,降级htmlDocx:',e.message||e);
+  }
+  // 二级保底: htmlDocx MHTML(桌面Word可开,手机端兼容差,仅作过渡)
+  const html=_buildExportHtml(vehicles,photoMap);
   if(window._htmlDocxReady&&typeof htmlDocx!=='undefined'&&htmlDocx.asBlob){
     try{
       return htmlDocx.asBlob(html);
@@ -3277,17 +3633,36 @@ function generateWord(vehicles,photoMap){
       console.warn('htmlDocx.asBlob failed, fallback to HTML blob:',e);
     }
   }
-  // 降级方案: 使用HTML Blob生成.doc文件(Word可直接打开)
+  // 兜底: HTML Blob(.doc,仅浏览器预览场景可用)
   return new Blob(['\ufeff'+html],{type:'application/msword'});
 }
 
 /**
- * 生成PDF文档 - V5.3.2照片以base64内嵌(修复此前仅打印路径文字的缺陷)
+ * 生成PDF文档 - V10.6.0双链路: canvas图像中文渲染(主) → jsPDF文本(保底)
+ * V10.6.0 问题1: 主链路改走generatePDFCanvas——中文经DOM渲染为图像,
+ * 根治jsPDF内置字体无CJK字形导致的乱码;canvas不可用(极老WebView)时
+ * 回退旧版文本链路,保证导出功能永不缺席。
  * @param {Array} vehicles - 车辆数据数组
  * @param {Object} [photoMap] - photoPath→dataURL映射(preparePhotoMap预取)
+ * @returns {Promise<Blob>} PDF文档Blob对象
+ */
+async function generatePDF(vehicles,photoMap){
+  try{
+    return await generatePDFCanvas(vehicles,photoMap);
+  }catch(e){
+    console.warn('[导出]canvas中文PDF失败,回退文本链路:',e.message||e);
+    return generatePDFLegacy(vehicles,photoMap);
+  }
+}
+
+/**
+ * 旧版jsPDF文本链路(V10.6.0降为保底) - 照片以base64内嵌
+ * 注意: 内置字体无CJK字形,中文显示为乱码方块,仅在html2canvas不可用时兜底
+ * @param {Array} vehicles - 车辆数据数组
+ * @param {Object} [photoMap] - photoPath→dataURL映射
  * @returns {Blob} PDF文档Blob对象
  */
-function generatePDF(vehicles,photoMap){
+function generatePDFLegacy(vehicles,photoMap){
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF('p','mm','a4');
   const isSingle=vehicles.length===1;
@@ -3484,12 +3859,12 @@ async function exportData(format){
       if(!window.jspdf){showToast('PDF组件未打包,请更新至新版安装包');return;}
       showToast('正在生成含照片PDF...');
       const photoMap=await preparePhotoMapSafe(selectedVehicles);
-      const blob=generatePDF(selectedVehicles,photoMap);
+      const blob=await generatePDF(selectedVehicles,photoMap); // V10.6.0: 异步canvas中文渲染
       await shareFile(blob,`vehicle_poweroff_export_${n}_${Date.now()}.pdf`,'application/pdf');
     }else if(format==='word'){
       showToast('正在生成含照片Word...');
       const photoMap=await preparePhotoMapSafe(selectedVehicles);
-      const blob=generateWord(selectedVehicles,photoMap);
+      const blob=await generateWord(selectedVehicles,photoMap); // V10.6.0: 异步真OOXML生成
       const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       const ext=mimeType.includes('msword')?'doc':'docx';
       await shareFile(blob,`车辆断电指南_批量_${n}_${Date.now()}.${ext}`,mimeType);
@@ -3533,12 +3908,12 @@ async function exportSingle(format){
       if(!window.jspdf){showToast('PDF组件未打包,请更新至新版安装包');return;}
       showToast('正在生成含照片PDF...');
       const photoMap=await preparePhotoMapSafe([v]);
-      const blob=generatePDF([v],photoMap);
+      const blob=await generatePDF([v],photoMap); // V10.6.0: 异步canvas中文渲染
       shared=await shareFile(blob,`${v.display}_断电指南.pdf`,'application/pdf');
     }else if(format==='word'){
       showToast('正在生成含照片Word...');
       const photoMap=await preparePhotoMapSafe([v]);
-      const blob=generateWord([v],photoMap);
+      const blob=await generateWord([v],photoMap); // V10.6.0: 异步真OOXML生成
       const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       const ext=mimeType.includes('msword')?'doc':'docx';
       shared=await shareFile(blob,`${v.display}_断电指南.${ext}`,mimeType);
@@ -3651,7 +4026,7 @@ async function pullPendingFromFeishu(silent){
       return true;
     });
     let newCount=0;
-    // V10.4.0 问题5.2: 跨端网格员申请静默处理计数(自动通过+列表显示,不弹通知)
+    // V10.6.0 问题2: 跨网络组员申请计数(完全隐形: 不显示+默认通过+云端文件即消费即删)
     let crossSilentCount=0;
     for(const file of pendingFiles){
       try{
@@ -3667,27 +4042,36 @@ async function pullPendingFromFeishu(silent){
         }
         const pendingData=JSON.parse(dlText);
         if(pendingData.type==='pending_registration'&&pendingData.user){
-          /* V10.4.0 问题5.2: 跨端网格员申请静默处理
-           * 判定: 申请载荷无source标识或source非本端('tcg-cordova')即为跨端申请
-           *       (React版APK/旧版本端上传的申请均无source字段)。
-           * 策略: "显示但是静默处理"——跨端申请自动激活(crossPlatform标记),
-           *       正常显示在组员管理列表(带「跨端」徽标),但不弹Toast、
-           *       不推本地通知、不进待审核队列,组长无感知即完成处理;
-           *       本端申请(带source标识)保持原有人工审批流程不变。 */
+          /* V10.6.0 问题2根因修复: 跨网络组员申请"不显示+默认通过"
+           * 背景: 跨网络组员(React版APK等)每更新一次会重新上传注册申请,
+           *   V10.4/10.5虽已静默自动通过,但仍写入USERS并显示在组员列表(跨端徽标),
+           *   且云端申请文件不删除→每轮询一次重复消费一次,组长端持续感知到噪音。
+           * 判定: 申请载荷无source标识或source非本端('tcg-cordova')即为跨网络申请。
+           * 策略(需求原文"应用端不显示跨网络组员的申请,默认通过"):
+           *   ①默认通过: 以active+crossPlatform+hidden标记upsert进USERS——
+           *     hidden使其在组员列表/待审核/计数等全部UI中不可见,
+           *     但仍随approved_users.json同步,保持跨端登录闭环兼容;
+           *   ②不显示: 不弹Toast、不推通知、不写同步日志UI、不进组员列表;
+           *   ③即消费即删: 处理完立即删除云端申请文件,杜绝重复消费与目录堆积。
+           * 本端申请(带source='tcg-cordova'标识)保持原有人工审批流程不变。 */
           const isCrossPlatform=pendingData.source!=='tcg-cordova';
           const existingUser=USERS.find(u=>u.phone===pendingData.user.phone);
           if(isCrossPlatform){
             const u=pendingData.user;
             u.crossPlatform=true;
-            u.status='active'; // 静默自动通过
+            u.hidden=true;
+            u.status='active'; // 默认通过
             if(!existingUser){
               USERS.push(u);
               crossSilentCount++;
-            }else if(existingUser.status!=='active'||!existingUser.crossPlatform){
+            }else if(existingUser.status!=='active'||!existingUser.crossPlatform||!existingUser.hidden){
               existingUser.status='active';
               existingUser.crossPlatform=true;
+              existingUser.hidden=true;
               crossSilentCount++;
             }
+            // 即消费即删: 清理云端申请文件(幂等,失败不影响主流程)
+            try{await deletePendingFileFromFeishu(u.phone);}catch(e){/* 清理失败下轮重试 */}
           }else{
             if(!existingUser){
               USERS.push(pendingData.user);
@@ -3716,10 +4100,9 @@ async function pullPendingFromFeishu(silent){
         }
       }
       if(crossSilentCount>0){
-        // 跨端申请: 静默——仅写同步日志留痕,不弹Toast不推通知(需求5.2原文:
-        // "显示但是静默处理"),组员列表中带「跨端」徽标可追溯
-        addSyncLog(`跨端网格员申请${crossSilentCount}条已静默处理(自动通过,见组员列表)`,'gray');
-        console.log('[组员管理] 跨端申请静默处理:',crossSilentCount,'条');
+        // V10.6.0 问题2: 跨网络申请完全隐形——不弹Toast/不推通知/不写同步日志UI,
+        // 仅console留痕供开发排查(需求原文"应用端不显示跨网络组员的申请")
+        console.log('[组员管理] 跨网络申请已默认通过(不显示):',crossSilentCount,'条');
       }
     }
     return newCount+crossSilentCount;
@@ -3735,7 +4118,16 @@ async function pullPendingFromFeishu(silent){
       for(const file of files){
         const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{headers:{Authorization:'Bearer '+token}});
         const pd=JSON.parse(await r.text());
-        if(pd.type==='pending_registration'&&pd.user&&!USERS.find(u=>u.phone===pd.user.phone)){
+        if(pd.type!=='pending_registration'||!pd.user)continue;
+        // V10.6.0 问题2: 自愈分支同样执行跨网络策略——默认通过+不显示+即消费即删
+        if(pd.source!=='tcg-cordova'){
+          const ex=USERS.find(u=>u.phone===pd.user.phone);
+          if(!ex){pd.user.crossPlatform=true;pd.user.hidden=true;pd.user.status='active';USERS.push(pd.user);}
+          else{ex.status='active';ex.crossPlatform=true;ex.hidden=true;}
+          try{await deletePendingFileFromFeishu(pd.user.phone);}catch(e){/* 忽略 */}
+          continue;
+        }
+        if(!USERS.find(u=>u.phone===pd.user.phone)){
           USERS.push(pd.user);cnt++;
         }
       }
@@ -4000,10 +4392,21 @@ async function doBackup(){
   const blob=new Blob([jsonStr],{type:'application/json'});
   const filename=`vehicle_backup_${new Date().toISOString().slice(0,10)}.json`;
   if(target==='local'){
-    await shareFile(blob,filename,'application/json');
-    showToast('本地备份完成');
-    addBackupHistory('local',filename,VEHICLES.length,blob.size);
-    addSyncLog(`本地备份完成 · ${VEHICLES.length}条 · ${filename}`,'green');
+    /* V10.6.0 问题3根因修复: 本地备份不再调起分享控件
+     * 根因: 旧版本地备份走shareFile()——该函数职责是"分享到第三方",
+     * 必然调起系统分享面板,与"本地备份=仅保存在本地对应文件夹"语义冲突。
+     * 修复: 改走saveBlobToLocalFolder()直写「下载/太仓港断电指导」目录,
+     * 全程无分享面板;保存成功提示具体目录,失败明确报错。 */
+    showToast('正在保存备份到本地...');
+    const saved=await saveBlobToLocalFolder(blob,filename);
+    if(saved){
+      showToast(`✅ 本地备份完成：${saved.label}/${filename}`);
+      addBackupHistory('local',filename,VEHICLES.length,blob.size);
+      addSyncLog(`本地备份完成 · ${VEHICLES.length}条 · ${saved.label}/`,'green');
+    }else{
+      showToast('本地备份失败：无法写入本地存储目录');
+      addSyncLog('本地备份失败 · 无法写入本地存储目录','red');
+    }
   }else if(target==='feishu'){
     const cfg=getFeishuCfg();
     if(!feishuCfgReady(cfg,true))return;
@@ -4270,6 +4673,101 @@ async function downloadSyncDataMigrated(cfg){
   throw lastErr;
 }
 
+/* ===================== V10.6.0 问题4: 车辆照片分离上传 =====================
+ * 根因: 组长本地新增车辆时,现场拍摄的照片以base64 dataURL存于photoPaths。
+ *   旧版doSyncUpload把整个VEHICLES(含数MB/张的base64)直接JSON化上传——
+ *   ①单张照片2-5MB,两三张即让JSON膨胀到10MB+,飞书上传超时/失败,
+ *     表现为"新增数据无法同步到飞书";
+ *   ②即使侥幸传成功,组员拉取的JSON也巨大无比,下载解析缓慢易断。
+ * 方案: 上传前把dataURL照片分离——降采样归一为JPEG→单独上传至云端
+ *   "APP数据备份/vehicle_images"目录→photoPaths原位替换为云端相对路径
+ *   (与内置数据同构)→JSON只含轻量路径。组员拉取后走既有
+ *   imgFromFeishuCloud展示链,照片自然可见,数据闭环。
+ * 幂等: 文件名=车辆id+序号+内容哈希,重复上传命中云端同名文件即跳过,
+ *   不产生冗余副本;本地photoPaths同步替换并持久化,二次上传零流量。 */
+
+/** djb2字符串哈希(文件名去重标识,非安全用途) */
+function _strHashDjb2(str){
+  let h=5381;
+  for(let i=0;i<str.length;i++){h=((h<<5)+h+str.charCodeAt(i))>>>0;}
+  return h;
+}
+
+/**
+ * 照片上传前归一化: 任意格式dataURL→长边≤maxEdge的JPEG dataURL
+ * 统一JPEG既控制体积(原图2-5MB→约150-300KB),又规避飞书对webp的兼容问题
+ * @param {string} dataUrl - 原始照片dataURL
+ * @param {number} [maxEdge=1280] - 长边像素上限
+ * @returns {Promise<string>} JPEG dataURL,失败时原样返回
+ */
+async function _normalizePhotoForUpload(dataUrl,maxEdge){
+  try{
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('decode'));i.src=dataUrl;});
+    const limit=maxEdge||1280;
+    const scale=Math.min(limit/Math.max(img.width,1),limit/Math.max(img.height,1),1);
+    const c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(img.width*scale));
+    c.height=Math.max(1,Math.round(img.height*scale));
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    return c.toDataURL('image/jpeg',0.85);
+  }catch(e){
+    console.warn('[同步]照片归一化失败,原样上传:',e.message||e);
+    return dataUrl;
+  }
+}
+
+/**
+ * 分离上传全部车辆中的base64照片至飞书vehicle_images目录
+ * 上传成功的照片其photoPaths原位替换为'vehicle_images/文件名'(与内置数据同构)
+ * @param {string} token - tenant_access_token
+ * @param {Array} vehicles - 车辆数组(原地修改photoPaths)
+ * @returns {Promise<{replaced:number,failed:number,skipped:number}>} 统计
+ */
+async function syncUploadVehiclePhotos(token,vehicles){
+  const stat={replaced:0,failed:0,skipped:0};
+  // 预检: 是否存在待上传的base64照片(无则零开销直通)
+  const pending=[];
+  vehicles.forEach(v=>{
+    (v.photoPaths||[]).forEach((p,i)=>{
+      if(/^data:image\//i.test(p))pending.push({v,i});
+    });
+  });
+  if(!pending.length)return stat;
+  const folder=await getDataSubFolderToken(token,'vehicle_images');
+  if(!folder)throw new Error('vehicle_images目录不可用');
+  // 云端已有文件清单(幂等判定: 同名即已上传过,跳过)
+  let cloudNames=new Set();
+  try{
+    (await feishuListFiles(token,folder)||[]).filter(f=>f.type==='file').forEach(f=>cloudNames.add(f.name));
+  }catch(e){/* 列表失败则全部走上传,幂等由服务端同名覆盖兜底 */}
+  for(const {v,i} of pending){
+    const raw=v.photoPaths[i];
+    try{
+      const norm=await _normalizePhotoForUpload(raw,1280);
+      const mm=/^data:image\/(png|jpe?g|webp);base64,(.*)$/.exec(norm);
+      if(!mm){stat.failed++;continue;}
+      const hash=_strHashDjb2(mm[2]).toString(16);
+      const fileName=`user_v${v.id}_p${i+1}_${hash}.jpeg`;
+      if(cloudNames.has(fileName)){
+        stat.skipped++; // 云端已有同内容照片,仅替换本地路径
+      }else{
+        const u8=_b64ToU8(mm[2]);
+        const blob=new Blob([u8],{type:'image/jpeg'});
+        const up=await httpUploadFile({token,fileName,folderToken:folder,blob});
+        if(up&&up.code!==0&&up.code!==undefined){throw new Error(up.msg||'照片上传失败');}
+        cloudNames.add(fileName);
+      }
+      v.photoPaths[i]='vehicle_images/'+fileName;
+      stat.replaced++;
+    }catch(e){
+      stat.failed++;
+      console.warn('[同步]照片上传失败(保留本地base64,下轮重试):',e.message||e);
+    }
+  }
+  console.log(`[同步]照片分离上传完成: 替换${stat.replaced} 跳过${stat.skipped} 失败${stat.failed}`);
+  return stat;
+}
+
 function doSyncUpload(){
   if(!canEdit()){showToast('组员无上传权限，请使用"从飞书获取数据"');return;}
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
@@ -4278,17 +4776,29 @@ function doSyncUpload(){
   showConfirm('确认上传','上传将覆盖飞书云端现有数据，请先确认已备份。',async()=>{
     showToast('正在连接飞书...');
     try{
+      const token=await getFeishuToken(cfg,2);
+      /* V10.6.0 问题4: 照片分离上传——先把现场拍照(base64)单独传至
+       * vehicle_images目录并替换为云端路径,再写JSON。
+       * 旧版把数MB级base64直接塞进JSON导致上传必败,此为"新增数据
+       * 无法同步到飞书"的直接根因。 */
+      showToast('正在上传车辆照片...');
+      const photoStat=await syncUploadVehiclePhotos(token,VEHICLES);
+      if(photoStat.replaced>0){
+        persistVehicles(); // 本地路径与云端对齐后立即持久化,重启不回退
+        renderVehicleList();
+      }
       const syncData={
         version:'v'+APP_VERSION,
         timestamp:new Date().toISOString(),
         uploadedBy:state.currentUser.name,
         vehicleCount:VEHICLES.length,
-        vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
+        // V10.6.0: 补齐size/brandId字段——旧版漏传导致同步后车辆尺寸/品牌索引丢失
+        vehicles:VEHICLES.map(v=>({id:v.id,brandId:v.brandId,brand:v.brand,series:v.series,config:v.config,display:v.display,size:v.size||'',powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
       };
       showToast('正在上传同步数据...');
       // V5.7: 同步数据统一存入"APP数据备份/同步数据"子文件夹(数据分仓),
       // 项目根目录与数据区根目录均不再存放,历史旧档同步清理
-      const token=await getFeishuToken(cfg,2);
+      // (token已在函数顶部获取,照片分离上传与数据上传共用同一会话)
       await uploadJsonToDataFeishu(token,'vehicle_sync_data.json',JSON.stringify(syncData),cfg.syncSub);
       // 迁移清理: 删除数据区根/项目根目录历史同名旧档,防止多份数据漂移导致读到旧数据
       try{
@@ -4305,8 +4815,9 @@ function doSyncUpload(){
         }
       }catch(e){console.warn('历史根目录旧档清理跳过:',e.message);}
       localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
-      showToast(`数据已同步至飞书，共${VEHICLES.length}条车型数据`);
-      addSyncLog(`上传同步完成 · ${VEHICLES.length}条车型数据 · 飞书`,'green');
+      // V10.6.0: 提示含照片上传统计,组长可感知分离上传结果
+      showToast(`数据已同步至飞书，共${VEHICLES.length}条车型数据`+(photoStat.replaced>0?`，照片${photoStat.replaced}张`:''));
+      addSyncLog(`上传同步完成 · ${VEHICLES.length}条车型数据${photoStat.replaced>0?' · 照片'+photoStat.replaced+'张':''} · 飞书`,'green');
       // V10.3 问题5.2: 上传成功即消化红点提示(本地即云端最新版)
       _setSyncNewDot(false);
       const cv=document.getElementById('sync-cloud-ver');
@@ -4344,6 +4855,9 @@ async function doSyncDownload(){
             v.powerType=sv.powerType;v.position=sv.position;v.steps=sv.steps;
             v.keyFrame=sv.keyFrame;v.keyContainer=sv.keyContainer;v.remarks=sv.remarks;
             v.photoPaths=sv.photoPaths;v.photos=sv.photos;
+            // V10.6.0: 同步补齐size/brandId(与上传字段对齐,防尺寸/品牌索引漂移)
+            if(sv.size!==undefined)v.size=sv.size;
+            if(sv.brandId!==undefined)v.brandId=sv.brandId;
             if(sv.videoPaths){v.videoPaths=sv.videoPaths;v.videos=sv.videos;}
             v.pinyin=getPinyin(sv.display);
             updatedCount++;
@@ -4357,6 +4871,8 @@ async function doSyncDownload(){
       });
       
       const totalChanges=addedCount+updatedCount;
+      // V10.6.0 问题4: 拉取合并后立即持久化——组员端重启后仍保有最新数据
+      if(totalChanges>0)persistVehicles();
       if(totalChanges>0){
         showToast(`数据同步完成: 新增${addedCount}条, 更新${updatedCount}条 (${syncData.version||''})`);
         addSyncLog(`从飞书拉取完成 · 新增${addedCount}条 更新${updatedCount}条 · ${syncData.version||''}`,'green');
@@ -5102,16 +5618,14 @@ function confirmAction(){
 function renderMemberList(){
   const c=document.getElementById('member-list');
   if(!c)return;
-  const activeUsers=USERS.filter(u=>u.role==='user'&&u.status==='active');
-  // V10.4.0 问题5.2: 跨端网格员带「跨端」徽标(静默处理来源可追溯,
-  // 组长可一眼区分本端审批通过的组员与跨端自动处理的网格员)
+  // V10.6.0 问题2: 跨网络组员(hidden或crossPlatform标记)在组长端全部隐形——
+  // 不进组员列表/不计入展示,仅保留在USERS数据层随approved_users.json同步,
+  // 兼容V10.4/10.5已落地的跨端记录(旧记录无hidden字段,以crossPlatform一并过滤)
+  const activeUsers=USERS.filter(u=>u.role==='user'&&u.status==='active'&&!u.hidden&&!u.crossPlatform);
   c.innerHTML=activeUsers.map(u=>{
-    const crossBadge=u.crossPlatform
-      ?'<span class="inline-block ml-1.5 px-1.5 py-0.5 text-xs text-purple-600 bg-purple-50 border border-purple-200 rounded-full align-middle">跨端</span>'
-      :'';
     return `
     <div class="flex items-center justify-between py-2 px-2 bg-gray-50 rounded-lg">
-      <div class="min-w-0"><div class="text-sm text-gray-800 truncate">${esc(u.name)}${crossBadge}</div><div class="text-xs text-gray-400">${esc(u.phone)} · ${esc(u.created)}</div></div>
+      <div class="min-w-0"><div class="text-sm text-gray-800 truncate">${esc(u.name)}</div><div class="text-xs text-gray-400">${esc(u.phone)} · ${esc(u.created)}</div></div>
       <div class="flex gap-2 flex-shrink-0">
         <button onclick="resetMemberPass(${u.id})" class="text-xs text-blue-400">重置密码</button>
         <button onclick="deleteMember(${u.id})" class="text-xs text-red-400">删除</button>
@@ -5121,7 +5635,8 @@ function renderMemberList(){
 
   const pc=document.getElementById('pending-list');
   if(pc){
-    const pending=USERS.filter(u=>u.status==='pending');
+    // V10.6.0 问题2: 待审核队列同样排除跨网络申请(防御性,跨网络申请不应进入pending态)
+    const pending=USERS.filter(u=>u.status==='pending'&&!u.hidden&&!u.crossPlatform);
     const pcount=document.getElementById('pending-count');
     if(pcount)pcount.textContent=pending.length?`(${pending.length})`:'';
     // V10.0: 增强待审核列表UI——显示完整注册信息,组长可清楚看到申请人详情
@@ -5956,6 +6471,11 @@ function migrateLegacyMedia(){
 // ===================== INIT =====================
 // V5.4: 启动时自动迁移明文密码为哈希（幂等，已哈希的不重复处理）
 hashUserPasswords().then(()=>{});
+/* V10.6.0 问题4: 启动时序——先恢复IndexedDB持久化快照,再迁移/渲染。
+ * 旧版直接同步渲染内置数据,用户新增车辆重启即消失;
+ * 现异步恢复快照完成后再走原初始化链(首启无快照时毫秒级直通,行为与旧版一致)。 */
+(async()=>{
+await loadPersistedVehicles();
 // 启动时检查是否有已保存的登录会话,实现免重复登录
 migrateLegacyMedia();
 if(restoreSession()){
@@ -5980,6 +6500,7 @@ renderVehicleList();
 loadFeishuConfig();
 renderSyncLog();
 renderBackupHistory();
+})();
 (function(){
   const verEl=document.getElementById('update-current-ver');
   if(verEl)verEl.textContent='当前版本 V'+APP_VERSION;

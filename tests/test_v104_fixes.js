@@ -70,10 +70,12 @@ check('A17 问题4: 滚动容器min-height修复(.screen>.scroll-y)', /\.screen>
 // 问题5.2: 跨端静默处理
 check('A18 问题5.2: 注册申请携带source来源标识', /source:'tcg-cordova'/.test(html) && (html.match(/source:'tcg-cordova'/g)||[]).length>=2);
 check('A19 问题5.2: 跨端申请判定逻辑(isCrossPlatform)', /const isCrossPlatform=pendingData\.source!=='tcg-cordova';/.test(html));
-check('A20 问题5.2: 跨端申请自动激活(status=active)', /u\.crossPlatform=true;\s*\n\s*u\.status='active';/.test(html));
+// V10.6.0升级: 跨网络申请由"静默通过+徽标显示+日志留痕"升级为"完全隐形"
+// (需求原文: 应用端不显示跨网络组员的申请,默认通过)——hidden标记+全UI过滤+即消费即删
+check('A20 问题5.2: 跨端申请自动激活(status=active,V10.6.0附加hidden隐形标记)', /u\.crossPlatform=true;\s*\n\s*u\.hidden=true;\s*\n\s*u\.status='active';/.test(html));
 check('A21 问题5.2: 跨端静默计数(crossSilentCount)', /crossSilentCount\+\+/.test(html) && /let crossSilentCount=0;/.test(html));
-check('A22 问题5.2: 跨端仅日志留痕不弹通知', /跨端网格员申请\$\{crossSilentCount\}条已静默处理/.test(html));
-check('A23 问题5.2: 组员列表「跨端」徽标', /跨端/.test(html) && /u\.crossPlatform[\s\S]{0,200}跨端/.test(html));
+check('A22 问题5.2: 跨端完全隐形——不弹通知仅console留痕(V10.6.0)', /跨网络申请已默认通过\(不显示\)/.test(html));
+check('A23 问题5.2: 组员列表排除跨端/隐形用户(V10.6.0替代徽标方案)', /!u\.hidden&&!u\.crossPlatform/.test(html));
 check('A24 问题5.2: 本端申请保留人工审批流程(newCount通知)', /本端申请: 原有审批通知流程/.test(html));
 
 // 问题6: 版本一致性(V10.5.0起改为动态校验,对齐v103模式: 三端同版本即可,发版免改测试)

@@ -180,7 +180,8 @@ setTimeout(async () => {
     console.log('维度5: 导出与vendor依赖 (issue 2)');
     console.log('='.repeat(62));
     const vendorRefs = (html.match(/vendor\/[a-z0-9._-]+\.js/g) || []);
-    check('5.1 vendor导出库被引用(5个)', vendorRefs.length === 5, vendorRefs.join(','));
+    // V10.6.0: 新增html2canvas(中文PDF画布渲染),本地化依赖5→6个
+    check('5.1 vendor导出库被引用(6个)', vendorRefs.length === 6, vendorRefs.join(','));
     check('5.2 Word/Excel/PDF 导出入口齐备(exportData/exportSingle)',
       typeof G('exportData') === 'function' && typeof G('exportSingle') === 'function'
       && /case\s*'word'|format==='word'/.test(html) && /case\s*'pdf'|format==='pdf'/.test(html)
