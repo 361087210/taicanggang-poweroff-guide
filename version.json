@@ -1,15 +1,16 @@
 {
-  "version": "5.9.0",
-  "versionCode": 50900,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.9.0/tcg_poweroff_v5.9.0.apk",
+  "version": "10.0.0",
+  "versionCode": 100000,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.0.0/tcg_poweroff_v10.0.0.apk",
   "releaseNotes": [
-    "V5.9.0 功能重定义版——分享两步流程+Excel照片内嵌+视频会话守卫",
-    "- 重定义: Word/PDF/Excel分享两步流程——①生成含照片文档 ②调起系统分享面板,微信/QQ/钉钉/飞书等任意第三方应用均可接收",
-    "- 新增: Excel照片真实内嵌(自研ZIP读写+OpenXML DrawingML注入,零外部依赖)——单车新增'车辆照片'工作表(≤8张),批量详情子表各内嵌≤4张;openpyxl/LibreOffice/WPS三端验证兼容",
-    "- 新增: 照片嵌入前Canvas降采样(长边≤1024px/JPEG 0.85),批量10辆合计<6MB,微信25MB分享限额内",
-    "- 修复: 视频未加载完退出后无法返回上一层——会话号守卫机制(等价取消令牌),关闭时使全部在途异步源链(定时器/错误回调/飞书下载回调)失效;关闭加固先移除'show'再清媒体资源,异常不阻断",
-    "- 优化: 车辆详情页'分享'按钮明确为'文字分享',与文档分享(Word/PDF/Excel)区分;导出按钮文案随两步流程同步重定义",
-    "- 兼容: Excel照片内嵌失败自动回退无图版本,导出主流程不中断;Word/PDF/Excel照片预取均带20秒超时保护"
+    "V10.0.0 对齐安装包方案版——三大根因修复+全界面操作逻辑验证",
+    "- 修复: 分享功能实际调起系统分享面板(根因: 旧版优先调socialsharing插件,部分ROM上success回调被立即调用却不弹面板,用户看到'生成成功'但无法分享;新版优先使用navigator.share(File)调起Android原生分享面板,对齐V1.8 Capacitor Share方案,微信/QQ/钉钉/飞书等任意第三方应用均可接收文件)",
+    "- 修复: 组长无法审核注册申请(根因: approveMember/rejectMember权限检查role!=='leader'恒为true,实际组长角色为'admin',导致组长永远无法通过/拒绝审核;新版使用isLeader()统一权限验证,修复审批闭环)",
+    "- 修复: 视频未加载完退出无法返回上一层(会话号守卫机制: 关闭时递增会话号使全部在途异步源链失效,先移除'show'再清媒体资源,异常不阻断)",
+    "- 优化: 导出分享流程不再显示误导性'文档已生成'提示,分享面板已调起时不额外toast,降级下载才显示'文件已保存'",
+    "- 优化: 待审核注册列表UI增强——显示申请人角色标签,按钮加大增强可操作性,错误恢复机制完善",
+    "- 优化: 批量导出各格式去除冗余'已导出'success toast,shareFile返回值驱动UI反馈",
+    "- 兼容: 三级分享降级策略(navigator.share→socialsharing→下载),MIME类型自动修正,dialogTitle对齐'选择保存或分享方式'"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
