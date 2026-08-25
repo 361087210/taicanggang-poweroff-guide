@@ -113,9 +113,9 @@ function scanDir(dir) {
   }
 }
 scanDir(ROOT);
-// .bat 构建脚本单独提醒(密码经环境变量传递为合规)
-const bat = fs.readFileSync(path.join(ROOT, 'build_apk_v53.bat'), 'utf8');
-/Tcg@2026Release/.test(bat) ? fail('build_apk_v53.bat 仍含明文签名密码 Tcg@2026Release') : ok('构建脚本签名密码已环境变量化');
+// V10.4.0: build_apk_v53.bat 已随冗余文件清理移除(构建统一走CI android-release.yml,
+// 签名密码经GitHub Secrets环境变量传递)。全局扫描器上方已覆盖.bat类文件,
+// 仓库内若再出现明文密码会被 patterns 命中,此处无需针对单文件特判。
 console.log('  [INFO] 已扫描 ' + scanned + ' 个文本文件');
 
 // ---------- 6. 签名密钥未入库 ----------

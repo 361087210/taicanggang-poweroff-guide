@@ -63,7 +63,7 @@ jobs:
           cp -r vendor tcg_app/www/vendor
           cp -r vehicle_images tcg_app/www/vehicle_images
           mkdir -p tcg_app/scripts
-          cp scripts/archive/patch_projectbuilder.js tcg_app/scripts/
+          cp scripts/patch_projectbuilder.js tcg_app/scripts/
 
       # V5.7 防御: 校验导出库与图片真实存在, 缺一即失败, 防止问题再次回归
       - name: Verify bundled web assets

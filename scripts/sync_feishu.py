@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-V10.3.0 飞书端同步脚本 (github和飞书双端同步)
+飞书端同步脚本 (github和飞书双端同步) — V10.4.0 起版本无关化
 用法:
     export FEISHU_APP_ID=cli_aa0ce4fd91f85be8
     export FEISHU_APP_SECRET=<secret>
-    python scripts/sync_feishu_v103.py [--apk <apk_path>]
+    python scripts/sync_feishu.py [--apk <apk_path>]
+
+V10.4.0 重构(对齐行业标准,消除版本硬编码):
+    旧版sync_feishu_v103.py把版本号"V10.3.0"硬编码在标题/文件名/说明里,
+    每次发版都要人肉改脚本,极易遗漏造成版本漂移。现改为启动时从version.json
+    读取版本号,脚本零改动支持任意后续版本。
 
 同步内容(对齐项目根目录既有的产物存放约定):
-    1. version.json   —— 最新版本信息(旧档替换)
+    1. version.json   —— 最新版本信息(旧档替换,单一事实源)
     2. demo.html      —— 最新APP代码快照(旧档替换)
-    3. V10.3.0发布说明 —— 新增发布文档
-    4. APK安装包       —— CI构建产物(--apk 指定路径时上传)
+    3. 发布说明       —— 新增发布文档(标题随版本号动态生成)
+    4. APK安装包      —— CI构建产物(--apk 指定路径时上传)
 """
 import os, sys, json, time, argparse, requests
 
@@ -25,7 +30,11 @@ LIST_URL = f"{FEISHU_API}/drive/v1/files"
 UPLOAD_URL = f"{FEISHU_API}/drive/v1/files/upload_all"
 DELETE_URL = f"{FEISHU_API}/drive/v1/files/{{token}}"
 
-RELEASE_NOTES_TITLE = "V10.3.0问题修复发布说明"
+
+def load_version():
+    """从version.json读取版本信息——版本唯一事实源,脚本本身零版本硬编码"""
+    with open("version.json", "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def log(msg):
@@ -94,12 +103,10 @@ def upload_file(token, local_path, remote_name, folder_token):
     return data["data"]["file_token"]
 
 
-def build_release_notes_md():
-    """从version.json生成发布说明Markdown"""
-    with open("version.json", "r", encoding="utf-8") as f:
-        vj = json.load(f)
+def build_release_notes_md(vj, notes_title):
+    """从version.json生成发布说明Markdown(内容零硬编码,全部来自版本事实源)"""
     lines = [
-        f"# {RELEASE_NOTES_TITLE}",
+        f"# {notes_title}",
         "",
         f"- **版本**: {vj['version']} (versionCode {vj['versionCode']})",
         f"- **发布时间**: {time.strftime('%Y-%m-%d %H:%M')}",
@@ -113,13 +120,7 @@ def build_release_notes_md():
         lines.append(f"- {note}")
     lines += [
         "",
-        "## 质量验证",
-        "",
-        "- 专项测试: 61项全部通过(静态32项+运行时29项)",
-        "- 回归测试: 逻辑30项/运行时21项全部通过",
-        "- CI关卡: 资产校验+三级测试+CodeQL安全扫描全绿",
-        "",
-        "> 本文档由 scripts/sync_feishu_v103.py 自动生成, 与GitHub Release保持同步。",
+        "> 本文档由 scripts/sync_feishu.py 自动生成, 与GitHub Release保持同步。",
     ]
     return "\n".join(lines)
 
@@ -132,6 +133,12 @@ def main():
     if not APP_ID or not APP_SECRET:
         log("缺少环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET")
         sys.exit(1)
+
+    # V10.4.0: 版本号动态读取,脚本不再随版本迭代修改
+    vj = load_version()
+    version = vj["version"]
+    notes_title = f"V{version}问题修复发布说明"
+    log(f"当前同步版本: V{version} (versionCode {vj['versionCode']})")
 
     token = get_token()
     log("飞书token获取成功")
@@ -147,12 +154,12 @@ def main():
     log(f"  完成 file_token={t}")
 
     # 3. 发布说明
-    notes = build_release_notes_md()
-    notes_path = "/tmp/v103_release_notes.md"
+    notes = build_release_notes_md(vj, notes_title)
+    notes_path = f"/tmp/v{version}_release_notes.md"
     with open(notes_path, "w", encoding="utf-8") as f:
         f.write(notes)
-    log("上传 V10.3.0 发布说明 ...")
-    t = upload_file(token, notes_path, f"{RELEASE_NOTES_TITLE}.md", ROOT_FOLDER)
+    log(f"上传 V{version} 发布说明 ...")
+    t = upload_file(token, notes_path, f"{notes_title}.md", ROOT_FOLDER)
     log(f"  完成 file_token={t}")
 
     # 4. APK (可选)
@@ -160,7 +167,7 @@ def main():
         if not os.path.exists(args.apk):
             log(f"APK不存在: {args.apk}")
             sys.exit(1)
-        apk_name = f"太仓港断电指导V10.3.0.apk(签名CI版)"
+        apk_name = f"太仓港断电指导V{version}.apk(签名CI版)"
         log(f"上传 {apk_name} ({os.path.getsize(args.apk)//1024//1024}MB) ...")
         t = upload_file(token, args.apk, apk_name, ROOT_FOLDER)
         log(f"  完成 file_token={t}")

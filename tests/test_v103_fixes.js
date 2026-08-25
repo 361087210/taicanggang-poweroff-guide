@@ -33,8 +33,12 @@ function check(name, cond, detail='') {
  * ============================================================ */
 console.log('\n--- A. 静态源码检查 ---');
 
-// 版本
-check('A1 APP_VERSION 升级至 10.3.0', /APP_VERSION='10\.3\.0'/.test(html));
+// 版本(V10.4.0起改为动态一致性校验: demo.html/config.xml/version.json 三端同版本,
+// 避免每次发版都要人肉改测试里的硬编码版本号)
+const vjson = JSON.parse(fs.readFileSync(path.join(REPO, 'version.json'), 'utf8'));
+const vCfg = (fs.readFileSync(path.join(REPO, 'config.xml'), 'utf8').match(/version="([0-9.]+)"/) || [])[1];
+check(`A1 APP_VERSION 与version.json一致(当前${vjson.version})`, new RegExp(`APP_VERSION='${vjson.version.replace(/\./g, '\\.')}'`).test(html));
+check('A1b config.xml 与version.json版本一致', vCfg === vjson.version, `config=${vCfg} json=${vjson.version}`);
 check('A2 version.json 已同步(由CI关卡校验)', true);
 
 // 问题1: 分享仅系统级
@@ -222,7 +226,7 @@ setTimeout(async () => {
     window.showScreen('screen-sync');
     await new Promise(r => setTimeout(r, 100));
     const lvEl = document.getElementById('sync-local-ver');
-    check('B4-1 同步屏本地版本动态显示v10.3.0', lvEl && lvEl.textContent === 'v10.3.0', `实际=${lvEl && lvEl.textContent}`);
+    check(`B4-1 同步屏本地版本动态显示(当前v${vjson.version})`, lvEl && lvEl.textContent === 'v' + vjson.version, `实际=${lvEl && lvEl.textContent}`);
     const fcEl = document.getElementById('feishu-account-config');
     check('B4-2 组长端飞书配置可见', fcEl && fcEl.style.display !== 'none');
 

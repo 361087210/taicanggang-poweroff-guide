@@ -10,6 +10,14 @@
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="vendor/jspdf.plugin.autotable.min.js"></script>
 <script src="vendor/html-docx.js"></script>
+<!-- V10.4.0 根因修复: 加载Cordova桥接层(构建时由Cordova自动生成,www/cordova.js)。
+     此前demo.html从未引用该文件,导致deviceready永不触发、window.plugins/
+     resolveLocalFileSystemURL/cordova.file全部未注入,引发三大真机故障:
+     ① 系统分享面板调起失败(问题1: socialsharing插件JS桥不存在)
+     ② 缓存管理无法加载/删除本地文件(问题2: 文件插件JS桥不存在)
+     ③ 主界面双击返回无法退出(问题5.1: backbutton事件从未注册)
+     浏览器预览时该文件404属预期,不影响调试。 -->
+<script src="cordova.js"></script>
 <script>
 // htmlDocx 降级方案: 如果CDN加载失败,使用HTML Blob生成.doc文件(Word可打开)
 window._htmlDocxReady = typeof window.htmlDocx !== 'undefined';
@@ -43,6 +51,13 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 /* Scrollbar hide */
 .scroll-y{overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
 .scroll-y::-webkit-scrollbar{display:none;}
+/* V10.4.0 问题4: 修复"数据同步显示不完全,无法下滑到最底端"
+ * 根因: .screen是flex列容器,滚动区是flex-1子项(flex:1 1 0%)。CSS规范规定
+ * 滚动容器子项的min-height:auto解析为0,但港口现场的老旧WebView(Android 5/6
+ * 内核)未实现该规则——flex-1子项被内容撑开超出屏幕,.screen的overflow:hidden
+ * 直接裁掉超出部分,滚动条根本不出现,表现为"滑不到底"。
+ * 显式min-height:0强制子项收缩到可用空间内,滚动区恢复。 */
+.screen>.scroll-y{min-height:0;}
 
 /* Bottom nav */
 .bottom-nav{position:absolute;bottom:0;left:0;right:0;height:64px;background:#fff;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-around;z-index:50;}
@@ -451,7 +466,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.3.0</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.4.0</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -1176,7 +1191,11 @@ async function cacheSaveBlob(subDir,fileName,blob,meta){
         writer.onwriteend=()=>{
           const idx=_cacheIndexLoad();
           const bucket=subDir===CACHE_DIR_VIDEOS?'videos':'docs';
-          idx[bucket][safeName]={size:blob.size,ts:Date.now(),meta:meta||{}};
+          // V10.4.0 问题2: 合并旧meta而非整条覆盖——流式播放期间已标记的
+          // played状态在落盘回调到达时不能被新meta冲掉(时序: 播放标记可能
+          // 先于磁盘写入完成),保留played/lastPlayed等展示元数据
+          const prev=idx[bucket][safeName]||{};
+          idx[bucket][safeName]={size:blob.size,ts:Date.now(),meta:Object.assign({},prev.meta,meta||{})};
           _cacheIndexSave(idx);
           console.log(`[缓存]已落盘 ${subDir}/${safeName} (${(blob.size/1048576).toFixed(1)}MB)`);
           resolve(fileEntry.toURL());
@@ -1261,6 +1280,37 @@ async function cacheDeleteFiles(subDir,names){
   }
   _cacheIndexSave(idx);
   return deleted;
+}
+
+/**
+ * V10.4.0 问题2: 标记视频为已播放
+ * 需求: "标记播放过的视频并缓存,清理缓存时索引标记过的缓存视频"——
+ * 缓存管理列表中,播放过的视频带「已播放」徽标,与未播放缓存区分。
+ * 设计:
+ *  - 播放≥3秒或播放结束(ended)时标记(误触秒关不计入);
+ *  - 状态写入索引meta(localStorage),文件系统扫描时作为展示元数据带出;
+ *  - 视频尚未落盘完成时(流式播放中)也允许登记——cacheSaveBlob落盘时
+ *    会合并已有meta,played标记不丢失;
+ *  - 重复标记幂等(已标记直接跳过,避免高频timeupdate写穿localStorage)。
+ * @param {string} fileName - 视频文件名(原始名,内部做安全名归一)
+ */
+function markVideoAsPlayed(fileName){
+  if(!fileName)return false;
+  try{
+    const idx=_cacheIndexLoad();
+    const safeName=String(fileName).replace(/[\/\\:*?"<>|]/g,'_');
+    const entry=idx.videos[safeName];
+    if(entry){
+      if(entry.meta&&entry.meta.played)return false; // 已标记,幂等
+      entry.meta=Object.assign({},entry.meta,{played:true,lastPlayed:Date.now()});
+    }else{
+      // 文件尚未落盘(流式播放中): 先登记占位,落盘时meta会带上played
+      idx.videos[safeName]={size:0,ts:Date.now(),meta:{played:true,lastPlayed:Date.now()}};
+    }
+    _cacheIndexSave(idx);
+    console.log('[视频]已标记为已播放:',safeName);
+    return true;
+  }catch(e){return false;} // 索引异常不影响播放主流程
 }
 
 /**
@@ -1407,7 +1457,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.3.0';
+const APP_VERSION='10.4.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -2346,6 +2396,15 @@ async function shareVehicleDetail(){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v)return;
   const shareText=getVehicleShareText(v);
+  // V10.4.0 问题1加固: 冷启动后立即点分享时,插件可能尚未就绪(deviceready未触发),
+  // 等待最多3秒再判定,避免误降级到剪贴板(用户观感=分享面板调不起)
+  if(window.cordova&&!hasNativeShare()){
+    await new Promise(res=>{
+      let done=false;
+      const timer=setTimeout(()=>{if(!done){done=true;res();}},3000);
+      document.addEventListener('deviceready',()=>{if(!done){done=true;clearTimeout(timer);res();}},{once:true});
+    });
+  }
   // 优先原生分享: 调起系统分享面板(微信/QQ/钉钉/短信等均可接收)
   if(hasNativeShare()){
     window.plugins.socialsharing.share(shareText,v.display+' 断电指导',null,null,()=>{},()=>{
@@ -3426,7 +3485,9 @@ async function syncPendingToFeishu(user){
   try{
     // V5.4: 注册申请上传飞书时含哈希密码（组长审批后需同步给组员）
     // 密码已在本地注册时哈希化（salt$hash格式），同步到飞书安全无明文泄露风险
-    const pendingData={type:'pending_registration',user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
+    // V10.4.0 问题5.2: 增加source来源标识——组长端据此区分本端申请(人工审批)
+    // 与跨端申请(React版APK等,静默自动处理),见pullPendingFromFeishu
+    const pendingData={type:'pending_registration',source:'tcg-cordova',appVersion:'v'+APP_VERSION,user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
     const jsonStr=JSON.stringify(pendingData,null,2);
     const blob=new Blob([jsonStr],{type:'application/json'});
     const token=await getFeishuToken(cfg,2);
@@ -3439,7 +3500,7 @@ async function syncPendingToFeishu(user){
     try{
       const token=await getFeishuToken(cfg,1);
       invalidateDataFolderCache();
-      const pendingData={type:'pending_registration',user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
+      const pendingData={type:'pending_registration',source:'tcg-cordova',appVersion:'v'+APP_VERSION,user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
       const blob=new Blob([JSON.stringify(pendingData,null,2)],{type:'application/json'});
       await httpUploadFile({token,fileName:`pending_reg_${user.phone}.json`,folderToken:await getDataSubFolderToken(token,cfg.pendingSub),blob});
       showToast('注册申请已推送(重试成功),等待组长审核');
@@ -3480,6 +3541,8 @@ async function pullPendingFromFeishu(silent){
       return true;
     });
     let newCount=0;
+    // V10.4.0 问题5.2: 跨端网格员申请静默处理计数(自动通过+列表显示,不弹通知)
+    let crossSilentCount=0;
     for(const file of pendingFiles){
       try{
         // 原生HTTP下载文本
@@ -3494,31 +3557,62 @@ async function pullPendingFromFeishu(silent){
         }
         const pendingData=JSON.parse(dlText);
         if(pendingData.type==='pending_registration'&&pendingData.user){
+          /* V10.4.0 问题5.2: 跨端网格员申请静默处理
+           * 判定: 申请载荷无source标识或source非本端('tcg-cordova')即为跨端申请
+           *       (React版APK/旧版本端上传的申请均无source字段)。
+           * 策略: "显示但是静默处理"——跨端申请自动激活(crossPlatform标记),
+           *       正常显示在组员管理列表(带「跨端」徽标),但不弹Toast、
+           *       不推本地通知、不进待审核队列,组长无感知即完成处理;
+           *       本端申请(带source标识)保持原有人工审批流程不变。 */
+          const isCrossPlatform=pendingData.source!=='tcg-cordova';
           const existingUser=USERS.find(u=>u.phone===pendingData.user.phone);
-          if(!existingUser){
-            USERS.push(pendingData.user);
-            newCount++;
-          }else if(existingUser.status==='pending'&&pendingData.user.status==='active'){
-            // 云端已审批通过(其他组长设备处理过),本地同步激活
-            existingUser.status='active';
-            newCount++;
+          if(isCrossPlatform){
+            const u=pendingData.user;
+            u.crossPlatform=true;
+            u.status='active'; // 静默自动通过
+            if(!existingUser){
+              USERS.push(u);
+              crossSilentCount++;
+            }else if(existingUser.status!=='active'||!existingUser.crossPlatform){
+              existingUser.status='active';
+              existingUser.crossPlatform=true;
+              crossSilentCount++;
+            }
+          }else{
+            if(!existingUser){
+              USERS.push(pendingData.user);
+              newCount++;
+            }else if(existingUser.status==='pending'&&pendingData.user.status==='active'){
+              // 云端已审批通过(其他组长设备处理过),本地同步激活
+              existingUser.status='active';
+              newCount++;
+            }
           }
         }
       }catch(e){continue;}
     }
-    if(newCount>0){
+    if(newCount>0||crossSilentCount>0){
       saveUsers(USERS);
       renderMemberList();
-      if(silent){
-        showToast(`📥 收到${newCount}条新的组员注册申请`);
-        addSyncLog(`轮询发现${newCount}条新注册申请`,'blue');
-      }else{
-        showToast(`从飞书拉取${newCount}条待审核注册`);
-        leaderNotify('新注册待审批', `收到${newCount}条新注册申请，请尽快处理`);
-        addSyncLog(`从飞书拉取${newCount}条待审核注册`,'blue');
+      if(newCount>0){
+        // 本端申请: 原有审批通知流程
+        if(silent){
+          showToast(`📥 收到${newCount}条新的组员注册申请`);
+          addSyncLog(`轮询发现${newCount}条新注册申请`,'blue');
+        }else{
+          showToast(`从飞书拉取${newCount}条待审核注册`);
+          leaderNotify('新注册待审批', `收到${newCount}条新注册申请，请尽快处理`);
+          addSyncLog(`从飞书拉取${newCount}条待审核注册`,'blue');
+        }
+      }
+      if(crossSilentCount>0){
+        // 跨端申请: 静默——仅写同步日志留痕,不弹Toast不推通知(需求5.2原文:
+        // "显示但是静默处理"),组员列表中带「跨端」徽标可追溯
+        addSyncLog(`跨端网格员申请${crossSilentCount}条已静默处理(自动通过,见组员列表)`,'gray');
+        console.log('[组员管理] 跨端申请静默处理:',crossSilentCount,'条');
       }
     }
-    return newCount;
+    return newCount+crossSilentCount;
   }catch(err){
     console.error('Pull pending from Feishu failed:',err);
     // V5.7: 一次性自愈重试(缓存失效场景)
@@ -4405,6 +4499,24 @@ async function openVideoPlayer(){
   video.onloadeddata=null;
   clearVideoError();
 
+  // V10.4.0 问题2: 播放标记钩子——观看≥3秒或播放结束(ended)时标记"已播放",
+  // 缓存管理列表据此显示「已播放」徽标;先移除上一会话的钩子防止监听器累积
+  if(video._playedHook){
+    video.removeEventListener('timeupdate',video._playedHook);
+    video.removeEventListener('ended',video._playedHook);
+  }
+  video._playedHook=function(){
+    if(session!==_videoSession)return; // 会话已失效,终止
+    if(video.currentTime>=3||video.ended){
+      if(markVideoAsPlayed(fileName)){
+        video.removeEventListener('timeupdate',video._playedHook);
+        video.removeEventListener('ended',video._playedHook);
+      }
+    }
+  };
+  video.addEventListener('timeupdate',video._playedHook,{passive:true});
+  video.addEventListener('ended',video._playedHook,{passive:true});
+
   video.onloadeddata=function(){
     if(session!==_videoSession)return; // 会话已失效,不再处理
     const err=video.parentElement.querySelector('.video-error');
@@ -4779,12 +4891,26 @@ function closeVideoPlayer(){
   _videoSession++;
   document.getElementById('video-player').classList.remove('show');
   try{
+    // V10.4.0 问题5.1: 关闭播放器前先退出全屏态。
+    // 根因: video进入全屏后WebView接管整个窗口,若只移除overlay不退出全屏,
+    // 全屏黑屏残留且手势返回被WebView全屏层吞掉——表现为"退出全屏后无法手势返回"。
+    // 退出全屏必须发生在移除src之前(部分ROM在无媒体源时exitFullscreen抛异常)。
+    const fsEl=document.fullscreenElement||document.webkitFullscreenElement;
+    if(fsEl){
+      if(document.exitFullscreen){const p=document.exitFullscreen();if(p&&p.catch)p.catch(()=>{});}
+      else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+    }
     const video=document.getElementById('video-element');
     // V5.8.1: 清理tryPlaySource的8秒超时定时器,防止关闭后异步回调重新设置src并播放
     if(video._currentTimer){clearTimeout(video._currentTimer);video._currentTimer=null;}
     // V5.8.1: 清除事件回调,防止onerror/onloadeddata在src清空后仍被触发
     video.onerror=null;
     video.onloadeddata=null;
+    // V10.4.0 问题2: 同步摘除播放标记钩子,防止关闭后timeupdate仍触发标记
+    if(video._playedHook){
+      video.removeEventListener('timeupdate',video._playedHook);
+      video.removeEventListener('ended',video._playedHook);
+    }
     video.pause();
     video.removeAttribute('src');
     video.load(); // 触发unload,确保释放媒体资源(部分浏览器仅src=''不释放)
@@ -4808,9 +4934,24 @@ function setVideoSpeed(speed){
   document.getElementById('video-element').playbackRate=parseFloat(speed);
 }
 
+/**
+ * V10.4.0 问题5.1: 全屏切换修复
+ * 旧版toggleFullscreen只进不出——进入全屏后按钮再点无反应,用户只能靠系统返回键
+ * 退出全屏;而旧版backbutton又因cordova.js缺失从未注册,形成"全屏后无法返回"死局。
+ * 现改为标准切换语义: 全屏中→退出全屏;非全屏→进入全屏。
+ * 兼容: 标准Fullscreen API + webkit前缀(老WebView) + video原生的webkitEnterFullscreen。
+ */
 function toggleFullscreen(){
   const video=document.getElementById('video-element');
-  if(video.requestFullscreen)video.requestFullscreen();
+  const fsEl=document.fullscreenElement||document.webkitFullscreenElement;
+  if(fsEl){
+    // 退出全屏
+    if(document.exitFullscreen){const p=document.exitFullscreen();if(p&&p.catch)p.catch(()=>{});}
+    else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+    return;
+  }
+  // 进入全屏
+  if(video.requestFullscreen){const p=video.requestFullscreen();if(p&&p.catch)p.catch(()=>{});}
   else if(video.webkitEnterFullscreen)video.webkitEnterFullscreen();
 }
 
@@ -4852,15 +4993,21 @@ function renderMemberList(){
   const c=document.getElementById('member-list');
   if(!c)return;
   const activeUsers=USERS.filter(u=>u.role==='user'&&u.status==='active');
-  c.innerHTML=activeUsers.map(u=>`
+  // V10.4.0 问题5.2: 跨端网格员带「跨端」徽标(静默处理来源可追溯,
+  // 组长可一眼区分本端审批通过的组员与跨端自动处理的网格员)
+  c.innerHTML=activeUsers.map(u=>{
+    const crossBadge=u.crossPlatform
+      ?'<span class="inline-block ml-1.5 px-1.5 py-0.5 text-xs text-purple-600 bg-purple-50 border border-purple-200 rounded-full align-middle">跨端</span>'
+      :'';
+    return `
     <div class="flex items-center justify-between py-2 px-2 bg-gray-50 rounded-lg">
-      <div><div class="text-sm text-gray-800">${esc(u.name)}</div><div class="text-xs text-gray-400">${esc(u.phone)} · ${esc(u.created)}</div></div>
-      <div class="flex gap-2">
+      <div class="min-w-0"><div class="text-sm text-gray-800 truncate">${esc(u.name)}${crossBadge}</div><div class="text-xs text-gray-400">${esc(u.phone)} · ${esc(u.created)}</div></div>
+      <div class="flex gap-2 flex-shrink-0">
         <button onclick="resetMemberPass(${u.id})" class="text-xs text-blue-400">重置密码</button>
         <button onclick="deleteMember(${u.id})" class="text-xs text-red-400">删除</button>
       </div>
-    </div>
-  `).join('')||'<div class="text-center text-sm text-gray-400 py-4">暂无组员</div>';
+    </div>`;
+  }).join('')||'<div class="text-center text-sm text-gray-400 py-4">暂无组员</div>';
 
   const pc=document.getElementById('pending-list');
   if(pc){
@@ -4989,6 +5136,11 @@ function _cacheItemHtml(kind,item){
     ?'<svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-4 h-4 flex-shrink-0"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>'
     :'<svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-4 h-4 flex-shrink-0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>';
   const timeStr=item.ts?new Date(item.ts).toLocaleDateString('zh-CN'):'';
+  // V10.4.0 问题2: 播放过的视频带「已播放」徽标(索引meta.played),
+  // 未播放缓存不带——清理缓存时可据此区分"看过/未看过"
+  const playedBadge=(kind==='video'&&item.meta&&item.meta.played)
+    ?'<span class="flex-shrink-0 text-xs text-green-600 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">已播放</span>'
+    :'';
   // V10.3 问题2: data-cache-key支撑原地选中态更新;onclick参数做js转义
   // (文件名含引号/反斜杠时旧版拼接会语法报错→该行永远选不上)
   const jsName=String(item.name).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
@@ -5000,6 +5152,7 @@ function _cacheItemHtml(kind,item){
       <div class="text-xs text-gray-800 truncate">${esc(item.name)}</div>
       <div class="text-xs text-gray-400">${cacheSizeText(item.size)}${timeStr?' · '+timeStr:''}</div>
     </div>
+    ${playedBadge}
   </div>`;
 }
 
@@ -5601,6 +5754,16 @@ function skipUpdate(){
  */
 let lastBackPressTs=0;
 function handleHardwareBack(){
+  // 0. V10.4.0 问题5.1: 视频处于全屏态 → 先退出全屏(不全屏态关播放器)
+  // 根因: 部分ROM在全屏态下backbutton事件被WebView全屏层拦截或不派发,
+  // 显式优先处理全屏退出,保证"全屏→按返回→退全屏→再按返回→关播放器"的
+  // 标准交互链路;退全屏放在最前,不与弹层/播放器逻辑耦合
+  const fsEl=document.fullscreenElement||document.webkitFullscreenElement;
+  if(fsEl){
+    if(document.exitFullscreen){const p=document.exitFullscreen();if(p&&p.catch)p.catch(()=>{});}
+    else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+    return;
+  }
   // 1. 照片查看器打开 → 关闭查看器
   const pv=document.getElementById('photo-viewer');
   if(pv&&pv.classList.contains('show')){closePhotoViewer();return;}
