@@ -507,6 +507,8 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 </div>
 <div class="bs-item relative" id="menu-members" onclick="showScreen('screen-members')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span class="text-sm text-gray-800">组员管理</span><span class="red-dot" id="members-badge-my">0</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" id="menu-sync" onclick="showScreen('screen-sync')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据同步</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<!-- V10.2 问题2: 缓存管理入口——已缓存视频+已导出文档的查看与多选删除 -->
+<div class="bs-item" onclick="openCacheManager()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg><div><div class="text-sm text-gray-800">缓存管理</div><div class="text-xs text-gray-400 mt-0.5" id="cache-size-hint">视频缓存与导出文档</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="checkUpdate()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 12a9 9 0 11-2.64-6.36M21 3v6h-6"/></svg><div><div class="text-sm text-gray-800">检查更新</div><div class="text-xs text-gray-400 mt-0.5" id="update-current-ver">当前版本 V4.1</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="doLogout()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="w-5 h-5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="text-sm text-red-500">退出登录</span></div></div>
 </div>
@@ -651,6 +653,29 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="text-xs text-blue-500 text-center mt-2">
 <a href="javascript:void(0)" onclick="openUpdatePage()" id="update-page-link">查看发布页面</a>
 </div>
+</div>
+</div>
+
+<!-- ===== V10.2 问题2: 缓存管理弹层 ===== -->
+<div class="modal-overlay" id="modal-cache" style="align-items:center;">
+<div class="modal-center p-5" style="max-height:82%;overflow-y:auto;width:92%;max-width:420px;">
+<div class="flex items-center justify-between mb-1">
+<div class="text-base font-bold text-gray-900">缓存管理</div>
+<button onclick="closeModal('modal-cache')" class="w-8 h-8 flex items-center justify-center text-gray-400">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+</button>
+</div>
+<div class="text-xs text-gray-400 mb-3" id="cache-total-size">统计中...</div>
+<div class="flex gap-2 mb-4">
+<button onclick="refreshCacheList()" class="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-medium">刷新</button>
+<button onclick="clearAllCache()" class="flex-1 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-medium">全部清空</button>
+</div>
+<div class="text-sm font-bold text-gray-700 mb-2">已缓存视频 <span class="text-xs text-gray-400 font-normal" id="cache-video-count"></span></div>
+<div class="space-y-2 mb-4 max-h-52 overflow-y-auto" id="cache-video-list"></div>
+<div class="text-sm font-bold text-gray-700 mb-2">已导出文档 <span class="text-xs text-gray-400 font-normal" id="cache-doc-count"></span></div>
+<div class="space-y-2 mb-4 max-h-52 overflow-y-auto" id="cache-doc-list"></div>
+<button onclick="deleteSelectedCache()" id="btn-del-cache" class="w-full py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-medium disabled:opacity-40" disabled>删除选中(0)</button>
+<div class="text-xs text-gray-400 text-center mt-2 leading-relaxed">缓存视频离线可播,删除后下次播放将重新加载</div>
 </div>
 </div>
 
@@ -1072,6 +1097,198 @@ function writeBlobToCache(fileName,blob){
   });
 }
 
+/* ===================== 本地持久缓存层 (V10.2 问题1+问题2) =====================
+ * 问题1根因: 视频播放走五源链(本地APK→GitHub直链→飞书云端→CDN→报错),
+ *   旧版仅内存objectURL单文件缓存(_feishuVideoCache),App重启即失效,
+ *   每次点开播放都要重新走网络加载。本层提供磁盘持久缓存:
+ *   - video_cache/  : 播放过的视频落盘,二次打开file://秒开
+ *   - exported_docs/: 导出生成的文档落盘,缓存管理页可见可删
+ * 目录选型: dataDirectory(App私有持久目录,系统不自动清理),
+ *   区别于cacheDirectory(系统低存储时可能回收,不适合视频缓存)。
+ * 索引策略: 文件系统目录扫描为事实源,localStorage仅存展示元数据,
+ *   外部删文件不会导致索引漂移(扫描时以实际存在为准)。
+ * 容量防御: 单文件>100MB不缓存(视频为短操作教学片,正常≤19MB分片上限)。
+ */
+const CACHE_ROOT_DIR='tcg_cache';
+const CACHE_DIR_VIDEOS='video_cache';
+const CACHE_DIR_DOCS='exported_docs';
+const CACHE_MAX_FILE_BYTES=100*1024*1024; // 100MB单文件上限
+
+/** 读取缓存索引(localStorage,文件系统扫描结果的展示元数据补充) */
+function _cacheIndexLoad(){
+  try{return JSON.parse(localStorage.getItem('tcg_cache_index')||'{"videos":{},"docs":{}}');}
+  catch(e){return{videos:{},docs:{}};}
+}
+function _cacheIndexSave(idx){try{localStorage.setItem('tcg_cache_index',JSON.stringify(idx));}catch(e){/*配额满不影响主流程*/}}
+
+/**
+ * 获取缓存子目录的DirectoryEntry(懒创建)
+ * @param {string} subDir - 子目录名(video_cache/exported_docs)
+ * @returns {Promise<DirectoryEntry|null>} 浏览器环境或插件不可用时返回null
+ */
+function _cacheDirEntry(subDir){
+  return new Promise(resolve=>{
+    if(!window.resolveLocalFileSystemURL||!window.cordova||!cordova.file){resolve(null);return;}
+    window.resolveLocalFileSystemURL(cordova.file.dataDirectory,rootEntry=>{
+      rootEntry.getDirectory(CACHE_ROOT_DIR,{create:true},cacheRoot=>{
+        cacheRoot.getDirectory(subDir,{create:true},subEntry=>resolve(subEntry),()=>resolve(null));
+      },()=>resolve(null));
+    },()=>resolve(null));
+  });
+}
+
+/**
+ * 将Blob写入持久缓存并登记索引(V10.2核心写入API)
+ * @param {string} subDir - 子目录名
+ * @param {string} fileName - 文件名
+ * @param {Blob} blob - 内容
+ * @param {Object} [meta] - 展示元数据(vehicle/kind等,可选)
+ * @returns {Promise<string|null>} file://URL;环境不支持或超限时返回null(不抛错,调用方可fire-and-forget)
+ */
+async function cacheSaveBlob(subDir,fileName,blob,meta){
+  if(!blob||!(blob instanceof Blob)||blob.size===0)return null;
+  if(blob.size>CACHE_MAX_FILE_BYTES){console.log('[缓存]文件超100MB上限,跳过:',fileName);return null;}
+  const dir=await _cacheDirEntry(subDir);
+  if(!dir)return null;
+  const safeName=String(fileName).replace(/[\/\\:*?"<>|]/g,'_');
+  return new Promise(resolve=>{
+    dir.getFile(safeName,{create:true,exclusive:false},fileEntry=>{
+      fileEntry.createWriter(writer=>{
+        writer.onwriteend=()=>{
+          const idx=_cacheIndexLoad();
+          const bucket=subDir===CACHE_DIR_VIDEOS?'videos':'docs';
+          idx[bucket][safeName]={size:blob.size,ts:Date.now(),meta:meta||{}};
+          _cacheIndexSave(idx);
+          console.log(`[缓存]已落盘 ${subDir}/${safeName} (${(blob.size/1048576).toFixed(1)}MB)`);
+          resolve(fileEntry.toURL());
+        };
+        writer.onerror=()=>{console.warn('[缓存]写入失败:',safeName);resolve(null);};
+        writer.write(blob);
+      },()=>resolve(null));
+    },()=>resolve(null));
+  });
+}
+
+/**
+ * 查询缓存文件是否已存在(视频播放源⓪)
+ * @param {string} subDir - 子目录名
+ * @param {string} fileName - 文件名
+ * @returns {Promise<string|null>} file://URL;不存在或环境不支持返回null
+ */
+async function cacheFileUrl(subDir,fileName){
+  const dir=await _cacheDirEntry(subDir);
+  if(!dir)return null;
+  const safeName=String(fileName).replace(/[\/\\:*?"<>|]/g,'_');
+  return new Promise(resolve=>{
+    dir.getFile(safeName,{create:false},fileEntry=>resolve(fileEntry.toURL()),()=>resolve(null));
+  });
+}
+
+/**
+ * 扫描缓存子目录,返回文件清单(文件系统为事实源,索引仅补元数据)
+ * @param {string} subDir - 子目录名
+ * @returns {Promise<Array<{name,size,ts,meta}>>} 按时间倒序
+ */
+async function cacheList(subDir){
+  const dir=await _cacheDirEntry(subDir);
+  if(!dir)return [];
+  const idx=_cacheIndexLoad();
+  const bucket=subDir===CACHE_DIR_VIDEOS?'videos':'docs';
+  return new Promise(resolve=>{
+    const reader=dir.createReader();
+    const all=[];
+    const readBatch=()=>reader.readEntries(entries=>{
+      if(!entries.length){
+        resolve(all.sort((a,b)=>b.ts-a.ts));
+        return;
+      }
+      let pending=entries.length;
+      entries.forEach(e=>{
+        if(!e.isFile){if(--pending===0)readBatch();return;}
+        e.file(f=>{
+          all.push({name:e.name,size:f.size,ts:(idx[bucket][e.name]&&idx[bucket][e.name].ts)||f.lastModified||Date.now(),meta:(idx[bucket][e.name]&&idx[bucket][e.name].meta)||{}});
+          if(--pending===0)readBatch();
+        },()=>{if(--pending===0)readBatch();});
+      });
+    },()=>resolve(all.sort((a,b)=>b.ts-a.ts)));
+    readBatch();
+  });
+}
+
+/**
+ * 删除缓存子目录中的指定文件并同步索引
+ * @param {string} subDir - 子目录名
+ * @param {string[]} names - 要删除的文件名数组
+ * @returns {Promise<number>} 实际删除数
+ */
+async function cacheDeleteFiles(subDir,names){
+  if(!names||!names.length)return 0;
+  const dir=await _cacheDirEntry(subDir);
+  if(!dir)return 0;
+  const idx=_cacheIndexLoad();
+  const bucket=subDir===CACHE_DIR_VIDEOS?'videos':'docs';
+  let deleted=0;
+  for(const name of names){
+    await new Promise(res=>{
+      dir.getFile(name,{create:false},fileEntry=>{
+        fileEntry.remove(()=>{
+          deleted++;
+          delete idx[bucket][name];
+          console.log('[缓存]已删除:',subDir+'/'+name);
+          res();
+        },()=>res());
+      },()=>res());
+    });
+  }
+  _cacheIndexSave(idx);
+  return deleted;
+}
+
+/**
+ * 从URL抓取内容落盘到缓存(流式播放成功后的异步预缓存)
+ * 真机优先cordova http(无CORS限制),浏览器回退fetch(GitHub Release/jsDelivr均带CORS头)
+ * @param {string} url - 源地址
+ * @param {string} fileName - 目标文件名
+ * @returns {Promise<string|null>} 落盘URL或null
+ */
+async function cacheUrlToDisk(url,fileName){
+  try{
+    if(!window.cordova)return null; // 浏览器调试环境无持久目录,跳过
+    let blob=null;
+    if(window.cordova.plugin&&window.cordova.plugin.http){
+      blob=await new Promise((resolve,reject)=>{
+        window.cordova.plugin.http.sendRequest(url,{method:'GET',responseType:'blob',timeout:120},
+          res=>resolve(asBlob(res.data,'video/mp4')),err=>reject(new Error(String(err.error||'抓取失败'))));
+      });
+    }else{
+      const r=await fetch(url);
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      blob=await r.blob();
+    }
+    return await cacheSaveBlob(CACHE_DIR_VIDEOS,fileName,blob);
+  }catch(e){
+    console.warn('[缓存]URL预缓存失败(不影响播放):',fileName,e.message||e);
+    return null;
+  }
+}
+
+/**
+ * 统计全部缓存总大小(缓存管理入口提示用)
+ * @returns {Promise<number>} 字节数
+ */
+async function cacheTotalSize(){
+  const [videos,docs]=await Promise.all([cacheList(CACHE_DIR_VIDEOS),cacheList(CACHE_DIR_DOCS)]);
+  return videos.concat(docs).reduce((s,f)=>s+f.size,0);
+}
+
+/** 字节数格式化(B/KB/MB/GB) */
+function cacheSizeText(bytes){
+  if(!bytes||bytes<1024)return bytes+' B';
+  if(bytes<1048576)return (bytes/1024).toFixed(1)+' KB';
+  if(bytes<1073741824)return (bytes/1048576).toFixed(1)+' MB';
+  return (bytes/1073741824).toFixed(2)+' GB';
+}
+
 /**
  * 列出飞书文件夹全部文件(自动翻页聚合) - 分页缺陷修复
  * 根因: files接口分页字段为next_page_token(而非page_token), 目录超过200项时
@@ -1171,7 +1388,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.1.0';
+const APP_VERSION='10.2.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1257,6 +1474,7 @@ function _activateScreen(id){
     updateMyInfo();
     const memMenu=document.getElementById('menu-members');
     if(memMenu)memMenu.style.display=canEdit()?'flex':'none';
+    _refreshCacheHint(); // V10.2: 进入「我的」页刷新缓存管理入口的大小提示
   }
   // V10.0: 组长打开组员管理页立即拉取云端注册申请(非静默,确保有反馈)
   if(id==='screen-members'&&isLeader()){
@@ -2140,6 +2358,10 @@ async function shareFile(blob,filename,mimeType,title){
   if(!blob||!(blob instanceof Blob)){showToast('分享失败：数据无效');return false;}
   if(blob.size===0){showToast('分享失败：文件为空');return false;}
   if(!filename||typeof filename!=='string'){showToast('分享失败：文件名无效');return false;}
+  // V10.2 问题2配套: 导出文档统一落盘登记到持久缓存exported_docs/
+  // 所有导出点(批量导出/车辆详情/备份)经此函数分发,单点登记零调用方改动;
+  // fire-and-forget: 落盘失败不影响分享流程
+  if(window.cordova){cacheSaveBlob(CACHE_DIR_DOCS,filename,blob,{kind:(filename.split('.').pop()||'').toLowerCase()}).catch(()=>{});}
   // 修正MIME(确保与文件扩展名一致,避免微信识别异常)
   const ext=(filename.split('.').pop()||'dat').toLowerCase();
   let fixedMime=mimeType||'application/octet-stream';
@@ -3985,18 +4207,39 @@ async function openVideoPlayer(){
     if(err)err.remove();
   };
 
-  // 源①: 本地APK内路径
-  tryPlaySource(video,v.videoPaths[0],()=>{
-    if(session!==_videoSession)return; // 用户已退出,终止源链
-    // 源②: GitHub Release直链(V5.3.5, 免鉴权+Range流式秒开)
-    const directUrl=mediaDirectUrl(fileName);
-    if(directUrl){
-      tryPlaySource(video,directUrl,()=>tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0],session),session);
-    }else{
-      // 未映射的视频(组长新上传)直接走飞书云端
-      tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0],session);
-    }
-  },session);
+  // V10.2 问题1修复: 网络源链抽为独立函数,供磁盘缓存未命中/缓存损坏两条路径复用
+  const playFromNetwork=()=>{
+    // 源①: 本地APK内路径
+    tryPlaySource(video,v.videoPaths[0],()=>{
+      if(session!==_videoSession)return; // 用户已退出,终止源链
+      // 源②: GitHub Release直链(V5.3.5, 免鉴权+Range流式秒开)
+      const directUrl=mediaDirectUrl(fileName);
+      if(directUrl){
+        // V10.2: 流式播放成功后异步抓取落盘,下次秒开
+        tryPlaySource(video,directUrl,()=>tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0],session),session,()=>{cacheUrlToDisk(directUrl,fileName);});
+      }else{
+        // 未映射的视频(组长新上传)直接走飞书云端
+        tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0],session);
+      }
+    },session);
+  };
+
+  // 源⓪: V10.2 问题1修复——本地磁盘持久缓存命中,file://直读秒开
+  // 根因: 旧版仅内存objectURL缓存,App重启即失效,每次播放重新走网络加载
+  const cachedUrl=await cacheFileUrl(CACHE_DIR_VIDEOS,fileName).catch(()=>null);
+  if(session!==_videoSession)return; // 查询期间用户已退出
+  if(cachedUrl){
+    console.log('[视频]命中本地磁盘缓存:',fileName);
+    tryPlaySource(video,cachedUrl,()=>{
+      // 缓存文件损坏(写入中断等)→ 清理损坏文件并回退完整网络源链
+      if(session!==_videoSession)return;
+      console.warn('[视频]磁盘缓存损坏,回退网络源链');
+      cacheDeleteFiles(CACHE_DIR_VIDEOS,[fileName]).catch(()=>{});
+      playFromNetwork();
+    },session);
+    return;
+  }
+  playFromNetwork();
 }
 
 /**
@@ -4015,11 +4258,13 @@ function tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session){
     if(session!==undefined&&session!==_videoSession)return; // 下载期间用户已退出,丢弃结果
     if(ok)return;
     // 源④: GitHub jsDelivr CDN(视频曾同步到仓库时可用)
-    tryPlaySource(video,cdnBase+'/'+videoPath,()=>{
+    // V10.2: CDN流式播放成功后异步抓取落盘,下次秒开
+    const cdnUrl=cdnBase+'/'+videoPath;
+    tryPlaySource(video,cdnUrl,()=>{
       if(session!==undefined&&session!==_videoSession)return;
       // 源⑤: 全部失败 → 诚实提示 + 组长上传入口
       showVideoMissing(fileName,video);
-    },session);
+    },session,()=>{cacheUrlToDisk(cdnUrl,fileName);});
   });
 }
 
@@ -4029,8 +4274,9 @@ function tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session){
  * @param {string} src - 视频源地址
  * @param {Function} fallback - 该源失败后的回退函数
  * @param {number} [session] - V5.9.0播放会话号:关闭播放器后所有续体自动失效
+ * @param {Function} [onReady] - V10.2可选:该源播放成功后的回调(用于流式源异步落盘预缓存)
  */
-function tryPlaySource(video,src,fallback,session){
+function tryPlaySource(video,src,fallback,session,onReady){
   // V5.9.0: 会话已失效(播放器已关闭)则本源与后续回退链全部终止
   if(session!==undefined&&session!==_videoSession)return;
   // V5.8.2: 显示加载状态指示器(方案3步骤三)
@@ -4058,6 +4304,8 @@ function tryPlaySource(video,src,fallback,session){
     if(session!==undefined&&session!==_videoSession)return;
     const err=video.parentElement.querySelector('.video-error');
     if(err)err.remove();
+    // V10.2: 播放成功回调(会话守卫内),流式源在此触发异步落盘
+    if(typeof onReady==='function'){try{onReady();}catch(e){console.warn('[视频]onReady回调异常:',e);}}
   };
   video.src=src;
   video.load();
@@ -4228,6 +4476,9 @@ async function playFromFeishuCloud(video,fileName,session){
     const url=URL.createObjectURL(blob);
     if(_feishuVideoCache.url)URL.revokeObjectURL(_feishuVideoCache.url); // 只保留最近1个,防内存膨胀
     _feishuVideoCache={name:fileName,url};
+    // V10.2 问题1修复: 飞书下载的完整blob(含分片重组)落盘持久缓存,下次file://秒开
+    // fire-and-forget: 落盘失败不影响本次播放
+    cacheSaveBlob(CACHE_DIR_VIDEOS,fileName,blob).catch(()=>{});
     tryPlaySource(video,url,()=>false,session);
     console.log('[视频]飞书云端源命中:',fileName,target?(rootHit?'(根目录回退完整文件)':'(完整文件)'):`(分片重组${parts.length}片,${(blob.size/1048576).toFixed(1)}MB)`);
     if(rootHit)addSyncLog(`视频命中根目录回退源 · ${fileName}`,'blue'); // V5.3.4: 回退命中留痕,便于云盘整理后观察
@@ -4492,6 +4743,122 @@ function hapticFeedback(){
   try{
     if(typeof navigator!=='undefined'&&typeof navigator.vibrate==='function')navigator.vibrate(30);
   }catch(e){/* 震动失败不影响主流程 */}
+}
+
+/* ===================== 缓存管理 (V10.2 问题2) =====================
+ * 「我的」页缓存管理弹层: 列出持久缓存中的已缓存视频(video_cache/)与
+ * 已导出文档(exported_docs/),支持复选多选删除与一键清空。
+ * 浏览器调试环境无持久目录时展示空态引导,不影响其他功能。
+ */
+let cacheSel=new Set(); // 选中项集合,格式 'video|文件名' / 'doc|文件名'
+
+/** 打开缓存管理弹层并刷新列表 */
+function openCacheManager(){
+  openModal('modal-cache');
+  refreshCacheList();
+}
+
+/** 渲染单条缓存项(复选框+文件名+大小+时间) */
+function _cacheItemHtml(kind,item){
+  const key=kind+'|'+item.name;
+  const on=cacheSel.has(key);
+  const icon=kind==='video'
+    ?'<svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-4 h-4 flex-shrink-0"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>'
+    :'<svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-4 h-4 flex-shrink-0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>';
+  const timeStr=item.ts?new Date(item.ts).toLocaleDateString('zh-CN'):'';
+  return `
+  <div class="flex items-center gap-2 py-2 px-2 bg-gray-50 rounded-lg cursor-pointer active:bg-gray-100" onclick="toggleCacheSel('${kind}','${item.name.replace(/'/g,"\\'")}')">
+    <div class="chk ${on?'on':''}"></div>
+    ${icon}
+    <div class="flex-1 min-w-0">
+      <div class="text-xs text-gray-800 truncate">${esc(item.name)}</div>
+      <div class="text-xs text-gray-400">${cacheSizeText(item.size)}${timeStr?' · '+timeStr:''}</div>
+    </div>
+  </div>`;
+}
+
+/**
+ * 扫描并渲染缓存管理列表(视频+文档两区)
+ */
+async function refreshCacheList(){
+  const vl=document.getElementById('cache-video-list');
+  const dl=document.getElementById('cache-doc-list');
+  const totalEl=document.getElementById('cache-total-size');
+  if(!vl||!dl)return;
+  vl.innerHTML='<div class="text-xs text-gray-400 text-center py-3">扫描中...</div>';
+  dl.innerHTML='';
+  const [videos,docs]=await Promise.all([cacheList(CACHE_DIR_VIDEOS),cacheList(CACHE_DIR_DOCS)]);
+  // 清掉已不存在文件的选中态(防索引漂移)
+  const validKeys=new Set([...videos.map(x=>'video|'+x.name),...docs.map(x=>'doc|'+x.name)]);
+  [...cacheSel].forEach(k=>{if(!validKeys.has(k))cacheSel.delete(k);});
+  const vc=document.getElementById('cache-video-count'),dc=document.getElementById('cache-doc-count');
+  if(vc)vc.textContent=videos.length?`(${videos.length}个)`:'';
+  if(dc)dc.textContent=docs.length?`(${docs.length}个)`:'';
+  vl.innerHTML=videos.length?videos.map(x=>_cacheItemHtml('video',x)).join('')
+    :'<div class="text-xs text-gray-400 text-center py-3">暂无缓存视频<br>播放过的教学视频会自动缓存到本地</div>';
+  dl.innerHTML=docs.length?docs.map(x=>_cacheItemHtml('doc',x)).join('')
+    :'<div class="text-xs text-gray-400 text-center py-3">暂无导出文档<br>导出的Word/PDF/Excel等文档会自动保存到本地</div>';
+  const total=videos.concat(docs).reduce((s,f)=>s+f.size,0);
+  if(totalEl)totalEl.textContent=total>0?`共 ${cacheSizeText(total)} · 视频${videos.length}个 文档${docs.length}个`:'暂无缓存内容';
+  _updateDelBtn();
+}
+
+/** 切换缓存项选中态 */
+function toggleCacheSel(kind,name){
+  const key=kind+'|'+name;
+  cacheSel.has(key)?cacheSel.delete(key):cacheSel.add(key);
+  refreshCacheList();
+}
+
+/** 更新"删除选中"按钮状态 */
+function _updateDelBtn(){
+  const btn=document.getElementById('btn-del-cache');
+  if(btn){btn.disabled=cacheSel.size===0;btn.textContent=`删除选中(${cacheSel.size})`;}
+}
+
+/** 删除选中的缓存项(带确认+反馈) */
+function deleteSelectedCache(){
+  if(!cacheSel.size)return;
+  const n=cacheSel.size;
+  showConfirm('删除缓存',`确定删除选中的 ${n} 项缓存？删除后视频需重新加载。`,async()=>{
+    hapticFeedback();
+    const videoNames=[...cacheSel].filter(k=>k.startsWith('video|')).map(k=>k.slice(6));
+    const docNames=[...cacheSel].filter(k=>k.startsWith('doc|')).map(k=>k.slice(4));
+    const [dv,dd]=await Promise.all([
+      videoNames.length?cacheDeleteFiles(CACHE_DIR_VIDEOS,videoNames):Promise.resolve(0),
+      docNames.length?cacheDeleteFiles(CACHE_DIR_DOCS,docNames):Promise.resolve(0)
+    ]);
+    cacheSel.clear();
+    await refreshCacheList();
+    _refreshCacheHint();
+    showToast(`✅ 已删除 ${dv+dd} 项缓存`);
+  });
+}
+
+/** 全部清空(双确认防误触) */
+function clearAllCache(){
+  showConfirm('清空全部缓存','确定清空所有已缓存视频和已导出文档？此操作不可恢复。',async()=>{
+    hapticFeedback();
+    const videos=await cacheList(CACHE_DIR_VIDEOS);
+    const docs=await cacheList(CACHE_DIR_DOCS);
+    const [dv,dd]=await Promise.all([
+      cacheDeleteFiles(CACHE_DIR_VIDEOS,videos.map(x=>x.name)),
+      cacheDeleteFiles(CACHE_DIR_DOCS,docs.map(x=>x.name))
+    ]);
+    cacheSel.clear();
+    await refreshCacheList();
+    _refreshCacheHint();
+    showToast(`✅ 已清空 ${dv+dd} 项缓存`);
+  });
+}
+
+/** 刷新「我的」页缓存入口的大小提示 */
+function _refreshCacheHint(){
+  const hint=document.getElementById('cache-size-hint');
+  if(!hint)return;
+  cacheTotalSize().then(total=>{
+    hint.textContent=total>0?`已缓存 ${cacheSizeText(total)}`:'视频缓存与导出文档';
+  }).catch(()=>{});
 }
 
 async function addMember(){
