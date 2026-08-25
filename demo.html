@@ -68,6 +68,12 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 
 /* Modal */
 .modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+/* V10.3 问题2: 确认框必须压在所有业务弹层(如缓存管理)之上——旧版两者同为z-index:300,
+   modal-confirm在DOM中先于modal-cache声明,同层级时后声明者覆盖前者,导致"删除选中/
+   全部清空"的确认框被缓存管理弹层整体遮挡,用户永远点不到确认按钮,删除永远不执行 */
+#modal-confirm{z-index:320;}
+/* V10.3 问题4: 弹层内容纵向滚动兜底(flex子项min-height:auto导致overflow失效的老WebView兼容) */
+.flex-1.scroll-y{min-height:0;}
 .modal-overlay.show{display:flex;animation:fadeIn .2s;}
 @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 .modal-sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;max-height:80vh;overflow-y:auto;animation:slideUp .3s ease-out;}
@@ -85,6 +91,9 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 
 /* V10.1 问题3修复: 组员管理红点通知——有待审核注册时入口显示红色数字角标 */
 .red-dot{position:absolute;top:8px;right:16px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#ef4444;color:#fff;font-size:11px;font-weight:600;line-height:18px;text-align:center;display:none;box-shadow:0 0 0 2px #fff;z-index:5;}
+/* V10.3 问题5.2: 云端新数据红点(数据同步入口提示,组员端主要感知通道) */
+.new-data-dot{position:relative;display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:6px;vertical-align:middle;box-shadow:0 0 0 2px #fff;animation:pulse 1.6s ease-in-out infinite;}
+.new-data-dot.hidden{display:none;}
 .red-dot.show{display:inline-block;animation:badgePop .3s ease-out;}
 @keyframes badgePop{from{transform:scale(0);}to{transform:scale(1);}}
 
@@ -417,7 +426,8 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 </div>
 <div class="flex-1 scroll-y px-4 pb-24 pt-4 space-y-4">
 <!-- Feishu account config -->
-<div class="bg-white rounded-2xl p-4 shadow-sm">
+<!-- V10.3 问题5.2: id标记——组员端隐藏飞书账号接口配置(仅组长可见可配) -->
+<div class="bg-white rounded-2xl p-4 shadow-sm" id="feishu-account-config">
 <div class="flex items-center gap-2 mb-3"><svg viewBox="0 0 24 24" fill="#3370ff" class="w-5 h-5"><path d="M4.3 4.3h5.4v5.4H4.3zM14.3 4.3h5.4v5.4h-5.4zM4.3 14.3h5.4v5.4H4.3zM14.3 14.3h5.4v5.4h-5.4z"/></svg><div class="text-sm font-bold text-gray-700">飞书账号接口</div></div>
 <div class="space-y-3">
 <div><label class="text-xs text-gray-500 ml-1 mb-1 block">App ID</label><input id="feishu-appid" type="text" placeholder="飞书应用 App ID" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
@@ -429,10 +439,19 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 </div>
 </div>
 <!-- Sync status -->
+<!-- V10.3 问题4: 版本号动态渲染(旧版静态写死v5.1造成"显示不完全/信息陈旧"观感);
+     V10.3 问题5.2: 云端有新数据时显示醒目提示条 -->
+<div id="sync-new-hint" class="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-0 hidden">
+<div class="flex items-center gap-2">
+<svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" class="w-5 h-5 flex-shrink-0"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+<div class="flex-1 text-xs text-amber-700" id="sync-new-hint-text">云端有新数据，请拉取获取最新版本</div>
+<button onclick="doSyncDownload()" class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium flex-shrink-0">立即拉取</button>
+</div>
+</div>
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v5.1</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.3.0</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -442,7 +461,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <!-- Sync operations -->
 <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 <div class="px-4 py-3 border-b border-gray-50 text-sm font-bold text-gray-700">同步操作</div>
-<div class="bs-item" onclick="doSyncUpload()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><div><div class="text-sm text-gray-800" id="sync-upload-title">上传数据至飞书</div><div class="text-xs text-gray-400" id="sync-upload-desc">将本地车型数据同步到飞书云</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="bs-item" onclick="canEdit()?doSyncUpload():doSyncDownload()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><div><div class="text-sm text-gray-800" id="sync-upload-title">上传数据至飞书</div><div class="text-xs text-gray-400" id="sync-upload-desc">将本地车型数据同步到飞书云</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="doSyncDownload()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><div><div class="text-sm text-gray-800">手动拉取飞书数据</div><div class="text-xs text-gray-400">强制从飞书云端获取最新数据</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="exportSyncConfig()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg><div><div class="text-sm text-gray-800">导出配置 — 备份本地</div><div class="text-xs text-gray-400">导出同步配置和车辆数据到本地</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="showToast('请使用上方「导出配置」生成备份文件，通过微信/蓝牙分享给其他设备')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><div><div class="text-sm text-gray-800">设备间传输</div><div class="text-xs text-gray-400">导出配置后通过分享传给其他设备</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
@@ -506,7 +525,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="toggle" id="toggle-outdoor" onclick="toggleOutdoorMode()"><div class="knob"></div></div>
 </div>
 <div class="bs-item relative" id="menu-members" onclick="showScreen('screen-members')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span class="text-sm text-gray-800">组员管理</span><span class="red-dot" id="members-badge-my">0</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
-<div class="bs-item" id="menu-sync" onclick="showScreen('screen-sync')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据同步</span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="bs-item" id="menu-sync" onclick="showScreen('screen-sync')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据同步</span><span class="new-data-dot hidden" id="sync-new-dot"></span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <!-- V10.2 问题2: 缓存管理入口——已缓存视频+已导出文档的查看与多选删除 -->
 <div class="bs-item" onclick="openCacheManager()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg><div><div class="text-sm text-gray-800">缓存管理</div><div class="text-xs text-gray-400 mt-0.5" id="cache-size-hint">视频缓存与导出文档</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="checkUpdate()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 12a9 9 0 11-2.64-6.36M21 3v6h-6"/></svg><div><div class="text-sm text-gray-800">检查更新</div><div class="text-xs text-gray-400 mt-0.5" id="update-current-ver">当前版本 V4.1</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
@@ -711,7 +730,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="flex-1 py-2">
 <div class="bs-item relative" onclick="showScreen('screen-members');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="text-sm text-gray-800">组员管理</span><span class="red-dot" id="members-badge-side">0</span></div></div>
 <div class="bs-item" onclick="showScreen('screen-data');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据中心</span></div></div>
-<div class="bs-item" onclick="showScreen('screen-sync');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></svg><span class="text-sm text-gray-800">数据同步</span></div></div>
+<div class="bs-item" onclick="showScreen('screen-sync');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></svg><span class="text-sm text-gray-800">数据同步</span><span class="new-data-dot hidden" id="sync-new-dot-side"></span></div></div>
 <div class="bs-item" onclick="showScreen('screen-my');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="text-sm text-gray-800">个人中心</span></div></div>
 </div>
 <button onclick="doLogout()" class="m-4 py-2.5 bg-red-50 text-red-500 rounded-xl text-sm font-medium">退出登录</button>
@@ -1388,7 +1407,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.2.0';
+const APP_VERSION='10.3.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1496,6 +1515,19 @@ function _activateScreen(id){
     const t=document.getElementById('sync-upload-title'),d=document.getElementById('sync-upload-desc');
     if(t)t.textContent=canEdit()?'上传数据至飞书':'从飞书获取数据';
     if(d)d.textContent=canEdit()?'组长：将本地车型数据同步到飞书云':'组员：从飞书云端获取最新数据';
+    // V10.3 问题4: 本地版本号动态渲染(旧版静态写死v5.1,升级后显示陈旧版本号)
+    const lv=document.getElementById('sync-local-ver');
+    if(lv)lv.textContent='v'+APP_VERSION;
+    // V10.3 问题5.2: 飞书账号接口配置仅组长可见——组员端隐藏(组员不该也不需要
+    // 触碰AppID/Secret等敏感配置,旧版对全员展示既泄露配置入口又造成界面噪音)
+    const fc=document.getElementById('feishu-account-config');
+    if(fc)fc.style.display=canEdit()?'block':'none';
+    // V10.3 问题5.2: 进入同步中心即静默核查云端新数据(节流5分钟)
+    checkCloudDataUpdate();
+  }
+  // V10.3 问题5.2: 进入数据中心静默核查云端新数据→同步入口红点
+  if(id==='screen-data'){
+    checkCloudDataUpdate();
   }
 }
 
@@ -1624,6 +1656,12 @@ async function doLogin(){
     pullPendingFromFeishu().then(()=>{renderMemberList();});
     // V5.3.1: 启动60秒静默轮询,跨网络/跨设备实时接收新注册申请
     startPendingPolling();
+  }else{
+    // V10.3 问题3/5.1: 组员登录即启动账号存活守卫——被删账号最多60秒内
+    // 收到通知并强制退出,登录瞬间也会即时核查一次
+    startMemberGuardPolling();
+    // V10.3 问题5.2: 组员登录后静默检查云端是否有新数据(红点提示)
+    checkCloudDataUpdate(true);
   }
   updateMembersBadge(); // V10.1 问题3修复: 登录后立即刷新组员管理红点(本地缓存的待审核申请)
 }
@@ -1708,6 +1746,9 @@ async function doForgotPassword(){
 function doLogout(){
   // V5.3.1: 退出时停止轮询器,避免登出后仍以旧身份拉取申请
   stopPendingPolling();
+  // V10.3 问题3/5.1: 同步停止组员账号守卫轮询
+  stopMemberGuardPolling();
+  window.__tcgKicked=false; // 重置踢出标记,允许后续正常登录流程
   localStorage.removeItem('tcg_session');
   state.currentUser=null;
   showScreen('screen-login');
@@ -2337,21 +2378,16 @@ async function shareVehicleDetail(){
  * @param {string} [title] - 分享面板标题(缺省用文件名)
  */
 /**
- * V10.0 分享文件——对齐安装包V1.8方案,实际调起系统分享面板
- * 根因分析(为什么之前"只显示生成成功但分享不了"):
- *   旧版优先调socialsharing插件,但部分Android ROM上该插件的success回调
- *   被立即调用却不弹出系统分享面板(静默成功),导致用户看到"已打开分享面板"
- *   提示但实际什么都没发生。Web Share API(navigator.share)被排在第二位,
- *   且canShare检查可能误判导致跳过。
- * 对齐方案(基准: 安装包V1.8 Capacitor Share插件):
- *   V1.8用Capacitor Filesystem写文件→getUri→Share.share({files:[uri]})
- *   在Android原生侧等价于Intent.ACTION_SEND,与navigator.share(files)同源。
- *   故本版改为: navigator.share(File)优先 → socialsharing(file://URI) → 下载兜底
+ * V10.3 分享文件——仅系统级分享,移除下载兜底(问题1)
+ * 需求: 数据分享必须调起系统分享面板分享到应用外部,不准降级为浏览器下载。
+ * 链路: ① Web Share API(navigator.share,等价原生Intent.ACTION_SEND)
+ *       ② Cordova socialsharing插件(file://URI→原生分享面板)
+ *       全部失败→明确报错提示,绝不静默降级下载。
  * @param {Blob} blob - 要分享的二进制数据
  * @param {string} filename - 文件名（含扩展名）
  * @param {string} mimeType - MIME类型
  * @param {string} [title] - 分享面板标题
- * @returns {Promise<boolean>} true=分享面板已调起, false=降级到下载
+ * @returns {Promise<boolean>} true=分享面板已调起, false=系统分享不可用(已提示用户)
  */
 async function shareFile(blob,filename,mimeType,title){
   // 输入验证
@@ -2431,7 +2467,7 @@ async function shareFile(blob,filename,mimeType,title){
         console.log('[分享] 调用socialsharing,文件:',filename);
         await new Promise((resolve,reject)=>{
           window.plugins.socialsharing.shareWithOptions(
-            {message:filename,subject:filename,title:title||filename,dialogTitle:'选择保存或分享方式',files:shareFiles},
+            {message:filename,subject:filename,title:title||filename,dialogTitle:'选择分享方式',files:shareFiles},
             ()=>{console.log('[分享] socialsharing回调成功');resolve();},
             err=>{console.error('[分享] socialsharing失败:',JSON.stringify(err));reject(err);}
           );
@@ -2439,19 +2475,16 @@ async function shareFile(blob,filename,mimeType,title){
         return true; // 分享面板已调起
       }catch(e){
         if(e==='canceled'){console.log('[分享] 用户取消');return true;}
-        console.warn('[分享] socialsharing失败,降级到下载:',e);
+        console.warn('[分享] socialsharing失败:',e);
       }
     }
   }
 
-  // ③ 兜底: 浏览器下载
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download=filename;
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),5000);
-  showToast('文件已保存: '+filename);
-  return false; // 下载兜底,非系统分享
+  // V10.3 问题1: 移除浏览器下载兜底——系统分享不可用时明确报错,
+  // 不准静默降级为"保存到本地"使用户误以为分享成功
+  console.error('[分享] 系统分享不可用: Web Share API与原生插件均未调起',filename);
+  showToast('分享失败：系统分享面板不可用，请检查系统或升级应用');
+  return false;
 }
 
 function getVehicleShareText(v){
@@ -3341,10 +3374,9 @@ async function exportSingle(format){
       const ext=mimeType.includes('msword')?'doc':'docx';
       shared=await shareFile(blob,`${v.display}_断电指南.${ext}`,mimeType);
     }
-    // V10.0: 只有分享面板未调起(降级下载)时才额外提示;面板已弹出则不再toast
+    // V10.3: shareFile仅系统级分享,失败时内部已报错提示,此处不重复toast
     if(!shared){
-      // shareFile内部已显示"文件已保存"toast,此处不再重复
-      console.log('[导出] '+names[format]+'降级为本地保存');
+      console.log('[导出] '+names[format]+'系统分享未调起(已在shareFile内提示)');
     }
   }catch(err){
     console.error('单车导出失败:',err);
@@ -3370,7 +3402,7 @@ async function shareBackup(){
     const payload={appVersion:APP_VERSION,backupAt:new Date().toISOString(),vehicles:VEHICLES,users:USERS};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const shared=await shareFile(blob,`vehicle_poweroff_backup_${Date.now()}.json`,'application/json');
-    // shareFile内部已处理toast(成功调起面板不额外提示,降级下载显示"已保存")
+    // V10.3: shareFile仅系统级分享,失败时内部已报错提示
     addSyncLog(`分享备份完成 · ${VEHICLES.length}条车辆数据`,'blue');
   }catch(err){
     console.error('分享备份失败:',err);
@@ -3651,6 +3683,110 @@ function startPendingPolling(){
   }
 }
 function stopPendingPolling(){if(pendingPollTimer){clearInterval(pendingPollTimer);pendingPollTimer=null;}}
+
+/**
+ * ===================== V10.3 问题3/5.1: 组员账号存活守卫 =====================
+ * 需求: 组长删除组员账号后,组员端必须立刻收到通知并退出应用。
+ * 背景: 旧版deleteMember仅在组长本机删除并推送approved_users.json到飞书,
+ *       组员端登录会话(tcg_session)与本地用户表(tcg_users)毫不知情,
+ *       组员可无限期继续使用已删除的账号——账号生命周期出现"幽灵态"。
+ * 方案: 组员登录后启动60秒轮询+resume即时核查,从飞书拉取云端权威用户表,
+ *       发现①账号不在表中(被删除)或②status≠active(被停用)时,
+ *       弹通知(本地通知插件可用时发系统通知)+清会话+强制退回登录页。
+ * 防误判: 仅在云端用户表成功拉取且结构合法时判定;网络失败/云端无数据时
+ *         跳过本轮,绝不因网络抖动误踢在线组员。
+ */
+let memberGuardTimer=null;
+let memberGuardBusy=false;
+
+/**
+ * 拉取云端用户表并核查当前组员账号是否仍存活
+ * @returns {Promise<boolean>} true=账号存活/本轮跳过; false=已判定账号被删并触发强制退出
+ */
+async function checkMemberAccountAlive(){
+  if(!state.currentUser||state.currentUser.role!=='user')return true;
+  if(memberGuardBusy)return true; // 上一轮未完成,跳过(防重入叠发请求)
+  memberGuardBusy=true;
+  try{
+    const cfg=getFeishuCfg();
+    if(!feishuCfgReady(cfg))return true; // 未配置同步:跳过(不误踢离线环境)
+    const token=await getFeishuToken(cfg);
+    // 优先新位置(审批结果/),回退旧位置(数据区根)——与pullApprovedStatusFromFeishu一致
+    let data=null;
+    try{data=await downloadJsonFromDataFeishu(token,'approved_users.json',cfg.approvedSub);}catch(e){/* 新位置无 */}
+    if(!data){
+      try{data=await downloadJsonFromDataFeishu(token,'approved_users.json');}catch(e){/* 旧位置无 */}
+    }
+    // 云端无有效用户表→本轮跳过,不能作为"账号已删"的证据
+    if(!data||!Array.isArray(data.users)||!data.users.length)return true;
+    const me=data.users.find(u=>u&&u.phone===state.currentUser.phone);
+    if(me&&me.status==='active')return true; // 账号存活
+    // ---- 账号已被组长删除或停用:判定成立,强制退出 ----
+    const reason=me?'您的账号已被组长停用':'您的账号已被组长删除';
+    await forceLogoutAsDeleted(reason);
+    return false;
+  }catch(err){
+    console.warn('[组员守卫] 核查失败(下轮重试):',err&&err.message);
+    return true; // 网络异常:跳过本轮
+  }finally{
+    memberGuardBusy=false;
+  }
+}
+
+/**
+ * 账号被删/停用后的强制退出:通知→清理→回登录页
+ * @param {string} reason - 展示给用户的原因文案
+ */
+async function forceLogoutAsDeleted(reason){
+  // 防重复触发(轮询与resume可能同秒命中)
+  if(window.__tcgKicked)return;
+  window.__tcgKicked=true;
+  stopMemberGuardPolling();
+  stopPendingPolling();
+  // 清会话+本地账号记录,下次启动restoreSession直接失败回登录页
+  localStorage.removeItem('tcg_session');
+  const idx=USERS.findIndex(u=>u.phone===state.currentUser.phone);
+  if(idx>-1){USERS.splice(idx,1);saveUsers(USERS);}
+  // 系统级通知(应用在前台时插件会以内嵌横幅弹出,后台时走系统通知栏)
+  leaderNotify('账号已删除',reason+',应用已退出,如需使用请联系组长重新开通。');
+  state.currentUser=null;
+  navHistory=[];
+  // 关闭全部弹层再回登录页,避免残留遮罩
+  document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));
+  showScreen('screen-login');
+  showToast(reason+',已退出应用');
+}
+
+/**
+ * 启动组员账号存活守卫(登录成功/会话恢复时由组员角色触发)
+ * 60秒周期轮询 + resume前台即时核查(与组长申请轮询同节奏)
+ */
+function startMemberGuardPolling(){
+  if(memberGuardTimer)clearInterval(memberGuardTimer);
+  memberGuardTimer=setInterval(()=>{
+    if(!state.currentUser||state.currentUser.role!=='user'||window.__tcgKicked){
+      stopMemberGuardPolling();
+      return;
+    }
+    checkMemberAccountAlive();
+  },60000);
+  // resume即时核查(复用去抖窗口,10秒内重复resume不重复核查)
+  if(!window.__tcgMemberResumeBound){
+    window.__tcgMemberResumeBound=true;
+    document.addEventListener('resume',()=>{
+      if(state.currentUser&&state.currentUser.role==='user'&&!window.__tcgKicked){
+        const now=Date.now();
+        if(now-(window.__tcgMemberGuardTs||0)>10000){
+          window.__tcgMemberGuardTs=now;
+          checkMemberAccountAlive();
+        }
+      }
+    });
+  }
+  // 启动即查一次(登录瞬间就校验,被删账号立即拦截)
+  checkMemberAccountAlive();
+}
+function stopMemberGuardPolling(){if(memberGuardTimer){clearInterval(memberGuardTimer);memberGuardTimer=null;}}
 
 async function doBackup(){
   const dest=document.querySelector('input[name="backup-dest"]:checked');
@@ -3967,6 +4103,8 @@ function doSyncUpload(){
       localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
       showToast(`数据已同步至飞书，共${VEHICLES.length}条车型数据`);
       addSyncLog(`上传同步完成 · ${VEHICLES.length}条车型数据 · 飞书`,'green');
+      // V10.3 问题5.2: 上传成功即消化红点提示(本地即云端最新版)
+      _setSyncNewDot(false);
       const cv=document.getElementById('sync-cloud-ver');
       if(cv)cv.textContent='已连接 · v'+APP_VERSION+' (最新)';
       const ss=document.getElementById('sync-status-text');
@@ -4027,6 +4165,8 @@ async function doSyncDownload(){
       if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
       const cv=document.getElementById('sync-cloud-ver');
       if(cv)cv.textContent='已连接 · '+(syncData.version||'v'+APP_VERSION)+' (最新)';
+      // V10.3 问题5.2: 拉取成功即消化红点提示(本地已与云端对齐)
+      _setSyncNewDot(false);
       renderBrandTags();
       renderVehicleList();
     }else{
@@ -4045,6 +4185,70 @@ function addSyncLog(msg,color){
   logs=logs.slice(0,20);
   localStorage.setItem('sync_logs',JSON.stringify(logs));
   renderSyncLog();
+}
+
+/**
+ * ===================== V10.3 问题5.2: 云端新数据红点通知 =====================
+ * 需求: 组员端(及组长端)在云端有新数据时,通过红点/提示条感知并引导拉取。
+ * 方案: 静默下载云端vehicle_sync_data.json的元数据,对比本地feishu_sync_data
+ *       的timestamp——云端更新→数据中心/侧边菜单"数据同步"入口亮红点+
+ *       同步中心顶部琥珀色提示条;拉取成功后红点自动消化。
+ * 节流: 5分钟内不重复联网核查(登录/进数据页/进同步中心/resume多入口共用)。
+ * 容错: 任一步失败静默跳过,红点状态保持原样——提示功能绝不阻塞主流程。
+ */
+let _cloudCheckBusy=false;
+let _cloudCheckLastTs=0;
+const CLOUD_CHECK_THROTTLE_MS=5*60*1000;
+
+/**
+ * 设置/清除"云端新数据"红点(全部入口+提示条联动)
+ * @param {boolean} on - true=亮红点; false=清除
+ */
+function _setSyncNewDot(on){
+  ['sync-new-dot','sync-new-dot-side'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.classList.toggle('hidden',!on);
+  });
+  const hint=document.getElementById('sync-new-hint');
+  if(hint)hint.classList.toggle('hidden',!on);
+}
+
+/**
+ * 静默检查云端是否有新数据
+ * @param {boolean} [force] - true=忽略节流立即检查(登录场景)
+ * @returns {Promise<void>}
+ */
+async function checkCloudDataUpdate(force){
+  if(!state.currentUser)return; // 未登录不检查
+  const now=Date.now();
+  if(!force&&now-_cloudCheckLastTs<CLOUD_CHECK_THROTTLE_MS)return; // 节流
+  if(_cloudCheckBusy)return;
+  _cloudCheckBusy=true;
+  _cloudCheckLastTs=now;
+  try{
+    const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+    const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
+    if(!feishuCfgReady(cfg))return; // 未配置同步:跳过
+    const syncData=await downloadSyncDataMigrated(cfg);
+    if(!syncData||!syncData.timestamp)return; // 云端无数据:跳过
+    const cloudTs=new Date(syncData.timestamp).getTime();
+    const local=JSON.parse(localStorage.getItem('feishu_sync_data')||'{}');
+    const localTs=local.timestamp?new Date(local.timestamp).getTime():0;
+    const hasNew=cloudTs>localTs;
+    _setSyncNewDot(hasNew);
+    // 顺带刷新同步中心的云端版本显示(拉取失败不改动)
+    const cv=document.getElementById('sync-cloud-ver');
+    if(cv&&syncData.version)cv.textContent=hasNew?'有新数据 · '+(syncData.version||''):'已连接 · '+(syncData.version||'')+(cloudTs<=localTs?' (最新)':'');
+    if(hasNew){
+      const hint=document.getElementById('sync-new-hint-text');
+      if(hint)hint.textContent='云端有新数据('+(syncData.version||'新版本')+' · '+(syncData.vehicleCount||'?')+'条),请拉取获取最新版本';
+      console.log('[同步] 检测到云端新数据:',syncData.version,syncData.timestamp);
+    }
+  }catch(err){
+    console.warn('[同步] 云端新数据检查失败(跳过):',err&&err.message);
+  }finally{
+    _cloudCheckBusy=false;
+  }
 }
 
 function addBackupHistory(type,filename,count,size){
@@ -4752,8 +4956,27 @@ function hapticFeedback(){
  */
 let cacheSel=new Set(); // 选中项集合,格式 'video|文件名' / 'doc|文件名'
 
+/**
+ * V10.3 问题2: 等待Cordova文件插件就绪(最长timeoutMs)
+ * 根因: 冷启动后立即打开缓存管理时,deviceready可能尚未触发,
+ * resolveLocalFileSystemURL尚未注入→_cacheDirEntry返回null→列表恒空,
+ * 用户误以为"本地已缓存的视频/文档无法加载"。
+ * @param {number} [timeoutMs=3000] - 最长等待
+ * @returns {Promise<void>}
+ */
+function _waitCordovaFileReady(timeoutMs){
+  timeoutMs=timeoutMs||3000;
+  return new Promise(resolve=>{
+    if(window.resolveLocalFileSystemURL&&window.cordova&&window.cordova.file){resolve();return;}
+    let done=false;
+    const finish=()=>{if(!done){done=true;clearTimeout(timer);resolve();}};
+    const timer=setTimeout(finish,timeoutMs);
+    document.addEventListener('deviceready',finish,{once:true});
+  });
+}
+
 /** 打开缓存管理弹层并刷新列表 */
-function openCacheManager(){
+async function openCacheManager(){
   openModal('modal-cache');
   refreshCacheList();
 }
@@ -4766,8 +4989,11 @@ function _cacheItemHtml(kind,item){
     ?'<svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-4 h-4 flex-shrink-0"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>'
     :'<svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-4 h-4 flex-shrink-0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>';
   const timeStr=item.ts?new Date(item.ts).toLocaleDateString('zh-CN'):'';
+  // V10.3 问题2: data-cache-key支撑原地选中态更新;onclick参数做js转义
+  // (文件名含引号/反斜杠时旧版拼接会语法报错→该行永远选不上)
+  const jsName=String(item.name).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
   return `
-  <div class="flex items-center gap-2 py-2 px-2 bg-gray-50 rounded-lg cursor-pointer active:bg-gray-100" onclick="toggleCacheSel('${kind}','${item.name.replace(/'/g,"\\'")}')">
+  <div class="flex items-center gap-2 py-2 px-2 bg-gray-50 rounded-lg cursor-pointer active:bg-gray-100" data-cache-key="${esc(key)}" onclick="toggleCacheSel('${kind}','${jsName}')">
     <div class="chk ${on?'on':''}"></div>
     ${icon}
     <div class="flex-1 min-w-0">
@@ -4779,6 +5005,7 @@ function _cacheItemHtml(kind,item){
 
 /**
  * 扫描并渲染缓存管理列表(视频+文档两区)
+ * V10.3 问题2: 先等待文件插件就绪再扫描,冷启动场景不再恒空
  */
 async function refreshCacheList(){
   const vl=document.getElementById('cache-video-list');
@@ -4787,6 +5014,7 @@ async function refreshCacheList(){
   if(!vl||!dl)return;
   vl.innerHTML='<div class="text-xs text-gray-400 text-center py-3">扫描中...</div>';
   dl.innerHTML='';
+  await _waitCordovaFileReady();
   const [videos,docs]=await Promise.all([cacheList(CACHE_DIR_VIDEOS),cacheList(CACHE_DIR_DOCS)]);
   // 清掉已不存在文件的选中态(防索引漂移)
   const validKeys=new Set([...videos.map(x=>'video|'+x.name),...docs.map(x=>'doc|'+x.name)]);
@@ -4803,11 +5031,23 @@ async function refreshCacheList(){
   _updateDelBtn();
 }
 
-/** 切换缓存项选中态 */
+/**
+ * 切换缓存项选中态
+ * V10.3 问题2: 原地更新复选框,不再整列表重渲染——旧版每次点选都重建全部DOM,
+ * 列表滚动位置归零+视觉闪烁,长列表多点选时体验像"没点上",真机上误判为删除失效
+ */
 function toggleCacheSel(kind,name){
   const key=kind+'|'+name;
   cacheSel.has(key)?cacheSel.delete(key):cacheSel.add(key);
-  refreshCacheList();
+  const on=cacheSel.has(key);
+  // 原地更新本行复选框样式(data-cache-key由渲染时标记)
+  document.querySelectorAll('#modal-cache [data-cache-key]').forEach(row=>{
+    if(row.getAttribute('data-cache-key')===key){
+      const chk=row.querySelector('.chk');
+      if(chk)chk.classList.toggle('on',on);
+    }
+  });
+  _updateDelBtn();
 }
 
 /** 更新"删除选中"按钮状态 */
@@ -4981,14 +5221,32 @@ function deleteMember(id){
     showToast('权限不足: 仅组长可删除组员账号');
     return;
   }
-  showConfirm('删除组员','确定删除该组员账号？',()=>{
+  const target=USERS.find(u=>u.id===id);
+  // V10.3 问题3: 禁止误删组长账号(组长间互删会破坏审批链)
+  if(!target||target.role==='admin'){
+    showToast('仅可删除组员账号');
+    return;
+  }
+  showConfirm('删除组员',`确定删除组员「${target.name}」的账号？删除后对方端将在1分钟内收到通知并强制退出。`,async()=>{
     const idx=USERS.findIndex(u=>u.id===id);
     if(idx>-1){
       hapticFeedback(); // V10.1: 触觉反馈,操作即时可感知
       USERS.splice(idx,1);saveUsers(USERS);renderMemberList();
-      showToast('删除成功');
       updateMembersBadge(); // V10.1: 删除后立即刷新红点
-      pushApprovedUsersToFeishu();
+      // V10.3 问题3/5.1: 删除必须可靠同步到飞书云端——云端用户表是组员端
+      // 存活守卫的判定依据,推送失败组员端就永远不会收到"被删"通知
+      showToast('正在同步删除到飞书云端...');
+      let pushed=await pushApprovedUsersToFeishu();
+      if(!pushed){
+        // 一次重试(网络抖动容错),再失败则明确告警
+        await new Promise(r=>setTimeout(r,1500));
+        pushed=await pushApprovedUsersToFeishu();
+      }
+      if(pushed){
+        showToast(`已删除「${target.name}」,对方端将在1分钟内被强制退出`);
+      }else{
+        showToast('⚠️ 账号已在本地删除,但云端同步失败,对方端暂无法收到通知,请检查网络后重试同步');
+      }
     }
   });
 }
@@ -5432,6 +5690,11 @@ if(restoreSession()){
     pullPendingFromFeishu().then(()=>{renderMemberList();});
     // V5.3.1: 会话恢复同样启动轮询,重启APP后跨网络审批通知不中断
     startPendingPolling();
+  }else if(state.currentUser){
+    // V10.3 问题3/5.1: 组员会话恢复同样启动账号存活守卫,被删账号重启APP后立即拦截
+    startMemberGuardPolling();
+    // V10.3 问题5.2: 启动即检查云端新数据(红点提示)
+    checkCloudDataUpdate(true);
   }
 }else{
   showScreen('screen-login');

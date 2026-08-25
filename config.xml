@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.taicanggang.poweroff" version="10.2.0" android-versionCode="100200" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+<widget id="com.taicanggang.poweroff" version="10.3.0" android-versionCode="100300" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>太仓港断电指导</name>
     <description>太仓港商品车断电操作标准化指导平台</description>
     <author email="dev@taicanggang.com" href="https://github.com/361087210/taicanggang-poweroff-guide">Taicanggang Dev Team</author>

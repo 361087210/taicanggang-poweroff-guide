@@ -61,7 +61,7 @@ setTimeout(async () => {
   console.log('维度1: 页面加载与全局结构');
   console.log('='.repeat(62));
   check('1.1 demo.html 无JS语法错误(内联脚本已执行)', typeof G('goBack') === 'function');
-  check('1.2 APP_VERSION 已升级 5.7.0', G('APP_VERSION') === '5.7.0', String(G('APP_VERSION')));
+  check('1.2 APP_VERSION 为语义化三段版本', /^\d+\.\d+\.\d+$/.test(String(G('APP_VERSION'))), String(G('APP_VERSION')));
   check('1.3 DEFAULT_FEISHU_CONFIG 内置凭证', G('DEFAULT_FEISHU_CONFIG.appId') === 'cli_aa0ce4fd91f85be8');
   // V5.7.1 安全规范: 不在代码中比对明文Secret, 改为格式校验(32位) + 可选环境变量比对
   const _decSecret = G('DEFAULT_FEISHU_CONFIG.appSecret');
@@ -192,11 +192,14 @@ setTimeout(async () => {
     console.log('维度6: 双端数据一致性');
     console.log('='.repeat(62));
     const versionJson = JSON.parse(fs.readFileSync(path.join(REPO, 'version.json'), 'utf8'));
-    check('6.1 version.json 版本=5.7.0', versionJson.version === '5.7.0', versionJson.version);
-    check('6.2 version.json versionCode=50700', versionJson.versionCode === 50700, String(versionJson.versionCode));
+    const appVer = String(G('APP_VERSION'));
+    const expectCode = appVer.split('.').reduce((acc,p,i)=>acc + parseInt(p,10)*[10000,100,1][i], 0);
+    // V10.3: 版本断言改为动态三端一致(硬编码版本号会在每次发版时陈旧失败)
+    check('6.1 version.json 版本与APP_VERSION一致', versionJson.version === appVer, `version.json=${versionJson.version} APP=${appVer}`);
+    check('6.2 version.json versionCode与版本号对应', versionJson.versionCode === expectCode, `versionCode=${versionJson.versionCode} 期望=${expectCode}`);
     const cfgXml = fs.readFileSync(path.join(REPO, 'config.xml'), 'utf8');
-    check('6.3 config.xml 版本=5.7.0/50700 双一致',
-      cfgXml.includes('version="5.7.0"') && cfgXml.includes('android-versionCode="50700"'));
+    check('6.3 config.xml 版本与version.json双一致',
+      cfgXml.includes(`version="${versionJson.version}"`) && cfgXml.includes(`android-versionCode="${versionJson.versionCode}"`));
     check('6.4 version.json feishuConfig 与APP内置一致',
       versionJson.feishuConfig && versionJson.feishuConfig.appId === 'cli_aa0ce4fd91f85be8'
       && Array.isArray(versionJson.feishuConfig.dataSubFolders) && versionJson.feishuConfig.dataSubFolders.length === 4);

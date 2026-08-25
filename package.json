@@ -10,6 +10,7 @@
     "test:cross": "node tests/test_v57_cross_network.js",
     "test:integration": "python tests/test_v57_integration.py",
     "test:runtime": "node tests/test_v53_runtime.js",
-    "test:all": "npm run test:logic && npm run test:runtime && npm run test:cross"
+    "test:v103": "node tests/test_v103_fixes.js",
+    "test:all": "npm run test:logic && npm run test:runtime && npm run test:cross && npm run test:v103"
   }
 }
