@@ -11,6 +11,7 @@
     "test:integration": "python tests/test_v57_integration.py",
     "test:runtime": "node tests/test_v53_runtime.js",
     "test:v103": "node tests/test_v103_fixes.js",
-    "test:all": "npm run test:logic && npm run test:runtime && npm run test:cross && npm run test:v103"
+    "test:v104": "node tests/test_v104_fixes.js",
+    "test:all": "npm run test:logic && npm run test:runtime && npm run test:cross && npm run test:v103 && npm run test:v104"
   }
 }
