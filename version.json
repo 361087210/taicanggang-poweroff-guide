@@ -1,16 +1,13 @@
 {
-  "version": "10.4.0",
-  "versionCode": 100400,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.4.0/tcg_poweroff_v10.4.0.apk",
+  "version": "10.5.0",
+  "versionCode": 100500,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.5.0/tcg_poweroff_v10.5.0.apk",
   "releaseNotes": [
-    "V10.4.0 根因修复版——一句话总结: 补上缺失的cordova.js桥接层,分享/缓存/返回键三大真机故障同源根治",
-    "- 修复(根因): demo.html从未加载cordova.js(构建时由Cordova生成),deviceready永不触发,socialsharing/文件/返回键插件JS桥全部未注入——问题1/2/5.1三大故障的共同根源,一行补齐",
-    "- 修复(问题1): 系统分享面板调起——桥接层补齐后socialsharing插件链路激活(file://URI→FileProvider→原生分享面板);文本分享冷启动加固(等待deviceready最多3秒,不再误降级剪贴板)",
-    "- 修复(问题2): 缓存加载/删除——文件插件JS桥补齐后resolveLocalFileSystemURL就绪,冷启动缓存列表正常加载,选中项正常删除;视频播放标记:观看≥3秒或播完自动标记,缓存管理列表带「已播放」徽标,清理时可区分看过/未看过;索引元数据合并写入,播放标记不被落盘回调冲掉",
-    "- 修复(问题5.1): 视频退出全屏后无法手势返回——全屏切换改为标准进出双语义(旧版只进不出);关闭播放器先退全屏再清媒体源(顺序修复:无媒体源时exitFullscreen在部分ROM抛异常);返回键最优先处理全屏退出,保证「全屏→返回→退全屏→再返回→关播放器」标准链路;主界面双击返回退出随backbutton注册恢复",
-    "- 修复(问题4): 数据同步无法滑到底——旧WebView未实现flex滚动容器min-height:auto→0规则,flex-1子项被内容撑开遭overflow:hidden裁剪,显式min-height:0恢复滚动区",
-    "- 修复(问题5.2): 跨端网格员申请静默处理——注册申请携带source来源标识;组长端对跨端申请(无标识/他端标识)自动激活并显示于组员列表(带「跨端」徽标),不弹通知不进审批队列,仅同步日志留痕;本端申请保留人工审批流程",
-    "- 继承V10.3.0: 系统级分享双链路/缓存删除z-index修复/删号踢出/同步体验;继承V10.2.0: 视频本地持久缓存+缓存管理;继承V10.1.0: 批量导出折叠+组员管理红点通知"
+    "V10.5.0 分享真实化+缓存留存版——一句话总结: 分享链路反转根治「只分享文件名文本」,缓存视频/文档支持保存到手机「下载」目录长期留存",
+    "- 修复(问题2根因): 导出分享只带出数据名称文本——旧版Web Share API优先,Android WebView的navigator.share长期不支持文件分享(files参数被静默丢弃,分享面板只带出文件名文本);V10.5.0反转链路:Cordova环境下socialsharing原生插件优先(文件落盘→file://URI→原生Intent.ACTION_SEND真实附件,微信/QQ/钉钉/飞书稳定接收文件本体),Web Share API降为浏览器主链路/原生失败保底,且必须canShare({files})校验通过才调用,杜绝文本-only静默降级",
+    "- 新增(问题1): 清理缓存界面「保存到本地」——缓存视频/文档原存储于App私有目录(文件管理器不可见),现支持一键复制到公共「下载/太仓港断电指导」目录长期留存;选中即保存,保存不删除源缓存(保存≠清理);Android 11+免权限直写,Android 10走legacy存储,Android 6-9保存前主动申请存储权限,公共目录不可写时自动降级App外部目录,全版本可用",
+    "- 清理(问题3): 移除死代码modal-share分享面板(纯静态占位UI,无任何JS引用,真实分享走系统原生面板),降低维护噪音与包体冗余",
+    "- 继承V10.4.0: cordova.js桥接层/缓存播放标记/全屏返回链路;继承V10.3.0: 系统级分享双链路/删号踢出;继承V10.2.0: 视频本地持久缓存+缓存管理"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
