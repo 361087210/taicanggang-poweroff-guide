@@ -1154,7 +1154,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='5.9.0';
+const APP_VERSION='10.0.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1241,9 +1241,14 @@ function _activateScreen(id){
     const memMenu=document.getElementById('menu-members');
     if(memMenu)memMenu.style.display=canEdit()?'flex':'none';
   }
-  // V5.7: 组长打开组员管理页立即拉取云端注册申请(非静默,确保有反馈)
+  // V10.0: 组长打开组员管理页立即拉取云端注册申请(非静默,确保有反馈)
   if(id==='screen-members'&&isLeader()){
-    pullPendingFromFeishu(false).then(()=>{renderMemberList();}).catch(()=>{});
+    pullPendingFromFeishu(false).then(()=>{
+      renderMemberList();
+    }).catch((e)=>{
+      console.warn('[审核] 进入组员管理页拉取申请失败:',e);
+      renderMemberList(); // 仍渲染本地缓存的用户列表
+    });
   }
   if(id==='screen-password'){
     const acct=document.getElementById('pw-current-account');
@@ -2096,88 +2101,117 @@ async function shareVehicleDetail(){
  * @param {string} [title] - 分享面板标题(缺省用文件名)
  */
 /**
- * V5.8.2 分享文件——增加输入验证+JSDoc类型注解
- * 方案1步骤二：验证分享请求的参数有效性后再调用原生分享
+ * V10.0 分享文件——对齐安装包V1.8方案,实际调起系统分享面板
+ * 根因分析(为什么之前"只显示生成成功但分享不了"):
+ *   旧版优先调socialsharing插件,但部分Android ROM上该插件的success回调
+ *   被立即调用却不弹出系统分享面板(静默成功),导致用户看到"已打开分享面板"
+ *   提示但实际什么都没发生。Web Share API(navigator.share)被排在第二位,
+ *   且canShare检查可能误判导致跳过。
+ * 对齐方案(基准: 安装包V1.8 Capacitor Share插件):
+ *   V1.8用Capacitor Filesystem写文件→getUri→Share.share({files:[uri]})
+ *   在Android原生侧等价于Intent.ACTION_SEND,与navigator.share(files)同源。
+ *   故本版改为: navigator.share(File)优先 → socialsharing(file://URI) → 下载兜底
  * @param {Blob} blob - 要分享的二进制数据
  * @param {string} filename - 文件名（含扩展名）
  * @param {string} mimeType - MIME类型
  * @param {string} [title] - 分享面板标题
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} true=分享面板已调起, false=降级到下载
  */
 async function shareFile(blob,filename,mimeType,title){
-  // V5.8.2: 分享前输入验证(方案1步骤一：检查文件路径和格式)
-  if(!blob||!(blob instanceof Blob)){showToast('分享失败：数据无效');return;}
-  if(blob.size===0){showToast('分享失败：文件为空');return;}
-  if(!filename||typeof filename!=='string'){showToast('分享失败：文件名无效');return;}
-  // V5.8.1: 原生分享插件未注入时主动等待deviceready(首次调用可能早于插件就绪)
-  // 延长等待至3秒——部分低端Android设备插件注入较慢,2秒不够
-  if(!hasNativeShare()&&window.cordova){
-    await new Promise(res=>{
-      let done=false;
-      const timer=setTimeout(()=>{if(!done){done=true;res();}},3000);
-      document.addEventListener('deviceready',()=>{if(!done){done=true;clearTimeout(timer);res();}},{once:true});
-    });
-  }
-  // 1. 原生社交分享: 调起系统分享面板,微信/QQ/钉钉接收Word/PDF/Excel文件
-  if(hasNativeShare()){
+  // 输入验证
+  if(!blob||!(blob instanceof Blob)){showToast('分享失败：数据无效');return false;}
+  if(blob.size===0){showToast('分享失败：文件为空');return false;}
+  if(!filename||typeof filename!=='string'){showToast('分享失败：文件名无效');return false;}
+  // 修正MIME(确保与文件扩展名一致,避免微信识别异常)
+  const ext=(filename.split('.').pop()||'dat').toLowerCase();
+  let fixedMime=mimeType||'application/octet-stream';
+  if(ext==='docx'&&!/wordprocessingml/.test(mimeType||''))fixedMime='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if(ext==='xlsx'&&!/spreadsheetml/.test(mimeType||''))fixedMime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if(ext==='doc'&&!/msword/.test(mimeType||''))fixedMime='application/msword';
+  if(ext==='pdf')fixedMime='application/pdf';
+  if(ext==='json')fixedMime='application/json';
+  if(ext==='csv')fixedMime='text/csv;charset=utf-8';
+  console.log('[分享] 开始分享:',filename,'大小:',(blob.size/1024).toFixed(1)+'KB','MIME:',fixedMime);
+
+  // ① 优先: Web Share API with files (对齐V1.8: navigator.share等价于原生Intent.ACTION_SEND)
+  // 这是Android 7+ WebView的标准系统分享,调起原生分享面板(微信/QQ/钉钉/飞书等)
+  if(typeof navigator!=='undefined'&&typeof navigator.share==='function'){
     try{
-      // 修正MIME(确保与文件扩展名一致,避免微信识别异常)
-      const ext=(filename.split('.').pop()||'dat').toLowerCase();
-      let fixedMime=mimeType||'application/octet-stream';
-      if(ext==='docx'&&!/wordprocessingml/.test(mimeType||''))fixedMime='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      if(ext==='xlsx'&&!/spreadsheetml/.test(mimeType||''))fixedMime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      if(ext==='doc'&&!/msword/.test(mimeType||''))fixedMime='application/msword';
-      if(ext==='pdf')fixedMime='application/pdf';
-      // V5.3: 优先写真实文件分享(file://路径),微信/QQ/钉钉对base64 DataURL
-      // 兼容性差(部分版本只显示文本不带附件),文件路径被所有主流App稳定识别
-      let shareFiles=null;
-      if(window.resolveLocalFileSystemURL&&window.cordova){
-        try{
-          const safeName=filename.replace(/[\/\\:*?"<>|]/g,'_');
-          const fileUrl=await writeBlobToCache(safeName,blob);
-          shareFiles=[fileUrl];
-          console.log('[分享] 文件已写入缓存:',fileUrl);
-        }catch(e){
-          console.warn('[分享] 缓存文件写入失败,回退base64分享:',e.message);
+      const file=new File([blob],filename,{type:fixedMime});
+      // canShare可用时检查,不可用时直接尝试(部分WebView支持share但不实现canShare)
+      if(typeof navigator.canShare==='function'){
+        if(navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:title||filename,text:filename});
+          console.log('[分享] Web Share API成功');
+          return true; // 分享面板已调起
         }
+      }else{
+        // 无canShare但share可用——直接尝试,AbortError=用户取消(面板已弹出)
+        await navigator.share({files:[file],title:title||filename,text:filename});
+        console.log('[分享] Web Share API成功(无canShare预检)');
+        return true;
       }
-      if(!shareFiles){
-        // base64回退: 文件名保留中文名,接收方按MIME类型识别
-        const dataUrl=await blobToDataURL(blob);
-        shareFiles=[dataUrl.replace(/^data:[^;]*;/,`data:${fixedMime};`)];
-      }
-      console.log('[分享] 调用原生分享面板,文件:',filename,'大小:',(blob.size/1024).toFixed(1)+'KB');
-      await new Promise((resolve,reject)=>{
-        window.plugins.socialsharing.shareWithOptions(
-          // V5.8.1: message传文件名便于接收方识别,dialogTitle更明确
-          {message:filename,subject:filename,title:title||filename,dialogTitle:'分享到其他应用',files:shareFiles},
-          ()=>{console.log('[分享] 原生分享成功');resolve();},
-          err=>{console.error('[分享] 原生分享失败:',JSON.stringify(err));reject(err);}
-        );
-      });
-      // V5.8.1: 原生分享成功后给明确提示(旧版静默return导致用户以为没反应)
-      showToast('已打开分享面板,请选择目标应用');
-      return;
     }catch(e){
-      if(e==='canceled')return; // 用户主动取消,静默处理
-      console.warn('[分享] 原生分享失败,降级到Web Share API:',e);
-      // V5.8.1: 不静默降级,先提示用户
-      showToast('原生分享异常,尝试其他方式...');
+      if(e&&e.name==='AbortError'){
+        console.log('[分享] 用户取消分享');
+        return true; // 面板弹出了但用户取消,仍算成功调起
+      }
+      console.warn('[分享] Web Share API失败,降级到原生插件:',e&&e.message);
     }
   }
-  // 2. Web Share API Level 2: 系统分享面板(支持文件的浏览器/WebView)
-  if(navigator.canShare&&navigator.canShare({files:[new File([blob],filename,{type:mimeType})]})){
-    try{
-      await navigator.share({files:[new File([blob],filename,{type:mimeType})],title:title||filename});
-    }catch(e){if(e.name!=='AbortError')showToast('分享取消');}
-    return;
+
+  // ② 降级: Cordova socialsharing插件 (写文件到缓存→file://URI→原生分享面板)
+  if(window.cordova){
+    // 等待deviceready(首次调用可能早于插件就绪)
+    if(!hasNativeShare()){
+      await new Promise(res=>{
+        let done=false;
+        const timer=setTimeout(()=>{if(!done){done=true;res();}},3000);
+        document.addEventListener('deviceready',()=>{if(!done){done=true;clearTimeout(timer);res();}},{once:true});
+      });
+    }
+    if(hasNativeShare()){
+      try{
+        let shareFiles=null;
+        // 优先写真实文件分享(file://路径),微信/QQ/钉钉稳定识别
+        if(window.resolveLocalFileSystemURL&&window.cordova&&window.cordova.file){
+          try{
+            const safeName=filename.replace(/[\/\\:*?"<>|]/g,'_');
+            const fileUrl=await writeBlobToCache(safeName,blob);
+            shareFiles=[fileUrl];
+            console.log('[分享] 文件已写入缓存:',fileUrl);
+          }catch(e){
+            console.warn('[分享] 缓存写入失败,尝试base64:',e.message);
+          }
+        }
+        if(!shareFiles){
+          const dataUrl=await blobToDataURL(blob);
+          shareFiles=[dataUrl.replace(/^data:[^;]*;/,`data:${fixedMime};`)];
+        }
+        console.log('[分享] 调用socialsharing,文件:',filename);
+        await new Promise((resolve,reject)=>{
+          window.plugins.socialsharing.shareWithOptions(
+            {message:filename,subject:filename,title:title||filename,dialogTitle:'选择保存或分享方式',files:shareFiles},
+            ()=>{console.log('[分享] socialsharing回调成功');resolve();},
+            err=>{console.error('[分享] socialsharing失败:',JSON.stringify(err));reject(err);}
+          );
+        });
+        return true; // 分享面板已调起
+      }catch(e){
+        if(e==='canceled'){console.log('[分享] 用户取消');return true;}
+        console.warn('[分享] socialsharing失败,降级到下载:',e);
+      }
+    }
   }
-  // 3. 兜底: 触发浏览器下载
+
+  // ③ 兜底: 浏览器下载
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;a.download=filename;a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),3000);
-  showToast('文件已下载: '+filename);
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),5000);
+  showToast('文件已保存: '+filename);
+  return false; // 下载兜底,非系统分享
 }
 
 function getVehicleShareText(v){
@@ -2963,7 +2997,6 @@ async function exportData(format){
       const payload={appVersion:APP_VERSION,backupAt:new Date().toISOString(),vehicles:selectedVehicles,users:USERS};
       const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
       await shareFile(blob,`vehicle_export_${n}_${Date.now()}.json`,'application/json','车辆断电数据导出');
-      showToast(`已导出 ${n} 条记录为 JSON`);
     }else if(format==='csv'){
       // 对齐APK: 11列标准表头(含钥匙-框架/集装箱/步骤数),CRLF行尾保证Windows Excel兼容
       const headers=['品牌','车系','配置','显示名称','车辆尺寸','动力类型','断电位置','钥匙-框架','钥匙-集装箱','步骤数','备注'];
@@ -2971,36 +3004,27 @@ async function exportData(format){
         (v.keyFrame||[]).join('; '),(v.keyContainer||[]).join('; '),String((v.steps||[]).length),v.remarks||'']);
       const csv='\uFEFF'+[headers,...rows].map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
       const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-      // 对齐APK: CSV不传分享标题(原生面板title回退为文件名)
       await shareFile(blob,`vehicle_poweroff_export_${Date.now()}.csv`,'text/csv;charset=utf-8');
-      showToast(`已导出 ${n} 条记录为 CSV`);
     }else if(format==='excel'){
-      // V5.9.0 问题1两步流程·第一步: 生成含照片的Excel(前10辆详情子表各内嵌≤4张)
-      showToast('正在获取车辆照片...');
+      showToast('正在生成含照片Excel...');
       const rawMap=await preparePhotoMapSafe(selectedVehicles);
       const photoMap=await shrinkPhotoMapForExcel(rawMap);
       const buf=generateExcelBatch(selectedVehicles,photoMap);
       const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       await shareFile(blob,`vehicle_poweroff_export_${n}_${Date.now()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      showToast(`已导出 ${n} 条记录为 Excel`);
     }else if(format==='pdf'){
       if(!window.jspdf){showToast('PDF组件未打包,请更新至新版安装包');return;}
-      // V5.3.2: 先预取照片(本地→飞书云端)转base64,再生成内嵌图片的PDF
-      // V5.7: 超时保护,照片不可达时导出无图PDF而非卡死
-      showToast('正在获取车辆照片...');
+      showToast('正在生成含照片PDF...');
       const photoMap=await preparePhotoMapSafe(selectedVehicles);
       const blob=generatePDF(selectedVehicles,photoMap);
       await shareFile(blob,`vehicle_poweroff_export_${n}_${Date.now()}.pdf`,'application/pdf');
-      showToast(`已导出 ${n} 条记录为 PDF`);
     }else if(format==='word'){
-      showToast('正在获取车辆照片...');
+      showToast('正在生成含照片Word...');
       const photoMap=await preparePhotoMapSafe(selectedVehicles);
       const blob=generateWord(selectedVehicles,photoMap);
       const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       const ext=mimeType.includes('msword')?'doc':'docx';
-      // 对齐APK批量Word命名: 车辆断电指南_批量_{n}_{ts}.docx
       await shareFile(blob,`车辆断电指南_批量_${n}_${Date.now()}.${ext}`,mimeType);
-      showToast(`已导出 ${n} 条记录为 Word（含照片）`);
     }
     // 对齐APK: 导出成功后清空选择,避免二次导出重复携带旧选择集
     state.selectedVehicles.clear();
@@ -3028,35 +3052,34 @@ async function exportSingle(format){
     showToast(names[format]+'库加载失败，正在使用降级方案...');
   }
   setExportLoading('detail',format);
+  let shared=false; // shareFile返回值: true=系统分享面板已调起
   try{
     if(format==='excel'){
-      // V5.9.0 问题1两步流程·第一步: 生成含照片的Excel
-      // (照片预取→降采样→DrawingML内嵌,任一环节失败自动回退无图版本)
-      showToast('正在获取车辆照片...');
+      showToast('正在生成含照片Excel...');
       const rawMap=await preparePhotoMapSafe([v]);
       const photoMap=await shrinkPhotoMapForExcel(rawMap);
       const buf=generateExcelSingle(v,photoMap);
       const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-      // 对齐APK: 单车导出不传分享标题(原生面板title回退为文件名)
-      await shareFile(blob,`${v.display}_断电指南.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      shared=await shareFile(blob,`${v.display}_断电指南.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }else if(format==='pdf'){
       if(!window.jspdf){showToast('PDF组件未打包,请更新至新版安装包');return;}
-      // V5.3.2: 预取照片转base64后内嵌(与批量导出同一回退链)
-      // V5.7: 超时保护,照片不可达时导出无图PDF而非卡死
-      showToast('正在获取车辆照片...');
+      showToast('正在生成含照片PDF...');
       const photoMap=await preparePhotoMapSafe([v]);
       const blob=generatePDF([v],photoMap);
-      await shareFile(blob,`${v.display}_断电指南.pdf`,'application/pdf');
+      shared=await shareFile(blob,`${v.display}_断电指南.pdf`,'application/pdf');
     }else if(format==='word'){
-      showToast('正在获取车辆照片...');
+      showToast('正在生成含照片Word...');
       const photoMap=await preparePhotoMapSafe([v]);
       const blob=generateWord([v],photoMap);
       const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       const ext=mimeType.includes('msword')?'doc':'docx';
-      await shareFile(blob,`${v.display}_断电指南.${ext}`,mimeType);
+      shared=await shareFile(blob,`${v.display}_断电指南.${ext}`,mimeType);
     }
-    // V5.9.0 问题1: 提示明确两步流程已走完(生成含照片文档→系统分享面板已调起)
-    showToast(`${names[format]}文档已生成${hasNativeShare()?'，可分享到微信/QQ/钉钉/飞书':''}`);
+    // V10.0: 只有分享面板未调起(降级下载)时才额外提示;面板已弹出则不再toast
+    if(!shared){
+      // shareFile内部已显示"文件已保存"toast,此处不再重复
+      console.log('[导出] '+names[format]+'降级为本地保存');
+    }
   }catch(err){
     console.error('单车导出失败:',err);
     showToast(`导出 ${names[format]} 失败: `+(err&&err.message?err.message:'未知错误'));
@@ -3080,9 +3103,8 @@ async function shareBackup(){
   try{
     const payload={appVersion:APP_VERSION,backupAt:new Date().toISOString(),vehicles:VEHICLES,users:USERS};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-    // 对齐APK: 备份不传分享标题(原生面板title回退为文件名)
-    await shareFile(blob,`vehicle_poweroff_backup_${Date.now()}.json`,'application/json');
-    showToast('备份文件已生成，请选择分享方式');
+    const shared=await shareFile(blob,`vehicle_poweroff_backup_${Date.now()}.json`,'application/json');
+    // shareFile内部已处理toast(成功调起面板不额外提示,降级下载显示"已保存")
     addSyncLog(`分享备份完成 · ${VEHICLES.length}条车辆数据`,'blue');
   }catch(err){
     console.error('分享备份失败:',err);
@@ -4346,22 +4368,29 @@ function renderMemberList(){
     const pending=USERS.filter(u=>u.status==='pending');
     const pcount=document.getElementById('pending-count');
     if(pcount)pcount.textContent=pending.length?`(${pending.length})`:'';
-    pc.innerHTML=pending.map(u=>`
-      <div class="py-3 px-3 bg-orange-50 rounded-lg">
+    // V10.0: 增强待审核列表UI——显示完整注册信息,组长可清楚看到申请人详情
+    pc.innerHTML=pending.map(u=>{
+      const timeStr=u.created||'未知';
+      const roleStr=u.role==='admin'?'组长':(u.role==='user'?'组员':u.role||'未知');
+      return `
+      <div class="py-3 px-3 bg-orange-50 rounded-lg border border-orange-200">
         <div class="flex items-start justify-between mb-2">
-          <div class="flex-1">
-            <div class="text-sm font-medium text-gray-800">${esc(u.name)}</div>
-            <div class="text-xs text-gray-500 mt-0.5">手机：${esc(u.phone)}</div>
-            <div class="text-xs text-gray-400 mt-0.5">申请时间：${esc(u.created||'未知')}</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-sm font-bold text-gray-900">${esc(u.name)}</span>
+              <span class="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-600 rounded">${esc(roleStr)}</span>
+            </div>
+            <div class="text-xs text-gray-600 mt-0.5">手机：${esc(u.phone)}</div>
+            <div class="text-xs text-gray-400 mt-0.5">申请时间：${esc(timeStr)}</div>
             ${u.remarks?`<div class="text-xs text-gray-400 mt-0.5">备注：${esc(u.remarks)}</div>`:''}
           </div>
-          <div class="flex flex-col gap-1.5 ml-2">
-            <button onclick="approveMember(${u.id})" class="px-3 py-1 text-xs text-white bg-green-500 rounded-lg font-medium">通过</button>
-            <button onclick="rejectMember(${u.id})" class="px-3 py-1 text-xs text-red-500 bg-red-50 rounded-lg font-medium">拒绝</button>
+          <div class="flex flex-col gap-1.5 ml-2 flex-shrink-0">
+            <button onclick="approveMember(${u.id})" class="px-3 py-1.5 text-xs text-white bg-green-500 rounded-lg font-medium active:bg-green-600">通过</button>
+            <button onclick="rejectMember(${u.id})" class="px-3 py-1.5 text-xs text-red-600 bg-red-50 rounded-lg font-medium active:bg-red-100">拒绝</button>
           </div>
         </div>
-      </div>
-    `).join('')||'<div class="text-center text-sm text-gray-400 py-4">暂无待审核注册</div>';
+      </div>`;
+    }).join('')||'<div class="text-center text-sm text-gray-400 py-4">暂无待审核注册</div>';
   }
 }
 
@@ -4422,23 +4451,21 @@ async function refreshPending(){
  * @returns {void}
  */
 function approveMember(id){
-  // V5.8.2: 权限验证——只有组长(role=leader)才能审核(方案4步骤一)
-  if(!state.currentUser||state.currentUser.role!=='leader'){
+  // V10.0修复: 权限验证——组长角色为'admin'(非'leader'),旧版检查role!=='leader'
+  // 导致组长永远无法通过审核(条件恒为true,始终return),是问题3的直接根因
+  if(!state.currentUser||!isLeader()){
     showToast('权限不足: 仅组长可审核注册申请');
     return;
   }
   const u=USERS.find(x=>x.id===id);
   if(!u){showToast('用户不存在');return;}
-  // V5.8.1: 通过也加确认,防止误触(审批操作不可撤销)
   showConfirm('通过审核',`确认通过「${u.name}(${u.phone})」的注册申请？`,async()=>{
     try{
       u.status='active';saveUsers(USERS);renderMemberList();showToast('已通过审核');
-      // V5.8.2: 推送审批结果到飞书,捕获网络错误(方案4步骤三)
       await pushApprovedUsersToFeishu().catch(err=>{
         console.error('[审核] 推送审批结果失败:',err);
         showToast('已通过,但云端同步失败,稍后自动重试');
       });
-      // V5.7: 审批完成后删除云端申请文件,防止其他组长设备重复处理
       deletePendingFileFromFeishu(u.phone).catch(err=>{
         console.warn('[审核] 删除云端申请文件失败:',err.message);
       });
@@ -4455,8 +4482,8 @@ function approveMember(id){
  * @returns {void}
  */
 function rejectMember(id){
-  // V5.8.2: 权限验证
-  if(!state.currentUser||state.currentUser.role!=='leader'){
+  // V10.0修复: 权限验证使用isLeader()(role==='admin'),旧版role!=='leader'恒为true
+  if(!state.currentUser||!isLeader()){
     showToast('权限不足: 仅组长可审核注册申请');
     return;
   }
