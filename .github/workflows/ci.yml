@@ -1,7 +1,8 @@
 # =============================================================================
-# CI 资产校验流水线 (落实优化方案「问题5: CI/CD规范化」)
+# CI 资产校验 + 单元测试流水线 (落实优化方案「问题5: CI/CD规范化」)
 # 触发: 每次 push / PR
 # 关卡: 文件完整性 / JS语法 / 关键能力标记 / JSON合法性 / 凭证泄露扫描 / 映射表漂移
+#       / 逻辑测试 / 运行时仿真测试 / 版本专项测试(V10.3)
 # =============================================================================
 name: CI
 
@@ -33,6 +34,18 @@ jobs:
 
       - name: 映射表一致性校验(与vehicles_data.js无漂移)
         run: node scripts/gen_media_mapping.js --check
+
+      - name: 安装测试依赖(jsdom)
+        run: npm ci --ignore-scripts || npm install --no-audit --no-fund
+
+      - name: 逻辑测试(30项)
+        run: npm run test:logic
+
+      - name: 运行时仿真测试(21项)
+        run: npm run test:runtime
+
+      - name: 版本专项测试(V10.3问题修复61项)
+        run: npm run test:v103
 
       - name: 上传校验摘要
         if: always()
