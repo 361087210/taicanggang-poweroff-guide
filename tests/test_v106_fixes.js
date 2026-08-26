@@ -91,28 +91,42 @@ console.log('-- 问题4: IndexedDB持久化+照片分离上传 --');
 check('A17 问题4: IndexedDB持久化层存在(库tcg_poweroff/仓vehicles/键user_data)',
   /async function persistVehicles\(\)/.test(html) && /async function loadPersistedVehicles\(\)/.test(html)
   && html.includes("indexedDB.open('tcg_poweroff'") && html.includes("'user_data'"));
-check('A18 问题4: 新增/编辑保存后立即持久化', /persistVehicles\(\);\s*\n\s*showToast\('保存成功'\)/.test(html));
+// V10.7.0: 保存流程在persistVehicles()后新增scheduleAutoSyncAfterSave()调度
+// (保存即自动同步,8秒防抖),持久化语义不变——断言放宽中间可插入调度调用
+check('A18 问题4: 新增/编辑保存后立即持久化(V10.7.0后接自动同步调度)',
+  /persistVehicles\(\);\s*\n\s*(\/\*[\s\S]*?\*\/\s*\n\s*)?scheduleAutoSyncAfterSave\(\);\s*\n\s*showToast\('保存成功'\)/.test(html));
 check('A19 问题4: 删除车辆同步持久化', /VEHICLES\.splice\(idx,1\);persistVehicles\(\);/.test(html));
 check('A20 问题4: 启动时序先恢复快照再渲染(异步IIFE包裹)', /\(async\(\)=>\{\s*\nawait loadPersistedVehicles\(\);/.test(html));
 check('A21 问题4: 照片分离上传函数存在(降采样归一+哈希文件名+vehicle_images目录)',
   /async function syncUploadVehiclePhotos\(token,vehicles\)/.test(html)
   && /async function _normalizePhotoForUpload\(dataUrl,maxEdge\)/.test(html)
   && html.includes('user_v${v.id}_p${i+1}_${hash}.jpeg') && html.includes("getDataSubFolderToken(token,'vehicle_images')"));
-check('A22 问题4: 同步上传前先分离照片再写JSON(根因修复顺序)',
+// V10.7.0: 上传管线重构为_syncUploadPipeline(手动/自动共用单一事实源),
+// 顺序断言改为管线内照片分离先于车型JSON上传(比旧"先于toast文案"更本质)
+const pipeStart = html.indexOf('async function _syncUploadPipeline()');
+const pipeEnd = html.indexOf('function doSyncUpload()');
+const pipeSrc = pipeStart >= 0 && pipeEnd > pipeStart ? html.substring(pipeStart, pipeEnd) : '';
+check('A22 问题4: 同步上传前先分离照片再写JSON(根因修复顺序,V10.7.0管线内断言)',
   /const photoStat=await syncUploadVehiclePhotos\(token,VEHICLES\);/.test(html)
-  && html.indexOf('syncUploadVehiclePhotos(token,VEHICLES)') < html.indexOf('正在上传同步数据'));
+  && pipeSrc.indexOf('syncUploadVehiclePhotos(token,VEHICLES)') >= 0
+  && pipeSrc.indexOf('syncUploadVehiclePhotos(token,VEHICLES)') < pipeSrc.indexOf("uploadJsonToDataFeishu(token,'vehicle_sync_data.json'"));
 check('A23 问题4: 照片路径替换后持久化+同步合并后持久化(双钩子)',
   /if\(photoStat\.replaced>0\)\{\s*\n\s*persistVehicles\(\);/.test(html)
   && /if\(totalChanges>0\)persistVehicles\(\);/.test(html));
 
 // ---- 问题6: 版本一致性 ----
-console.log('-- 问题6: 版本10.6.0一致性 --');
-check('A24 问题6: demo.html APP_VERSION=10.6.0', /const APP_VERSION='10\.6\.0';/.test(html));
-check('A25 问题6: config.xml version/versionCode=10.6.0/100600',
-  configXml.includes('version="10.6.0"') && configXml.includes('android-versionCode="100600"'));
-check('A26 问题6: version.json 10.6.0+下载链接指向v10.6.0',
-  versionJson.version === '10.6.0' && versionJson.versionCode === 100600
-  && versionJson.downloadUrl.includes('v10.6.0'));
+// V10.7.0: 版本断言改为"三端一致"动态校验(对齐v103/v104模式,发版免改测试)
+console.log('-- 问题6: 版本三端一致性(动态) --');
+const htmlVer = /const APP_VERSION='([0-9.]+)';/.exec(html);
+const cfgVer = /version="([0-9.]+)"/.exec(configXml);
+const cfgCode = /android-versionCode="(\d+)"/.exec(configXml);
+check(`A24 问题6: demo.html APP_VERSION=${versionJson.version} 与version.json一致`,
+  !!htmlVer && htmlVer[1] === versionJson.version);
+check('A25 问题6: config.xml version/versionCode与version.json一致',
+  !!cfgVer && !!cfgCode && cfgVer[1] === versionJson.version && Number(cfgCode[1]) === versionJson.versionCode,
+  `config=${cfgVer&&cfgVer[1]}/${cfgCode&&cfgCode[1]} json=${versionJson.version}/${versionJson.versionCode}`);
+check(`A26 问题6: version.json下载链接指向v${versionJson.version}`,
+  versionJson.downloadUrl.includes('v'+versionJson.version));
 
 /* ============================================================
  * B. 运行时行为验证
