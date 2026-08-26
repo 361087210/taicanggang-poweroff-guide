@@ -2,7 +2,10 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- V10.7.0 问题4: viewport-fit=cover 是刘海屏/挖孔屏安全区适配的前提——
+     缺失该声明时 iOS/部分Android WebView 的 env(safe-area-inset-*) 恒为0,
+     V10.6.0已有的--safe-top/--safe-bottom变量全部失效(顶部状态栏/底部手势条遮挡内容) -->
 <title>太仓港车辆断电指导</title>
 <!-- V5.3: 全部依赖库本地化打包,离线/弱网环境下界面与导出功能不再依赖CDN(港口现场网络受限场景刚需) -->
 <script src="vendor/tailwind.js"></script>
@@ -31,7 +34,7 @@ window.addEventListener('load', function() {
 <style>
 *{font-family:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
 body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
-:root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
+:root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);}
 
 /* Full-screen adaptive container */
 .phone-frame{width:100vw;height:100vh;height:100dvh;background:#f5f6fa;position:relative;overflow:hidden;}
@@ -184,6 +187,53 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 /* Safe area padding for status bar */
 .phone-frame .pt-12{padding-top:calc(var(--safe-top) + 12px);}
 .phone-frame .pb-24{padding-bottom:calc(var(--safe-bottom) + 24px);}
+
+/* ===================== V10.7.0 问题4: 全界面自适应近10年主流手机屏 =====================
+ * 目标设备带(2016-2026主流机型): 320×568(iPhone SE/小屏Android) ~ 480×960(折叠屏外屏/平板手机)
+ * 覆盖维度: ①安全区(刘海/挖孔/手势条) ②小屏(≤360px)防挤压 ③大屏(≥412px)防稀疏
+ *           ④矮屏(高≤620px)防溢出 ⑤超长屏(高≥850px)留白节奏 ⑥老旧WebView文本自缩放纠正
+ * 实现策略: 基线布局(100vw/dvh+safe-area变量) + 断点微调(间距/字号/网格),不动DOM结构零回归风险 */
+*{-webkit-text-size-adjust:100%;text-size-adjust:100%;} /* 老WebView禁用字体自动膨胀,布局不被撑破 */
+img,svg,video{max-width:100%;}
+.break-all{word-break:break-all;} /* 长车牌/长步骤文本在小屏不横向溢出 */
+
+/* ① 底部导航/FAB/Toast 抬升出手势条安全区(原固定px在全面屏上被系统手势条遮挡) */
+.bottom-nav{height:calc(64px + var(--safe-bottom));padding-bottom:var(--safe-bottom);}
+.fab{bottom:calc(80px + var(--safe-bottom));}
+.toast{bottom:calc(90px + var(--safe-bottom));white-space:normal;} /* 长提示自动换行,小屏不被截断 */
+
+/* ② 小屏(≤360px): 2016-2019入门机/SE——压缩间距与字号,关键操作区仍≥44px触控标准 */
+@media (max-width:360px){
+  .nav-tab{font-size:9px;padding:4px 10px;}
+  .nav-tab svg{width:22px;height:22px;}
+  .bs-item{padding:12px 14px;}
+  .phone-frame .text-lg{font-size:17px;}
+  .modal-sheet{max-height:86vh;} /* 小屏弹层给更多可视高度 */
+  .fab{width:48px;height:48px;right:14px;}
+}
+
+/* ③ 大屏(≥412px): 近年主流大屏机——内容卡片区限宽居中,避免文字行宽过长难读 */
+@media (min-width:412px){
+  .modal-center{max-width:400px;}
+  .modal-sheet{max-height:78vh;}
+}
+
+/* ④ 矮屏(高≤620px): 横屏/小尺寸机——压缩顶栏与最近查看区,保证列表可视高度 */
+@media (max-height:620px){
+  .phone-frame .pt-12{padding-top:calc(var(--safe-top) + 6px);}
+  #recent-section{display:none;} /* 矮屏隐藏"最近查看",列表区让位核心功能 */
+}
+
+/* ⑤ 超长屏(高≥850px): 21:9长比例机——底部导航上浮呼吸感,防误触手势条 */
+@media (min-height:850px){
+  .bottom-nav{height:calc(68px + var(--safe-bottom));}
+}
+
+/* ⑥ 横屏: 刘海/挖孔随旋转到侧边,内容左右同步内收安全区(竖屏变量在横屏恒为0,无副作用) */
+@media (orientation:landscape){
+  .phone-frame{padding-left:var(--safe-left);padding-right:var(--safe-right);}
+  .phone-frame .pt-12{padding-top:calc(var(--safe-top) + 6px);} /* 横屏顶栏更贴边,多给列表高度 */
+}
 </style>
     <script src="feishu-api.js"></script>
 </head>
@@ -211,7 +261,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <button onclick="showScreen('screen-forgot')" class="text-xs text-gray-400">忘记密码？</button>
 </div>
 </div>
-<div class="mt-6 text-white/30 text-xs anim-up" style="animation-delay:.3s">V5.1 · 2026-08-20</div>
+<div class="mt-6 text-white/30 text-xs anim-up" style="animation-delay:.3s" id="login-ver">V10.7.0</div>
 </div>
 </div>
 
@@ -469,7 +519,7 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.6.0</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.7.0</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -733,7 +783,9 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 <div class="text-white/60 text-xs" id="side-role">-</div>
 </div>
 <div class="flex-1 py-2">
-<div class="bs-item relative" onclick="showScreen('screen-members');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="text-sm text-gray-800">组员管理</span><span class="red-dot" id="members-badge-side">0</span></div></div>
+<!-- V10.7.0 问题3: 侧边菜单组员管理项加id——openSideMenu()按角色控制显隐,
+     组员端从车型页右上角菜单进入时不再看到组员管理入口 -->
+<div class="bs-item relative" id="side-menu-members" onclick="showScreen('screen-members');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="text-sm text-gray-800">组员管理</span><span class="red-dot" id="members-badge-side">0</span></div></div>
 <div class="bs-item" onclick="showScreen('screen-data');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据中心</span></div></div>
 <div class="bs-item" onclick="showScreen('screen-sync');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></svg><span class="text-sm text-gray-800">数据同步</span><span class="new-data-dot hidden" id="sync-new-dot-side"></span></div></div>
 <div class="bs-item" onclick="showScreen('screen-my');closeModal('modal-side-menu')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-gray-500"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="text-sm text-gray-800">个人中心</span></div></div>
@@ -1062,8 +1114,16 @@ async function httpFetch(url,opts){
 
 /**
  * 原生文件上传适配层 - 飞书upload_all接口
- * 原生HTTP插件的uploadFile只支持文件路径,WebView环境回退fetch+FormData
- * @param {string} url - 上传接口地址
+ * V10.7.0 问题2根因修复: cordova-plugin-advanced-http 3.x的uploadFile真实签名为
+ *   uploadFile(url, params, headers, filePath, name, success, failure) —— 7个扁平参数
+ * 旧版按"options对象"调用 http.uploadFile(url, options, done, fail),导致done落位到
+ * headers参数、fail落位到filePath参数,success/failure两位实参为undefined——
+ * 插件内部handleMissingCallbacks直接抛出
+ *   'advanced-http: missing mandatory "onSuccess" callback function'
+ * 这是"应用端数据同步到飞书失败"的直接根因(注册申请/照片/视频/备份全部上传通道被斩断)。
+ * 正确用法: params会由插件序列化为URL查询串,而飞书upload_all官方即支持查询串传参
+ * (file_name/parent_type/parent_node/size),二进制体由filePath+name以multipart携带。
+ * @param {string} url - 上传接口地址(固定飞书upload_all)
  * @param {Object} params - {token,fileName,folderToken,blob}
  * @returns {Promise<Object>} 上传接口响应
  */
@@ -1075,16 +1135,24 @@ async function httpUploadFile(params){
       const fileUrl=await writeBlobToCache(params.fileName,blob);
       const http=window.cordova.plugin.http;
       return new Promise((resolve,reject)=>{
-        const options={
-          method:'POST',
-          headers:{Authorization:'Bearer '+params.token},
-          filePath:fileUrl,
-          name:'file',
-          params:{file_name:params.fileName,parent_type:'explorer',parent_node:params.folderToken,size:String(blob.size)}
-        };
         const done=res=>{try{resolve(JSON.parse(res.data));}catch(e){resolve(res.data);}};
-        const fail=err=>reject(new Error(typeof err==='object'?(err.error||'上传失败'):String(err)));
-        http.uploadFile('https://open.feishu.cn/open-apis/drive/v1/files/upload_all',options,done,fail);
+        const fail=err=>reject(new Error(typeof err==='object'?(err.error||err.message||'上传失败'):String(err)));
+        // V10.7.0: 严格按插件7参数签名传递——params→查询串, headers→鉴权头,
+        // filePath→本地缓存文件, name→multipart字段名('file'为飞书约定), 回调殿后
+        try{
+          http.uploadFile(
+            'https://open.feishu.cn/open-apis/drive/v1/files/upload_all',
+            {file_name:params.fileName,parent_type:'explorer',parent_node:params.folderToken,size:String(blob.size)},
+            {Authorization:'Bearer '+params.token},
+            fileUrl,
+            'file',
+            done,
+            fail
+          );
+        }catch(syncErr){
+          // 插件参数校验同步抛错(如filePath非法)也走reject,不静默吞掉
+          reject(syncErr instanceof Error?syncErr:new Error(String(syncErr)));
+        }
       });
     }catch(e){console.warn('原生上传失败,回退fetch:',e);}
   }
@@ -1685,7 +1753,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.6.0';
+const APP_VERSION='10.7.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1934,6 +2002,8 @@ async function doLogin(){
     pullPendingFromFeishu().then(()=>{renderMemberList();});
     // V5.3.1: 启动60秒静默轮询,跨网络/跨设备实时接收新注册申请
     startPendingPolling();
+    // V10.7.0 问题1: 登录即迁移历史pending用户为默认通过(幂等)
+    autoApproveLegacyPendingUsers();
   }else{
     // V10.3 问题3/5.1: 组员登录即启动账号存活守卫——被删账号最多60秒内
     // 收到通知并强制退出,登录瞬间也会即时核查一次
@@ -1992,7 +2062,14 @@ async function doRegister(){
   const newUser={id:Date.now(),name,phone,password:hashedPass,role:isLeader?'admin':'user',status:isLeader?'active':'pending',created:new Date().toLocaleDateString()};
   USERS.push(newUser);
   saveUsers(USERS);
-  if(isLeader){showToast('组长账号注册成功');}else{showToast('注册申请已提交，请等待组长审核');syncPendingToFeishu(newUser);}
+  if(isLeader){showToast('组长账号注册成功');}else{
+    /* V10.7.0 问题1: 注册默认通过——文案与机制同步升级
+     * 旧文案"请等待组长审核"配合人工审批;现在组长端拉取即自动通过(≤60秒轮询),
+     * 注册体验改为"提交后短时自动激活"。 */
+    showToast('注册成功，组长端自动通过后即可登录（约1分钟内）');
+    syncPendingToFeishu(newUser);
+    watchRegistrationActivation(newUser);
+  }
   showScreen('screen-login');
   // V5.7: 注册完成回到登录页后清空历史栈,返回键不再退回注册表单
   navHistory=[];
@@ -2537,6 +2614,11 @@ function saveVehicle(){
   editPhotos=[];editVideos=[];
   // V10.6.0 问题4: 车辆数据(含文字图片照片)立即持久化,重启不丢,可同步飞书
   persistVehicles();
+  /* V10.7.0 问题2: 保存即调度自动同步——8秒防抖窗口合并连续保存,
+   * 检出未上云的base64照片/视频才执行完整上传管线(照片降采样→分离上传→
+   * 路径替换→JSON上云→更新通知落云),组长无需再手动点"上传同步"。
+   * 组员端无上传权限/飞书未配置时函数内部静默跳过,不产生任何干扰。 */
+  scheduleAutoSyncAfterSave();
   showToast('保存成功');
   renderBrandTags();
   renderVehicleList();
@@ -3978,7 +4060,7 @@ async function syncPendingToFeishu(user){
     const token=await getFeishuToken(cfg,2);
     await httpUploadFile({token,fileName:`pending_reg_${user.phone}.json`,folderToken:await getDataSubFolderToken(token,cfg.pendingSub),blob});
     console.log('注册申请已同步到飞书:',`pending_reg_${user.phone}.json`);
-    showToast('注册申请已推送,等待组长在任一设备审核');
+    showToast('注册申请已推送，组长端将自动通过');
   }catch(err){
     console.error('Sync pending to Feishu failed:',err);
     // V5.7: 失败时清缓存自动重试一次(文件夹token失效自愈)
@@ -3988,11 +4070,48 @@ async function syncPendingToFeishu(user){
       const pendingData={type:'pending_registration',source:'tcg-cordova',appVersion:'v'+APP_VERSION,user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
       const blob=new Blob([JSON.stringify(pendingData,null,2)],{type:'application/json'});
       await httpUploadFile({token,fileName:`pending_reg_${user.phone}.json`,folderToken:await getDataSubFolderToken(token,cfg.pendingSub),blob});
-      showToast('注册申请已推送(重试成功),等待组长审核');
+      showToast('注册申请已推送(重试成功)，组长端将自动通过');
       return;
     }catch(e2){/* 重试仍失败,走提示 */}
-    showToast('申请推送失败('+err.message+'),请检查网络后重试');
+    showToast('申请推送失败('+err.message+')，请检查网络后重试');
   }
+}
+
+/**
+ * V10.7.0 问题1: 注册后激活守望——组员端轮询云端审批结果
+ * 机制: 组长端拉取申请即默认通过并回推approved_users.json(≤60秒轮询+5秒去抖)。
+ *       组员注册后本函数每12秒拉一次云端用户表(最多10次/2分钟),检测到自己
+ *       status=active时本地激活并提示可登录——把"默认通过"的闭环终点做到
+ *       组员可感知,而不是等用户盲试登录。
+ * 容错: 任一轮网络失败静默跳过;超时未激活则保持pending,登录时doLogin仍会
+ *       现场拉取一次审批状态兜底(V5.3.1闭环),不额外打扰用户。
+ */
+let _regWatchTimer=null;
+function watchRegistrationActivation(user){
+  if(_regWatchTimer)clearInterval(_regWatchTimer);
+  let attempts=0;
+  _regWatchTimer=setInterval(async()=>{
+    attempts++;
+    const local=USERS.find(u=>u.phone===user.phone);
+    if(!local||local.status==='active'){ // 已激活(云端拉取或其他路径)
+      clearInterval(_regWatchTimer);_regWatchTimer=null;
+      if(local&&local.status==='active'){
+        showToast('✅ 您的账号已激活，请登录');
+      }
+      return;
+    }
+    if(attempts>10){ // 2分钟守望窗口
+      clearInterval(_regWatchTimer);_regWatchTimer=null;
+      return;
+    }
+    try{
+      const approved=await pullApprovedStatusFromFeishu(user);
+      if(approved){
+        clearInterval(_regWatchTimer);_regWatchTimer=null;
+        showToast('✅ 您的账号已激活，请登录');
+      }
+    }catch(e){/* 网络抖动: 下一轮重试 */}
+  },12000);
 }
 
 /**
@@ -4028,6 +4147,8 @@ async function pullPendingFromFeishu(silent){
     let newCount=0;
     // V10.6.0 问题2: 跨网络组员申请计数(完全隐形: 不显示+默认通过+云端文件即消费即删)
     let crossSilentCount=0;
+    // V10.7.0 问题1: 本端申请"默认通过"计数(原人工审批流改为全自动,组长仅收通知)
+    let localAutoCount=0;
     for(const file of pendingFiles){
       try{
         // 原生HTTP下载文本
@@ -4053,7 +4174,8 @@ async function pullPendingFromFeishu(silent){
            *     但仍随approved_users.json同步,保持跨端登录闭环兼容;
            *   ②不显示: 不弹Toast、不推通知、不写同步日志UI、不进组员列表;
            *   ③即消费即删: 处理完立即删除云端申请文件,杜绝重复消费与目录堆积。
-           * 本端申请(带source='tcg-cordova'标识)保持原有人工审批流程不变。 */
+           * V10.7.0: 隐形通过后同样回推云端用户表(去抖),跨端组员登录闭环不再依赖
+           *   组长下一次手动审批动作才触发同步。 */
           const isCrossPlatform=pendingData.source!=='tcg-cordova';
           const existingUser=USERS.find(u=>u.phone===pendingData.user.phone);
           if(isCrossPlatform){
@@ -4073,23 +4195,37 @@ async function pullPendingFromFeishu(silent){
             // 即消费即删: 清理云端申请文件(幂等,失败不影响主流程)
             try{await deletePendingFileFromFeishu(u.phone);}catch(e){/* 清理失败下轮重试 */}
           }else{
+            /* V10.7.0 问题1: 本端申请(tcg-cordova)同样"默认通过"——
+             * 需求原文"待审核注册列表默认通过且不显示跨网络组员账号的申请"。
+             * 旧版本端申请进入pending态等待人工审批,组长不点"通过"组员就永远
+             * 卡在"审核中"。现改为: 拉取即激活(status=active),组员直接进现有
+             * 组员列表,组长端仅收一条通知(不拦截、不需要任何操作)。
+             * 保留approveMember/rejectMember手动通道作为兜底(如遇恶意注册,
+             * 组长仍可先删后拒)。云端申请文件同样即消费即删防重复消费。 */
+            const u=pendingData.user;
             if(!existingUser){
-              USERS.push(pendingData.user);
-              newCount++;
-            }else if(existingUser.status==='pending'&&pendingData.user.status==='active'){
-              // 云端已审批通过(其他组长设备处理过),本地同步激活
-              existingUser.status='active';
-              newCount++;
+              u.status='active'; // 默认通过
+              USERS.push(u);
+              localAutoCount++;
+            }else if(existingUser.status==='pending'){
+              existingUser.status='active'; // 默认通过
+              localAutoCount++;
+            }else if(existingUser.status==='rejected'&&pendingData.user.status==='active'){
+              // 组长曾明确拒绝过的账号不自动复活(拒绝是显式人工决定,优先级最高)
+              console.log('[组员管理] 已拒绝账号的新申请不自动通过:',pendingData.user.phone);
             }
+            // 即消费即删: 本端申请处理完同样清理云端文件
+            try{await deletePendingFileFromFeishu(u.phone);}catch(e){/* 清理失败下轮重试 */}
           }
         }
       }catch(e){continue;}
     }
-    if(newCount>0||crossSilentCount>0){
+    if(newCount>0||crossSilentCount>0||localAutoCount>0){
       saveUsers(USERS);
       renderMemberList();
+      updateMembersBadge();
       if(newCount>0){
-        // 本端申请: 原有审批通知流程
+        // 兼容保留: 历史路径(其他组长设备已审批)沿用原通知文案
         if(silent){
           showToast(`📥 收到${newCount}条新的组员注册申请`);
           addSyncLog(`轮询发现${newCount}条新注册申请`,'blue');
@@ -4099,13 +4235,23 @@ async function pullPendingFromFeishu(silent){
           addSyncLog(`从飞书拉取${newCount}条待审核注册`,'blue');
         }
       }
+      if(localAutoCount>0){
+        // V10.7.0 问题1: 本端申请默认通过——组员立即可登录,组长仅收知会通知
+        const names=USERS.filter(u=>u.status==='active'&&u.role==='user'&&!u.hidden&&!u.crossPlatform).slice(-localAutoCount).map(u=>u.name).join('、');
+        showToast(`✅ ${localAutoCount}条注册已默认通过${names?('：'+names):''}`);
+        leaderNotify('新组员已自动通过', `${names||localAutoCount+'名新组员'}注册已按默认策略自动通过，无需人工审批`);
+        addSyncLog(`注册默认通过 · ${localAutoCount}条${names?(' · '+names):''}`,'green');
+      }
       if(crossSilentCount>0){
         // V10.6.0 问题2: 跨网络申请完全隐形——不弹Toast/不推通知/不写同步日志UI,
         // 仅console留痕供开发排查(需求原文"应用端不显示跨网络组员的申请")
         console.log('[组员管理] 跨网络申请已默认通过(不显示):',crossSilentCount,'条');
       }
+      // V10.7.0: 任何自动通过后回推云端用户表(去抖5秒,防连续申请逐条全量推送),
+      // 组员端/跨端设备拉取approved_users.json即可立即看到激活状态
+      _debouncePushApprovedUsers();
     }
-    return newCount+crossSilentCount;
+    return newCount+crossSilentCount+localAutoCount;
   }catch(err){
     console.error('Pull pending from Feishu failed:',err);
     // V5.7: 一次性自愈重试(缓存失效场景)
@@ -4127,11 +4273,20 @@ async function pullPendingFromFeishu(silent){
           try{await deletePendingFileFromFeishu(pd.user.phone);}catch(e){/* 忽略 */}
           continue;
         }
-        if(!USERS.find(u=>u.phone===pd.user.phone)){
+        // V10.7.0 问题1: 自愈分支本端申请同样默认通过(与主分支策略一致)
+        const ex2=USERS.find(u=>u.phone===pd.user.phone);
+        if(!ex2){
+          pd.user.status='active'; // 默认通过
           USERS.push(pd.user);cnt++;
+        }else if(ex2.status==='pending'){
+          ex2.status='active'; // 默认通过
+          cnt++;
+        }else if(!ex2.status||ex2.status==='active'){
+          // 已激活账号的重复申请: 仅清理云端文件
         }
+        try{await deletePendingFileFromFeishu(pd.user.phone);}catch(e){/* 忽略 */}
       }
-      if(cnt>0){saveUsers(USERS);renderMemberList();showToast(`📥 收到${cnt}条新的组员注册申请`);}
+      if(cnt>0){saveUsers(USERS);renderMemberList();updateMembersBadge();showToast(`✅ ${cnt}条注册已默认通过`);_debouncePushApprovedUsers();}
       return cnt;
     }catch(e2){return 0;}
   }
@@ -4158,6 +4313,48 @@ async function deletePendingFileFromFeishu(phone){
       }
     }
   }catch(err){console.warn('云端申请文件清理跳过:',err.message);}
+}
+
+/**
+ * V10.7.0 问题1: 去抖回推云端用户表
+ * 注册默认通过(本端+跨端)发生在轮询循环里,可能一秒内连续命中多次;
+ * 直接逐条pushApprovedUsersToFeishu会产生N次全量上传(每次都拉token+列目录+传JSON)。
+ * 去抖5秒: 窗口期内多次触发只执行最后一次,网络开销归一。
+ * 失败静默(下轮轮询的自动通过路径会再次触发),不阻塞审批主流程。
+ */
+let _pushApprovedTimer=null;
+function _debouncePushApprovedUsers(){
+  if(!isLeader())return; // 仅组长端有权回推云端权威用户表
+  if(_pushApprovedTimer)clearTimeout(_pushApprovedTimer);
+  _pushApprovedTimer=setTimeout(()=>{
+    _pushApprovedTimer=null;
+    pushApprovedUsersToFeishu().catch(err=>{
+      console.warn('[组员管理] 自动通过后回推云端用户表失败(下轮重试):',err&&err.message);
+    });
+  },5000);
+}
+
+/**
+ * V10.7.0 问题1: 历史遗留pending用户一次性自动通过迁移
+ * 背景: V10.6.0及之前本端申请进入pending态等人工审批,升级V10.7.0后默认策略
+ *       变为"默认通过"——但本地已存在的pending用户(组长一直没点通过的那批)
+ *       若不做迁移会永远卡在"审核中",与新策略语义冲突。
+ * 时机: 组长登录成功/会话恢复后调用一次(幂等: 无pending用户时零开销直通)。
+ * 安全边界: 仅激活pending态;rejected态(组长显式拒绝过)绝不自动复活。
+ */
+function autoApproveLegacyPendingUsers(){
+  if(!isLeader())return;
+  const pendings=USERS.filter(u=>u.status==='pending'&&!u.hidden&&!u.crossPlatform);
+  if(!pendings.length)return;
+  pendings.forEach(u=>{u.status='active';});
+  saveUsers(USERS);
+  renderMemberList();
+  updateMembersBadge();
+  const names=pendings.map(u=>u.name).join('、');
+  showToast(`✅ ${pendings.length}条历史待审核注册已按默认策略自动通过${names?('：'+names):''}`);
+  addSyncLog(`历史待审核自动通过 · ${pendings.length}条${names?(' · '+names):''}`,'green');
+  console.log('[组员管理] 历史pending用户自动通过:',pendings.length,'条');
+  _debouncePushApprovedUsers();
 }
 
 /**
@@ -4768,56 +4965,77 @@ async function syncUploadVehiclePhotos(token,vehicles){
   return stat;
 }
 
-function doSyncUpload(){
-  if(!canEdit()){showToast('组员无上传权限，请使用"从飞书获取数据"');return;}
+/**
+ * V10.7.0 问题2: 同步上传核心管线(手动上传按钮/保存后自动触发共用)
+ * 管线七步: ①取token ②照片分离上传(降采样→vehicle_images→路径原位替换)
+ *   ③本地持久化对齐 ④车型JSON上传(同步数据/) ⑤历史旧档迁移清理
+ *   ⑥数据更新通知落云(组员端轻量感知通道) ⑦本地同步水位更新
+ * 抽取动机: 旧版doSyncUpload把全部逻辑内联在确认框回调里,自动同步机制(问题2)
+ *   需要复用同一管线,复制粘贴会产生两份漂移风险——重构为单一事实源。
+ * @returns {Promise<{ok:boolean,vehicles:number,photos:number,version:string,msg?:string}>}
+ */
+async function _syncUploadPipeline(){
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
   const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
-  if(!feishuCfgReady(cfg,true))return; // V5.3.4: appId+appSecret双查,缺失即引导填写(诊断根因1)
+  if(!feishuCfgReady(cfg,true))return {ok:false,msg:'飞书配置不完整: 请在设置中填写 App Secret'}; // V5.3.4: appId+appSecret双查
+  const token=await getFeishuToken(cfg,2);
+  /* V10.6.0 问题4: 照片分离上传——先把现场拍照(base64)单独传至
+   * vehicle_images目录并替换为云端路径,再写JSON。
+   * 旧版把数MB级base64直接塞进JSON导致上传必败,此为"新增数据
+   * 无法同步到飞书"的直接根因。 */
+  const photoStat=await syncUploadVehiclePhotos(token,VEHICLES);
+  if(photoStat.replaced>0){
+    persistVehicles(); // 本地路径与云端对齐后立即持久化,重启不回退
+    renderVehicleList();
+  }
+  const syncData={
+    version:'v'+APP_VERSION,
+    timestamp:new Date().toISOString(),
+    uploadedBy:state.currentUser?state.currentUser.name:'unknown',
+    vehicleCount:VEHICLES.length,
+    // V10.6.0: 补齐size/brandId字段——旧版漏传导致同步后车辆尺寸/品牌索引丢失
+    vehicles:VEHICLES.map(v=>({id:v.id,brandId:v.brandId,brand:v.brand,series:v.series,config:v.config,display:v.display,size:v.size||'',powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
+  };
+  // V5.7: 同步数据统一存入"APP数据备份/同步数据"子文件夹(数据分仓),
+  // 项目根目录与数据区根目录均不再存放,历史旧档同步清理
+  // (token已在函数顶部获取,照片分离上传与数据上传共用同一会话)
+  await uploadJsonToDataFeishu(token,'vehicle_sync_data.json',JSON.stringify(syncData),cfg.syncSub);
+  // 迁移清理: 删除数据区根/项目根目录历史同名旧档,防止多份数据漂移导致读到旧数据
+  try{
+    const dataRoot=await getDataFolderToken(token);
+    const dataOlds=(await feishuListFiles(token,dataRoot)||[]).filter(f=>f.type==='file'&&f.name==='vehicle_sync_data.json');
+    for(const f of dataOlds){
+      await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+    }
+  }catch(e){console.warn('数据区旧档清理跳过:',e.message);}
+  try{
+    const rootOlds=(await feishuListFiles(token,cfg.folder)||[]).filter(f=>f.type==='file'&&f.name==='vehicle_sync_data.json');
+    for(const f of rootOlds){
+      await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+    }
+  }catch(e){console.warn('历史根目录旧档清理跳过:',e.message);}
+  /* V10.7.0 问题2: 数据更新通知落云——上传成功后写轻量notice文件(数百字节),
+   * 组员端60秒轻轮询只下载该文件即可感知"组长已更新数据",不必拉取数MB级
+   * 全量车型JSON。这是"上传成功后飞书同步通知组员账号更新数据"的云端通道;
+   * 写入失败仅降级组员感知速度(红点5分钟节流全量比对仍在),不影响数据本体。 */
+  try{
+    const notice={type:'data_update_notice',version:syncData.version,timestamp:syncData.timestamp,vehicleCount:syncData.vehicleCount,uploadedBy:syncData.uploadedBy,photoCount:photoStat.replaced};
+    await uploadJsonToDataFeishu(token,'data_update_notice.json',JSON.stringify(notice),cfg.syncSub);
+  }catch(e){console.warn('[同步]数据更新通知写入失败(组员感知退化为全量比对):',e.message);}
+  localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
+  return {ok:true,vehicles:VEHICLES.length,photos:photoStat.replaced,version:syncData.version};
+}
+
+function doSyncUpload(){
+  if(!canEdit()){showToast('组员无上传权限，请使用"从飞书获取数据"');return;}
   showConfirm('确认上传','上传将覆盖飞书云端现有数据，请先确认已备份。',async()=>{
     showToast('正在连接飞书...');
     try{
-      const token=await getFeishuToken(cfg,2);
-      /* V10.6.0 问题4: 照片分离上传——先把现场拍照(base64)单独传至
-       * vehicle_images目录并替换为云端路径,再写JSON。
-       * 旧版把数MB级base64直接塞进JSON导致上传必败,此为"新增数据
-       * 无法同步到飞书"的直接根因。 */
-      showToast('正在上传车辆照片...');
-      const photoStat=await syncUploadVehiclePhotos(token,VEHICLES);
-      if(photoStat.replaced>0){
-        persistVehicles(); // 本地路径与云端对齐后立即持久化,重启不回退
-        renderVehicleList();
-      }
-      const syncData={
-        version:'v'+APP_VERSION,
-        timestamp:new Date().toISOString(),
-        uploadedBy:state.currentUser.name,
-        vehicleCount:VEHICLES.length,
-        // V10.6.0: 补齐size/brandId字段——旧版漏传导致同步后车辆尺寸/品牌索引丢失
-        vehicles:VEHICLES.map(v=>({id:v.id,brandId:v.brandId,brand:v.brand,series:v.series,config:v.config,display:v.display,size:v.size||'',powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
-      };
-      showToast('正在上传同步数据...');
-      // V5.7: 同步数据统一存入"APP数据备份/同步数据"子文件夹(数据分仓),
-      // 项目根目录与数据区根目录均不再存放,历史旧档同步清理
-      // (token已在函数顶部获取,照片分离上传与数据上传共用同一会话)
-      await uploadJsonToDataFeishu(token,'vehicle_sync_data.json',JSON.stringify(syncData),cfg.syncSub);
-      // 迁移清理: 删除数据区根/项目根目录历史同名旧档,防止多份数据漂移导致读到旧数据
-      try{
-        const dataRoot=await getDataFolderToken(token);
-        const dataOlds=(await feishuListFiles(token,dataRoot)||[]).filter(f=>f.type==='file'&&f.name==='vehicle_sync_data.json');
-        for(const f of dataOlds){
-          await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
-        }
-      }catch(e){console.warn('数据区旧档清理跳过:',e.message);}
-      try{
-        const rootOlds=(await feishuListFiles(token,cfg.folder)||[]).filter(f=>f.type==='file'&&f.name==='vehicle_sync_data.json');
-        for(const f of rootOlds){
-          await httpFetch(`https://open.feishu.cn/open-apis/drive/v1/files/${f.token}?type=file`,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
-        }
-      }catch(e){console.warn('历史根目录旧档清理跳过:',e.message);}
-      localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
+      const r=await _syncUploadPipeline();
+      if(!r.ok)throw new Error(r.msg||'同步失败');
       // V10.6.0: 提示含照片上传统计,组长可感知分离上传结果
-      showToast(`数据已同步至飞书，共${VEHICLES.length}条车型数据`+(photoStat.replaced>0?`，照片${photoStat.replaced}张`:''));
-      addSyncLog(`上传同步完成 · ${VEHICLES.length}条车型数据${photoStat.replaced>0?' · 照片'+photoStat.replaced+'张':''} · 飞书`,'green');
+      showToast(`数据已同步至飞书，共${r.vehicles}条车型数据`+(r.photos>0?`，照片${r.photos}张`:''));
+      addSyncLog(`上传同步完成 · ${r.vehicles}条车型数据${r.photos>0?' · 照片'+r.photos+'张':''} · 飞书`,'green');
       // V10.3 问题5.2: 上传成功即消化红点提示(本地即云端最新版)
       _setSyncNewDot(false);
       const cv=document.getElementById('sync-cloud-ver');
@@ -4829,6 +5047,68 @@ function doSyncUpload(){
       addSyncLog('同步失败: '+err.message,'red');
     }
   });
+}
+
+/**
+ * V10.7.0 问题2: 新数据自动同步机制(核心新增)
+ * 需求原文: "检测到应用端新数据上传，新数据的照片视频按照现有的方案进行处理和
+ * 匹配后上传到飞书。上传成功后飞书同步通知组员账号更新数据。"
+ * 触发: 组长在车型编辑页保存(新增/编辑,含现场拍照/视频)后调度;
+ *   8秒防抖窗口内多次保存合并为一次全量管线执行,管线运行中不重入。
+ * 检测: 扫描全部车辆中尚未上云的base64媒体(data:image://data:video:前缀),
+ *   检出才真正执行——纯文字编辑不惊动云端。
+ * 管线: 复用_syncUploadPipeline(照片降采样归一→vehicle_images分离上传→路径
+ *   匹配替换→车型JSON上传→通知文件落云),与手动上传完全同构零分叉。
+ * 权限: 仅组长;飞书未配置时静默跳过(不打扰组员端保存)。
+ * 失败: 明确toast告知且数据保留本地,下次保存或手动上传自动重试。
+ */
+let _autoSyncBusy=false;
+let _autoSyncTimer=null;
+const AUTO_SYNC_DEBOUNCE_MS=8000;
+
+/** 检测本地尚未上云的base64媒体(照片走分离上传,视频按现有方案随JSON) */
+function detectPendingLocalMedia(){
+  const stat={photos:0,videos:0};
+  VEHICLES.forEach(v=>{
+    (v.photoPaths||[]).forEach(p=>{if(/^data:image\//i.test(p))stat.photos++;});
+    (v.videoPaths||[]).forEach(p=>{if(/^data:video\//i.test(p))stat.videos++;});
+  });
+  return stat;
+}
+
+/** 保存车型后调度自动同步(防抖合并) */
+function scheduleAutoSyncAfterSave(){
+  if(!canEdit())return;                        // 组员端无上传权限,不触发
+  if(!feishuCfgReady(getFeishuCfg()))return;   // 飞书未配置: 静默跳过
+  if(_autoSyncBusy)return;                     // 管线执行中: 本轮不叠加
+  if(_autoSyncTimer)clearTimeout(_autoSyncTimer);
+  _autoSyncTimer=setTimeout(_runAutoSyncAfterSave,AUTO_SYNC_DEBOUNCE_MS);
+}
+
+/** 自动同步执行体(由防抖定时器触发) */
+async function _runAutoSyncAfterSave(){
+  _autoSyncTimer=null;
+  if(_autoSyncBusy||!canEdit())return;
+  const pending=detectPendingLocalMedia();
+  if(!pending.photos&&!pending.videos)return;  // 无待上云媒体: 纯文字编辑,不惊动云端
+  _autoSyncBusy=true;
+  try{
+    showToast(`检测到新增照片/视频共${pending.photos+pending.videos}项，正在自动同步到飞书...`);
+    addSyncLog(`检测到本地新数据(${pending.photos}照片/${pending.videos}视频)，自动同步开始`,'blue');
+    const r=await _syncUploadPipeline();
+    if(!r.ok)throw new Error(r.msg||'自动同步失败');
+    showToast(`✅ 新数据已自动同步飞书(${r.vehicles}条${r.photos>0?'，照片'+r.photos+'张':''})，已通知组员更新`);
+    addSyncLog(`新数据自动同步完成 · ${r.vehicles}条 · 照片${r.photos}张 · 已通知组员更新`,'green');
+    _setSyncNewDot(false);
+    const cv=document.getElementById('sync-cloud-ver');
+    if(cv)cv.textContent='已连接 · v'+APP_VERSION+' (最新)';
+  }catch(err){
+    console.warn('[自动同步]失败(数据保留本地,下次保存/手动上传重试):',err.message);
+    showToast('自动同步失败: '+err.message+'（数据已保留本地）');
+    addSyncLog('新数据自动同步失败 · '+err.message+' · 数据保留本地','red');
+  }finally{
+    _autoSyncBusy=false;
+  }
 }
 
 async function doSyncDownload(){
@@ -4949,16 +5229,44 @@ async function checkCloudDataUpdate(force){
     const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
     const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
     if(!feishuCfgReady(cfg))return; // 未配置同步:跳过
+    /* V10.7.0 问题2: 组员端轻量感知通道——优先读云端"数据更新通知"文件
+     * (data_update_notice.json,数百字节)。组长端上传成功后写入该文件,
+     * 组员60秒轮询命中即感知"组长已更新数据",无需下载数MB级全量车型JSON。
+     * 通知时间戳>本地水位→亮红点并直接返回;通知<=水位→同样直接返回(流量双省);
+     * 通知文件不存在(老版本组长端上传/通知写入失败)→回退原全量比对逻辑,兼容完整。 */
+    const local=JSON.parse(localStorage.getItem('feishu_sync_data')||'{}');
+    const localTs=local.timestamp?new Date(local.timestamp).getTime():0;
+    try{
+      const noticeToken=await getFeishuToken(cfg,2);
+      const notice=await downloadJsonFromDataFeishu(noticeToken,'data_update_notice.json',cfg.syncSub);
+      if(notice&&notice.type==='data_update_notice'&&notice.timestamp){
+        const noticeTs=new Date(notice.timestamp).getTime();
+        if(noticeTs>localTs){
+          _setSyncNewDot(true);
+          const hint=document.getElementById('sync-new-hint-text');
+          if(hint)hint.textContent='云端有新数据('+(notice.version||'新版本')+' · '+(notice.vehicleCount||'?')+'条，'+(notice.uploadedBy||'组长')+'已上传)，请拉取获取最新版本';
+          const cv1=document.getElementById('sync-cloud-ver');
+          if(cv1&&notice.version)cv1.textContent='有新数据 · '+notice.version;
+          console.log('[同步] 通过更新通知感知到新数据:',notice.version,notice.timestamp);
+        }else{
+          _setSyncNewDot(false);
+          const cv2=document.getElementById('sync-cloud-ver');
+          if(cv2&&notice.version)cv2.textContent='已连接 · '+notice.version+' (最新)';
+        }
+        return; // 轻量通道已裁决: 不再下载全量JSON
+      }
+    }catch(e){console.warn('[同步] 更新通知读取失败,回退全量比对:',e&&e.message);}
+    // 回退路径: 通知文件不可用(老版本组长上传的数据),维持原全量比对逻辑
     const syncData=await downloadSyncDataMigrated(cfg);
     if(!syncData||!syncData.timestamp)return; // 云端无数据:跳过
     const cloudTs=new Date(syncData.timestamp).getTime();
-    const local=JSON.parse(localStorage.getItem('feishu_sync_data')||'{}');
-    const localTs=local.timestamp?new Date(local.timestamp).getTime():0;
-    const hasNew=cloudTs>localTs;
+    const local2=JSON.parse(localStorage.getItem('feishu_sync_data')||'{}');
+    const localTs2=local2.timestamp?new Date(local2.timestamp).getTime():0;
+    const hasNew=cloudTs>localTs2;
     _setSyncNewDot(hasNew);
     // 顺带刷新同步中心的云端版本显示(拉取失败不改动)
     const cv=document.getElementById('sync-cloud-ver');
-    if(cv&&syncData.version)cv.textContent=hasNew?'有新数据 · '+(syncData.version||''):'已连接 · '+(syncData.version||'')+(cloudTs<=localTs?' (最新)':'');
+    if(cv&&syncData.version)cv.textContent=hasNew?'有新数据 · '+(syncData.version||''):'已连接 · '+(syncData.version||'')+(cloudTs<=localTs2?' (最新)':'');
     if(hasNew){
       const hint=document.getElementById('sync-new-hint-text');
       if(hint)hint.textContent='云端有新数据('+(syncData.version||'新版本')+' · '+(syncData.vehicleCount||'?')+'条),请拉取获取最新版本';
@@ -5599,6 +5907,13 @@ function openSideMenu(){
     document.getElementById('side-phone').textContent=state.currentUser.phone;
     document.getElementById('side-role').textContent=state.currentUser.role==='admin'?'组长':'组员';
   }
+  /* V10.7.0 问题3: 组员端隐藏组员管理入口——车型页右上角菜单打开侧边栏时
+   * 按角色裁剪菜单项。canEdit()=isLeader()=仅组长可见,组员只能看到
+   * 数据中心/数据同步/个人中心/退出登录四项,组员管理入口完全不可见。
+   * 「我的」页的menu-members入口在_activateScreen('screen-my')已有同款控制,
+   * 此处补齐侧边菜单这条路径,两个入口的权限裁剪策略完全一致。 */
+  const smm=document.getElementById('side-menu-members');
+  if(smm)smm.style.display=canEdit()?'flex':'none';
   openModal('modal-side-menu');
 }
 
@@ -6486,6 +6801,8 @@ if(restoreSession()){
     pullPendingFromFeishu().then(()=>{renderMemberList();});
     // V5.3.1: 会话恢复同样启动轮询,重启APP后跨网络审批通知不中断
     startPendingPolling();
+    // V10.7.0 问题1: 会话恢复同样执行历史pending迁移(幂等)
+    autoApproveLegacyPendingUsers();
   }else if(state.currentUser){
     // V10.3 问题3/5.1: 组员会话恢复同样启动账号存活守卫,被删账号重启APP后立即拦截
     startMemberGuardPolling();
@@ -6521,6 +6838,26 @@ setTimeout(()=>{checkUpdate(true).catch(()=>{});},3000);
   if(mEl){
     const m=navigator.userAgent.match(/;\s*([^;)]+)\s*[);]/);
     mEl.textContent=m?m[1].trim():navigator.userAgent.substring(0,20);
+  }
+  /* V10.7.0 问题4: 登录页版本号动态渲染(旧版静态写死"V5.1·2026-08-20",
+   * 升级后展示陈旧版本号误导用户)。与"检查更新"入口的当前版本号同源APP_VERSION。 */
+  const lv=document.getElementById('login-ver');
+  if(lv)lv.textContent='V'+APP_VERSION;
+  /* V10.7.0 问题4: 设备分级标记——识别屏幕物理带后给根节点打data-devclass,
+   * 供CSS钩子(如[data-devclass="small"]进一步压缩)与真机诊断排查用。
+   * 分级标准(近10年主流机型):
+   *   small  ≤360px宽     (2016-2019入门机/iPhone SE系)
+   *   standard 361-411px  (绝大多数Android/iPhone 12-15)
+   *   large  ≥412px       (Pro Max/折叠屏外屏/平板手机)
+   * 长屏额外标记tall(高≥850px,21:9带鱼屏)。 */
+  const root=document.getElementById('app-root');
+  // 防御: 极简DOM环境(单测桩)无setAttribute时不致命
+  if(root&&typeof root.setAttribute==='function'){
+    const w=Math.min(window.innerWidth,screen.width||window.innerWidth);
+    const h=Math.max(window.innerHeight,screen.height||window.innerHeight);
+    const cls=w<=360?'small':(w>=412?'large':'standard');
+    root.setAttribute('data-devclass',h>=850?cls+' tall':cls);
+    console.log('[适配] 设备分级:',cls,(h>=850?'tall ':''),'物理分辨率',sw+'×'+sh,'DPR',window.devicePixelRatio||1);
   }
 })();
 </script>

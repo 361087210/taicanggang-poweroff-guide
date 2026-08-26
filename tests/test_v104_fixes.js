@@ -76,7 +76,10 @@ check('A20 问题5.2: 跨端申请自动激活(status=active,V10.6.0附加hidden
 check('A21 问题5.2: 跨端静默计数(crossSilentCount)', /crossSilentCount\+\+/.test(html) && /let crossSilentCount=0;/.test(html));
 check('A22 问题5.2: 跨端完全隐形——不弹通知仅console留痕(V10.6.0)', /跨网络申请已默认通过\(不显示\)/.test(html));
 check('A23 问题5.2: 组员列表排除跨端/隐形用户(V10.6.0替代徽标方案)', /!u\.hidden&&!u\.crossPlatform/.test(html));
-check('A24 问题5.2: 本端申请保留人工审批流程(newCount通知)', /本端申请: 原有审批通知流程/.test(html));
+// V10.7.0升级: 本端申请由"人工审批"改为"拉取即默认通过"——需求原文
+// "待审核注册列表默认通过"。组员立即可登录,组长仅收知会通知(无需操作);
+// 组长显式拒绝过的账号不自动复活(人工拒绝优先级最高)。
+check('A24 问题5.2: 本端申请默认通过(V10.7.0替代人工审批,拒绝不复活)', /本端申请\(tcg-cordova\)同样"默认通过"/.test(html) && /已拒绝账号的新申请不自动通过/.test(html));
 
 // 问题6: 版本一致性(V10.5.0起改为动态校验,对齐v103模式: 三端同版本即可,发版免改测试)
 check(`A25 问题6: APP_VERSION=${versionJson.version} 与version.json一致`, new RegExp(`APP_VERSION='${versionJson.version.replace(/\./g,'\\.')}'`).test(html));
