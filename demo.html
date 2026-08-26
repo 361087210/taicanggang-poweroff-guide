@@ -55,7 +55,10 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 .pulse{animation:pulse 2s ease-in-out infinite;}
 
 /* Scrollbar hide */
-.scroll-y{overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+/* V10.9.0 问题2: 增加overflow-x:hidden——旧版仅overflow-y:auto,
+ * 部分Android WebView(含红米K70 Pro Android 16)将overflow-x:visible
+ * 解析为auto,允许横向滑动露出留白(同步中心从右往左滑有大片空白) */
+.scroll-y{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
 .scroll-y::-webkit-scrollbar{display:none;}
 /* V10.4.0 问题4: 修复"数据同步显示不完全,无法下滑到最底端"
  * 根因: .screen是flex列容器,滚动区是flex-1子项(flex:1 1 0%)。CSS规范规定
@@ -185,8 +188,13 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 .chk.on::after{content:'';width:6px;height:10px;border:2px solid #fff;border-top:0;border-left:0;transform:rotate(45deg) translate(-1px,-1px);}
 
 /* Safe area padding for status bar */
-.phone-frame .pt-12{padding-top:calc(var(--safe-top) + 12px);}
-.phone-frame .pb-24{padding-bottom:calc(var(--safe-bottom) + 24px);}
+/* V10.9.0 问题2: 修复Android WebView safe-area-inset-top恒为0时顶部标题被状态栏遮挡——
+ *   旧版覆写把pt-12(48px)降到safe-top+12px,Android上--safe-top=0即仅12px,不够;
+ *   修正为safe-top+48px,无安全区时48px(与原Tailwind pt-12一致),有安全区时叠加 */
+.phone-frame .pt-12{padding-top:calc(var(--safe-top) + 48px);}
+/* V10.9.0 问题2: 修复底部按钮被导航栏遮挡——旧版覆写pb-24(96px)降到safe-bottom+24px,
+ *   Android上--safe-bottom=0即仅24px<底部导航64px,按钮被nav遮挡;修正为safe-bottom+96px */
+.phone-frame .pb-24{padding-bottom:calc(var(--safe-bottom) + 96px);}
 
 /* ===================== V10.7.0 问题4: 全界面自适应近10年主流手机屏 =====================
  * 目标设备带(2016-2026主流机型): 320×568(iPhone SE/小屏Android) ~ 480×960(折叠屏外屏/平板手机)
@@ -519,7 +527,7 @@ img,svg,video{max-width:100%;}
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.8.0</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.9.0</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -1759,11 +1767,12 @@ async function getDataSubFolderToken(token,subName){
 function invalidateDataFolderCache(){
   localStorage.removeItem('tcg_data_folder');
   // V10.6.0: vehicle_images(照片分离上传目录)纳入缓存失效清单
-  ['同步数据','注册申请','审批结果','备份文件','vehicle_images'].forEach(n=>localStorage.removeItem('tcg_sub_'+n));
+  // V10.9.0: vehicle_videos(视频分离上传目录)纳入缓存失效清单
+  ['同步数据','注册申请','审批结果','备份文件','vehicle_images','vehicle_videos'].forEach(n=>localStorage.removeItem('tcg_sub_'+n));
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.8.0';
+const APP_VERSION='10.9.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -4160,14 +4169,19 @@ async function pullPendingFromFeishu(silent){
     for(const file of pendingFiles){
       try{
         // 原生HTTP下载文本
+        // V10.9.0: 增加timeout:60秒防止弱网挂起
         let dlText;
         if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
           dlText=await new Promise((resolve,reject)=>{
-            window.cordova.plugin.http.sendRequest(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{method:'GET',headers:{Authorization:'Bearer '+token}},res=>resolve(res.data),err=>reject(err));
+            window.cordova.plugin.http.sendRequest(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{method:'GET',headers:{Authorization:'Bearer '+token},timeout:60},res=>resolve(res.data),err=>reject(new Error(String(err.error||'下载失败'))));
           });
         }else{
-          const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{headers:{Authorization:'Bearer '+token}});
-          dlText=await r.text();
+          const _c=new AbortController(),_t=setTimeout(()=>_c.abort(),60000);
+          try{
+            const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{headers:{Authorization:'Bearer '+token},signal:_c.signal});
+            clearTimeout(_t);
+            dlText=await r.text();
+          }catch(e){clearTimeout(_t);throw e;}
         }
         const pendingData=JSON.parse(dlText);
         if(pendingData.type==='pending_registration'&&pendingData.user){
@@ -4257,8 +4271,14 @@ async function pullPendingFromFeishu(silent){
       const files=(await feishuListFiles(token,newSub)||[]).filter(f=>f.name&&f.name.startsWith('pending_reg_')&&f.name.endsWith('.json'));
       let cnt=0;
       for(const file of files){
-        const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{headers:{Authorization:'Bearer '+token}});
-        const pd=JSON.parse(await r.text());
+        // V10.9.0: 增加fetch超时防止弱网挂起
+        const _rc=new AbortController(),_rt=setTimeout(()=>_rc.abort(),60000);
+        let pd;
+        try{
+          const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{headers:{Authorization:'Bearer '+token},signal:_rc.signal});
+          clearTimeout(_rt);
+          pd=JSON.parse(await r.text());
+        }catch(e){clearTimeout(_rt);console.warn('[自愈]注册文件下载失败:',e.message);continue;}
         if(pd.type!=='pending_registration'||!pd.user)continue;
         // V10.6.0 问题2: 自愈分支同样执行跨网络策略——默认通过+不显示+即消费即删
         if(pd.source!=='tcg-cordova'){
@@ -4730,16 +4750,31 @@ async function downloadJsonFromFolder(token,folderToken,docName){
     return JSON.parse(text);
   };
   // 原生HTTP下载
+  // V10.9.0: 增加timeout:120秒——视频分离上传后JSON虽已轻量化,但弱网下仍需防无限挂起
   if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
     return await new Promise((resolve,reject)=>{
-      window.cordova.plugin.http.sendRequest(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{method:'GET',headers:{Authorization:'Bearer '+token},responseType:'text'},res=>{
-        try{resolve(robustParse(res.data));}catch(e){reject(new Error('数据解析失败(编码异常)'));}
-      },err=>reject(new Error(String(err.error||'下载失败'))));
+      window.cordova.plugin.http.sendRequest(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{method:'GET',headers:{Authorization:'Bearer '+token},responseType:'text',timeout:120},res=>{
+        try{resolve(robustParse(res.data));}catch(e){reject(new Error('数据解析失败(编码异常): '+e.message));}
+      },err=>{
+        const msg=String(err.error||'下载失败');
+        reject(new Error(msg.includes('timeout')||msg.includes('timed out')?'数据下载超时(120s),请检查网络后重试':msg));
+      });
     });
   }
-  const dlRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
-  const dlText=await dlRes.text();
-  return robustParse(dlText);
+  // V10.9.0: fetch路径增加AbortController超时——浏览器fetch默认无超时,弱网下可能永久挂起
+  const _ctrl=new AbortController();
+  const _tid=setTimeout(()=>_ctrl.abort(),120000);
+  try{
+    const dlRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token},signal:_ctrl.signal});
+    clearTimeout(_tid);
+    if(!dlRes.ok)throw new Error('下载HTTP '+dlRes.status);
+    const dlText=await dlRes.text();
+    return robustParse(dlText);
+  }catch(e){
+    clearTimeout(_tid);
+    if(e.name==='AbortError')throw new Error('数据下载超时(120s),请检查网络后重试');
+    throw e;
+  }
 }
 
 /**
@@ -4946,8 +4981,74 @@ async function syncUploadVehiclePhotos(token,vehicles){
 }
 
 /**
- * V10.7.0 问题2: 同步上传核心管线(手动上传按钮/保存后自动触发共用)
- * 管线七步: ①取token ②照片分离上传(降采样→vehicle_images→路径原位替换)
+ * V10.9.0 问题1: 车辆视频分离上传——与照片分离上传同构
+ * 根因: V10.6.0仅分离了照片(base64→云端路径),视频仍以data:video/;base64,留在videoPaths。
+ *   单段现场拍摄视频base64编码后常达10-50MB,JSON膨胀至数十MB——
+ *   ①飞书upload_all虽能传(V10.8.0 multipart修复),但生成的JSON文件巨大,
+ *     组员端download接口下载超时/内存溢出,表现为"收到通知但拉取失败";
+ *   ②即使侥幸下载成功,JSON.parse在移动端WebView内存受限下直接OOM崩溃。
+ * 方案: 上传前把data:video base64分离——直接转Blob→单独上传至云端
+ *   "APP数据备份/vehicle_videos"目录→videoPaths原位替换为云端相对路径
+ *   (与内置数据同构)→JSON只含轻量路径。组员拉取后走既有视频展示链。
+ * 幂等: 文件名=车辆id+序号+内容哈希,重复上传命中云端同名文件即跳过,
+ *   不产生冗余副本;本地videoPaths同步替换并持久化,二次上传零流量。
+ * @param {string} token - tenant_access_token
+ * @param {Array} vehicles - 车辆数组(原地修改videoPaths)
+ * @returns {Promise<{replaced:number,failed:number,skipped:number}>} 统计
+ */
+async function syncUploadVehicleVideos(token,vehicles){
+  const stat={replaced:0,failed:0,skipped:0};
+  // 预检: 是否存在待上传的base64视频(无则零开销直通)
+  const pending=[];
+  vehicles.forEach(v=>{
+    (v.videoPaths||[]).forEach((p,i)=>{
+      if(/^data:video\//i.test(p))pending.push({v,i});
+    });
+  });
+  if(!pending.length)return stat;
+  // V10.9.0: vehicle_videos目录(与vehicle_images并列,数据分仓)
+  const folder=await getDataSubFolderToken(token,'vehicle_videos');
+  if(!folder)throw new Error('vehicle_videos目录不可用');
+  // 云端已有文件清单(幂等判定: 同名即已上传过,跳过)
+  let cloudNames=new Set();
+  try{
+    (await feishuListFiles(token,folder)||[]).filter(f=>f.type==='file').forEach(f=>cloudNames.add(f.name));
+  }catch(e){/* 列表失败则全部走上传,幂等由服务端同名覆盖兜底 */}
+  for(const {v,i} of pending){
+    const raw=v.videoPaths[i];
+    try{
+      // data:video/mp4;base64,XXXX → 提取MIME和base64数据
+      const mm=/^data:video\/([a-z0-9]+);base64,(.*)$/i.exec(raw);
+      if(!mm){stat.failed++;continue;}
+      const mime=mm[1].toLowerCase();
+      const b64=mm[2];
+      const hash=_strHashDjb2(b64).toString(16);
+      // 文件名: user_v{id}_v{序号}_{hash}.mp4(统一mp4扩展名,飞书按MIME识别)
+      const fileName=`user_v${v.id}_v${i+1}_${hash}.mp4`;
+      if(cloudNames.has(fileName)){
+        stat.skipped++; // 云端已有同内容视频,仅替换本地路径
+      }else{
+        const u8=_b64ToU8(b64);
+        const blob=new Blob([u8],{type:'video/'+mime});
+        const up=await httpUploadFile({token,fileName,folderToken:folder,blob});
+        if(up&&up.code!==0&&up.code!==undefined){throw new Error(up.msg||'视频上传失败');}
+        cloudNames.add(fileName);
+      }
+      v.videoPaths[i]='vehicle_videos/'+fileName;
+      stat.replaced++;
+    }catch(e){
+      stat.failed++;
+      console.warn('[同步]视频上传失败(保留本地base64,下轮重试):',e.message||e);
+    }
+  }
+  console.log(`[同步]视频分离上传完成: 替换${stat.replaced} 跳过${stat.skipped} 失败${stat.failed}`);
+  return stat;
+}
+
+/**
+ * V10.7.0问题2+V10.9.0问题1: 同步上传核心管线(手动上传按钮/保存后自动触发共用)
+ * 管线八步: ①取token ②照片分离上传(降采样→vehicle_images→路径原位替换)
+ *   ②b.视频分离上传(base64→vehicle_videos→路径原位替换)  [V10.9.0新增]
  *   ③本地持久化对齐 ④车型JSON上传(同步数据/) ⑤历史旧档迁移清理
  *   ⑥数据更新通知落云(组员端轻量感知通道) ⑦本地同步水位更新
  * 抽取动机: 旧版doSyncUpload把全部逻辑内联在确认框回调里,自动同步机制(问题2)
@@ -4964,7 +5065,11 @@ async function _syncUploadPipeline(){
    * 旧版把数MB级base64直接塞进JSON导致上传必败,此为"新增数据
    * 无法同步到飞书"的直接根因。 */
   const photoStat=await syncUploadVehiclePhotos(token,VEHICLES);
-  if(photoStat.replaced>0){
+  /* V10.9.0 问题1: 视频分离上传——与照片同构,把base64视频单独传至
+   * vehicle_videos目录并替换为云端路径,再写JSON。
+   * 根因: 视频base64(10-50MB)留在JSON中导致组员端下载超时/OOM失败。 */
+  const videoStat=await syncUploadVehicleVideos(token,VEHICLES);
+  if(photoStat.replaced>0||videoStat.replaced>0){
     persistVehicles(); // 本地路径与云端对齐后立即持久化,重启不回退
     renderVehicleList();
   }
@@ -4999,11 +5104,11 @@ async function _syncUploadPipeline(){
    * 全量车型JSON。这是"上传成功后飞书同步通知组员账号更新数据"的云端通道;
    * 写入失败仅降级组员感知速度(红点5分钟节流全量比对仍在),不影响数据本体。 */
   try{
-    const notice={type:'data_update_notice',version:syncData.version,timestamp:syncData.timestamp,vehicleCount:syncData.vehicleCount,uploadedBy:syncData.uploadedBy,photoCount:photoStat.replaced};
+    const notice={type:'data_update_notice',version:syncData.version,timestamp:syncData.timestamp,vehicleCount:syncData.vehicleCount,uploadedBy:syncData.uploadedBy,photoCount:photoStat.replaced,videoCount:videoStat.replaced};
     await uploadJsonToDataFeishu(token,'data_update_notice.json',JSON.stringify(notice),cfg.syncSub);
   }catch(e){console.warn('[同步]数据更新通知写入失败(组员感知退化为全量比对):',e.message);}
   localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
-  return {ok:true,vehicles:VEHICLES.length,photos:photoStat.replaced,version:syncData.version};
+  return {ok:true,vehicles:VEHICLES.length,photos:photoStat.replaced,videos:videoStat.replaced,version:syncData.version};
 }
 
 function doSyncUpload(){
@@ -5013,9 +5118,13 @@ function doSyncUpload(){
     try{
       const r=await _syncUploadPipeline();
       if(!r.ok)throw new Error(r.msg||'同步失败');
-      // V10.6.0: 提示含照片上传统计,组长可感知分离上传结果
-      showToast(`数据已同步至飞书，共${r.vehicles}条车型数据`+(r.photos>0?`，照片${r.photos}张`:''));
-      addSyncLog(`上传同步完成 · ${r.vehicles}条车型数据${r.photos>0?' · 照片'+r.photos+'张':''} · 飞书`,'green');
+      // V10.6.0+V10.9.0: 提示含照片/视频上传统计,组长可感知分离上传结果
+      const mediaParts=[];
+      if(r.photos>0)mediaParts.push(`照片${r.photos}张`);
+      if(r.videos>0)mediaParts.push(`视频${r.videos}段`);
+      const mediaStr=mediaParts.length?'，'+mediaParts.join(''):'';
+      showToast(`数据已同步至飞书，共${r.vehicles}条车型数据${mediaStr}`);
+      addSyncLog(`上传同步完成 · ${r.vehicles}条车型数据${mediaStr} · 飞书`,'green');
       // V10.3 问题5.2: 上传成功即消化红点提示(本地即云端最新版)
       _setSyncNewDot(false);
       const cv=document.getElementById('sync-cloud-ver');
