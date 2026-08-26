@@ -1,14 +1,12 @@
 {
-  "version": "10.7.0",
-  "versionCode": 100700,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.7.0/tcg_poweroff_v10.7.0.apk",
+  "version": "10.8.0",
+  "versionCode": 100800,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.8.0/tcg_poweroff_v10.8.0.apk",
   "releaseNotes": [
-    "V10.7.0 自动同步+全屏适配版——一句话总结: 注册申请全部默认通过(组长零操作),飞书同步崩溃根治+保存即自动上云并通知组员,组员端菜单权限收紧,全界面自适应近10年主流手机屏",
-    "- 修复(问题1): 待审核注册列表默认通过——本端申请拉取即激活(组员立即可登录,组长仅收知会通知);跨网络申请保持V10.6.0完全隐形策略(默认通过+hidden标记+云端申请文件即消费即删),两类申请均不再需要人工审批;组长曾显式拒绝的账号不自动复活(人工拒绝优先级最高)",
-    "- 修复(问题2根因): 同步失败\"advanced-http: missing mandatory onSuccess callback\"——旧版按options对象模式调用uploadFile,回调落位到插件参数校验的失效分支;V10.7.0改为插件3.3.1标准的7参数扁平签名(url/params/headers/filePath/name/success/fail),并新增保存即自动同步机制: 检出未上云的照片视频→8秒防抖合并→复用上传管线(降采样→分离上传→路径替换→JSON上云)→写轻量data_update_notice.json→组员端60秒轮询读通知亮红点(通知不可用自动回退全量比对,老版本组长数据兼容)",
-    "- 修复(问题3): 组员端车型页右上角菜单隐藏组员管理入口——侧边菜单项按canEdit()角色裁剪,组员仅见数据中心/数据同步/个人中心/退出登录;与「我的」页入口权限策略完全一致",
-    "- 修复(问题4): 全界面自适应近10年主流手机屏——viewport-fit=cover激活刘海/挖孔安全区(顶部状态栏/底部手势条不再遮挡),100dvh动态视口高度,六维断点覆盖: 小屏≤360px(压缩间距,触控区仍≥44px)/大屏≥412px(卡片限宽)/矮屏≤620px(隐藏次要区)/超长屏≥850px(导航呼吸感)/横屏(左右安全区内收);设备分级识别(small/standard/large/tall)打标根节点供诊断",
-    "- 工程质量: 同步管线重构为单一事实源(手动上传与自动同步共用_syncUploadPipeline零分叉),登录页版本号动态渲染(旧版静态写死V5.1),回归测试套件V10.7.0专项用例(注册默认通过/上传签名/菜单权限/响应式断点)",
+    "V10.8.0 云同步根治+注册回退版——一句话总结: 飞书上传参数错误1061002根因修复(sendRequest+multipart序列化),注册审核回退至V10.6.0人工审批策略(仅保留跨网络组员自动通过隐形处理)",
+    "- 修复(问题1根因): 云同步失败\"code:1061002 params error\"——cordova-plugin-advanced-http的uploadFile()将file_name/parent_type/parent_node/size序列化为URL查询串,而飞书upload_all API要求这些参数作为multipart/form-data体中的表单字段;V10.8.0改用sendRequest()+serializer:'multipart'+FormData,所有参数(含文件Blob)由插件multipart序列化器通过FormData.entries()遍历,对Blob值通过FileReader读取二进制,完整构造符合飞书API要求的multipart体;优先使用插件ponyfill FormData兼容老旧WebView",
+    "- 修复(问题2): 注册审核回退至V10.6.0策略——本端申请(tcg-cordova)恢复pending态等待组长人工审批;移除autoApproveLegacyPendingUsers历史迁移函数;注册文案恢复\"请等待组长审核\";自愈分支同样恢复pending态;仅保留跨网络组员自动通过+hidden隐形+云端申请文件即消费即删(V10.6.0问题2策略不变)",
+    "- 继承V10.7.0: 保存即自动同步机制(检出未上云媒体→8秒防抖→复用_syncUploadPipeline→data_update_notice通知组员);组员端菜单权限收紧(canEdit裁剪);全界面自适应(viewport-fit=cover+100dvh+六维断点+设备分级)",
     "- 继承V10.6.0: 真实Word/PDF导出/跨网络申请隐形/IndexedDB持久化/照片分离上传;继承V10.5.0: 分享链路反转/缓存保存本地;继承V10.4.0: cordova.js桥接/播放标记/全屏返回"
   ],
   "forceUpdate": false,

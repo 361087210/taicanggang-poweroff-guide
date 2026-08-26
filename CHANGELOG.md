@@ -2,6 +2,17 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.8.0] - 2026-08-26
+
+### 云同步根治 + 注册审核回退版
+
+- **修复(问题1根因)**: 云同步失败 `{"code":1061002,"msg":"params error."}` — `cordova-plugin-advanced-http` 的 `uploadFile()` 将飞书必填参数(file_name/parent_type/parent_node/size)序列化为 URL 查询串,而飞书 `upload_all` API 要求这些参数作为 `multipart/form-data` 体中的表单字段;V10.8.0 改用 `sendRequest()` + `serializer:'multipart'` + `FormData`,所有参数(含文件 Blob)由插件 multipart 序列化器通过 `FormData.entries()` 遍历,完整构造符合飞书 API 要求的 multipart 体;优先使用插件 ponyfill `FormData` 兼容老旧 WebView;移除 `writeBlobToCache` 临时文件依赖(Blob 直传)
+- **修复(问题2)**: 注册审核回退至 V10.6.0 策略 — 本端申请恢复 `pending` 态等待组长人工审批;移除 `autoApproveLegacyPendingUsers` 历史迁移函数(空操作);注册文案恢复"请等待组长审核";仅保留跨网络组员自动通过 + hidden 隐形 + 即消费即删(V10.6.0 策略不变)
+- **继承 V10.7.0**: 保存即自动同步(8 秒防抖 + 未上云媒体检测)、组员端菜单权限收紧(canEdit 裁剪)、全界面自适应(viewport-fit=cover + 100dvh + 六维断点)
+- **继承 V10.6.0**: 真实 Word/PDF 导出(OOXML + 画布中文)、跨网络申请隐形通过、IndexedDB 持久化、照片分离上传
+- **测试**: V10.8.0 专项测试 20 用例 + 全量回归 241 用例(0 失败)
+- **文档**: `docs/RELEASE_V1080.md` 完整开发文档
+
 ## [5.8.0] - 2026-08-24
 
 ### 导出分享方案对齐（基准：安装包 V1.8 React/Capacitor 版）
