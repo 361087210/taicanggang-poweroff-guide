@@ -39,26 +39,27 @@ function check(name, cond, detail='') {
  * ============================================================ */
 console.log('\n--- A. 静态源码检查 ---');
 
-// ---- 问题1: 待审核注册默认通过 ----
-console.log('-- 问题1: 注册默认通过+跨网络隐形 --');
-check('A1 问题1: 本端申请拉取即激活(status=active,默认通过)',
-  /if\(!existingUser\)\{\s*\n\s*u\.status='active'; \/\/ 默认通过\s*\n\s*USERS\.push\(u\);/.test(html));
-check('A2 问题1: 已pending用户自动转active(旧存量申请同样放行)',
-  /existingUser\.status==='pending'\)\{\s*\n\s*existingUser\.status='active'; \/\/ 默认通过/.test(html));
-check('A3 问题1: 组长显式拒绝的账号不自动复活(人工拒绝优先级最高)',
-  /已拒绝账号的新申请不自动通过/.test(html));
-check('A4 问题1: 本端申请即消费即删云端文件(防轮询重复消费)',
-  (html.match(/deletePendingFileFromFeishu\(u\.phone\)/g)||[]).length >= 2);
-check('A5 问题1: 自动通过后回推云端用户表(去抖,组员立即可登录)',
+// ---- 问题1: V10.8.0回退——本端恢复人工审批,跨网络保留自动通过 ----
+console.log('-- 问题1: V10.8.0回退——本端pending/跨网络自动通过 --');
+check('A1 问题1(V10.8.0回退): 本端申请恢复pending态(人工审批)',
+  /status='pending'; \/\/ 人工审批/.test(html));
+check('A2 问题1(V10.8.0回退): pending用户不再自动转active',
+  !/existingUser\.status='active'; \/\/ 默认通过/.test(html));
+check('A3 问题1(V10.8.0回退): 已拒绝账号保留拒绝状态',
+  /已拒绝账号的新申请保留拒绝状态/.test(html));
+check('A4 问题1: 跨网络申请即消费即删云端文件(防轮询重复消费)',
+  (html.match(/deletePendingFileFromFeishu\(u\.phone\)/g)||[]).length >= 1);
+check('A5 问题1: 跨网络自动通过后回推云端用户表(去抖)',
   /_debouncePushApprovedUsers\(\);/.test(html));
-check('A6 问题1: 默认通过知会组长(通知但无需操作)',
-  /新组员已自动通过/.test(html) && /无需人工审批/.test(html));
+check('A6 问题1(V10.8.0回退): 不再有"新组员已自动通过"通知',
+  !/新组员已自动通过/.test(html) && !/无需人工审批/.test(html));
 
-// ---- 问题2: advanced-http签名修复+自动同步闭环 ----
-console.log('-- 问题2: 上传签名修复+自动同步+组员通知 --');
-const uploadMatch = html.match(/http\.uploadFile\(\s*'https:\/\/open\.feishu\.cn\/open-apis\/drive\/v1\/files\/upload_all',\s*\{file_name[\s\S]*?fail\s*\n?\s*\);/);
-check('A7 问题2: uploadFile严格7参数扁平签名(url,params,headers,filePath,name,success,fail)',
-  !!uploadMatch && /'file',\s*\n\s*done,\s*\n\s*fail/.test(uploadMatch[0]));
+// ---- 问题2: V10.8.0上传签名修复(sendRequest+multipart)+自动同步闭环 ----
+console.log('-- 问题2: sendRequest+multipart修复+自动同步+组员通知 --');
+check('A7 问题2(V10.8.0修复): sendRequest+serializer multipart替代uploadFile',
+  /http\.sendRequest\(\s*'https:\/\/open\.feishu\.cn\/open-apis\/drive\/v1\/files\/upload_all'/.test(html)
+  && /serializer:'multipart'/.test(html)
+  && !html.includes('http.uploadFile('));
 check('A8 问题2: 原生调用同步抛错走reject(不静默吞掉)',
   /reject\(syncErr instanceof Error\?syncErr:new Error\(String\(syncErr\)\)\);/.test(html));
 check('A9 问题2: 同步管线单一事实源(手动/自动共用零分叉)',
@@ -217,31 +218,35 @@ setTimeout(async () => {
     check('B3 scheduleAutoSyncAfterSave(组员被拦截/组长防抖调度不立即执行)', false, e.message);
   }
 
-  // B4: httpUploadFile原生7参数签名(问题2根因)
+  // B4: httpUploadFile原生sendRequest+multipart签名(V10.8.0根因修复)
   try {
     const r4 = await GAsync(`(async()=>{
       const calls=[];
-      window.cordova={plugin:{http:{uploadFile:function(url,params,headers,filePath,name,success,fail){
-        calls.push([typeof url,typeof params,typeof headers,typeof filePath,typeof name,typeof success,typeof fail]);
-        // 模拟插件: 参数合法即同步回调success(带JSON字符串响应体)
-        success({data:'{"code":0,"data":{"file_token":"fn_test"}}'});
-      }}},file:{cacheDirectory:'file:///cache/'}};
-      window.resolveLocalFileSystemURL=(url,ok)=>ok({});
-      // mock落盘直接resolve路径(绕过文件系统异步链)
-      window.writeBlobToCache=async()=>'file:///cache/test.jpg';
+      // mock插件: sendRequest+ponyfills.FormData(V10.8.0改用multipart序列化器)
+      window.cordova={plugin:{http:{
+        sendRequest:function(url,opts,success,fail){
+          calls.push({url:url,method:opts.method,serializer:opts.serializer,
+            hasFormData:opts.data instanceof FormData,
+            authHeader:opts.headers&&opts.headers.Authorization});
+          // 模拟插件: multipart序列化器+FormData合法即同步回调success
+          success({data:'{"code":0,"data":{"file_token":"fn_test"}}'});
+        },
+        ponyfills:{FormData:window.FormData}
+      }}};
       const res=await httpUploadFile({token:'t_test',fileName:'x.jpg',folderToken:'fld_test',blob:new Blob(['test'])});
       return {calls,res};
     })()`);
-    const sig = r4 && r4.calls && r4.calls[0];
-    check('B4 httpUploadFile原生调用7实参(类型序列匹配插件签名+回调解析)',
-      sig && sig.length === 7
-      && sig[0] === 'string' && sig[1] === 'object' && sig[2] === 'object'
-      && sig[3] === 'string' && sig[4] === 'string'
-      && sig[5] === 'function' && sig[6] === 'function'
+    const c4 = r4 && r4.calls && r4.calls[0];
+    check('B4 httpUploadFile原生sendRequest+multipart(V10.8.0签名修复)',
+      c4 && c4.url==='https://open.feishu.cn/open-apis/drive/v1/files/upload_all'
+      && c4.method==='post'
+      && c4.serializer==='multipart'
+      && c4.hasFormData===true
+      && c4.authHeader==='Bearer t_test'
       && r4.res && r4.res.code === 0,
-      sig ? sig.join(',') + ' | res.code=' + (r4.res && r4.res.code) : JSON.stringify(r4).substring(0,120));
+      c4 ? c4.serializer+'/'+c4.method+' | res.code=' + (r4.res && r4.res.code) : JSON.stringify(r4).substring(0,120));
   } catch(e) {
-    check('B4 httpUploadFile原生调用7实参(类型序列匹配插件签名+回调解析)', false, e.message);
+    check('B4 httpUploadFile原生sendRequest+multipart(V10.8.0签名修复)', false, e.message);
   }
 
   // B5: 自动同步执行体——无待上云媒体时零动作
