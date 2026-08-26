@@ -1,13 +1,15 @@
 {
-  "version": "10.8.0",
-  "versionCode": 100800,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.8.0/tcg_poweroff_v10.8.0.apk",
+  "version": "10.9.0",
+  "versionCode": 100900,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.9.0/tcg_poweroff_v10.9.0.apk",
   "releaseNotes": [
-    "V10.8.0 云同步根治+注册回退版——一句话总结: 飞书上传参数错误1061002根因修复(sendRequest+multipart序列化),注册审核回退至V10.6.0人工审批策略(仅保留跨网络组员自动通过隐形处理)",
-    "- 修复(问题1根因): 云同步失败\"code:1061002 params error\"——cordova-plugin-advanced-http的uploadFile()将file_name/parent_type/parent_node/size序列化为URL查询串,而飞书upload_all API要求这些参数作为multipart/form-data体中的表单字段;V10.8.0改用sendRequest()+serializer:'multipart'+FormData,所有参数(含文件Blob)由插件multipart序列化器通过FormData.entries()遍历,对Blob值通过FileReader读取二进制,完整构造符合飞书API要求的multipart体;优先使用插件ponyfill FormData兼容老旧WebView",
-    "- 修复(问题2): 注册审核回退至V10.6.0策略——本端申请(tcg-cordova)恢复pending态等待组长人工审批;移除autoApproveLegacyPendingUsers历史迁移函数;注册文案恢复\"请等待组长审核\";自愈分支同样恢复pending态;仅保留跨网络组员自动通过+hidden隐形+云端申请文件即消费即删(V10.6.0问题2策略不变)",
-    "- 继承V10.7.0: 保存即自动同步机制(检出未上云媒体→8秒防抖→复用_syncUploadPipeline→data_update_notice通知组员);组员端菜单权限收紧(canEdit裁剪);全界面自适应(viewport-fit=cover+100dvh+六维断点+设备分级)",
-    "- 继承V10.6.0: 真实Word/PDF导出/跨网络申请隐形/IndexedDB持久化/照片分离上传;继承V10.5.0: 分享链路反转/缓存保存本地;继承V10.4.0: cordova.js桥接/播放标记/全屏返回"
+    "V10.9.0 视频分离上传+UI适配修复版——一句话总结: 视频base64分离上传至云端(与照片同构),组员端拉取数据不再因JSON过大而超时/OOM崩溃;修复红米K70 Pro(Android 16)安全区/横向溢出导致的UI显示不全问题",
+    "- 修复(问题1根因): 组员端收到通知但拉取数据失败——根因是V10.6.0仅分离了照片base64,视频仍以data:video/;base64,留在videoPaths中,单段视频base64编码后常达10-50MB,JSON膨胀至数十MB导致飞书下载接口超时/JSON.parse在移动端WebView内存受限下OOM崩溃;V10.9.0实现syncUploadVehicleVideos()函数,上传前把data:video base64分离→转Blob→单独上传至云端\"APP数据备份/vehicle_videos\"目录→videoPaths原位替换为云端相对路径(与内置数据同构)→JSON只含轻量路径;幂等设计:文件名=车辆id+序号+内容哈希,重复上传命中云端同名文件即跳过",
+    "- 修复(问题1健壮性): 所有飞书文件下载路径(主同步数据/注册申请/自愈分支)增加超时保护——原生HTTP路径增加timeout参数(60-120秒),fetch路径增加AbortController(60-120秒),防止弱网下永久挂起;下载失败提供清晰超时提示而非模糊错误",
+    "- 修复(问题2-1): 数据页顶端标题和返回按键显示不全——根因是CSS覆写将pt-12的padding-top从48px降到safe-top+12px,Android WebView的safe-area-inset-top恒为0导致仅12px(不够);修正为safe-top+48px,无安全区时48px(与原Tailwind pt-12一致),有安全区时叠加",
+    "- 修复(问题2-2): 数据同步下方按钮显示不完整——根因是CSS覆写将pb-24的padding-bottom从96px降到safe-bottom+24px,Android WebView的safe-area-inset-bottom恒为0导致仅24px<底部导航64px(按钮被nav遮挡);修正为safe-bottom+96px",
+    "- 修复(问题2-3): 云端数据同步中心从右往左滑动有大片留白——根因是.scroll-y仅有overflow-y:auto缺少overflow-x:hidden,部分Android WebView(含红米K70 Pro Android 16)将overflow-x:visible解析为auto,允许横向滑动露出留白;增加overflow-x:hidden",
+    "- 继承V10.8.0: 飞书上传multipart序列化修复;继承V10.7.0: 保存即自动同步机制;继承V10.6.0: 照片分离上传;继承V10.5.0: 分享链路反转/缓存保存本地;继承V10.4.0: cordova.js桥接/播放标记/全屏返回"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",

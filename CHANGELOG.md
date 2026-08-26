@@ -2,6 +2,18 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.9.0] - 2026-08-26
+
+### 视频分离上传 + UI适配修复版
+
+- **修复(问题1根因)**: 组员端收到通知但拉取数据失败 — V10.6.0 仅分离了照片 base64,视频仍以 `data:video/;base64,` 留在 `videoPaths`,单段视频 base64 编码后常达 10-50MB,JSON 膨胀至数十 MB 导致飞书下载接口超时/`JSON.parse` 在移动端 WebView 内存受限下 OOM 崩溃;V10.9.0 实现 `syncUploadVehicleVideos()` 函数,上传前把 `data:video` base64 分离 → 转 Blob → 单独上传至云端 `APP数据备份/vehicle_videos` 目录 → `videoPaths` 原位替换为云端相对路径(与内置数据同构) → JSON 只含轻量路径;幂等设计:文件名 = 车辆 id + 序号 + 内容哈希,重复上传命中云端同名文件即跳过
+- **修复(问题1健壮性)**: 所有飞书文件下载路径(主同步数据/注册申请/自愈分支)增加超时保护 — 原生 HTTP 路径增加 `timeout` 参数(60-120 秒),`fetch` 路径增加 `AbortController`(60-120 秒),防止弱网下永久挂起;下载失败提供清晰超时提示而非模糊错误
+- **修复(问题2-1)**: 数据页顶端标题和返回按键显示不全 — CSS 覆写将 `pt-12` 的 `padding-top` 从 48px 降到 `safe-top+12px`,Android WebView 的 `safe-area-inset-top` 恒为 0 导致仅 12px(不够);修正为 `safe-top+48px`
+- **修复(问题2-2)**: 数据同步下方按钮显示不完整 — CSS 覆写将 `pb-24` 的 `padding-bottom` 从 96px 降到 `safe-bottom+24px`,Android 上仅 24px < 底部导航 64px;修正为 `safe-bottom+96px`
+- **修复(问题2-3)**: 云端数据同步中心从右往左滑动有大片留白 — `.scroll-y` 仅有 `overflow-y:auto` 缺少 `overflow-x:hidden`,部分 Android WebView(含红米 K70 Pro Android 16)将 `overflow-x:visible` 解析为 `auto`;增加 `overflow-x:hidden`
+- **测试**: V10.9.0 全链路同步管线测试 32 用例(0 失败) — 覆盖视频分离上传逻辑/JSON 体积缩减/下载超时保护/全链路同步流程/边界条件/CSS UI 适配/数据完整性/端到端同步模拟
+- **文档**: `docs/RELEASE_V1090.md` 完整开发文档
+
 ## [10.8.0] - 2026-08-26
 
 ### 云同步根治 + 注册审核回退版
