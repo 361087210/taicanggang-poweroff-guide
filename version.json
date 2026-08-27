@@ -1,15 +1,13 @@
 {
-  "version": "10.9.0",
-  "versionCode": 100900,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.9.0/tcg_poweroff_v10.9.0.apk",
+  "version": "10.9.1",
+  "versionCode": 100901,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.9.1/tcg_poweroff_v10.9.1.apk",
   "releaseNotes": [
-    "V10.9.0 视频分离上传+UI适配修复版——一句话总结: 视频base64分离上传至云端(与照片同构),组员端拉取数据不再因JSON过大而超时/OOM崩溃;修复红米K70 Pro(Android 16)安全区/横向溢出导致的UI显示不全问题",
-    "- 修复(问题1根因): 组员端收到通知但拉取数据失败——根因是V10.6.0仅分离了照片base64,视频仍以data:video/;base64,留在videoPaths中,单段视频base64编码后常达10-50MB,JSON膨胀至数十MB导致飞书下载接口超时/JSON.parse在移动端WebView内存受限下OOM崩溃;V10.9.0实现syncUploadVehicleVideos()函数,上传前把data:video base64分离→转Blob→单独上传至云端\"APP数据备份/vehicle_videos\"目录→videoPaths原位替换为云端相对路径(与内置数据同构)→JSON只含轻量路径;幂等设计:文件名=车辆id+序号+内容哈希,重复上传命中云端同名文件即跳过",
-    "- 修复(问题1健壮性): 所有飞书文件下载路径(主同步数据/注册申请/自愈分支)增加超时保护——原生HTTP路径增加timeout参数(60-120秒),fetch路径增加AbortController(60-120秒),防止弱网下永久挂起;下载失败提供清晰超时提示而非模糊错误",
-    "- 修复(问题2-1): 数据页顶端标题和返回按键显示不全——根因是CSS覆写将pt-12的padding-top从48px降到safe-top+12px,Android WebView的safe-area-inset-top恒为0导致仅12px(不够);修正为safe-top+48px,无安全区时48px(与原Tailwind pt-12一致),有安全区时叠加",
-    "- 修复(问题2-2): 数据同步下方按钮显示不完整——根因是CSS覆写将pb-24的padding-bottom从96px降到safe-bottom+24px,Android WebView的safe-area-inset-bottom恒为0导致仅24px<底部导航64px(按钮被nav遮挡);修正为safe-bottom+96px",
-    "- 修复(问题2-3): 云端数据同步中心从右往左滑动有大片留白——根因是.scroll-y仅有overflow-y:auto缺少overflow-x:hidden,部分Android WebView(含红米K70 Pro Android 16)将overflow-x:visible解析为auto,允许横向滑动露出留白;增加overflow-x:hidden",
-    "- 继承V10.8.0: 飞书上传multipart序列化修复;继承V10.7.0: 保存即自动同步机制;继承V10.6.0: 照片分离上传;继承V10.5.0: 分享链路反转/缓存保存本地;继承V10.4.0: cordova.js桥接/播放标记/全屏返回"
+    "V10.9.1 组员端导入备份功能版——一句话总结: 数据同步页增加「导入备份」入口,组长/组员均可从本地备份JSON文件恢复车型数据,不依赖飞书也能完成数据迁移",
+    "- 新增(问题3): 组员端数据同步页增加「导入备份 — 从本地恢复」功能——选择 cloud_sync_config.json 备份文件→智能合并(同ID覆盖/新增追加)→二次确认→持久化到本地;支持三种格式兼容:标准sync_config_backup/旧版vehicle_poweroff_backup/裸车辆数组",
+    "- 权限设计: 组长/组员均可使用导入备份——导入为本地数据恢复操作,不涉及上云,因此组员端(只读角色)也开放;上传至飞书仍仅限组长",
+    "- 安全防护: 文件大小限制(50MB)+格式校验(JSON parse)+二次确认弹窗+导入结果统计(新增/覆盖数)+同步日志记录",
+    "- 继承V10.9.0: 视频分离上传+下载超时保护+红米K70 Pro UI适配修复;继承V10.8.0: 飞书上传multipart序列化修复;继承V10.7.0: 保存即自动同步机制"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",

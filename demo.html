@@ -527,7 +527,7 @@ img,svg,video{max-width:100%;}
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.9.0</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.9.1</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -540,6 +540,11 @@ img,svg,video{max-width:100%;}
 <div class="bs-item" onclick="canEdit()?doSyncUpload():doSyncDownload()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><div><div class="text-sm text-gray-800" id="sync-upload-title">上传数据至飞书</div><div class="text-xs text-gray-400" id="sync-upload-desc">将本地车型数据同步到飞书云</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="doSyncDownload()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><div><div class="text-sm text-gray-800">手动拉取飞书数据</div><div class="text-xs text-gray-400">强制从飞书云端获取最新数据</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="exportSyncConfig()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg><div><div class="text-sm text-gray-800">导出配置 — 备份本地</div><div class="text-xs text-gray-400">导出同步配置和车辆数据到本地</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<!-- V10.9.1 问题3: 组员端数据同步页增加导入备份功能——与导出配置对称,
+  组员/组长均可从本地备份文件导入车辆数据,不依赖飞书也能恢复数据;
+  导入为本地恢复操作,不涉及上云,因此组员端也开放 -->
+<div class="bs-item" onclick="triggerImportBackup()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5 5-5-5M12 3v12"/></svg><div><div class="text-sm text-gray-800">导入备份 — 从本地恢复</div><div class="text-xs text-gray-400">选择备份文件恢复车型数据到本机</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<input type="file" id="import-backup-input" accept=".json,application/json" class="hidden" onchange="handleImportBackup(this)">
 <div class="bs-item" onclick="showToast('请使用上方「导出配置」生成备份文件，通过微信/蓝牙分享给其他设备')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><div><div class="text-sm text-gray-800">设备间传输</div><div class="text-xs text-gray-400">导出配置后通过分享传给其他设备</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 </div>
 <!-- Sync settings -->
@@ -716,7 +721,7 @@ img,svg,video{max-width:100%;}
 <div class="text-base font-bold text-gray-900 mb-2" id="confirm-title">确认</div>
 <div class="text-sm text-gray-500 mb-4" id="confirm-msg">确定执行此操作？</div>
 <div class="flex gap-3">
-<button onclick="closeModal('modal-confirm')" class="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">取消</button>
+<button onclick="confirmCancelAction()" class="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">取消</button>
 <button onclick="confirmAction()" class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium">确认</button>
 </div>
 </div>
@@ -1772,7 +1777,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.9.0';
+const APP_VERSION='10.9.1';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1834,6 +1839,7 @@ VEHICLES.forEach(v=>{v.pinyin=getPinyin(v.display);});
 // ===================== STATE =====================
 let state={screen:'screen-login',currentUser:null,viewMode:'tree',currentVehicleId:null,currentVehicleIndex:0,searchQuery:'',brandFilter:'all',selectedVehicles:new Set(),editingVehicle:null,isEditing:false,outdoorMode:false,expandedBrands:new Set(['saic']),recentVehicles:[],photoZoom:1,detailExporting:null,batchExporting:null,backupExporting:false,pendingDetailOpen:null};
 let confirmCallback=null;
+let confirmCancelCallback=null;
 let navHistory=[];
 
 // ===================== NAVIGATION =====================
@@ -5418,6 +5424,120 @@ async function exportSyncConfig(){
   addSyncLog(`配置导出完成 · ${VEHICLES.length}条 · ${filename}`,'blue');
 }
 
+/**
+ * V10.9.1 问题3: 组员端导入备份——触发文件选择器
+ * 权限: 组长/组员均可使用(本地数据恢复,不涉及上云,无需编辑权限)
+ */
+function triggerImportBackup(){
+  const input=document.getElementById('import-backup-input');
+  if(input){input.value='';input.click();}
+}
+
+/**
+ * V10.9.1 问题3: 处理备份文件导入
+ * 兼容格式:
+ *   ① sync_config_backup(标准导出格式,含type/vehicles/version)
+ *   ② vehicle_poweroff_backup(旧版备份格式)
+ *   ③ 裸车辆数组(兜底兼容)
+ * 策略: 智能合并——同ID覆盖,新增追加,导入前二次确认(防止误操作覆盖本地数据)
+ * @param {HTMLInputElement} inputEl - 文件选择input元素
+ */
+async function handleImportBackup(inputEl){
+  const file=inputEl.files&&inputEl.files[0];
+  if(!file){return;}
+  if(file.size>50*1024*1024){showToast('备份文件过大(>50MB),请检查文件');return;}
+  showToast('正在读取备份文件...');
+  try{
+    const text=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=e=>resolve(e.target.result);
+      reader.onerror=()=>reject(new Error('文件读取失败'));
+      reader.readAsText(file);
+    });
+    let data;
+    try{data=JSON.parse(text);}catch(e){throw new Error('文件格式错误,不是有效的JSON');}
+    
+    // 兼容多种格式,提取车辆数组
+    let vehicles=null;
+    let sourceType='未知格式';
+    if(data&&data.type==='sync_config_backup'&&Array.isArray(data.vehicles)){
+      vehicles=data.vehicles;
+      sourceType='标准备份('+(data.version||'v?')+')';
+    }else if(data&&data.type==='vehicle_poweroff_backup'&&Array.isArray(data.vehicles)){
+      vehicles=data.vehicles;
+      sourceType='旧版备份';
+    }else if(Array.isArray(data)&&data.length>0&&data[0].id!==undefined){
+      vehicles=data;
+      sourceType='裸数组格式';
+    }
+    
+    if(!vehicles||!vehicles.length){throw new Error('备份文件中没有车辆数据');}
+    
+    // 统计导入信息
+    const localIds=new Set(VEHICLES.map(v=>v.id));
+    let newCount=0,updateCount=0;
+    vehicles.forEach(v=>{
+      if(localIds.has(v.id))updateCount++;
+      else newCount++;
+    });
+    
+    // 二次确认: 使用showConfirm+confirmCancelCallback的标准Promise封装
+    const msg=`将导入 ${vehicles.length} 条车辆数据\n来源: ${sourceType}\n新增: ${newCount} 条\n覆盖: ${updateCount} 条\n\n导入后本地数据将被合并,是否继续?`;
+    const ok=await new Promise(resolve=>{
+      showConfirm('导入备份确认',msg,()=>resolve(true));
+      confirmCancelCallback=()=>resolve(false);
+    });
+    if(!ok){showToast('已取消导入');inputEl.value='';return;}
+    
+    // 执行合并
+    let added=0,updated=0;
+    vehicles.forEach(sv=>{
+      const v=VEHICLES.find(x=>x.id===sv.id);
+      if(v){
+        // 已存在: 覆盖更新
+        v.display=sv.display;v.brand=sv.brand;v.series=sv.series;v.config=sv.config;
+        v.powerType=sv.powerType;v.position=sv.position;v.steps=sv.steps;
+        v.keyFrame=sv.keyFrame;v.keyContainer=sv.keyContainer;v.remarks=sv.remarks;
+        v.photoPaths=sv.photoPaths||[];v.photos=sv.photos||0;
+        v.videoPaths=sv.videoPaths||[];v.videos=sv.videos||0;
+        if(sv.size!==undefined)v.size=sv.size;
+        if(sv.brandId!==undefined)v.brandId=sv.brandId;
+        v.pinyin=getPinyin(sv.display);
+        updated++;
+      }else{
+        // 新增: 构造完整车辆对象
+        const nv={
+          id:sv.id,display:sv.display,brand:sv.brand,series:sv.series,
+          config:sv.config,powerType:sv.powerType,position:sv.position,
+          steps:sv.steps,keyFrame:sv.keyFrame,keyContainer:sv.keyContainer,
+          remarks:sv.remarks,photoPaths:sv.photoPaths||[],photos:sv.photos||0,
+          videoPaths:sv.videoPaths||[],videos:sv.videos||0
+        };
+        if(sv.size!==undefined)nv.size=sv.size;
+        if(sv.brandId!==undefined)nv.brandId=sv.brandId;
+        nv.pinyin=getPinyin(sv.display);
+        VEHICLES.push(nv);
+        added++;
+      }
+    });
+    
+    // 保存到本地
+    persistVehicles();
+    // 刷新界面
+    if(typeof renderVehicleList==='function')renderVehicleList();
+    if(typeof refreshVehicleCount==='function')refreshVehicleCount();
+    
+    const result=`导入完成 · 新增${added}条 · 覆盖${updated}条`;
+    showToast(result);
+    addSyncLog(`备份导入完成 · 来源:${sourceType} · 新增${added}条 · 覆盖${updated}条`,'green');
+  }catch(e){
+    showToast('导入失败: '+e.message);
+    addSyncLog('备份导入失败: '+e.message,'red');
+  }finally{
+    inputEl.value='';
+  }
+}
+
 function renderSyncLog(){
   const c=document.getElementById('sync-log-list');
   if(!c)return;
@@ -6016,6 +6136,13 @@ function showConfirm(title,msg,callback){
 function confirmAction(){
   closeModal('modal-confirm');
   if(confirmCallback){confirmCallback();confirmCallback=null;}
+  confirmCancelCallback=null;
+}
+
+function confirmCancelAction(){
+  closeModal('modal-confirm');
+  if(confirmCancelCallback){confirmCancelCallback();confirmCancelCallback=null;}
+  confirmCallback=null;
 }
 
 // ===================== MEMBERS =====================
