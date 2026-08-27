@@ -2158,10 +2158,24 @@ function updateMyInfo(){
 function renderBrandTags(){
   const c=document.getElementById('brand-tags');
   let html=`<button onclick="setBrandFilter('all')" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${state.brandFilter==='all'?'bg-blue-600 text-white':'bg-gray-100 text-gray-600'}">全部</button>`;
+  // V10.9.2 性能优化: 一次遍历统计各品牌车辆数,替代 O(n*m) 嵌套filter
+  const brandCount={};
+  const knownIds=new Set(BRANDS.map(b=>b.id));
+  let otherCount=0;
+  VEHICLES.forEach(v=>{
+    if(knownIds.has(v.brandId)){
+      brandCount[v.brandId]=(brandCount[v.brandId]||0)+1;
+    }else{
+      otherCount++;
+    }
+  });
   BRANDS.forEach(b=>{
-    const count=VEHICLES.filter(v=>v.brandId===b.id).length;
+    const count=brandCount[b.id]||0;
     html+=`<button onclick="setBrandFilter('${b.id}')" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${state.brandFilter===b.id?'bg-blue-600 text-white':'bg-gray-100 text-gray-600'}">${b.name}(${count})</button>`;
   });
+  if(otherCount>0){
+    html+=`<button onclick="setBrandFilter('__other__')" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${state.brandFilter==='__other__'?'bg-blue-600 text-white':'bg-gray-100 text-gray-600'}">其他(${otherCount})</button>`;
+  }
   c.innerHTML=html;
 }
 
@@ -2176,7 +2190,12 @@ function setViewMode(mode){
 
 function getFilteredVehicles(){
   let list=VEHICLES;
-  if(state.brandFilter!=='all')list=list.filter(v=>v.brandId===state.brandFilter);
+  if(state.brandFilter==='__other__'){
+    const knownIds=new Set(BRANDS.map(b=>b.id));
+    list=list.filter(v=>!knownIds.has(v.brandId));
+  }else if(state.brandFilter!=='all'){
+    list=list.filter(v=>v.brandId===state.brandFilter);
+  }
   if(state.searchQuery){
     const q=state.searchQuery.toLowerCase();
     list=list.filter(v=>v.display.toLowerCase().includes(q)||v.pinyin.toLowerCase().includes(q)||v.series.toLowerCase().includes(q)||v.brand.toLowerCase().includes(q)||v.position.toLowerCase().includes(q));
@@ -2184,9 +2203,14 @@ function getFilteredVehicles(){
   return list;
 }
 
+// V10.9.2 代码优化: 搜索防抖——避免每次按键全量重绘DOM,低端机也流畅
+let searchDebounceTimer=null;
 function handleSearch(){
-  state.searchQuery=document.getElementById('search-input').value.trim();
-  renderVehicleList();
+  if(searchDebounceTimer)clearTimeout(searchDebounceTimer);
+  searchDebounceTimer=setTimeout(()=>{
+    state.searchQuery=document.getElementById('search-input').value.trim();
+    renderVehicleList();
+  },150);
 }
 
 function toggleSearchMode(){
@@ -2208,13 +2232,25 @@ function renderVehicleList(){
   if(state.viewMode==='tree'){
     // Hierarchical view
     let html='';
+    // V10.9.2 性能优化: 一次遍历按brandId+series两级分组,替代 O(n*m) 嵌套filter
+    const brandMap={};
+    const knownIds=new Set(BRANDS.map(b=>b.id));
+    let otherVehicles=[];
+    list.forEach(v=>{
+      if(knownIds.has(v.brandId)){
+        if(!brandMap[v.brandId])brandMap[v.brandId]={};
+        if(!brandMap[v.brandId][v.series])brandMap[v.brandId][v.series]=[];
+        brandMap[v.brandId][v.series].push(v);
+      }else{
+        otherVehicles.push(v);
+      }
+    });
     const brandsToShow=state.brandFilter==='all'?BRANDS:BRANDS.filter(b=>b.id===state.brandFilter);
     brandsToShow.forEach(b=>{
-      const vehicles=list.filter(v=>v.brandId===b.id);
-      if(vehicles.length===0)return;
+      const seriesMap=brandMap[b.id];
+      if(!seriesMap)return;
+      const brandCount=Object.values(seriesMap).reduce((s,a)=>s+a.length,0);
       const expanded=state.expandedBrands.has(b.id);
-      const series={};
-      vehicles.forEach(v=>{if(!series[v.series])series[v.series]=[];series[v.series].push(v);});
       html+=`<div class="mb-2">
         <div onclick="toggleBrand('${b.id}')" class="flex items-center justify-between py-2 px-1 cursor-pointer">
           <div class="flex items-center gap-2">
@@ -2222,7 +2258,38 @@ function renderVehicleList(){
             <span class="text-sm font-bold text-gray-900">${b.name}${b.en?'('+b.en+')':''}</span>
             ${b.note?`<span class="text-xs text-gray-300">— ${b.note.substring(0,20)}${b.note.length>20?'...':''}</span>`:''}
           </div>
-          <span class="text-xs text-gray-400">${vehicles.length}条</span>
+          <span class="text-xs text-gray-400">${brandCount}条</span>
+        </div>`;
+      if(expanded){
+        Object.entries(seriesMap).forEach(([sName,svs])=>{
+          html+=`<div class="ml-6 mb-1">
+            <div class="flex items-center gap-2 py-1.5 px-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3 text-gray-300"><path d="M6 9l6 6 6-6"/></svg>
+              <span class="text-xs font-medium text-gray-700">${sName}</span>
+              <span class="text-xs text-gray-400">${svs.length}条</span>
+            </div>`;
+          svs.forEach((v,i)=>{
+            html+=renderVehicleCard(v,i,'ml-12');
+          });
+          html+='</div>';
+        });
+      }
+      html+='</div>';
+    });
+    // V10.9.2 问题1: 自定义品牌(brandId不在BRANDS中)的车辆归入"其他品牌"分组,
+    // 确保新增车型在分级列表中也能显示,不会因为品牌未登记而"消失"
+    if(otherVehicles.length>0&&(state.brandFilter==='all'||state.brandFilter==='__other__')){
+      const expanded=state.expandedBrands.has('__other__');
+      const series={};
+      otherVehicles.forEach(v=>{if(!series[v.series])series[v.series]=[];series[v.series].push(v);});
+      html+=`<div class="mb-2">
+        <div onclick="toggleBrand('__other__')" class="flex items-center justify-between py-2 px-1 cursor-pointer">
+          <div class="flex items-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-400 transition-transform ${expanded?'rotate-90':''}"><path d="M9 6l6 6-6 6"/></svg>
+            <span class="text-sm font-bold text-gray-900">其他品牌</span>
+            <span class="text-xs text-gray-300">— 自定义品牌</span>
+          </div>
+          <span class="text-xs text-gray-400">${otherVehicles.length}条</span>
         </div>`;
       if(expanded){
         Object.entries(series).forEach(([sName,svs])=>{
@@ -2239,7 +2306,7 @@ function renderVehicleList(){
         });
       }
       html+='</div>';
-    });
+    }
     c.innerHTML=html;
   }else{
     // Flat view
@@ -2625,11 +2692,15 @@ function saveVehicle(){
   const videoPaths=editVideos.map(v=>v.data);
   if(state.isEditing&&state.editingVehicle){
     const v=state.editingVehicle;
+    const brandObj=BRANDS.find(b=>b.name===brand);
     v.display=display;v.size=size;v.position=position;v.brand=brand;v.series=series;
     v.config=config;v.powerType=powerType;v.keyFrame=keyFrame;v.keyContainer=keyContainer;
     v.steps=steps;v.remarks=remarks;v.pinyin=getPinyin(display);
     v.photos=photoPaths.length;v.photoPaths=photoPaths;
     v.videos=videoPaths.length;v.videoPaths=videoPaths;
+    // V10.9.2 问题1: 编辑时也更新brandId——之前只改brand名称不改分组ID,
+    // 导致分级列表分组错乱,改了品牌还在旧组里
+    v.brandId=brandObj?brandObj.id:'custom';
   }else{
     const maxId=VEHICLES.reduce((m,v)=>Math.max(m,v.id),0);
     const brandObj=BRANDS.find(b=>b.name===brand);

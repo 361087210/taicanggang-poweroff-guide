@@ -1,13 +1,12 @@
 {
-  "version": "10.9.1",
-  "versionCode": 100901,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.9.1/tcg_poweroff_v10.9.1.apk",
+  "version": "10.9.2",
+  "versionCode": 100902,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.9.2/tcg_poweroff_v10.9.2.apk",
   "releaseNotes": [
-    "V10.9.1 组员端导入备份功能版——一句话总结: 数据同步页增加「导入备份」入口,组长/组员均可从本地备份JSON文件恢复车型数据,不依赖飞书也能完成数据迁移",
-    "- 新增(问题3): 组员端数据同步页增加「导入备份 — 从本地恢复」功能——选择 cloud_sync_config.json 备份文件→智能合并(同ID覆盖/新增追加)→二次确认→持久化到本地;支持三种格式兼容:标准sync_config_backup/旧版vehicle_poweroff_backup/裸车辆数组",
-    "- 权限设计: 组长/组员均可使用导入备份——导入为本地数据恢复操作,不涉及上云,因此组员端(只读角色)也开放;上传至飞书仍仅限组长",
-    "- 安全防护: 文件大小限制(50MB)+格式校验(JSON parse)+二次确认弹窗+导入结果统计(新增/覆盖数)+同步日志记录",
-    "- 继承V10.9.0: 视频分离上传+下载超时保护+红米K70 Pro UI适配修复;继承V10.8.0: 飞书上传multipart序列化修复;继承V10.7.0: 保存即自动同步机制"
+    "V10.9.2 分级列表修复+性能优化版——一句话总结: 修复新增自定义品牌车辆在分级列表中不显示的bug,优化列表渲染性能,搜索防抖",
+    "- 修复(问题1): 分级列表不显示新增车型——自定义品牌(brandId不在BRANDS中)的车辆归入「其他品牌」分组,品牌标签栏新增「其他(N)」筛选入口,编辑车辆改品牌后brandId同步更新",
+    "- 性能优化: 品牌标签栏从 O(n*m) 嵌套filter改为一次遍历统计;分级列表从多次filter改为 brandId+series 两级 Map 预分组;搜索输入增加150ms防抖",
+    "- 继承V10.9.1: 组员端导入备份功能;继承V10.9.0: 视频分离上传+下载超时保护+红米K70 Pro UI适配修复"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
