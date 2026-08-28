@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -38,7 +38,7 @@ jobs:
           echo "Detected version=${APP_VERSION} code=${VERSION_CODE}"
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
@@ -147,7 +147,7 @@ jobs:
           $ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs "$APK_OUT"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: tcg-poweroff-apk
           path: release/tcg_poweroff_v${{ env.APP_VERSION }}.apk
