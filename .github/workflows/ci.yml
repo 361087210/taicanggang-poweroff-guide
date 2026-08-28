@@ -22,12 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: 配置 Node 20
-        uses: actions/setup-node@v4
+      - name: 配置 Node 22
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: 综合校验(文件/语法/标记/JSON/凭证泄露)
         run: node scripts/validate_web_assets.js
