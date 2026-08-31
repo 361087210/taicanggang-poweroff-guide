@@ -527,7 +527,7 @@ img,svg,video{max-width:100%;}
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.9.2</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.10.0</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -1191,6 +1191,206 @@ async function httpUploadFile(params){
 }
 
 /**
+ * ============================================================
+ * V10.10.0 大文件分片上传模块 - 飞书同步失败根因修复核心
+ * ============================================================
+ * 根因: 飞书upload_all接口单文件硬上限20MB(官方文档明确),现场拍摄
+ *   视频普遍10-50MB——超限视频上传必败(1061043 file size beyond
+ *   limit),base64滞留videoPaths→同步JSON膨胀至数十MB→整条上传
+ *   管线中断→组员端永远拉不到新车型数据。
+ * 修复: 接入飞书官方分片上传三件套(与upload_all同一权限域):
+ *   ① upload_prepare 预上传 → 返回upload_id/block_size(固定4MB)/block_num
+ *   ② upload_part   逐片上传 → multipart表单(upload_id/seq/size/checksum/file)
+ *   ③ upload_finish 完成上传 → 返回file_token,云端落盘
+ * 可靠性设计:
+ *   - Adler-32分片校验和(官方支持),防弱网位翻转
+ *   - 每片3次重试+指数退避;1061045(频控可重试)自动退避
+ *   - 1061021(事务24h过期)自动重新prepare并重传一次
+ *   - QPS门控: 所有上传类调用串行且间隔≥220ms(官方限制5QPS)
+ */
+
+/** 飞书upload_all单文件硬上限(官方20MB) */
+const FEISHU_UPLOAD_ALL_LIMIT=20*1024*1024;
+/** 分片上传触发阈值: 16MB(预留4MB安全余量,规避multipart表单头边界) */
+const FEISHU_MULTIPART_THRESHOLD=16*1024*1024;
+/** 分片上传体积上限: 500MB(飞书云盘单文件上限随版本不同,保守取值) */
+const FEISHU_MULTIPART_MAX=500*1024*1024;
+
+/** 上传类API QPS门控: 串行+最小间隔220ms,贴官方5QPS限制飞行 */
+let _feishuUploadLastTs=0;
+async function _feishuQpsGate(){
+  const wait=Math.max(0,_feishuUploadLastTs+220-Date.now());
+  if(wait>0)await new Promise(r=>setTimeout(r,wait));
+  _feishuUploadLastTs=Date.now();
+}
+
+/**
+ * Adler-32校验和(飞书upload_part的checksum字段算法)
+ * @param {Uint8Array} u8 - 分片字节
+ * @returns {string} 无符号32位十进制字符串(如"3248270248")
+ */
+function _adler32(u8){
+  const MOD=65521;
+  let a=1,b=0;
+  for(let i=0;i<u8.length;i++){
+    a=(a+u8[i])%MOD;
+    b=(b+a)%MOD;
+  }
+  return String((((b<<16)|a)>>>0));
+}
+
+/**
+ * 飞书文件名清洗 - 随机名称/特殊字符防护
+ * 根因: 用户设备上的文件随机命名可能包含飞书拒绝的字符
+ *   (1061109 file name cqc not passed): 控制字符 / \ : * ? " < > |
+ *   emoji/特殊符号;官方文件名上限250字符。
+ * 策略: 非法字符替换为下划线→空白归并→去首尾点/空白→截断保扩展名→
+ *   空名兜底时间戳名。幂等: 已合法名称原样通过。
+ * @param {string} name - 原始文件名
+ * @param {number} [maxLen=150] - 长度上限(严于官方250,留路径余量)
+ * @returns {string} 清洗后的安全文件名
+ */
+function _sanitizeFeishuFileName(name,maxLen){
+  const limit=maxLen||150;
+  let s=String(name||'')
+    .replace(/[\u0000-\u001f\u007f]/g,'')
+    .replace(/[\\/:*?"<>|]/g,'_')
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu,'')
+    .replace(/\s+/g,'_')
+    .replace(/_{2,}/g,'_')
+    // 首尾清洗: 首部去[._空白],尾部去[._空白]——空白已先转为_,尾部必须含_
+    // 否则"  前后空白  .  "会残留"_._"尾巴(扩展名前的下划线不受影响,如v2_.mp4)
+    .replace(/^[.\s_]+|[.\s_]+$/g,'');
+  if(!s)s='file_'+Date.now().toString(36);
+  if(s.length>limit){
+    const dot=s.lastIndexOf('.');
+    const ext=(dot>0&&s.length-dot<=6)?s.slice(dot):'';
+    s=s.slice(0,limit-ext.length)+ext;
+  }
+  return s;
+}
+
+/**
+ * 上传单个分片(upload_part) - 原生multipart优先,fetch兜底
+ * @returns {Promise<Object>} 飞书响应 {code,msg}
+ */
+async function _uploadPartOnce(token,uploadId,seq,u8,checksum){
+  const chunkBlob=new Blob([u8]);
+  if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
+    try{
+      const http=window.cordova.plugin.http;
+      const FormDataCtor=(http.ponyfills&&http.ponyfills.FormData)||window.FormData;
+      const fd=new FormDataCtor();
+      fd.append('upload_id',uploadId);
+      fd.append('seq',String(seq));
+      fd.append('size',String(u8.length));
+      fd.append('checksum',checksum);
+      fd.append('file',chunkBlob,'chunk_'+seq);
+      return await new Promise((resolve,reject)=>{
+        http.sendRequest(
+          'https://open.feishu.cn/open-apis/drive/v1/files/upload_part',
+          {method:'post',data:fd,serializer:'multipart',headers:{Authorization:'Bearer '+token},responseType:'text'},
+          res=>{try{resolve(JSON.parse(res.data));}catch(e){resolve(res.data);}},
+          err=>reject(new Error(typeof err==='object'?(err.error||err.message||'分片上传失败'):String(err)))
+        );
+      });
+    }catch(e){console.warn('[分片]原生multipart上传失败,回退fetch:',e);}
+  }
+  const fd=new FormData();
+  fd.append('upload_id',uploadId);
+  fd.append('seq',String(seq));
+  fd.append('size',String(u8.length));
+  fd.append('checksum',checksum);
+  fd.append('file',chunkBlob,'chunk_'+seq);
+  const res=await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_part',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd});
+  return res.json();
+}
+
+/**
+ * 飞书官方分片上传(upload_prepare→upload_part×N→upload_finish)
+ * @param {Object} params - {token,fileName,folderToken,blob,onProgress?(done,total)}
+ * @returns {Promise<Object>} {code:0,data:{file_token}}
+ * @throws 事务过期重传一次后仍失败/分片重试耗尽/体积超限 时抛出Error
+ */
+async function httpUploadFileMultipart(params){
+  const blob=params.blob;
+  const onProgress=params.onProgress||(()=>{});
+  if(!blob||blob.size<=0)throw new Error('空文件不可上传');
+  if(blob.size>FEISHU_MULTIPART_MAX)throw new Error('文件超过500MB上限,请压缩后重试');
+  const fileName=_sanitizeFeishuFileName(params.fileName);
+  const doPrepare=async()=>{
+    await _feishuQpsGate();
+    const prep=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_prepare',{
+      method:'POST',
+      headers:{'Content-Type':'application/json; charset=utf-8',Authorization:'Bearer '+params.token},
+      body:JSON.stringify({file_name:fileName,parent_type:'explorer',parent_node:params.folderToken,size:blob.size})
+    });
+    if(!prep||prep.code!==0)throw new Error('预上传失败: '+((prep&&prep.msg)||'无响应'));
+    return {uploadId:String(prep.data.upload_id),blockSize:prep.data.block_size||4194304,blockNum:prep.data.block_num||Math.ceil(blob.size/(prep.data.block_size||4194304))};
+  };
+  // 事务过期(1061021)兜底: 最多重新prepare一次,整段重传
+  for(let session=0;session<2;session++){
+    const {uploadId,blockSize,blockNum}=await doPrepare();
+    let expired=false;
+    for(let seq=0;seq<blockNum;seq++){
+      const chunk=blob.slice(seq*blockSize,Math.min((seq+1)*blockSize,blob.size));
+      const u8=new Uint8Array(await chunk.arrayBuffer());
+      const checksum=_adler32(u8);
+      let ok=false,lastErr=null;
+      for(let attempt=0;attempt<3&&!ok;attempt++){
+        try{
+          await _feishuQpsGate();
+          const res=await _uploadPartOnce(params.token,uploadId,seq,u8,checksum);
+          if(res&&res.code===0){ok=true;}
+          else if(res&&res.code===1061021){expired=true;break;} // 事务过期→跳出重prepare
+          else if(res&&res.code===1061045){lastErr=new Error('频控可重试');} // 稍后重试
+          else{lastErr=new Error('分片'+seq+'失败: '+((res&&res.msg)||'未知'));}
+        }catch(e){lastErr=e;}
+        if(!ok&&!expired)await new Promise(r=>setTimeout(r,500*(attempt+1)));
+      }
+      if(expired)break;
+      if(!ok)throw lastErr||new Error('分片上传失败 seq='+seq);
+      onProgress(seq+1,blockNum);
+    }
+    if(expired){
+      if(session===0){console.warn('[分片]事务过期,重新预上传并重传:',fileName);continue;}
+      throw new Error('分片事务两次过期,上传失败');
+    }
+    await _feishuQpsGate();
+    const fin=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_finish',{
+      method:'POST',
+      headers:{'Content-Type':'application/json; charset=utf-8',Authorization:'Bearer '+params.token},
+      body:JSON.stringify({upload_id:uploadId,block_num:blockNum})
+    });
+    if(!fin||fin.code!==0)throw new Error('完成上传失败: '+((fin&&fin.msg)||'无响应'));
+    return {code:0,msg:'success',data:fin.data||{}};
+  }
+  throw new Error('分片上传失败: 事务过期重传仍失败');
+}
+
+/**
+ * 智能上传路由 - 全部上传场景统一入口(V10.10.0)
+ * 策略: ≤16MB走upload_all(单次调用省配额);>16MB走官方分片三件套;
+ *   upload_all返回1061043(超限)时自动升级分片重试,双保险。
+ * @param {Object} params - {token,fileName,folderToken,blob,onProgress?}
+ * @returns {Promise<Object>} 飞书响应
+ */
+async function httpUploadFileSmart(params){
+  // V10.10.0 随机名称防护: 统一入口清洗文件名(幂等,合法名原样通过),
+  // 覆盖小文件路径——分片路径内部另有清洗,双保险杜绝1061109合规拒绝
+  if(params.fileName)params=Object.assign({},params,{fileName:_sanitizeFeishuFileName(params.fileName)});
+  if(params.blob&&params.blob.size>FEISHU_MULTIPART_THRESHOLD){
+    return await httpUploadFileMultipart(params);
+  }
+  const res=await httpUploadFile(params);
+  if(res&&res.code===1061043&&params.blob){
+    console.warn('[上传]upload_all超限(1061043),自动升级分片上传:',params.fileName);
+    return await httpUploadFileMultipart(params);
+  }
+  return res;
+}
+
+/**
  * 将Blob写入APP缓存目录并返回file://路径 - 原生上传/分享共用
  * @param {string} fileName - 目标文件名
  * @param {Blob} blob - 二进制内容
@@ -1777,7 +1977,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.9.2';
+const APP_VERSION='10.10.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -5042,7 +5242,8 @@ async function syncUploadVehiclePhotos(token,vehicles){
       }else{
         const u8=_b64ToU8(mm[2]);
         const blob=new Blob([u8],{type:'image/jpeg'});
-        const up=await httpUploadFile({token,fileName,folderToken:folder,blob});
+        // V10.10.0: 智能路由(小文件upload_all/超限自动分片),文件名先清洗
+        const up=await httpUploadFileSmart({token,fileName:_sanitizeFeishuFileName(fileName),folderToken:folder,blob});
         if(up&&up.code!==0&&up.code!==undefined){throw new Error(up.msg||'照片上传失败');}
         cloudNames.add(fileName);
       }
@@ -5107,7 +5308,13 @@ async function syncUploadVehicleVideos(token,vehicles){
       }else{
         const u8=_b64ToU8(b64);
         const blob=new Blob([u8],{type:'video/'+mime});
-        const up=await httpUploadFile({token,fileName,folderToken:folder,blob});
+        /* V10.10.0 根因修复: >16MB视频走飞书官方分片上传三件套。
+         * 旧版一律upload_all→>20MB必败(1061043)→base64滞留→整条同步管线中断。 */
+        if(blob.size>FEISHU_MULTIPART_THRESHOLD){
+          showToast(`大视频分片上传中(${(blob.size/1048576).toFixed(0)}MB)...`);
+        }
+        const up=await httpUploadFileSmart({token,fileName:_sanitizeFeishuFileName(fileName),folderToken:folder,blob,
+          onProgress:(done,total)=>{if(total>1)showToast(`视频分片上传 ${done}/${total}...`);}});
         if(up&&up.code!==0&&up.code!==undefined){throw new Error(up.msg||'视频上传失败');}
         cloudNames.add(fileName);
       }
@@ -5134,7 +5341,10 @@ async function syncUploadVehicleVideos(token,vehicles){
  */
 async function _syncUploadPipeline(){
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
+  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval,
+    // V10.10.0 根因修复②: 旧版cfg漏配syncSub→同步JSON被传到"APP数据备份"根
+    // 而非"同步数据"子目录,随后被迁移清理逻辑当旧档删除,组员端永远拉不到数据
+    syncSub:saved.syncSub||DEFAULT_FEISHU_CONFIG.syncSub};
   if(!feishuCfgReady(cfg,true))return {ok:false,msg:'飞书配置不完整: 请在设置中填写 App Secret'}; // V5.3.4: appId+appSecret双查
   const token=await getFeishuToken(cfg,2);
   /* V10.6.0 问题4: 照片分离上传——先把现场拍照(base64)单独传至
@@ -5158,10 +5368,21 @@ async function _syncUploadPipeline(){
     // V10.6.0: 补齐size/brandId字段——旧版漏传导致同步后车辆尺寸/品牌索引丢失
     vehicles:VEHICLES.map(v=>({id:v.id,brandId:v.brandId,brand:v.brand,series:v.series,config:v.config,display:v.display,size:v.size||'',powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
   };
+  /* V10.10.0 守卫: JSON体积预检——媒体分离后JSON应<1MB;若仍>16MB说明
+   * 有base64媒体分离失败滞留,直接诊断性失败,避免把巨大JSON推上云端
+   * 导致组员端下载超时(旧版静默上传→组员必败的隐性故障链)。 */
+  const _jsonStr=JSON.stringify(syncData);
+  const _pendingMedia=VEHICLES.reduce((n,v)=>n+((v.photoPaths||[]).filter(p=>/^data:/i.test(p)).length)+((v.videoPaths||[]).filter(p=>/^data:/i.test(p)).length),0);
+  if(_jsonStr.length>FEISHU_MULTIPART_THRESHOLD){
+    const msg=`同步数据异常过大(${(_jsonStr.length/1048576).toFixed(1)}MB,残留媒体${_pendingMedia}项),请检查媒体上传失败项后重试`;
+    addSyncLog('[同步]'+msg,'red');
+    // V10.10.0: 诊断性失败也携带媒体失败计数,调用方可定位具体失败项
+    return {ok:false,msg,photoFailed:photoStat.failed,videoFailed:videoStat.failed,pendingMedia:_pendingMedia};
+  }
   // V5.7: 同步数据统一存入"APP数据备份/同步数据"子文件夹(数据分仓),
   // 项目根目录与数据区根目录均不再存放,历史旧档同步清理
   // (token已在函数顶部获取,照片分离上传与数据上传共用同一会话)
-  await uploadJsonToDataFeishu(token,'vehicle_sync_data.json',JSON.stringify(syncData),cfg.syncSub);
+  await uploadJsonToDataFeishu(token,'vehicle_sync_data.json',_jsonStr,cfg.syncSub);
   // 迁移清理: 删除数据区根/项目根目录历史同名旧档,防止多份数据漂移导致读到旧数据
   try{
     const dataRoot=await getDataFolderToken(token);
@@ -5185,7 +5406,10 @@ async function _syncUploadPipeline(){
     await uploadJsonToDataFeishu(token,'data_update_notice.json',JSON.stringify(notice),cfg.syncSub);
   }catch(e){console.warn('[同步]数据更新通知写入失败(组员感知退化为全量比对):',e.message);}
   localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
-  return {ok:true,vehicles:VEHICLES.length,photos:photoStat.replaced,videos:videoStat.replaced,version:syncData.version};
+  /* V10.10.0: 返回媒体失败计数——调用方(手动按钮/自动同步)可据此提示
+   * "部分媒体未上云,下轮自动重试",不再静默吞掉部分失败。 */
+  return {ok:true,vehicles:VEHICLES.length,photos:photoStat.replaced,videos:videoStat.replaced,
+    photoFailed:photoStat.failed,videoFailed:videoStat.failed,pendingMedia:_pendingMedia,version:syncData.version};
 }
 
 function doSyncUpload(){
@@ -5279,7 +5503,8 @@ async function _runAutoSyncAfterSave(){
 
 async function doSyncDownload(){
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
+  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval,
+    syncSub:saved.syncSub||DEFAULT_FEISHU_CONFIG.syncSub}; // V10.10.0 根因修复②: 补齐syncSub,否则永远读不到"同步数据"子目录
   if(!feishuCfgReady(cfg,true))return; // V5.3.4: appId+appSecret双查,缺失即引导填写(诊断根因1)
   showToast('正在从飞书获取数据...');
   try{
@@ -5393,7 +5618,8 @@ async function checkCloudDataUpdate(force){
   _cloudCheckLastTs=now;
   try{
     const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-    const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
+    const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval,
+      syncSub:saved.syncSub||DEFAULT_FEISHU_CONFIG.syncSub}; // V10.10.0 根因修复②: 补齐syncSub,通知文件读取与组长端写入位置对齐
     if(!feishuCfgReady(cfg))return; // 未配置同步:跳过
     /* V10.7.0 问题2: 组员端轻量感知通道——优先读云端"数据更新通知"文件
      * (data_update_notice.json,数百字节)。组长端上传成功后写入该文件,
@@ -6050,23 +6276,24 @@ function clearVideoError(){
 /**
  * 组长选择本地视频文件并上传到飞书 - V5.3新增
  * 上传到"APP数据备份/vehicle_videos/<fileName>",其他设备播放时自动命中云端源
- * 飞书upload_all单文件上限约20MB,超限提示压缩后重传
+ * V10.10.0: 解除20MB硬拒绝——>16MB自动走飞书官方分片上传(上限500MB),
+ *   随机文件名先经_sanitizeFeishuFileName清洗,防1061109合规拒绝
  */
 function pickVideoFile(){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v||!v.videoPaths||!v.videoPaths.length)return;
-  const fileName=v.videoPaths[0].split('/').pop();
+  const fileName=_sanitizeFeishuFileName(v.videoPaths[0].split('/').pop());
   const input=document.createElement('input');
   input.type='file';
   input.accept='video/mp4,video/quicktime,video/webm';
   input.onchange=async()=>{
     const file=input.files&&input.files[0];
     if(!file)return;
-    if(file.size>20*1024*1024){
-      showToast('视频超过20MB,请压缩后重传(飞书单文件上限)');
+    if(file.size>FEISHU_MULTIPART_MAX){
+      showToast('视频超过500MB上限,请压缩后重传');
       return;
     }
-    showToast('视频上传中...');
+    showToast(file.size>FEISHU_MULTIPART_THRESHOLD?'大视频将分片上传中...':'视频上传中...');
     try{
       const cfg=getFeishuCfg();
       if(!feishuCfgReady(cfg))throw new Error('飞书配置不完整: 请在设置中填写 App Secret'); // V5.3.4(诊断根因1)
@@ -6082,7 +6309,9 @@ function pickVideoFile(){
         vfToken=(cr.data||{}).token;
       }
       if(!vfToken)throw new Error('创建视频文件夹失败');
-      const res=await httpUploadFile({token,fileName,folderToken:vfToken,blob:file});
+      // V10.10.0: 智能路由——>16MB自动分片上传,附分片进度提示
+      const res=await httpUploadFileSmart({token,fileName,folderToken:vfToken,blob:file,
+        onProgress:(done,total)=>{if(total>1)showToast(`视频分片上传 ${done}/${total}...`);}});
       if(res.code!==0)throw new Error(res.msg||'飞书拒绝上传');
       showToast('视频上传成功,全组设备已可播放');
       addSyncLog(`视频上传成功 · ${fileName} · ${(file.size/1048576).toFixed(1)}MB`,'green');

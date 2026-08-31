@@ -1,0 +1,125 @@
+{
+  "runAt": "2026-08-31T16:23:46.425Z",
+  "scenario": "2台随机名称新车型+3照片+2视频(1MB+21MB),21MB为旧版必败触发点",
+  "pass": 9,
+  "fail": 0,
+  "total": 9,
+  "results": [
+    {
+      "name": "S1 V10.5.0基线: base64内嵌JSON整包上传(旧版行为复现)",
+      "status": "PASS",
+      "ms": 522
+    },
+    {
+      "name": "S2 媒体分离+upload_all直传: 大视频仍必败",
+      "status": "PASS",
+      "ms": 2190
+    },
+    {
+      "name": "S3 客户端压缩至20MB内+upload_all: 可行但有损",
+      "status": "PASS",
+      "ms": 310
+    },
+    {
+      "name": "S4 自建中转服务器分片聚合: 可行但需额外基建",
+      "status": "PASS",
+      "ms": 275
+    },
+    {
+      "name": "S5 Bitable附件通道: 大视频仍受限",
+      "status": "PASS",
+      "ms": 234
+    },
+    {
+      "name": "S6 OSS对象存储直传+飞书通知: 可行但引入第二套系统",
+      "status": "PASS",
+      "ms": 274
+    },
+    {
+      "name": "S7 手动导出/导入离线兜底: 永远可行但非自动",
+      "status": "PASS",
+      "ms": 413
+    },
+    {
+      "name": "S2+S3 组合: 分离直传+压缩兜底补位",
+      "status": "PASS",
+      "ms": 256
+    },
+    {
+      "name": "S* 最优解: 官方分片上传全链路(引用主E2E C1/C2闭环)",
+      "status": "PASS",
+      "ms": 2046
+    }
+  ],
+  "matrix": [
+    {
+      "id": "S1",
+      "name": "V10.5.0基线: base64内嵌JSON+upload_all整包上传",
+      "verdict": "失败",
+      "payloadMB": "29.3",
+      "errorCode": 1061043,
+      "conclusion": "同步JSON膨胀至29.3MB(21MB视频base64≈28MB),远超upload_all 20MB硬上限,整包被拒(1061043)——与现场故障完全一致,确认为根因形态"
+    },
+    {
+      "id": "S2",
+      "name": "媒体分离+upload_all直传(V10.6.0/V10.9.0形态)",
+      "verdict": "失败",
+      "uploaded": 4,
+      "failed": 1,
+      "failedItems": "video_8002(21MB)",
+      "conclusion": "媒体分离消除了JSON膨胀,照片/小视频可传;但21MB视频仍撞20MB硬上限(1061043)——单靠分离无法覆盖现场10-50MB视频,需叠加大文件通道"
+    },
+    {
+      "id": "S3",
+      "name": "客户端压缩至20MB内+upload_all",
+      "verdict": "通过(有损)",
+      "originalMB": "21.0",
+      "compressedMB": "12.6",
+      "conclusion": "技术可行: 压缩到限内即可传。但硬伤明显——①画质有损(断电操作关键帧细节可能丢失);②移动端转码耗时数分钟且耗电;③>50MB素材压缩比要求苛刻;④无法保证任意大小素材都能压进20MB。仅适合作辅助兜底"
+    },
+    {
+      "id": "S4",
+      "name": "自建中转服务器分片聚合转发",
+      "verdict": "通过(重基建)",
+      "chunks": 6,
+      "relayCalls": 8,
+      "conclusion": "技术完全可行且无体积上限。但需要: ①自建服务器/云函数+存储(持续成本);②ICP备案/HTTPS证书;③自研鉴权与运维;④数据离开飞书合规域。对一个Cordova单体应用属过度设计"
+    },
+    {
+      "id": "S5",
+      "name": "飞书多维表格(Bitable)附件通道",
+      "verdict": "失败",
+      "conclusion": "Bitable附件与云空间同源,单文件同样20MB上限,21MB视频依旧被拒;且需重构数据模型为表格记录+附件字段,迁移成本高、收益为零——此路不通"
+    },
+    {
+      "id": "S6",
+      "name": "OSS对象存储直传+飞书通知",
+      "verdict": "通过(重基建)",
+      "parts": 3,
+      "limitGB": 5,
+      "conclusion": "OSS分片上传上限5GB,技术最优。但需要: ①额外开通对象存储+计费;②客户端内嵌AK/SK或STS(安全风险);③组长/组员双端改造下载通道;④飞书退化为纯通知。数据脱离飞书管控域,运维与合规成本显著"
+    },
+    {
+      "id": "S7",
+      "name": "手动导出/导入离线兜底",
+      "verdict": "通过(人工)",
+      "packMB": "29.3",
+      "conclusion": "离线包经微信/U盘人工传递,永远可行且已具备(V10.9.2导入备份)。但完全依赖人工、无实时性、易漏传,只能作最后兜底,不满足\"自动同步\"需求"
+    },
+    {
+      "id": "S2+S3",
+      "name": "媒体分离+压缩兜底组合",
+      "verdict": "通过(有损)",
+      "conclusion": "组合后功能闭环,但继承了S3全部硬伤(画质有损/转码耗时/超大素材未必压得进),且客户端逻辑复杂度陡增。对比官方分片上传(无损/零额外耗时/原生支持),性价比明显更低"
+    },
+    {
+      "id": "S*",
+      "name": "官方分片上传(upload_prepare/part/finish)【采纳】",
+      "verdict": "通过",
+      "multipartParts": 6,
+      "uploadAllRejected": 0,
+      "conclusion": "无损、零额外基建、与飞书权限/合规域一致,4MB定长分片+Adler-32校验+重试退避,组长→组员数据完全闭环。综合评分第一,采纳为V10.10.0实施方案(主E2E 18/18全通过)"
+    }
+  ],
+  "adopted": "S* 官方分片上传(upload_prepare/upload_part/upload_finish)"
+}

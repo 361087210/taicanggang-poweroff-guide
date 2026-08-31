@@ -1,12 +1,14 @@
 {
-  "version": "10.9.2",
-  "versionCode": 100902,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.9.2/tcg_poweroff_v10.9.2.apk",
+  "version": "10.10.0",
+  "versionCode": 101000,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.10.0/tcg_poweroff_v10.10.0.apk",
   "releaseNotes": [
-    "V10.9.2 分级列表修复+性能优化版——一句话总结: 修复新增自定义品牌车辆在分级列表中不显示的bug,优化列表渲染性能,搜索防抖",
-    "- 修复(问题1): 分级列表不显示新增车型——自定义品牌(brandId不在BRANDS中)的车辆归入「其他品牌」分组,品牌标签栏新增「其他(N)」筛选入口,编辑车辆改品牌后brandId同步更新",
-    "- 性能优化: 品牌标签栏从 O(n*m) 嵌套filter改为一次遍历统计;分级列表从多次filter改为 brandId+series 两级 Map 预分组;搜索输入增加150ms防抖",
-    "- 继承V10.9.1: 组员端导入备份功能;继承V10.9.0: 视频分离上传+下载超时保护+红米K70 Pro UI适配修复"
+    "V10.10.0 飞书大文件分片同步版——一句话总结: 彻底修复新车型(含随机名称文字/图片/视频)经飞书同步组长组员数据失败,接入飞书官方分片上传突破20MB限制",
+    "- 根因修复: 飞书upload_all接口单文件硬上限20MB,现场视频10-50MB必败(1061043)且base64滞留JSON致整条管线中断。接入官方分片上传三件套(upload_prepare/upload_part/upload_finish),4MB定长分片+Adler-32校验,支持500MB大视频",
+    "- 可靠性: 每片3次重试+指数退避;1061045频控自动退避;1061021事务过期自动重传;QPS门控串行220ms间隔;1061043超限自动升级分片",
+    "- 随机名称防护: _sanitizeFeishuFileName清洗控制字符/非法符/emoji/超长名,杜绝1061109合规拒绝",
+    "- 守卫: 同步JSON体积预检,残留base64媒体诊断性失败而非静默上传;返回媒体失败计数不再吞掉部分失败",
+    "- 继承V10.9.2: 分级列表修复+性能优化;继承V10.9.0: 视频分离上传+下载超时保护"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
