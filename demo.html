@@ -527,7 +527,7 @@ img,svg,video{max-width:100%;}
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.10.0</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.11.0</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -1977,7 +1977,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.10.0';
+const APP_VERSION='10.11.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -5510,56 +5510,64 @@ async function doSyncDownload(){
   try{
     const syncData=await downloadSyncDataMigrated(cfg); // V5.3.4: 新旧位置自动迁移读取(诊断根因6)
     if(syncData&&syncData.vehicles){
-      // 智能合并: 云端新增的车辆添加到本地,已存在的按时间戳合并
-      let addedCount=0,updatedCount=0;
-      const localIds=new Set(VEHICLES.map(v=>v.id));
-      const cloudTs=new Date(syncData.timestamp||0).getTime();
-      const localSyncTs=JSON.parse(localStorage.getItem('feishu_sync_data')||'{}');
-      const lastSyncTs=localSyncTs.timestamp?new Date(localSyncTs.timestamp).getTime():0;
-      
-      syncData.vehicles.forEach(sv=>{
-        const v=VEHICLES.find(x=>x.id===sv.id);
-        if(v){
-          // 已存在: 云端更新则覆盖本地
-          if(cloudTs>lastSyncTs){
-            v.display=sv.display;v.brand=sv.brand;v.series=sv.series;v.config=sv.config;
-            v.powerType=sv.powerType;v.position=sv.position;v.steps=sv.steps;
-            v.keyFrame=sv.keyFrame;v.keyContainer=sv.keyContainer;v.remarks=sv.remarks;
-            v.photoPaths=sv.photoPaths;v.photos=sv.photos;
-            // V10.6.0: 同步补齐size/brandId(与上传字段对齐,防尺寸/品牌索引漂移)
-            if(sv.size!==undefined)v.size=sv.size;
-            if(sv.brandId!==undefined)v.brandId=sv.brandId;
-            if(sv.videoPaths){v.videoPaths=sv.videoPaths;v.videos=sv.videos;}
-            v.pinyin=getPinyin(sv.display);
-            updatedCount++;
+      /* V10.11.0 镜像同步(根因修复): 云端为唯一真源,拉取后本地与云端
+       * 完全对齐——新增/更新/删除全量传播,保证组长组员车型数量一致。
+       * 旧版只做正向合并(云端新增追加/同ID覆盖),反向差集(云端已删除的
+       * 车型)永久滞留组员本地——下方localIds旧版声明后从未使用,即
+       * "删除同步从未实现"的历史遗留证据。 */
+      const cloudVehicles=syncData.vehicles;
+      if(!cloudVehicles.length&&VEHICLES.length>0){
+        /* 防御: 云端0条车但本地有数据,视为异常(正常组长库至少含内置
+         * 车型,不可能为空),拒绝镜像防误清空本地 */
+        showToast('云端同步数据为0条,已跳过合并以保护本地数据');
+        addSyncLog('从飞书拉取异常 · 云端车辆数为0,拒绝镜像同步','red');
+      }else{
+        const cloudTs=new Date(syncData.timestamp||0).getTime();
+        const localSyncTs=JSON.parse(localStorage.getItem('feishu_sync_data')||'{}');
+        const lastSyncTs=localSyncTs.timestamp?new Date(localSyncTs.timestamp).getTime():0;
+        if(cloudTs>lastSyncTs){
+          /* 云端有更新: 执行完整镜像对齐(仅在有更新时执行,避免云端无
+           * 变化时误删组员本地导入的备份数据) */
+          const localIds=new Set(VEHICLES.map(v=>v.id));
+          const cloudIds=new Set(cloudVehicles.map(v=>v.id));
+          let addedCount=0,updatedCount=0,removedCount=0;
+          // 正向差集: 云端权威字段覆盖,保留本地扩展字段
+          const nextVehicles=cloudVehicles.map(sv=>{
+            if(localIds.has(sv.id))updatedCount++;else addedCount++;
+            const local=VEHICLES.find(x=>x.id===sv.id);
+            const nv=Object.assign({},local,sv);
+            nv.pinyin=getPinyin(sv.display);
+            return nv;
+          });
+          // 反向差集: 本地存在但云端已删除 → 移除(删除传播核心)
+          localIds.forEach(id=>{if(!cloudIds.has(id))removedCount++;});
+          // 原地替换: VEHICLES为const引用,persistVehicles/渲染闭包均持此引用
+          VEHICLES.length=0;
+          nextVehicles.forEach(v=>VEHICLES.push(v));
+          const totalChanges=addedCount+updatedCount+removedCount;
+          // V10.6.0 问题4: 拉取合并后立即持久化——组员端重启后仍保有最新数据
+          if(totalChanges>0)persistVehicles();
+          if(totalChanges>0){
+            showToast(`数据同步完成: 新增${addedCount}条, 更新${updatedCount}条, 删除${removedCount}条 (${syncData.version||''})`);
+            addSyncLog(`从飞书拉取完成 · 新增${addedCount}条 更新${updatedCount}条 删除${removedCount}条 · ${syncData.version||''}`,'green');
+          }else{
+            showToast(`数据已是最新 (${syncData.version||''})`);
+            addSyncLog(`从飞书拉取完成 · 数据已是最新 · ${syncData.vehicleCount}条`,'green');
           }
         }else{
-          // 云端新增车辆,添加到本地
-          sv.pinyin=getPinyin(sv.display);
-          VEHICLES.push(sv);
-          addedCount++;
+          showToast(`数据已是最新 (${syncData.version||''})`);
+          addSyncLog(`从飞书拉取完成 · 数据已是最新 · ${syncData.vehicleCount}条`,'green');
         }
-      });
-      
-      const totalChanges=addedCount+updatedCount;
-      // V10.6.0 问题4: 拉取合并后立即持久化——组员端重启后仍保有最新数据
-      if(totalChanges>0)persistVehicles();
-      if(totalChanges>0){
-        showToast(`数据同步完成: 新增${addedCount}条, 更新${updatedCount}条 (${syncData.version||''})`);
-        addSyncLog(`从飞书拉取完成 · 新增${addedCount}条 更新${updatedCount}条 · ${syncData.version||''}`,'green');
-      }else{
-        showToast(`数据已是最新 (${syncData.version||''})`);
-        addSyncLog(`从飞书拉取完成 · 数据已是最新 · ${syncData.vehicleCount}条`,'green');
+        localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
+        const ss=document.getElementById('sync-status-text');
+        if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
+        const cv=document.getElementById('sync-cloud-ver');
+        if(cv)cv.textContent='已连接 · '+(syncData.version||'v'+APP_VERSION)+' (最新)';
+        // V10.3 问题5.2: 拉取成功即消化红点提示(本地已与云端对齐)
+        _setSyncNewDot(false);
+        renderBrandTags();
+        renderVehicleList();
       }
-      localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
-      const ss=document.getElementById('sync-status-text');
-      if(ss){ss.className='text-base font-bold text-green-600 flex items-center gap-2 mt-1';ss.innerHTML='<span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>已同步';}
-      const cv=document.getElementById('sync-cloud-ver');
-      if(cv)cv.textContent='已连接 · '+(syncData.version||'v'+APP_VERSION)+' (最新)';
-      // V10.3 问题5.2: 拉取成功即消化红点提示(本地已与云端对齐)
-      _setSyncNewDot(false);
-      renderBrandTags();
-      renderVehicleList();
     }else{
       showToast('飞书云端暂无同步数据，请等待组长上传');
       addSyncLog('从飞书拉取失败 · 云端无数据','red');
