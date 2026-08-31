@@ -416,16 +416,16 @@ test('D1 feishu-api.js driveUploadFile: 小文件+17MB分片双路径字节回�
 // ============================================================
 // E组: 发布一致性
 // ============================================================
-test('E1 版本一致性: config.xml / version.json / demo.html 三处版本对齐10.10.0', async () => {
+test('E1 版本一致性: config.xml / version.json / demo.html 三处版本对齐10.11.0', async () => {
   const root = path.join(__dirname, '..');
   const configXml = fs.readFileSync(path.join(root, 'config.xml'), 'utf8');
   const versionJson = JSON.parse(fs.readFileSync(path.join(root, 'version.json'), 'utf8'));
   const demoHtml = fs.readFileSync(path.join(root, 'demo.html'), 'utf8');
-  assert.ok(/version="10\.10\.0"/.test(configXml), 'config.xml版本未对齐');
-  assert.ok(/android-versionCode="101000"/.test(configXml), 'config.xml versionCode未对齐');
-  assert.strictEqual(versionJson.version, '10.10.0', 'version.json版本未对齐');
-  assert.strictEqual(versionJson.versionCode, 101000, 'version.json versionCode未对齐');
-  assert.ok(/const APP_VERSION='10\.10\.0'/.test(demoHtml), 'demo.html APP_VERSION未对齐');
+  assert.ok(/version="10\.11\.0"/.test(configXml), 'config.xml版本未对齐');
+  assert.ok(/android-versionCode="101100"/.test(configXml), 'config.xml versionCode未对齐');
+  assert.strictEqual(versionJson.version, '10.11.0', 'version.json版本未对齐');
+  assert.strictEqual(versionJson.versionCode, 101100, 'version.json versionCode未对齐');
+  assert.ok(/const APP_VERSION='10\.11\.0'/.test(demoHtml), 'demo.html APP_VERSION未对齐');
 });
 
 // ---------- 执行 ----------
