@@ -202,6 +202,10 @@ const FeishuAPI = (function() {
   /** 上传文件到云文档 */
   async function driveUploadFile(folderToken, fileName, blob) {
     const token = await getTenantToken();
+    // V10.10.0: >16MB走官方分片上传(upload_all硬上限20MB,超限必败1061043)
+    if (blob && blob.size > 16 * 1024 * 1024) {
+      return await driveUploadFileMultipart(folderToken, fileName, blob);
+    }
     const form = new FormData();
     form.append('file_name', fileName);
     form.append('parent_type', 'explorer');
@@ -209,15 +213,73 @@ const FeishuAPI = (function() {
     form.append('size', String(blob.size));
     form.append('file', blob, fileName);
 
-    const resp = await fetch('https://open.feishu.cn/open-apis/drive/v1/medias/upload_all', {
+    const resp = await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: form,
     });
     const data = await resp.json();
+    // V10.10.0: 1061043超限自动升级分片(双保险)
+    if (data.code === 1061043) {
+      log('warn', 'upload_all超限,自动升级分片上传', fileName);
+      return await driveUploadFileMultipart(folderToken, fileName, blob);
+    }
     if (data.code !== 0) throw new Error(`上传失败 ${data.code}: ${data.msg}`);
     log('success', `文件上传成功`, fileName);
     return data.data;
+  }
+
+  /**
+   * V10.10.0: 飞书官方分片上传三件套(与demo.html httpUploadFileMultipart同构)
+   * upload_prepare → upload_part×N(4MB定长分片+Adler-32校验+3次重试) → upload_finish
+   */
+  async function driveUploadFileMultipart(folderToken, fileName, blob) {
+    const token = await getTenantToken();
+    const adler32 = (u8) => {
+      const MOD = 65521; let a = 1, b = 0;
+      for (let i = 0; i < u8.length; i++) { a = (a + u8[i]) % MOD; b = (b + a) % MOD; }
+      return String((((b << 16) | a) >>> 0));
+    };
+    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json; charset=utf-8' };
+    // 注意: request()已解包返回data.data(成功时不含code字段),失败时抛错——
+    // 旧版误按完整响应检查prep.code(恒为undefined)导致分片上传必然抛"预上传失败: 无响应"
+    const prep = await request('https://open.feishu.cn/open-apis/drive/v1/files/upload_prepare', {
+      method: 'POST', headers,
+      body: JSON.stringify({ file_name: fileName, parent_type: 'explorer', parent_node: folderToken, size: blob.size }),
+    });
+    if (!prep || !prep.upload_id) throw new Error(`预上传失败: ${(prep && prep.msg) || '无响应'}`);
+    const uploadId = String(prep.upload_id);
+    const blockSize = prep.block_size || 4194304;
+    const blockNum = prep.block_num || Math.ceil(blob.size / blockSize);
+    for (let seq = 0; seq < blockNum; seq++) {
+      const chunk = blob.slice(seq * blockSize, Math.min((seq + 1) * blockSize, blob.size));
+      const u8 = new Uint8Array(await chunk.arrayBuffer());
+      const fd = new FormData();
+      fd.append('upload_id', uploadId);
+      fd.append('seq', String(seq));
+      fd.append('size', String(u8.length));
+      fd.append('checksum', adler32(u8));
+      fd.append('file', new Blob([u8]), 'chunk_' + seq);
+      let ok = false, lastErr = null;
+      for (let attempt = 0; attempt < 3 && !ok; attempt++) {
+        try {
+          const r = await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_part', {
+            method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
+          });
+          const d = await r.json();
+          if (d.code === 0) ok = true; else lastErr = new Error(`分片${seq}失败: ${d.msg}`);
+        } catch (e) { lastErr = e; }
+        if (!ok) await new Promise(res => setTimeout(res, 500 * (attempt + 1)));
+      }
+      if (!ok) throw lastErr || new Error('分片上传失败 seq=' + seq);
+    }
+    const fin = await request('https://open.feishu.cn/open-apis/drive/v1/files/upload_finish', {
+      method: 'POST', headers,
+      body: JSON.stringify({ upload_id: uploadId, block_num: blockNum }),
+    });
+    if (!fin || !fin.file_token) throw new Error(`完成上传失败: ${(fin && fin.msg) || '无响应'}`);
+    log('success', `大文件分片上传成功(${blockNum}片)`, fileName);
+    return fin;
   }
 
   /** 下载云文档文件 */

@@ -2,6 +2,20 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.10.0] - 2026-08-31
+
+### 飞书大文件分片同步版
+
+- **修复(根因①)**: 新车型(含随机名称文字/图片/视频)经飞书同步组长组员数据失败 — 飞书 `upload_all` 接口单文件硬上限20MB,现场视频10-50MB必败(`1061043 file size beyond limit`),失败视频 base64 滞留 `videoPaths` → 同步JSON膨胀至数十MB → 整条管线中断 → 组员端永远拉不到新数据;接入飞书官方分片上传三件套(`upload_prepare`/`upload_part`/`upload_finish`),4MB定长分片+Adler-32校验,支持500MB大视频
+- **新增**: 智能上传路由 `httpUploadFileSmart()` — ≤16MB走upload_all,>16MB走分片,`1061043`自动升级分片重试双保险
+- **可靠性**: 每片3次重试+指数退避;`1061045`频控自动退避;`1061021`事务过期自动重新prepare整段重传;QPS门控串行220ms间隔(贴官方5QPS限制)
+- **修复(根因②)**: 随机名称防护 — `_sanitizeFeishuFileName()` 清洗控制字符/非法符/emoji/超长名,杜绝 `1061109` 合规拒绝
+- **修复(根因③)**: `_syncUploadPipeline`/`doSyncDownload`/`checkCloudDataUpdate` 三处 cfg 补齐 `syncSub`,同步数据稳定落入"同步数据"子目录,不再被迁移清理误删
+- **守卫**: 同步JSON体积预检,残留base64媒体诊断性失败而非静默上传;管线返回媒体失败计数(`photoFailed`/`videoFailed`/`pendingMedia`)不再吞掉部分失败
+- **修复(feishu-api.js)**: `driveUploadFileMultipart` 双解包缺陷 — `request()` 已解包返回,旧版误按完整响应检查 `prep.code` 导致分片上传必然抛"预上传失败: 无响应"
+- **测试**: 真机模拟E2E 18用例 + 方案逐个对比9用例 + 历史回归17用例,全部通过(0失败);新增高保真飞书Mock服务器与真机模拟沙箱测试基建
+- **文档**: `docs/ROOT_CAUSE_V10100.md` 根因报告 / `docs/SOLUTIONS_V10100.md` 7+2套方案穷举对比 / `docs/TEST_REPORT_V10100.md` 测试报告 / `docs/RELEASE_V10100.md` 发布文档
+
 ## [10.9.2] - 2026-08-27
 
 ### 分级列表修复 + 性能优化版
