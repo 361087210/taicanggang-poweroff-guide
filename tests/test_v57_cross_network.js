@@ -103,7 +103,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   check('2.1 云端token获取', !!token);
 
   // 定位注册申请子文件夹
-  const rootLs = await (await fetch('https://open.feishu.cn/open-apis/drive/v1/files?folder_token=WdXUfZPkClI1audQxIYc90XRnWc&page_size=200', {headers:{Authorization:`Bearer ${token}`}})).json();
+  const rootLs = await (await fetch('https://open.feishu.cn/open-apis/drive/v1/files?folder_token=nodcnGA95g93RhIUSdCeTkhKlQc&page_size=200', {headers:{Authorization:`Bearer ${token}`}})).json();
   const dataRoot = (rootLs.data.files||[]).find(f=>f.name==='APP数据备份');
   const dataLs = await (await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${dataRoot.token}&page_size=200`, {headers:{Authorization:`Bearer ${token}`}})).json();
   const regFolder = (dataLs.data.files||[]).find(f=>f.name==='注册申请');

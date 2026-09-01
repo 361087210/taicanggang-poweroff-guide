@@ -167,7 +167,7 @@ async function hashUserPasswords() {
 const DEFAULT_FEISHU_CONFIG={
   // 公开字段(非机密, version.json/交付文档内已公开): 构建注入/用户保存优先,本处做兜底
   appId:'cli_aa0ce4fd91f85be8',
-  folder:'WdXUfZPkClI1audQxIYc90XRnWc',
+  folder:'nodcnGA95g93RhIUSdCeTkhKlQc',
   // ⚠️ appSecret(V10.12起源码内移除硬编码) → 来源顺序: localStorage设置 → 构建期window.__BUILD_SECRETS__注入
   //   本地未配置+未注入时: getFeishuCfg().appSecret 为空字符串, feishuCfgReady()拦截并给出提示
   dataFolder:'APP数据备份',   // 首次同步时自动在该名称子文件夹下定位/创建,token缓存于localStorage
