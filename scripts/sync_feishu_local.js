@@ -146,13 +146,19 @@ class FeishuClient {
 
 // ---- 本地数据读取 ----
 function readVehiclesData() {
+  const fs = require('fs');
   const vm = require('vm');
-  const sandbox = {};
-  vm.createContext(sandbox);
+  const path = require('path');
   const js = fs.readFileSync(path.join(REPO, 'vehicles_data.js'), 'utf8');
-  try { vm.runInContext(js, sandbox, { filename: 'vehicles_data.js' }); } catch (e) { throw new Error('vehicles_data.js 执行失败: ' + e.message); }
-  // 优先找 VEHICLES 变量, 兜底找 window.VEHICLES
-  const vehicles = sandbox.VEHICLES || (sandbox.window && sandbox.window.VEHICLES);
+  // const 声明不挂到 vm 沙箱全局 —— 在文本里把 "const VEHICLES=" 替换成 window 赋值,
+  // 执行后从 sandbox.window 取值; BRANDS 同理(虽不同步但也顺便导出防遗漏)
+  const patched = js
+    .replace(/^const VEHICLES\s*=/m, 'window.__vehicles_out = ')
+    .replace(/^const BRANDS\s*=/m, 'window.__brands_out = ');
+  const sandbox = { window: {} };
+  vm.createContext(sandbox);
+  try { vm.runInContext(patched, sandbox, { filename: 'vehicles_data.js' }); } catch (e) { throw new Error('vehicles_data.js 执行失败: ' + e.message); }
+  const vehicles = (sandbox.window && sandbox.window.__vehicles_out);
   if (!vehicles || !Array.isArray(vehicles)) throw new Error('vehicles_data.js 中找不到 VEHICLES 数组');
   return vehicles;
 }
