@@ -1,15 +1,14 @@
 {
-  "version": "10.11.0",
-  "versionCode": 101100,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.11.0/tcg_poweroff_v10.11.0.apk",
+  "version": "10.13.0",
+  "versionCode": 101300,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.13.0/tcg_poweroff_v10.13.0.apk",
   "releaseNotes": [
-    "V10.11.0 镜像同步版——一句话总结: 修复组长删除车型后组员端不同步删除的问题,组长组员车型数量保持同源一致,增删改全量传播",
-    "- 根因修复: 旧版拉取合并只做正向差集(云端新增追加/同ID覆盖),反向差集(云端已删除的车型)永久滞留组员本地,导致两端数量越差越大",
-    "- 镜像对齐: 云端为唯一真源,拉取后本地与云端完全对齐——新增/更新/删除全量传播,组长组员车型数量严格一致",
-    "- 同步提示: 完成通知显示「新增N条 更新N条 删除N条」,删改明细一目了然",
-    "- 防误清空: 云端车辆数为0时拒绝镜像同步,保护组员本地数据不被异常空数据覆盖",
-    "- 原地替换: VEHICLES数组原地更新,持久化与渲染闭包引用不失效,重启后数据仍保持最新",
-    "- 继承V10.10.0: 飞书大文件分片同步;继承V10.9.2: 分级列表修复+性能优化"
+    "V10.13.0 复杂度治理版(方案A Phase A3)——一句话总结: pullPendingFromFeishu四刀切(网络IO/业务规则/持久化/渲染四职责分离), 车辆列表渲染与业务分离(filterVehicles纯函数+renderVehicleCards纯DOM), 引入State状态守卫(读写门面+防前端提权), 开发模式innerHTML注入绊线",
+    "- 四刀切(A3-1): pullPendingFromFeishu 165行单函数 → fetchPendingFromCloud(①IO)/applyApprovalRules(②规则)/writePendingsToStorage(③持久化)/refreshMemberUI(④渲染)四函数编排, 自愈重试分支与主分支3处漂移归并(双位置读取统一/云端文件删除策略统一/跨网络计数统一防丢档)",
+    "- 渲染业务分离(A3-2): getFilteredVehicles下沉为纯函数filterVehicles(keyword,brandId)可独立单测; renderVehicleList瘦身, DOM拼装收敛到renderVehicleCards(list)纯函数",
+    "- 状态守卫(A3-3): 新增State门面(vehicles/users只读副本getter+addVehicle/updateVehicle/removeVehicle/pushVehicle/replaceVehicles/addUser/removeUser), 车辆与用户的全部交互式写路径收敛走API, promoteToLeader()抛错阻断前端提权",
+    "- XSS绊线(A3-4): 非Cordova环境为Element.prototype.innerHTML安装风险写入绊线(<script/javascript:), 默认warn留痕, __XSS_GUARD_STRICT__严格模式抛错阻断, 生产APK零开销",
+    "- 继承V10.12.0单向收敛与九模块拆分、V10.11.0镜像同步与V10.10.0分片上传能力"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",

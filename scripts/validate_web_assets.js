@@ -49,7 +49,19 @@ try {
 
 // ---------- 3. demo.html 关键能力标记 ----------
 section('3. demo.html 关键能力标记');
-const demo = fs.readFileSync(path.join(ROOT, 'demo.html'), 'utf8');
+const demoHtml = fs.readFileSync(path.join(ROOT, 'demo.html'), 'utf8');
+/** V10.12 A2 拆分后: 函数/常量/模板散落在 js/00-bootstrap.js ~ js/08-main.js
+ *  标记扫描需基于(demo.html + 全部JS模块)的组合串, 旧版单HTML仍然兼容。 */
+function loadDemoPlusJs() {
+  let s = demoHtml;
+  const jd = path.join(ROOT, 'js');
+  if (fs.existsSync(jd)) {
+    const files = fs.readdirSync(jd).filter(f => f.endsWith('.js')).sort();
+    for (const f of files) s += '\n' + fs.readFileSync(path.join(jd, f), 'utf8') + '\n';
+  }
+  return s;
+}
+const demo = loadDemoPlusJs();
 const markers = [
   ['vendor/', '离线依赖本地化'],
   ['httpFetch', '原生HTTP适配层(飞书CORS修复)'],
@@ -60,18 +72,26 @@ const markers = [
 for (const [m, desc] of markers) {
   demo.includes(m) ? ok(desc + ' (' + m + ')') : fail('demo.html 缺少关键标记: ' + m + ' (' + desc + ')');
 }
-// V5.7 安全规范: 默认 Secret 允许两种合规形态
-//   a) appSecret:''             — 留空(旧版安全加固, 手动配置模式)
-//   b) appSecret:_fsDec('hex')  — XOR混淆默认凭证(V5.7开箱即用, 非明文可读)
-// 任何明文长字符串仍视为泄露, 直接拦截
-const secretMatch = demo.match(/appSecret\s*:\s*['"]([^'"]*)['"]/);
-const obfMatch = demo.match(/appSecret\s*:\s*_fsDec\(\s*['"][0-9a-fA-F]{16,}['"]\s*\)/);
-if (secretMatch) {
-  secretMatch[1] === '' ? ok('默认飞书 appSecret 为空(安全加固生效)') : fail('demo.html 默认 appSecret 非空: 泄露风险!');
-} else if (obfMatch) {
-  ok('默认飞书 appSecret 为 _fsDec 混淆存储(V5.7开箱即用, 非明文合规)');
+// V10.12.0 安全规范: 允许3种合规形态(禁止任何可还原的密文/明文/混淆hex+解密算法驻源码)
+//   a) 构建时注入: inject_build_secrets.js存在 && DEFAULT_FEISHU_CONFIG不含appSecret(移除硬编码) && getFeishuCfg引用window.__BUILD_SECRETS__
+//   b) appSecret:'' 留空(手动配置模式,旧版安全加固)
+//   c) 老版本仍保留的_fsDec混淆(仅过渡期;CI会告警提示升级)
+// 任何明文长字符串(4位以上非空字母数字)仍视为泄露,直接拦截
+const secretPlain = demo.match(/appSecret\s*:\s*['"]([^'"]*)['"]/);
+const obfOld = demo.match(/appSecret\s*:\s*_fsDec\(\s*['"][0-9a-fA-F]{16,}['"]\s*\)/);
+const usesBuildSecrets = demo.includes('window.__BUILD_SECRETS__') && demo.includes('delete window.__BUILD_SECRETS__');
+const injectScriptExists = require('fs').existsSync(path.join(ROOT, 'scripts', 'inject_build_secrets.js'));
+const DEFAULT_HAS_NO_SECRET_LINE = !/^\s*appSecret\s*:/m.test(
+  (demo.match(/const DEFAULT_FEISHU_CONFIG\s*=\s*\{([\s\S]*?)\n\};?\n/) || [])[0] || ''
+);
+if (injectScriptExists && usesBuildSecrets && DEFAULT_HAS_NO_SECRET_LINE) {
+  ok('飞书凭证走构建期注入(V10.12: 源码无硬编码Secret + inject脚本存在 + getFeishuCfg用完即delete)');
+} else if (secretPlain) {
+  secretPlain[1] === '' ? ok('默认飞书 appSecret 为空(安全加固生效)') : fail('demo.html 默认 appSecret 非空: 泄露风险!');
+} else if (obfOld) {
+  ok('默认飞书 appSecret 为 _fsDec 混淆存储(V5.7过渡期形态, 建议升级到V10.12构建注入)');
 } else {
-  fail('demo.html 未找到 appSecret 配置项(合规形态: 空串或 _fsDec 混淆)');
+  fail('demo.html 未找到 appSecret 合规形态(空串/构建注入/V5.7混淆)');
 }
 
 // ---------- 4. JSON 合法性 ----------
@@ -89,7 +109,9 @@ for (const f of ['version.json', 'docs/vehicle_media_mapping.json']) {
 section('5. 凭证泄露扫描');
 // 扫描范围: 源码与文档(排除 release/ 产物与 tests/, tests 走环境变量)
 const scanDirs = ['.', 'docs', 'scripts', 'tcg_app'];
-const skipDirs = new Set(['node_modules', '.git', 'release', 'archive', 'vendor', 'vehicle_images']);
+const skipDirs = new Set(['node_modules', '.git', 'release', 'archive', 'vendor', 'vehicle_images',
+  // V10.12: 本地npm引导产物(第三方npm源码, 非本项目代码), 见 scripts/bootstrap_npm.js
+  '.npm-vendor', '.npm-scratch']);
 const patterns = [
   [/ghp_[A-Za-z0-9]{30,}/, 'GitHub PAT 明文'],
   [/gho_[A-Za-z0-9]{30,}/, 'GitHub OAuth token 明文'],

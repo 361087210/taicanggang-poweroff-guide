@@ -1,54 +1,55 @@
 {
-  "runAt": "2026-08-31T22:42:15.657Z",
+  "runAt": "2026-09-01T01:56:42.257Z",
   "scenario": "2台随机名称新车型+3照片+2视频(1MB+21MB),21MB为旧版必败触发点",
-  "pass": 9,
-  "fail": 0,
+  "pass": 8,
+  "fail": 1,
   "total": 9,
   "results": [
     {
       "name": "S1 V10.5.0基线: base64内嵌JSON整包上传(旧版行为复现)",
       "status": "PASS",
-      "ms": 506
+      "ms": 370
     },
     {
       "name": "S2 媒体分离+upload_all直传: 大视频仍必败",
       "status": "PASS",
-      "ms": 2155
+      "ms": 2246
     },
     {
       "name": "S3 客户端压缩至20MB内+upload_all: 可行但有损",
       "status": "PASS",
-      "ms": 304
+      "ms": 252
     },
     {
       "name": "S4 自建中转服务器分片聚合: 可行但需额外基建",
       "status": "PASS",
-      "ms": 269
+      "ms": 200
     },
     {
       "name": "S5 Bitable附件通道: 大视频仍受限",
       "status": "PASS",
-      "ms": 236
+      "ms": 152
     },
     {
       "name": "S6 OSS对象存储直传+飞书通知: 可行但引入第二套系统",
       "status": "PASS",
-      "ms": 272
+      "ms": 204
     },
     {
       "name": "S7 手动导出/导入离线兜底: 永远可行但非自动",
       "status": "PASS",
-      "ms": 459
+      "ms": 279
     },
     {
       "name": "S2+S3 组合: 分离直传+压缩兜底补位",
       "status": "PASS",
-      "ms": 261
+      "ms": 194
     },
     {
       "name": "S* 最优解: 官方分片上传全链路(引用主E2E C1/C2闭环)",
-      "status": "PASS",
-      "ms": 2025
+      "status": "FAIL",
+      "ms": 2022,
+      "error": "组员端未闭环\n\n0 !== 2\n"
     }
   ],
   "matrix": [
@@ -111,14 +112,6 @@
       "name": "媒体分离+压缩兜底组合",
       "verdict": "通过(有损)",
       "conclusion": "组合后功能闭环,但继承了S3全部硬伤(画质有损/转码耗时/超大素材未必压得进),且客户端逻辑复杂度陡增。对比官方分片上传(无损/零额外耗时/原生支持),性价比明显更低"
-    },
-    {
-      "id": "S*",
-      "name": "官方分片上传(upload_prepare/part/finish)【采纳】",
-      "verdict": "通过",
-      "multipartParts": 6,
-      "uploadAllRejected": 0,
-      "conclusion": "无损、零额外基建、与飞书权限/合规域一致,4MB定长分片+Adler-32校验+重试退避,组长→组员数据完全闭环。综合评分第一,采纳为V10.10.0实施方案(主E2E 18/18全通过)"
     }
   ],
   "adopted": "S* 官方分片上传(upload_prepare/upload_part/upload_finish)"

@@ -20,7 +20,8 @@ try { JSDOM = require('jsdom').JSDOM; }
 catch(e) { console.error('请先安装: npm i jsdom'); process.exit(2); }
 
 const REPO = '.';
-const html = fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8');
+const _h = require('./e2e_harness'); // A2拆分兼容: js/*.js defer 内联回原时序 + css/app.css 内联回原文
+const html = _h.inlineStylesheets(_h.inlineDeferScripts(fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8')));
 
 const PASSED = [], FAILED = [];
 function check(name, cond, detail='') {
@@ -62,7 +63,7 @@ check('A13 问题3: forceLogoutAsDeleted 强制退出函数存在', /async funct
 check('A14 问题3: startMemberGuardPolling 轮询启动(60秒)', /function startMemberGuardPolling\(\)/.test(html) && /memberGuardTimer=setInterval/.test(html));
 check('A15 问题3: 登录后组员启动守卫', /startMemberGuardPolling\(\);\s*\n\s*\/\/ V10\.3 问题5\.2/.test(html) || (html.match(/startMemberGuardPolling\(\)/g)||[]).length>=3);
 check('A16 问题3: 会话恢复后组员启动守卫', /组员会话恢复同样启动账号存活守卫/.test(html));
-check('A17 问题3: 强制退出清理会话+本地账号', /localStorage\.removeItem\('tcg_session'\);\s*\n\s*const idx=USERS\.findIndex/.test(html));
+check('A17 问题3: 强制退出清理会话+本地账号', /localStorage\.removeItem\('tcg_session'\);[\s\S]{0,150}State\.removeUser\(state\.currentUser\.phone\)/.test(html)); // A3状态守卫: 删号走State API(行为等价)
 check('A18 问题3: 防误判——云端无有效用户表时跳过', /if\(!data\|\|!Array\.isArray\(data\.users\)\|\|!data\.users\.length\)return true;/.test(html));
 check('A19 问题3: 防重入(memberGuardBusy)', /memberGuardBusy/.test(html));
 check('A20 问题3: 组长删号带云端推送重试+失败告警', /pushed=await pushApprovedUsersToFeishu\(\);\s*\n\s*if\(!pushed\)/.test(html) && /云端同步失败/.test(html));

@@ -1,5 +1,5 @@
 {
-  "runAt": "2026-08-31T22:42:08.379Z",
+  "runAt": "2026-09-01T01:59:05.107Z",
   "pass": 18,
   "fail": 0,
   "total": 18,
@@ -7,67 +7,67 @@
     {
       "name": "A1 文件名清洗: 恶意随机名称全部净化为飞书合法名",
       "status": "PASS",
-      "ms": 36
+      "ms": 52
     },
     {
       "name": "A2 Adler-32校验和: 标准向量与分片实现一致",
       "status": "PASS",
-      "ms": 128
+      "ms": 93
     },
     {
       "name": "A3 QPS门控: 连续上传调用间隔≥220ms(贴官方5QPS飞行)",
       "status": "PASS",
-      "ms": 466
+      "ms": 472
     },
     {
       "name": "B1 小文件(1MB)走upload_all单次上传+字节级回环校验",
       "status": "PASS",
-      "ms": 41
+      "ms": 33
     },
     {
       "name": "B2 17MB文件自动路由分片上传(5片)+字节级回环校验",
       "status": "PASS",
-      "ms": 1573
+      "ms": 1555
     },
     {
       "name": "B3 21MB视频(旧版必败场景)分片上传成功——根因修复核心验证",
       "status": "PASS",
-      "ms": 1850
+      "ms": 1818
     },
     {
       "name": "B4 旧版回归对照: upload_all直传21MB必被拒(1061043)——根因复现",
       "status": "PASS",
-      "ms": 246
+      "ms": 157
     },
     {
       "name": "B5 弱网故障注入: 每片首次请求500,客户端3次重试全部救回",
       "status": "PASS",
-      "ms": 4072
+      "ms": 4113
     },
     {
       "name": "B6 事务过期(1061021): 自动重新prepare整段重传成功",
       "status": "PASS",
-      "ms": 2005
+      "ms": 2016
     },
     {
       "name": "B7 500MB上限防御: 超限文件明确拒绝而非推上云端",
       "status": "PASS",
-      "ms": 28
+      "ms": 20
     },
     {
       "name": "B8 恶意文件名上传: 智能入口统一清洗,云端落盘为合法名",
       "status": "PASS",
-      "ms": 24
+      "ms": 23
     },
     {
       "name": "C1 组长端全管线: 随机名称新车型+3照片+2视频(含21MB)一次同步成功",
       "status": "PASS",
-      "ms": 2044
+      "ms": 2015
     },
     {
       "name": "C2 组员端拉取: 新车型完整合并到本地(数据闭环)",
       "status": "PASS",
-      "ms": 27
+      "ms": 24
     },
     {
       "name": "C3 幂等二次上传: 已上云媒体零流量跳过,云端无冗余副本",
@@ -77,20 +77,20 @@
     {
       "name": "C4 JSON体积守卫: 媒体分离失败残留时诊断性失败,云端数据不被污染",
       "status": "PASS",
-      "ms": 127
+      "ms": 104
     },
     {
       "name": "C5 随机名称压力: 5台恶意命名车型+控制字符全部同步成功且云端文件名合法",
       "status": "PASS",
-      "ms": 65
+      "ms": 98
     },
     {
       "name": "D1 feishu-api.js driveUploadFile: 小文件+17MB分片双路径字节回环",
       "status": "PASS",
-      "ms": 441
+      "ms": 1667
     },
     {
-      "name": "E1 版本一致性: config.xml / version.json / demo.html 三处版本对齐10.11.0",
+      "name": "E1 版本一致性: config.xml / version.json / demo.html(+js模块) 三处动态对齐",
       "status": "PASS",
       "ms": 5
     }

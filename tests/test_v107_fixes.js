@@ -24,7 +24,8 @@ try { JSDOM = require('jsdom').JSDOM; }
 catch(e) { console.error('请先安装: npm i jsdom'); process.exit(2); }
 
 const REPO = '.';
-const html = fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8');
+const _h = require('./e2e_harness'); // A2拆分兼容: js/*.js defer 内联回原时序 + css/app.css 内联回原文
+const html = _h.inlineStylesheets(_h.inlineDeferScripts(fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8')));
 const configXml = fs.readFileSync(path.join(REPO, 'config.xml'), 'utf8');
 const versionJson = JSON.parse(fs.readFileSync(path.join(REPO, 'version.json'), 'utf8'));
 

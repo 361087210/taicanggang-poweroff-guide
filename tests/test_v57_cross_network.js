@@ -7,7 +7,8 @@ const fs = require('fs');
 const { JSDOM } = require('jsdom');
 
 const REPO = '.';
-const html = fs.readFileSync(`${REPO}/demo.html`, 'utf8');
+const _h = require('./e2e_harness'); // A2拆分兼容: js/*.js defer 内联回原时序 + css/app.css 内联回原文
+const html = _h.inlineStylesheets(_h.inlineDeferScripts(fs.readFileSync(`${REPO}/demo.html`, 'utf8')));
 const PASSED = [], FAILED = [];
 const check = (n, c, d='') => { (c?PASSED:FAILED).push(n); console.log(`  [${c?'PASS':'FAIL'}] ${n}${d?' | '+d:''}`); };
 

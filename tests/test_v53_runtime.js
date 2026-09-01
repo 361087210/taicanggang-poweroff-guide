@@ -17,7 +17,8 @@ const path = require('path');
 const vm = require('vm');
 
 const BASE = path.join(__dirname, '..');
-const html = fs.readFileSync(path.join(BASE, 'demo.html'), 'utf-8');
+const _h = require('./e2e_harness'); // A2拆分兼容: js/*.js defer 内联回原时序 + css/app.css 内联回原文
+const html = _h.inlineStylesheets(_h.inlineDeferScripts(fs.readFileSync(path.join(BASE, 'demo.html'), 'utf-8')));
 
 // ---------- 最小DOM/环境模拟 ----------
 function el(tag) {

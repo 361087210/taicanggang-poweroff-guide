@@ -24,7 +24,8 @@ try { JSDOM = require('jsdom').JSDOM; }
 catch(e) { console.error('请先安装: npm i jsdom'); process.exit(2); }
 
 const REPO = '.';
-const html = fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8');
+const _h = require('./e2e_harness'); // A2拆分兼容: js/*.js defer 内联回原时序 + css/app.css 内联回原文
+const html = _h.inlineStylesheets(_h.inlineDeferScripts(fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8')));
 const configXml = fs.readFileSync(path.join(REPO, 'config.xml'), 'utf8');
 const versionJson = JSON.parse(fs.readFileSync(path.join(REPO, 'version.json'), 'utf8'));
 
@@ -62,13 +63,15 @@ check('A8 问题1: 导出HTML模板抽取复用(Word降级链与PDF同源同构)
 // ---- 问题2: 跨网络申请完全隐形 ----
 console.log('-- 问题2: 跨网络申请隐形通过 --');
 const pullFnMatch = html.match(/async function pullPendingFromFeishu[\s\S]*?\n\}/);
-const pullFnSrc = pullFnMatch ? pullFnMatch[0] : '';
+const rulesFnMatch = html.match(/async function applyApprovalRules[\s\S]*?\n\}/);
+// A3四刀切: 即消费即删从 pullPendingFromFeishu 移入 applyApprovalRules(②业务规则), 行为等价
+const consumeSrc = (pullFnMatch ? pullFnMatch[0] : '') + '\n' + (rulesFnMatch ? rulesFnMatch[0] : '');
 check('A9 问题2: 跨端申请即时激活(active+hidden+crossPlatform三标记)',
   /u\.crossPlatform=true;\s*\n\s*u\.hidden=true;\s*\n\s*u\.status='active';/.test(html));
 check('A10 问题2: 已存在用户补齐隐形标记(防旧数据漏过滤)',
   /existingUser\.status='active';\s*\n\s*existingUser\.crossPlatform=true;\s*\n\s*existingUser\.hidden=true;/.test(html));
 check('A11 问题2: 即消费即删云端申请文件(防反复消费/目录堆积)',
-  pullFnSrc.includes('deletePendingFileFromFeishu(u.phone)'));
+  consumeSrc.includes('deletePendingFileFromFeishu(u.phone)'));
 check('A12 问题2: 跨端处理完全隐形——仅console留痕,无Toast/通知/日志UI',
   /跨网络申请已默认通过\(不显示\)/.test(html) && !/leaderNotify\([^)]*跨网络/.test(html));
 check('A13 问题2: 组员列表+待审列表双过滤隐形用户',
@@ -93,8 +96,9 @@ check('A17 问题4: IndexedDB持久化层存在(库tcg_poweroff/仓vehicles/键u
   && html.includes("indexedDB.open('tcg_poweroff'") && html.includes("'user_data'"));
 // V10.7.0: 保存流程在persistVehicles()后新增scheduleAutoSyncAfterSave()调度
 // (保存即自动同步,8秒防抖),持久化语义不变——断言放宽中间可插入调度调用
-check('A18 问题4: 新增/编辑保存后立即持久化(V10.7.0后接自动同步调度)',
-  /persistVehicles\(\);\s*\n\s*(\/\*[\s\S]*?\*\/\s*\n\s*)?scheduleAutoSyncAfterSave\(\);\s*\n\s*showToast\('保存成功'\)/.test(html));
+check('A18 问题4: 新增/编辑保存后立即持久化(A3经State API持久化+V10.7.0自动同步调度)',
+  /State\.updateVehicle\(v\.id,\{/.test(html) && /State\.addVehicle\(\{brand,series,config,display/.test(html)
+  && /scheduleAutoSyncAfterSave\(\);\s*\n\s*showToast\('保存成功'\)/.test(html));
 check('A19 问题4: 删除车辆同步持久化', /VEHICLES\.splice\(idx,1\);persistVehicles\(\);/.test(html));
 check('A20 问题4: 启动时序先恢复快照再渲染(异步IIFE包裹)', /\(async\(\)=>\{\s*\nawait loadPersistedVehicles\(\);/.test(html));
 check('A21 问题4: 照片分离上传函数存在(降采样归一+哈希文件名+vehicle_images目录)',
@@ -110,8 +114,8 @@ check('A22 问题4: 同步上传前先分离照片再写JSON(根因修复顺序,
   /const photoStat=await syncUploadVehiclePhotos\(token,VEHICLES\);/.test(html)
   && pipeSrc.indexOf('syncUploadVehiclePhotos(token,VEHICLES)') >= 0
   && pipeSrc.indexOf('syncUploadVehiclePhotos(token,VEHICLES)') < pipeSrc.indexOf("uploadJsonToDataFeishu(token,'vehicle_sync_data.json'"));
-check('A23 问题4: 照片路径替换后持久化+同步合并后持久化(双钩子)',
-  /if\(photoStat\.replaced>0\)\{\s*\n\s*persistVehicles\(\);/.test(html)
+check('A23 问题4: 照片/视频路径替换后持久化+同步合并后持久化(双钩子)',
+  /if\(photoStat\.replaced>0\|\|videoStat\.replaced>0\)\{\s*\n\s*persistVehicles\(\);/.test(html)
   && /if\(totalChanges>0\)persistVehicles\(\);/.test(html));
 
 // ---- 问题6: 版本一致性 ----

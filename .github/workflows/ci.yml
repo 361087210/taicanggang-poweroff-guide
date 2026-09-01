@@ -29,6 +29,16 @@ jobs:
         with:
           node-version: '22'
 
+      # V10.12: 构建期Secret注入前置校验——CI Secrets中若已配置FEISHU_*就校验注入脚本就绪;
+      # Pull Requests from fork 无Secrets权限→FEISHU_STRICT=0跳过,不阻断回归测试
+      - name: Secret注入基线校验(缺Secrets权限时降级不阻断)
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+          FEISHU_STRICT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true && '0' || '' }}
+        run: node scripts/inject_build_secrets.js --check
+
       - name: 综合校验(文件/语法/标记/JSON/凭证泄露)
         run: node scripts/validate_web_assets.js
 
@@ -52,6 +62,27 @@ jobs:
 
       - name: 版本专项测试(V10.5分享真实化+缓存留存)
         run: npm run test:v105
+
+      - name: 版本专项测试(V10.6导出修复+中文PDF/Word真OOXML)
+        run: npm run test:v106
+
+      - name: 版本专项测试(V10.7防抖同步+菜单权限收紧)
+        run: npm run test:v107
+
+      - name: 版本专项测试(V10.8云同步根治FormData+注册审批回退)
+        run: npm run test:v108
+
+      - name: 版本专项测试(V10.9视频分离+UI适配修复)
+        run: npm run test:v109
+
+      - name: 版本专项测试(V10.10大文件分片同步+方案对比)
+        run: npm run test:v1010
+
+      - name: 版本专项测试(V10.11镜像同步删除传播)
+        run: npm run test:v1011
+
+      - name: 版本专项测试(V10.13复杂度治理A3)
+        run: npm run test:v1013
 
       - name: 上传校验摘要
         if: always()
