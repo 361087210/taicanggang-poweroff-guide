@@ -402,16 +402,13 @@ const FeishuAPI = (function() {
     }
   }
 
-  /** 下载云文档文件 */
+  /** 下载云文档文件(与js/05-sync.js一致: /drive/v1/files/{token}/download; 旧?type=file meta端点已废弃404) */
   async function driveDownloadFile(fileToken) {
     const token = await getTenantToken();
-    const meta = await request(
-      `https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}?type=file`,
+    const downloadResp = await fetch(
+      `https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    const downloadResp = await fetch(meta.url || meta.tmp_url || meta.file_token, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
     if (!downloadResp.ok) throw new Error(`下载失败 HTTP ${downloadResp.status}`);
     return await downloadResp.blob();
   }
