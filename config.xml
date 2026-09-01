@@ -55,6 +55,44 @@
             </provider>
         </config-file>
     </platform>
+    <!-- V10.13 iOS 平台: 与 Android 共用 web 源码(demo.html/js/css/vendor/vehicle_images),
+         构建走 GitHub Actions macos-latest + cordova-ios@7, 签名凭据后续补 -->
+    <platform name="ios">
+        <preference name="deployment-target" value="14.0" />
+        <preference name="target-device" value="universal" />
+        <preference name="Orientation" value="default" />
+        <preference name="SupportsPortraitOrientation" value="true" />
+        <preference name="SupportsLandscapeOrientation" value="false" />
+        <preference name="StatusBarStyle" value="lightcontent" />
+        <preference name="StatusBarOverlaysWebView" value="false" />
+        <preference name="GapBetweenPages" value="0" />
+        <preference name="IonicWebView" value="true" />
+        <preference name="WKWebViewOnly" value="true" />
+        <preference name="AllowInlineMediaPlayback" value="true" />
+        <preference name="MediaPlaybackRequiresUserAction" value="false" />
+        <preference name="DisallowOverscroll" value="true" />
+        <preference name="KeyboardDisplayRequiresUserAction" value="false" />
+        <config-file parent="NSCameraUsageDescription" target="*-Info.plist">
+            <string>用于拍摄断电操作照片</string>
+        </config-file>
+        <config-file parent="NSPhotoLibraryUsageDescription" target="*-Info.plist">
+            <string>用于选择断电操作照片</string>
+        </config-file>
+        <config-file parent="NSLocationWhenInUseUsageDescription" target="*-Info.plist">
+            <string>用于定位车辆位置</string>
+        </config-file>
+        <config-file parent="NSMicrophoneUsageDescription" target="*-Info.plist">
+            <string>用于录制操作视频声音</string>
+        </config-file>
+        <!-- iOS ATS: 允许 HTTP 明文(飞书云端API走HTTPS, 本地环回/CDN图片可能走HTTP) -->
+        <config-file parent="NSAppTransportSecurity" target="*-Info.plist">
+            <dict>
+                <key>NSAllowsArbitraryLoads</key>
+                <true />
+            </dict>
+        </config-file></platform>
+    <!-- Android-only 插件 cordova-plugin-android-permissions 不注入 iOS, iOS 用 Info.plist 声明权限即可 -->
+    </platform>
     <plugin name="cordova-plugin-whitelist" spec="1.3.5" />
     <plugin name="cordova-plugin-device" spec="3.0.0" />
     <plugin name="cordova-plugin-network-information" spec="3.0.0" />
