@@ -1,0 +1,198 @@
+name: iOS CI Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g. 10.13.0)'
+        required: true
+        default: '10.13.0'
+      build_type:
+        description: 'Build type (development=无签名 IPA | release=需要Apple证书)'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - release
+
+permissions:
+  contents: write
+
+env:
+  XCODE_VERSION: '15.4'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Derive version from config.xml
+        id: ver
+        run: |
+          APP_VERSION=$(grep -oP 'version="\K[0-9.]+' config.xml | head -1)
+          echo "APP_VERSION=${APP_VERSION}" >> $GITHUB_ENV
+          echo "Detected version=${APP_VERSION}"
+
+      - name: Set up Xcode ${{ env.XCODE_VERSION }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Install Cordova & CocoaPods
+        run: |
+          npm install -g cordova@13
+          cordova --version
+          brew install cocoapods || true
+          pod --version
+
+      # 与 Android 同构构建目录 tcg_app/, 共用 www 源码
+      - name: Prepare build environment
+        run: |
+          mkdir -p tcg_app/www
+          cp config.xml tcg_app/config.xml
+          cp demo.html tcg_app/www/
+          cp feishu-api.js tcg_app/www/
+          cp vehicles_data.js tcg_app/www/
+          cp -r vendor tcg_app/www/vendor
+          cp -r css tcg_app/www/css
+          cp -r js tcg_app/www/js
+          cp -r vehicle_images tcg_app/www/vehicle_images
+          mkdir -p tcg_app/scripts
+          cp scripts/patch_projectbuilder.js tcg_app/scripts/
+
+      - name: Verify bundled web assets
+        run: |
+          for f in tailwind.js xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js html-docx.js; do
+            test -s "tcg_app/www/vendor/$f" || { echo "MISSING vendor/$f"; exit 1; }
+          done
+          IMG_COUNT=$(ls tcg_app/www/vehicle_images/*.jpeg 2>/dev/null | wc -l)
+          echo "vehicle_images count: $IMG_COUNT"
+          [ "$IMG_COUNT" -ge 100 ] || { echo "vehicle_images incomplete (<100)"; exit 1; }
+
+      # V10.12: 构建期 Secret 注入
+      - name: Inject Feishu build secrets into www/demo.html (strict fail)
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+          DEMO_HTML_PATH: ${{ github.workspace }}/tcg_app/www/demo.html
+          FEISHU_STRICT: '1'
+        run: node scripts/inject_build_secrets.js
+
+      - name: Add iOS platform
+        working-directory: ./tcg_app
+        run: cordova platform add ios@7
+
+      # 安装跨平台插件(排除 Android-only 的 cordova-plugin-android-permissions)
+      - name: Install plugins (iOS-safe)
+        working-directory: ./tcg_app
+        run: |
+          cordova plugin add cordova-plugin-whitelist@1.3.5
+          cordova plugin add cordova-plugin-device@3.0.0
+          cordova plugin add cordova-plugin-network-information@3.0.0
+          cordova plugin add cordova-plugin-dialogs@2.0.2
+          cordova plugin add cordova-plugin-inappbrowser@6.0.0
+          cordova plugin add cordova-plugin-file@8.1.0
+          cordova plugin add cordova-plugin-file-transfer@2.0.0
+          cordova plugin add cordova-plugin-camera@7.0.0
+          cordova plugin add cordova-plugin-media-capture@5.0.0
+          cordova plugin add cordova-plugin-geolocation@5.0.0 --variable GPS_REQUIRED=false
+          cordova plugin add cordova-plugin-advanced-http@3.3.1
+          cordova plugin add cordova-plugin-x-socialsharing@6.0.4
+          cordova plugin add cordova-plugin-screen-orientation@3.0.3
+          cordova plugin add cordova-plugin-statusbar@4.0.0
+          cordova plugin add cordova-plugin-splashscreen@6.0.2
+          cordova plugin add cordova-plugin-app-version@0.1.14
+          cordova plugin add cordova-plugin-local-notification@1.2.3
+          cordova plugin add cordova-plugin-file-opener2@4.0.0
+
+      # ===== 签名分支: development / release =====
+      # development: 无签名 IPA(仅内部测试, 需自签), release: 需 Apple 证书 + Provisioning Profile
+      - name: Build development IPA (no signing)
+        if: ${{ github.event.inputs.build_type == 'development' || github.event_name == 'push' }}
+        working-directory: ./tcg_app
+        run: |
+          # 跳过签名: 用 xcodebuild CODE_SIGNING_ALLOWED=NO
+          cordova build ios --device -- --buildFlag="-UseModernBuildSystem=YES"
+          # cordova build 默认会签 development profile, 这里重新无签名打包
+          cd platforms/ios
+          xcodebuild -workspace *.xcworkspace -scheme "TCG Poweroff" -configuration Debug -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO build
+          echo "IPA built (unsigned)"
+
+      - name: Build release IPA (with signing)
+        if: github.event.inputs.build_type == 'release'
+        working-directory: ./tcg_app
+        env:
+          APPLE_P12_BASE64: ${{ secrets.APPLE_P12_BASE64 }}
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_BUNDLE_ID: ${{ secrets.APPLE_BUNDLE_ID }}
+        run: |
+          if [ -z "$APPLE_P12_BASE64" ]; then
+            echo "ERROR: Apple signing secrets not configured. Add APPLE_P12_BASE64, APPLE_PROVISIONING_PROFILE_BASE64, APPLE_TEAM_ID, APPLE_BUNDLE_ID to GitHub repo secrets."
+            exit 1
+          fi
+          # 解码 P12 证书到 Keychain
+          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+          echo "$APPLE_P12_BASE64" | base64 -d > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "" "$KEYCHAIN_PATH"
+          security import "$RUNNER_TEMP/cert.p12" -A -P "" -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN_PATH"
+          # Provisioning Profile
+          echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 -d > "$RUNNER_TEMP/build.mobileprovision"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$RUNNER_TEMP/build.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/
+          # Build
+          cordova build ios --release --device -- \
+            --buildFlag="-UseModernBuildSystem=YES" \
+            --buildFlag="-CODE_SIGN_STYLE=Manual" \
+            --buildFlag="-DEVELOPMENT_TEAM=$APPLE_TEAM_ID" \
+            --buildFlag="-CODE_SIGN_IDENTITY=Apple Distribution" \
+            --buildFlag="-PROVISIONING_PROFILE_SPECIFIER=TCG Poweroff Release" \
+            --keychain "$KEYCHAIN_PATH"
+
+      - name: Collect IPA
+        run: |
+          IPA_PATH=$(find tcg_app/platforms/ios/build -name "*.ipa" -o -name "*.app" | head -1)
+          echo "Found: $IPA_PATH"
+          if [ -z "$IPA_PATH" ]; then
+            echo "No IPA found, listing build dir:"
+            ls -la tcg_app/platforms/ios/build/ || true
+            exit 1
+          fi
+          # 如果只找到 .app, 打包成 .ipa
+          if [[ "$IPA_PATH" == *.app ]]; then
+            mkdir -p Payload
+            cp -r "$IPA_PATH" Payload/
+            zip -r "tcg_poweroff_v${APP_VERSION}_ios.ipa" Payload/
+            rm -rf Payload
+          else
+            cp "$IPA_PATH" "tcg_poweroff_v${APP_VERSION}_ios.ipa"
+          fi
+          ls -la "tcg_poweroff_v${APP_VERSION}_ios.ipa"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: tcg-poweroff-ios
+          path: tcg_poweroff_v${{ env.APP_VERSION }}_ios.ipa
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: tcg_poweroff_v${{ env.APP_VERSION }}_ios.ipa
+          generate_release_notes: true
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
