@@ -146,11 +146,15 @@ class FeishuClient {
 
 // ---- 本地数据读取 ----
 function readVehiclesData() {
+  const vm = require('vm');
+  const sandbox = {};
+  vm.createContext(sandbox);
   const js = fs.readFileSync(path.join(REPO, 'vehicles_data.js'), 'utf8');
-  // 提取 window.VEHICLES = [...]
-  const m = js.match(/window\.VEHICLES\s*=\s*(\[[\s\S]*?\])\s*;/);
-  if (!m) throw new Error('vehicles_data.js 中找不到 window.VEHICLES');
-  return JSON.parse(m[1]);
+  try { vm.runInContext(js, sandbox, { filename: 'vehicles_data.js' }); } catch (e) { throw new Error('vehicles_data.js 执行失败: ' + e.message); }
+  // 优先找 VEHICLES 变量, 兜底找 window.VEHICLES
+  const vehicles = sandbox.VEHICLES || (sandbox.window && sandbox.window.VEHICLES);
+  if (!vehicles || !Array.isArray(vehicles)) throw new Error('vehicles_data.js 中找不到 VEHICLES 数组');
+  return vehicles;
 }
 
 function fileHash(filePath) {
