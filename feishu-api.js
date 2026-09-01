@@ -15,7 +15,7 @@ const FeishuAPI = (function() {
   const DEFAULTS = {
     appId: '',
     appSecret: '',
-    folderToken: 'WdXUfZPkClI1audQxIYc90XRnWc',      // 云文档根文件夹
+    folderToken: 'nodcnGA95g93RhIUSdCeTkhKlQc',      // 云文档根文件夹(V10.13: 新App根目录)
     dataFolderName: 'APP数据备份',                      // 数据备份子文件夹
     bitableAppToken: '',                                // 多维表格 AppToken（可选）
     approvalCode: '',                                   // 审批定义 Code（可选）
@@ -169,7 +169,7 @@ const FeishuAPI = (function() {
 
     // 2. 列出根文件夹内容
     const list = await request(
-      `https://open.feishu.cn/open-apis/drive/v1/files/${c.folderToken}/children?page_size=200`,
+      `https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${c.folderToken}&page_size=200`,
       { headers }
     );
     const found = (list.files || []).find(f => f.name === c.dataFolderName && f.type === 'folder');
@@ -193,7 +193,7 @@ const FeishuAPI = (function() {
   async function driveListFiles(folderToken) {
     const token = await getTenantToken();
     const data = await request(
-      `https://open.feishu.cn/open-apis/drive/v1/files/${folderToken}/children?page_size=200`,
+      `https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${folderToken}&page_size=200`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return data.files || [];

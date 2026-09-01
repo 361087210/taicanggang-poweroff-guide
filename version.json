@@ -14,7 +14,7 @@
   "minVersion": "5.3.0",
   "feishuConfig": {
     "appId": "cli_aa0ce4fd91f85be8",
-    "folderToken": "WdXUfZPkClI1audQxIYc90XRnWc",
+    "folderToken": "nodcnGA95g93RhIUSdCeTkhKlQc",
     "dataFolderName": "APP数据备份",
     "dataSubFolders": ["同步数据", "注册申请", "审批结果", "备份文件"],
     "bitableAppToken": "",
