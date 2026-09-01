@@ -90,9 +90,9 @@
                 <key>NSAllowsArbitraryLoads</key>
                 <true />
             </dict>
-        </config-file></platform>
-    <!-- Android-only 插件 cordova-plugin-android-permissions 不注入 iOS, iOS 用 Info.plist 声明权限即可 -->
+        </config-file>
     </platform>
+    <!-- Android-only 插件 cordova-plugin-android-permissions 不注入 iOS, iOS 用 Info.plist 声明权限即可 -->
     <plugin name="cordova-plugin-whitelist" spec="1.3.5" />
     <plugin name="cordova-plugin-device" spec="3.0.0" />
     <plugin name="cordova-plugin-network-information" spec="3.0.0" />

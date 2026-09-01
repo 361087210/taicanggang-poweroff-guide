@@ -115,16 +115,33 @@ jobs:
           cordova plugin add cordova-plugin-file-opener2@4.0.0
 
       # ===== 签名分支: development / release =====
-      # development: 无签名 IPA(仅内部测试, 需自签), release: 需 Apple 证书 + Provisioning Profile
+      # development: 无签名 IPA(内部测试用), release: 需 Apple 证书 + Provisioning Profile
+      - name: Detect Xcode scheme name
+        id: scheme
+        working-directory: ./tcg_app
+        run: |
+          # Cordova 自动生成 scheme 名 (通常等于 config.xml <name> 值或 widget id 最后一段)
+          SCHEME=$(xcodebuild -list -project platforms/ios/*.xcodeproj 2>/dev/null | grep -A1 "Schemes:" | tail -1 | xargs)
+          if [ -z "$SCHEME" ]; then
+            # fallback: 用 plist 里的 CFBundleName
+            SCHEME=$(defaults read platforms/ios/*/Info.plist CFBundleName 2>/dev/null || echo "TCG Poweroff")
+          fi
+          echo "SCHEME=${SCHEME}" >> $GITHUB_ENV
+          echo "Detected Xcode scheme: ${SCHEME}"
+
       - name: Build development IPA (no signing)
         if: ${{ github.event.inputs.build_type == 'development' || github.event_name == 'push' }}
         working-directory: ./tcg_app
         run: |
-          # 跳过签名: 用 xcodebuild CODE_SIGNING_ALLOWED=NO
+          # 跳过签名: CODE_SIGNING_ALLOWED=NO
           cordova build ios --device -- --buildFlag="-UseModernBuildSystem=YES"
-          # cordova build 默认会签 development profile, 这里重新无签名打包
           cd platforms/ios
-          xcodebuild -workspace *.xcworkspace -scheme "TCG Poweroff" -configuration Debug -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -workspace *.xcworkspace -scheme "${SCHEME}" -configuration Debug \
+            -destination generic/platform=iOS \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
           echo "IPA built (unsigned)"
 
       - name: Build release IPA (with signing)
@@ -134,13 +151,14 @@ jobs:
           APPLE_P12_BASE64: ${{ secrets.APPLE_P12_BASE64 }}
           APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_BUNDLE_ID: ${{ secrets.APPLE_BUNDLE_ID }}
         run: |
-          if [ -z "$APPLE_P12_BASE64" ]; then
-            echo "ERROR: Apple signing secrets not configured. Add APPLE_P12_BASE64, APPLE_PROVISIONING_PROFILE_BASE64, APPLE_TEAM_ID, APPLE_BUNDLE_ID to GitHub repo secrets."
+          if [ -z "$APPLE_P12_BASE64" ] || [ -z "$APPLE_PROVISIONING_PROFILE_BASE64" ] || [ -z "$APPLE_TEAM_ID" ]; then
+            echo "ERROR: Apple signing secrets incomplete."
+            echo "Required: APPLE_P12_BASE64, APPLE_PROVISIONING_PROFILE_BASE64, APPLE_TEAM_ID"
+            echo "Note: Bundle ID is read automatically from config.xml (com.taicanggang.poweroff)"
             exit 1
           fi
-          # 解码 P12 证书到 Keychain
+          # 解码 P12 证书到临时 Keychain
           KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
           echo "$APPLE_P12_BASE64" | base64 -d > "$RUNNER_TEMP/cert.p12"
           security create-keychain -p "" "$KEYCHAIN_PATH"
@@ -152,7 +170,7 @@ jobs:
           echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 -d > "$RUNNER_TEMP/build.mobileprovision"
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp "$RUNNER_TEMP/build.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/
-          # Build
+          # Release build with manual signing
           cordova build ios --release --device -- \
             --buildFlag="-UseModernBuildSystem=YES" \
             --buildFlag="-CODE_SIGN_STYLE=Manual" \
