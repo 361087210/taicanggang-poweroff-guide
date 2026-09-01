@@ -199,27 +199,113 @@ const FeishuAPI = (function() {
     return data.files || [];
   }
 
-  /** 上传文件到云文档 */
-  async function driveUploadFile(folderToken, fileName, blob) {
-    const token = await getTenantToken();
-    // V10.10.0: >16MB走官方分片上传(upload_all硬上限20MB,超限必败1061043)
-    if (blob && blob.size > 16 * 1024 * 1024) {
-      return await driveUploadFileMultipart(folderToken, fileName, blob);
+  // ==========================================================
+  // V10.12.0: 上传核心能力统一到此(取代demo.html双轨);兼容 Cordova 原生+fetch 双栈
+  // 特性: 220ms QPS串行门控 · 1061021事务过期整段重传 · 1061045频控退避 · 文件名清洗
+  // ==========================================================
+  /** 上传类API QPS门控: 串行+最小间隔220ms,贴官方5QPS限制飞行 */
+  let _feishuUploadLastTs = 0;
+  const FEISHU_UPLOAD_ALL_LIMIT = 20 * 1024 * 1024;
+  const FEISHU_MULTIPART_THRESHOLD = 16 * 1024 * 1024;
+  const FEISHU_MULTIPART_MAX = 500 * 1024 * 1024;
+  async function _qpsGate() {
+    const wait = Math.max(0, _feishuUploadLastTs + 220 - Date.now());
+    if (wait > 0) await new Promise(r => setTimeout(r, wait));
+    _feishuUploadLastTs = Date.now();
+  }
+  /** Adler-32 校验和(飞书 upload_part checksum 算法) */
+  function _adler32(u8) {
+    const MOD = 65521; let a = 1, b = 0;
+    for (let i = 0; i < u8.length; i++) { a = (a + u8[i]) % MOD; b = (b + a) % MOD; }
+    return String((((b << 16) | a) >>> 0));
+  }
+  /** 飞书文件名清洗 - 解决 1061109 file name cqc not passed */
+  function _sanitizeFeishuFileName(name, maxLen) {
+    const limit = maxLen || 150;
+    let s = String(name || '')
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .replace(/[\\/:*?"<>|]/g, '_')
+      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu, '')
+      .replace(/\s+/g, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^[.\s_]+|[.\s_]+$/g, '');
+    if (!s) s = 'file_' + Date.now().toString(36);
+    if (s.length > limit) {
+      const dot = s.lastIndexOf('.');
+      const ext = (dot > 0 && s.length - dot <= 6) ? s.slice(dot) : '';
+      s = s.slice(0, limit - ext.length) + ext;
     }
+    return s;
+  }
+  /** Cordova 原生上传(绕过 CORS + ponyfill FormData); 失败返回 null */
+  function _cordovaMultipart(url, token, fieldsPairs, fileTriple) {
+    if (!(typeof window !== 'undefined' && window.cordova && window.cordova.plugin && window.cordova.plugin.http)) return null;
+    try {
+      const http = window.cordova.plugin.http;
+      const FormDataCtor = (http.ponyfills && http.ponyfills.FormData) || window.FormData;
+      if (!FormDataCtor) return null;
+      const fd = new FormDataCtor();
+      fieldsPairs.forEach(([k, v]) => fd.append(k, v));
+      if (fileTriple) fd.append(fileTriple[0], fileTriple[1], fileTriple[2]);
+      return new Promise((resolve, reject) => {
+        try {
+          http.sendRequest(url, {
+            method: 'post',
+            data: fd,
+            serializer: 'multipart',
+            headers: { Authorization: 'Bearer ' + token },
+            responseType: 'text'
+          },
+            res => { try { resolve(JSON.parse(res.data)); } catch (e) { resolve(res.data); } },
+            err => reject(new Error(typeof err === 'object' ? (err.error || err.message || '上传失败') : String(err)))
+          );
+        } catch (syncErr) { reject(syncErr instanceof Error ? syncErr : new Error(String(syncErr))); }
+      });
+    } catch (e) { console.warn('[feishu-api] cordova upload fallback trigger:', e); return null; }
+  }
+  /** 上传单个分片 - 原生multipart优先,fetch兜底 */
+  async function _uploadPartOnce(token, uploadId, seq, u8, checksum) {
+    const chunkBlob = new Blob([u8]);
+    const pairs = [['upload_id', uploadId], ['seq', String(seq)], ['size', String(u8.length)], ['checksum', checksum]];
+    const cvd = await _cordovaMultipart(
+      'https://open.feishu.cn/open-apis/drive/v1/files/upload_part',
+      token, pairs, ['file', chunkBlob, 'chunk_' + seq]
+    );
+    if (cvd !== null) return cvd;
+    const fd = new FormData();
+    pairs.forEach(([k, v]) => fd.append(k, v));
+    fd.append('file', chunkBlob, 'chunk_' + seq);
+    const res = await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_part', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: fd });
+    return res.json();
+  }
+  /** 通用单次 upload_all: Cordova → fetch 双栈,返回原始响应{code,msg,data} */
+  async function _uploadAllRaw(token, folderToken, fileName, blob) {
+    const safeName = _sanitizeFeishuFileName(fileName);
+    const pairs = [['file_name', safeName], ['parent_type', 'explorer'], ['parent_node', folderToken], ['size', String(blob.size)]];
+    await _qpsGate();
+    const cvd = await _cordovaMultipart(
+      'https://open.feishu.cn/open-apis/drive/v1/files/upload_all',
+      token, pairs, ['file', blob, safeName]
+    );
+    if (cvd !== null) return cvd;
     const form = new FormData();
-    form.append('file_name', fileName);
-    form.append('parent_type', 'explorer');
-    form.append('parent_node', folderToken);
-    form.append('size', String(blob.size));
-    form.append('file', blob, fileName);
-
+    pairs.forEach(([k, v]) => form.append(k, v));
+    form.append('file', blob, safeName);
     const resp = await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_all', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: form,
     });
-    const data = await resp.json();
-    // V10.10.0: 1061043超限自动升级分片(双保险)
+    return await resp.json();
+  }
+
+  /** 上传文件到云文档(V10.12: 统一Cordova双栈+QPS+超限升级) */
+  async function driveUploadFile(folderToken, fileName, blob) {
+    const token = await getTenantToken();
+    if (blob && blob.size > FEISHU_MULTIPART_THRESHOLD) {
+      return await driveUploadFileMultipart(folderToken, fileName, blob);
+    }
+    const data = await _uploadAllRaw(token, folderToken, fileName, blob);
     if (data.code === 1061043) {
       log('warn', 'upload_all超限,自动升级分片上传', fileName);
       return await driveUploadFileMultipart(folderToken, fileName, blob);
@@ -230,56 +316,90 @@ const FeishuAPI = (function() {
   }
 
   /**
-   * V10.10.0: 飞书官方分片上传三件套(与demo.html httpUploadFileMultipart同构)
-   * upload_prepare → upload_part×N(4MB定长分片+Adler-32校验+3次重试) → upload_finish
+   * V10.12: 分片上传 - 新增:QPS门控/1061021事务过期整段重传/1061045频控退避/Cordova原生分片
    */
-  async function driveUploadFileMultipart(folderToken, fileName, blob) {
+  async function driveUploadFileMultipart(folderToken, fileName, blob, onProgress) {
     const token = await getTenantToken();
-    const adler32 = (u8) => {
-      const MOD = 65521; let a = 1, b = 0;
-      for (let i = 0; i < u8.length; i++) { a = (a + u8[i]) % MOD; b = (b + a) % MOD; }
-      return String((((b << 16) | a) >>> 0));
+    const op = onProgress || (() => {});
+    if (!blob || blob.size <= 0) throw new Error('空文件不可上传');
+    if (blob.size > FEISHU_MULTIPART_MAX) throw new Error('文件超过500MB上限,请压缩后重试');
+    const safeName = _sanitizeFeishuFileName(fileName);
+    const doPrepare = async () => {
+      await _qpsGate();
+      const full = await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_prepare', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ file_name: safeName, parent_type: 'explorer', parent_node: folderToken, size: blob.size })
+      }).then(r => r.json());
+      if (!full || full.code !== 0) throw new Error(`预上传失败: ${(full && full.msg) || '无响应'}`);
+      const prep = full.data;
+      return {
+        uploadId: String(prep.upload_id),
+        blockSize: prep.block_size || 4194304,
+        blockNum: prep.block_num || Math.ceil(blob.size / (prep.block_size || 4194304))
+      };
     };
-    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json; charset=utf-8' };
-    // 注意: request()已解包返回data.data(成功时不含code字段),失败时抛错——
-    // 旧版误按完整响应检查prep.code(恒为undefined)导致分片上传必然抛"预上传失败: 无响应"
-    const prep = await request('https://open.feishu.cn/open-apis/drive/v1/files/upload_prepare', {
-      method: 'POST', headers,
-      body: JSON.stringify({ file_name: fileName, parent_type: 'explorer', parent_node: folderToken, size: blob.size }),
-    });
-    if (!prep || !prep.upload_id) throw new Error(`预上传失败: ${(prep && prep.msg) || '无响应'}`);
-    const uploadId = String(prep.upload_id);
-    const blockSize = prep.block_size || 4194304;
-    const blockNum = prep.block_num || Math.ceil(blob.size / blockSize);
-    for (let seq = 0; seq < blockNum; seq++) {
-      const chunk = blob.slice(seq * blockSize, Math.min((seq + 1) * blockSize, blob.size));
-      const u8 = new Uint8Array(await chunk.arrayBuffer());
-      const fd = new FormData();
-      fd.append('upload_id', uploadId);
-      fd.append('seq', String(seq));
-      fd.append('size', String(u8.length));
-      fd.append('checksum', adler32(u8));
-      fd.append('file', new Blob([u8]), 'chunk_' + seq);
-      let ok = false, lastErr = null;
-      for (let attempt = 0; attempt < 3 && !ok; attempt++) {
-        try {
-          const r = await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_part', {
-            method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
-          });
-          const d = await r.json();
-          if (d.code === 0) ok = true; else lastErr = new Error(`分片${seq}失败: ${d.msg}`);
-        } catch (e) { lastErr = e; }
-        if (!ok) await new Promise(res => setTimeout(res, 500 * (attempt + 1)));
+    for (let session = 0; session < 2; session++) {
+      const { uploadId, blockSize, blockNum } = await doPrepare();
+      let expired = false;
+      for (let seq = 0; seq < blockNum; seq++) {
+        const chunk = blob.slice(seq * blockSize, Math.min((seq + 1) * blockSize, blob.size));
+        const u8 = new Uint8Array(await chunk.arrayBuffer());
+        const checksum = _adler32(u8);
+        let ok = false, lastErr = null;
+        for (let attempt = 0; attempt < 3 && !ok; attempt++) {
+          try {
+            await _qpsGate();
+            const res = await _uploadPartOnce(token, uploadId, seq, u8, checksum);
+            if (res && res.code === 0) ok = true;
+            else if (res && res.code === 1061021) { expired = true; break; }
+            else if (res && res.code === 1061045) lastErr = new Error('频控可重试');
+            else lastErr = new Error('分片' + seq + '失败: ' + ((res && res.msg) || '未知'));
+          } catch (e) { lastErr = e; }
+          if (!ok && !expired) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+        }
+        if (expired) break;
+        if (!ok) throw lastErr || new Error('分片上传失败 seq=' + seq);
+        op(seq + 1, blockNum);
       }
-      if (!ok) throw lastErr || new Error('分片上传失败 seq=' + seq);
+      if (expired) {
+        if (session === 0) { log('warn', '[分片]事务过期,重新预上传并重传:', safeName); continue; }
+        throw new Error('分片事务两次过期,上传失败');
+      }
+      await _qpsGate();
+      const finFull = await fetch('https://open.feishu.cn/open-apis/drive/v1/files/upload_finish', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ upload_id: uploadId, block_num: blockNum })
+      }).then(r => r.json());
+      if (!finFull || finFull.code !== 0) throw new Error(`完成上传失败: ${(finFull && finFull.msg) || '无响应'}`);
+      log('success', `大文件分片上传成功(${blockNum}片)`, safeName);
+      return finFull.data;
     }
-    const fin = await request('https://open.feishu.cn/open-apis/drive/v1/files/upload_finish', {
-      method: 'POST', headers,
-      body: JSON.stringify({ upload_id: uploadId, block_num: blockNum }),
-    });
-    if (!fin || !fin.file_token) throw new Error(`完成上传失败: ${(fin && fin.msg) || '无响应'}`);
-    log('success', `大文件分片上传成功(${blockNum}片)`, fileName);
-    return fin;
+    throw new Error('分片上传失败: 事务过期重传仍失败');
+  }
+
+  // ==========================================================
+  // V10.12 兼容薄封装 (与demo.html历史函数同签名,实现单向收敛到上面的实现)
+  // ==========================================================
+  async function httpUploadFile(params) {
+    const data = await _uploadAllRaw(params.token, params.folderToken, params.fileName, params.blob);
+    if (data.code === 1061043) {
+      log('warn', 'upload_all超限,自动升级分片上传(params)', params.fileName);
+      return await httpUploadFileMultipart(params);
+    }
+    return data;
+  }
+  async function httpUploadFileMultipart(params) {
+    try {
+      const d = await driveUploadFileMultipart(
+        params.folderToken, params.fileName, params.blob,
+        params.onProgress || null
+      );
+      return { code: 0, msg: 'success', data: d || {} };
+    } catch (e) {
+      return { code: -1, msg: e.message || String(e), data: {} };
+    }
   }
 
   /** 下载云文档文件 */
@@ -832,6 +952,8 @@ const FeishuAPI = (function() {
     getTenantToken, authHeaders,
     // 云文档
     getDataFolderToken, driveListFiles, driveUploadFile, driveDownloadFile, driveDeleteFile,
+    // V10.12: 与 demo.html 同签名的兼容上传入口(单向收敛)
+    httpUploadFile, httpUploadFileMultipart,
     // Bitable
     bitableListRecords, bitableCreateRecord, bitableBatchCreate,
     bitableUpdateRecord, bitableBatchUpdate, bitableDeleteRecord,

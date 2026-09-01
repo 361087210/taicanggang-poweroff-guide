@@ -23,7 +23,8 @@ try { JSDOM = require('jsdom').JSDOM; }
 catch(e) { console.error('请先安装: npm i jsdom'); process.exit(2); }
 
 const REPO = '.';
-const html = fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8');
+const _h = require('./e2e_harness'); // A2拆分兼容: js/*.js defer 内联回原时序 + css/app.css 内联回原文
+const html = _h.inlineStylesheets(_h.inlineDeferScripts(fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8')));
 const configXml = fs.readFileSync(path.join(REPO, 'config.xml'), 'utf8');
 const versionJson = JSON.parse(fs.readFileSync(path.join(REPO, 'version.json'), 'utf8'));
 
@@ -42,8 +43,8 @@ check('A1 分级列表其他品牌分组',
   '自定义品牌车辆归入"其他品牌"分组');
 
 // A2: 编辑保存时更新brandId(在isEditing分支内有v.brandId=brandObj赋值)
-// 检查要点: isEditing块内有brandObj查找 + brandId赋值
-const editBlockMatch = html.match(/state\.isEditing[\s\S]{0,600}?v\.brandId\s*=\s*brandObj/);
+// 检查要点: isEditing块内有brandObj查找 + brandId赋值(A3后经State.updateVehicle patch字面量传递)
+const editBlockMatch = html.match(/state\.isEditing&&state\.editingVehicle[\s\S]{0,400}?brandObj=BRANDS\.find[\s\S]{0,500}?brandId:brandObj\?brandObj\.id/);
 check('A2 编辑保存更新brandId',
   editBlockMatch !== null,
   editBlockMatch ? '编辑路径中brandId同步更新为brandObj.id' : '未在编辑块中找到brandId赋值');

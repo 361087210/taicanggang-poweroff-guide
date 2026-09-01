@@ -20,6 +20,23 @@ const vm = require('vm');
 
 const DEMO_PATH = path.join(__dirname, '..', 'demo.html');
 const FEISHU_API_PATH = path.join(__dirname, '..', 'feishu-api.js');
+const JS_DIR = path.join(__dirname, '..', 'js');
+
+/** V10.12 A2 拆分后: 函数实际定义散落在 js/00-bootstrap.js ~ js/08-main.js (9个模块)
+ *  读取全部模块(按文件名自然排序=defer顺序),拼接为单一源码串供 extractNamedBlock 扫描,
+ *  保持 DEMO_BLOCKS 列表和提取正则零改动即可兼容新/旧源码组织。 */
+function loadCombinedSource() {
+  let src = fs.readFileSync(DEMO_PATH, 'utf8');
+  if (fs.existsSync(JS_DIR)) {
+    const files = fs.readdirSync(JS_DIR)
+      .filter(f => f.endsWith('.js'))
+      .sort();
+    for (const f of files) {
+      src += '\n' + fs.readFileSync(path.join(JS_DIR, f), 'utf8') + '\n';
+    }
+  }
+  return src;
+}
 
 /** 判断某字符是否可作为"正则字面量前驱"(启发式, 覆盖本项目全部用例) */
 function isRegexPreceding(ch) {
@@ -170,9 +187,12 @@ function createLocalStorage() {
   };
 }
 
-/** demo.html 同步链路需要提取的声明清单(依赖序) */
+/** demo.html 同步链路需要提取的声明清单(依赖序)
+ *  V10.12: 移除_FS_XOR_KEY/_fsDec(已从源码删除,改为构建期注入window.__BUILD_SECRETS__)
+ *  —— 若测试需要mock飞书配置,通过 opts.feishuConfig 传入(本文件下方已支持注入)
+ */
 const DEMO_BLOCKS = [
-  '_FS_XOR_KEY', '_fsDec', 'DEFAULT_FEISHU_CONFIG', 'getFeishuCfg', 'feishuCfgReady',
+  'DEFAULT_FEISHU_CONFIG', 'getFeishuCfg', 'feishuCfgReady',
   'httpFetch', 'httpUploadFile',
   'FEISHU_UPLOAD_ALL_LIMIT', 'FEISHU_MULTIPART_THRESHOLD', 'FEISHU_MULTIPART_MAX',
   '_feishuUploadLastTs', '_feishuQpsGate', '_adler32', '_sanitizeFeishuFileName',
@@ -183,6 +203,7 @@ const DEMO_BLOCKS = [
   'getFeishuToken', 'uploadJsonToFolder', 'downloadJsonFromFolder',
   'uploadJsonToDataFeishu', 'downloadJsonFromDataFeishu', 'downloadSyncDataMigrated',
   '_strHashDjb2', '_normalizePhotoForUpload',
+  'State', // V10.13 A3状态守卫: doSyncDownload/_syncUploadPipeline经State API写VEHICLES/USERS
   'syncUploadVehiclePhotos', 'syncUploadVehicleVideos', '_syncUploadPipeline', 'doSyncDownload',
 ];
 
@@ -193,7 +214,7 @@ const DEMO_BLOCKS = [
  */
 function createAppSandbox(opts) {
   const { mock } = opts;
-  const src = fs.readFileSync(DEMO_PATH, 'utf8');
+  const src = loadCombinedSource();
   const localStorage = createLocalStorage();
   const stubs = {
     toasts: [], syncLogs: [], persists: 0, renders: 0, confirms: [],
@@ -275,4 +296,55 @@ function createFeishuApiSandbox(opts) {
   return { ctx, run: expr => vm.runInContext(expr, ctx, { filename: 'e2e_eval_api.js' }) };
 }
 
-module.exports = { extractNamedBlock, createAppSandbox, createFeishuApiSandbox, createMockFetch, createLocalStorage, DEMO_PATH, FEISHU_API_PATH };
+/**
+ * V10.12 A2 拆分兼容(共享版): demo.html 骨架化后主逻辑在 9 个 <script defer src="js/..."> 中,
+ * vm/旧版提取器拿不到。本函数将 defer 标签内联回 html(移至 </body> 前, 还原原始执行时序),
+ * 内联内容做 HTML-tokenizer 净化(字面 </script 与 <!-- 替换为 JS 语义等义转义)。
+ * 供 test_v53_runtime / test_v103~v109 / test_v57_cross_network 等直接读 demo.html 的旧测试复用。
+ * @param {string} html - demo.html 原文
+ * @returns {string} 内联 js/*.js 后的 html
+ */
+function inlineDeferScripts(html) {
+  const re = /[ \t]*<script[^>]+defer[^>]+src="(js\/[^"]+\.js)"[^>]*><\/script>[ \t]*(?:\r?\n|$)/g;
+  const matches = [...html.matchAll(re)];
+  if (matches.length === 0) return html;
+  const inlined = [];
+  let replaced = html;
+  for (const m of matches) {
+    replaced = replaced.replace(m[0], '');
+    const srcFile = path.join(__dirname, '..', m[1]);
+    if (!fs.existsSync(srcFile)) {
+      console.error('[inlineDeferScripts] 缺少 ' + srcFile + ' → 测试可能加载失败');
+      continue;
+    }
+    const content = fs.readFileSync(srcFile, 'utf8')
+      .replace(/<\/script/gi, '<\\/script')
+      .replace(/<!--/g, '<\\!--');
+    inlined.push(`<script>\n${content}\n</script>\n`);
+  }
+  const closeIdx = replaced.lastIndexOf('</body>');
+  if (closeIdx >= 0) {
+    replaced = replaced.slice(0, closeIdx) + inlined.join('') + replaced.slice(closeIdx);
+  } else {
+    replaced += inlined.join('');
+  }
+  return replaced;
+}
+
+/**
+ * V10.12 A2-1 兼容(共享版): CSS 抽取到 css/app.css 后, 旧测试在 demo.html 内
+ * 搜不到样式规则。本函数把 <link rel="stylesheet" href="css/app.css"> 替换为
+ * 内联 <style>, 使基于 html 字符串的 CSS 断言继续有效。
+ * @param {string} html - demo.html 原文
+ * @returns {string} 内联 css/app.css 后的 html(文件不存在则原样返回)
+ */
+function inlineStylesheets(html) {
+  const re = /[ \t]*<link[^>]+href="(css\/[^"]+\.css)"[^>]*>[ \t]*(?:\r?\n|$)/g;
+  return html.replace(re, (m, href) => {
+    const cssFile = path.join(__dirname, '..', href);
+    if (!fs.existsSync(cssFile)) return m;
+    return `<style>\n${fs.readFileSync(cssFile, 'utf8')}\n</style>\n`;
+  });
+}
+
+module.exports = { loadCombinedSource, inlineDeferScripts, inlineStylesheets, extractNamedBlock, createAppSandbox, createFeishuApiSandbox, createMockFetch, createLocalStorage, DEMO_PATH, FEISHU_API_PATH };

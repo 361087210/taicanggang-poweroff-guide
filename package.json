@@ -13,6 +13,15 @@
     "test:v103": "node tests/test_v103_fixes.js",
     "test:v104": "node tests/test_v104_fixes.js",
     "test:v105": "node tests/test_v105_fixes.js",
-    "test:all": "npm run test:logic && npm run test:runtime && npm run test:cross && npm run test:v103 && npm run test:v104 && npm run test:v105"
+    "test:v106": "node tests/test_v106_fixes.js",
+    "test:v107": "node tests/test_v107_fixes.js",
+    "test:v108": "node tests/test_v108_fixes.js",
+    "test:v109": "node tests/test_v109_fixes.js",
+    "test:v1010-solutions": "node tests/test_v1010_solutions_comparison.js",
+    "test:v1010-sync": "node tests/test_v1010_sync_e2e.js",
+    "test:v1010": "npm run test:v1010-solutions && npm run test:v1010-sync",
+    "test:v1011": "node tests/test_v1011_mirror_sync.js",
+    "test:v1013": "node tests/test_v1013_a3.js",
+    "test:all": "npm run test:logic && npm run test:runtime && npm run test:cross && npm run test:v103 && npm run test:v104 && npm run test:v105 && npm run test:v106 && npm run test:v107 && npm run test:v108 && npm run test:v109 && npm run test:v1010 && npm run test:v1011 && npm run test:v1013"
   }
 }

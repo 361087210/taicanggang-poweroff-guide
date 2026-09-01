@@ -2,6 +2,34 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.13.0] - 2026-09-01
+
+### 复杂度治理版(方案A Phase A3)
+
+- **四刀切(A3-1)**: `pullPendingFromFeishu` 165行单函数 → `fetchPendingFromCloud`(①网络IO) / `applyApprovalRules`(②审批规则) / `writePendingsToStorage`(③持久化) / `refreshMemberUI`(④渲染+通知) 四个单一职责函数，主流程为编排薄壳；失败自愈路径(缓存失效重试)同步收敛到同一编排，消除主/自愈双份内联逻辑
+- **渲染/业务分离(A3-2)**: `renderVehicleList` 拆出 `filterVehicles`(纯数据过滤,无DOM/state依赖,可独立单测) 与 `renderVehicleCards`(纯DOM拼装,输入已过滤list,输出html字符串)；平铺/树形两种视图的过滤与渲染职责彻底解耦
+- **状态守卫(A3-3)**: 新增 `State` 门面 API — `vehicles/users` 只读副本(外部改动不污染内部数组)、`addVehicle/updateVehicle/removeVehicle/pushVehicle/replaceVehicles/addUser/removeUser` 受控写入口(含必填兜底/拼音/持久化收敛)；`promoteToLeader()` 直接抛错，杜绝前端提权(用户角色只能由组长审批或云端同步产生)；`saveVehicle/confirmDeleteVehicle/02-auth注册/07-cache成员增删` 等写入点全部收敛到 State
+- **XSS绊线(A3-4)**: 开发模式(非Cordova)安装 `innerHTML` 注入绊线 — 拦截 `<script` 标签注入与 `javascript:` 伪协议两类明确风险片段，默认 `console.warn` 留痕不阻断(兼容117处内联事件合法形态)，`window.__XSS_GUARD_STRICT__=true` 严格模式直接抛错阻断(供测试与安全审计)；生产APK零开销零行为差异
+- **版本对齐(A3-5)**: `version.json`(10.13.0/101300)、`config.xml`(version+android-versionCode)、`APP_VERSION` 三处同步
+- **测试(A3-6)**: 新增 `tests/test_v1013_a3.js` 专项(静态结构/State守卫行为/渲染分离纯函数性/审批规则四刀切/XSS绊线/版本一致性)；`package.json` 新增 `test:v1013`，`test:all` 扩展至 V53~V1013；CI 新增 V10.13 step
+- **测试基建收口(修复A2/A3遗留)**: `e2e_harness.js` 新增共享 `inlineDeferScripts`(js/*.js defer内联回原时序)与 `inlineStylesheets`(css/app.css内联回原文)，修复 V53运行时/V103~V109/V57跨网络 9个旧测试读不到拆分后源码的问题(V53曾整体崩溃"VEHICLES is not defined")；`DEMO_BLOCKS` 补注入 `State`(修复A3后 doSyncDownload 走State API导致 V1010/V1011 E2E 镜像同步全挂)；`demo.html` 同步屏本地版本号静态兜底 v10.11.0→v10.13.0；V106 A11/A18/A23、V103 A17、V109 A2 断言更新为A3等价形态；V108 A16 与 V1010 E1 版本断言从硬编码改为三端动态一致(发版免改测试)。全量回归 V53/V57logic/V57cross/V103~V109/V1010/V1011/V1013 全绿(0失败)
+
+## [10.12.0] - 2026-09-01
+
+### 渐进式重构版(方案A)
+
+- **单向收敛(核心 A1-1)**: 飞书上传双轨 → 单例化统一。旧版 `demo.html` (含220ms QPS门控+1061021事务过期二次prepare重传+Cordova http.ponyfills双栈+1061109文件名清洗) 与 `feishu-api.js`(仅fetch且无可靠性特性) 长期功能漂移，本次把 demo 完整实现下沉到 `FeishuAPI.driveUploadFile/driveUploadFileMultipart`，新增 `FeishuAPI.httpUploadFile(params)/httpUploadFileMultipart(params)` 与 demo 同签名兼容入口，demo 内 189 行大实现改为 2 行薄壳委托，从架构上杜绝后续双真源回归
+- **导航栈封装(q4 §七-4)**: `navHistory` 11 处散点直操作 → `navPush/navPop/navReset/navRemove/navTop` 五个封装函数，集中内置登录族不入栈、连续重复去重(防御性)、栈深度上限 20、特定页面残留移除，彻底根治 goBack 多层连跳/返回编辑页错乱
+- **XSS 用户字段全转义(q3 §七-3)**: `renderVehicleCard`/`renderVehicleList`(含 recent-section+分级列表 brandMap/seriesMap)/`_renderVehicleDetail`(车辆详情所有模板)/`openEditVehicle`(编辑页表单 value/textarea) 等用户可见关键 innerHTML 路径，全部对 `v.display/v.powerType/v.position/v.size/v.brand/v.series/v.config/s.name/s.en/s.note/s.step/s.keyFrame/s.keyContainer/u.name 等` 包裹 `esc()` 5 字符转义
+- **降低嵌套深度(q2 §七-2)**: `fetchFeishuPhotoDataURL` 原 5 层 if 箭形嵌套 + Cordova/Promise 回调共 8 层，抽出 `_feishuDownloadBlob(token,fileToken,mimeType)`(12行 Cordova/fetch 双栈下载) 与 `_feishuLocatePhotoFile(token,dataFolder,fileName)`(dataFiles→imgFolder→target 三级卫语句)，重写为 2 层卫语句 + try/catch 单 if，最大嵌套 ≤ 4 层
+- **测试 & CI 补齐(q1 §七-1)**: `package.json` 新增 `test:v106`~`test:v1011` 脚本(含 v1010 solutions+sync 双组合)，`test:all` 扩展为 V53~V1011 全量；`.github/workflows/ci.yml` 在 V105 step 后追加 V106~V1011 六个 step
+- **不变量保证(方案A核心原则)**: 全局 241 个函数名保留、117 处 onclick 零改动、`showScreen/goBack/doLogin/hashPassword/esc/saveUsers/...` 全部签名兼容，可回滚
+- **A1-2 ✓ Secret 构建时注入(防反编译还原硬编码)**：从 demo.html 移除唯一真密文 `_FS_XOR_KEY + _fsDec(hex_cipher)` + `DEFAULT_FEISHU_CONFIG.appSecret` 声明；重写 `getFeishuCfg()` 优先级 `window.__BUILD_SECRETS__`(读后立即 delete，用完即焚) → localStorage 用户保存值 → 回退公开 DEFAULT(仅 appId/folder，version.json 已公开这对非机密)。新增 `scripts/inject_build_secrets.js`(模式 `--check`/写入 `</head>` 前幂等重入/`--strip` 清理) + Cordova 钩子 `hooks/before_build/01_inject_secrets.js`(失败直接 abort 构建)。CI：`ci.yml` 新增 "Secret注入基线校验" step(Fork PR 无 Secret → `FEISHU_STRICT=0` 降级不阻断)；`android-release.yml` Verify assets 后新增 "Inject Feishu build secrets" step(严格模式缺 env 直接失败，防发空 Secret 版本)。校验端：`validate_web_assets.js` 升级为新 3 态合规(注入脚本存在+getFeishuCfg引用&delete__BUILD_SECRETS__+DEFAULT字面量无appSecret声明行 → 通过)；`test_v57_logic.js` 旧"解码32位"断言升级为四条正向安全基线(1.4无硬编码/1.4b_fsDec不存在/1.4c getFeishuCfg双语句存在/1.4d 若提供env则注入归并优先级验证)；`e2e_harness.js` DEMO_BLOCKS 移除已不存在的 `_FS_XOR_KEY/_fsDec`
+- **A2-1 ✓ CSS 抽取解耦**：demo.html L34-L245 内联 211 行 CSS 完整提取至 `css/app.css`；demo.html 内联替换为 `<link rel="stylesheet" href="css/app.css">`；`android-release.yml` Prepare build environment step 新增 `cp -r css tcg_app/www/css`(保证 APK 内含 css 目录生效)
+- **A2-2/A2-3 ✓ 主 Script 九模块连续拆分 + demo.html 骨架化**：主 script 6570 行(L603-L7172)按依赖拓扑切为 9 个 defer 模块(边界零 gap/零 overlap，全量代码覆盖)— 00-bootstrap.js(拼音+品牌车辆数据+用户密码工具+飞书Cfg/HTTP/上传三兄弟/缓存索引+APP_VERSION/esc, 1200行) → 01-state.js(state对象/navHistory五层封装/路由常量+_activateScreen/showScreen/goBack, 144行) → 02-auth.js(注册审批登录找回, 177行) → 03-vehicles.js(品牌渲染/搜索筛选/车辆列表详情编辑保存/分享, 806行) → 04-export.js(Excel+zip压缩/Word OOXML/PDF canvas+legacy/批量折叠导出, 1201行) → 05-sync.js(审批轮询/成员守护/备份/JSON上传下载/doSyncUpload+Download/导入导出配置/同步日志, 1522行) → 06-media.js(图片查看/视频播放器/飞书云端图片视频/户外模式/模态框与硬件反馈, 724行) → 07-cache.js(缓存管理器/组员增删改/密码变更/校验工具/showToast/通知/版本更新与APK下载, 633行) → 08-main.js(Android backbutton/migrateLegacyMedia/deviceready入口/顶层side-effects, 163行)。demo.html 移除 <script> 6570 行内联大代码，紧接现有 `<script src="feishu-api.js">`（同步加载，保证 FeishuAPI 先于 defer 就绪）后顺序写入 9 行 `<script defer src="js/0x-xxx.js"></script>`。不变量：241 个全局函数名/签名 100% 保留、117 处 onclick 裸调用零改动、所有声明为顶层 function(自然挂 window，不包 IIFE 闭包)
+- **A2-4 ✓ 测试基建 A2 兼容**：`tests/e2e_harness.js` 新增 `loadCombinedSource()`(demo.html 源码 + js/*.js 排序后拼接 → 统一注入 extractNamedBlock 沙箱)；`tests/test_v57_logic.js` 新增 `inlineDeferScripts()`(检测到 <script defer src=js/> → 内联回 <script> 并移至 `</body>` 前还原原始执行时序；内联内容做 HTML-tokenizer 净化：字面 `</script`/`<!--` 替换为 JS 语义等价的 `<\/script`/`<\!--`，防注释说明文字截断脚本块)；维度4 旧断言升级为 V10.12 基线(4.1 默认配置非Secret字段全备+无硬编码Secret；4.2a 默认未注入→feishuCfgReady=false 安全拦截；4.2b 模拟构建注入→立即就绪；4.2c 注入Secret用完即焚)；`scripts/validate_web_assets.js` 新增 `loadDemoPlusJs()` → 关键能力标记/Secret合规形态 3 态判断 统一扫 demo+js；`tests/test_v1010_sync_e2e.js` E1 版本断言升级为扫描 demo.html + js/* 组合字符串(APP_VERSION 常量现落在 00-bootstrap.js)
+- **A2-5 ✓ 本地无 npm 环境引导工具**：开发机仅有裸 node.exe(无 npm/corepack/python)，新增 `scripts/bootstrap_npm.js`(Node 内置 https+zlib+最小 ustar/pax/GNU长名 tar 解包器，从 npmmirror/npmjs 下载官方 npm tarball 自解包到 `scripts/.npm-vendor/`)，使本地可运行 `node scripts\.npm-vendor\npm\bin\npm-cli.js install jsdom`；jsdom 已装至根 node_modules(V57 34/34 全绿验证)；`.npm-vendor/.npm-scratch/node_modules` 均不入库(gitignore)且凭证扫描排除
+
 ## [10.11.0] - 2026-08-31
 
 ### 镜像同步版(删除传播修复)

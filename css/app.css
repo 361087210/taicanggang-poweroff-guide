@@ -1,0 +1,210 @@
+*{font-family:'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
+body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
+:root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);}
+
+/* Full-screen adaptive container */
+.phone-frame{width:100vw;height:100vh;height:100dvh;background:#f5f6fa;position:relative;overflow:hidden;}
+.phone-screen{width:100%;height:100%;background:#f5f6fa;overflow:hidden;position:relative;}
+
+/* Screens */
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:#f5f6fa;overflow:hidden;}
+.screen.active{display:flex;}
+.screen-slide{animation:slideIn .3s ease-out;}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+@keyframes slideUp{from{opacity:0;transform:translateY(15px);}to{opacity:1;transform:translateY(0);}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:scale(1);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.anim-up{animation:slideUp .3s ease-out both;}
+.anim-scale{animation:scaleIn .25s ease-out both;}
+.spin{animation:spin 1s linear infinite;}
+.pulse{animation:pulse 2s ease-in-out infinite;}
+
+/* Scrollbar hide */
+/* V10.9.0 问题2: 增加overflow-x:hidden——旧版仅overflow-y:auto,
+ * 部分Android WebView(含红米K70 Pro Android 16)将overflow-x:visible
+ * 解析为auto,允许横向滑动露出留白(同步中心从右往左滑有大片空白) */
+.scroll-y{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.scroll-y::-webkit-scrollbar{display:none;}
+/* V10.4.0 问题4: 修复"数据同步显示不完全,无法下滑到最底端"
+ * 根因: .screen是flex列容器,滚动区是flex-1子项(flex:1 1 0%)。CSS规范规定
+ * 滚动容器子项的min-height:auto解析为0,但港口现场的老旧WebView(Android 5/6
+ * 内核)未实现该规则——flex-1子项被内容撑开超出屏幕,.screen的overflow:hidden
+ * 直接裁掉超出部分,滚动条根本不出现,表现为"滑不到底"。
+ * 显式min-height:0强制子项收缩到可用空间内,滚动区恢复。 */
+.screen>.scroll-y{min-height:0;}
+
+/* Bottom nav */
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;height:64px;background:#fff;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-around;z-index:50;}
+.nav-tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:#9ca3af;cursor:pointer;padding:4px 16px;transition:color .2s;}
+.nav-tab.active{color:#2563eb;font-weight:600;}
+.nav-tab svg{width:24px;height:24px;}
+
+/* FAB */
+.fab{position:absolute;bottom:80px;right:20px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,99,235,.45);cursor:pointer;z-index:40;transition:transform .15s;}
+.fab:active{transform:scale(.9);}
+
+/* Status badge */
+.status-pending{background:#fef3c7;color:#d97706;}
+.status-done{background:#dcfce7;color:#16a34a;}
+
+/* Power type badge */
+.pt-纯电{background:#dcfce7;color:#16a34a;}
+.pt-插混{background:#fef3c7;color:#d97706;}
+.pt-油混{background:#e0e7ff;color:#4f46e5;}
+.pt-燃油{background:#f3f4f6;color:#6b7280;}
+.pt-氢燃料{background:#fce7f3;color:#be185d;}
+.pt-混动{background:#fef3c7;color:#d97706;}
+
+/* Modal */
+.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+/* V10.3 问题2: 确认框必须压在所有业务弹层(如缓存管理)之上——旧版两者同为z-index:300,
+   modal-confirm在DOM中先于modal-cache声明,同层级时后声明者覆盖前者,导致"删除选中/
+   全部清空"的确认框被缓存管理弹层整体遮挡,用户永远点不到确认按钮,删除永远不执行 */
+#modal-confirm{z-index:320;}
+/* V10.3 问题4: 弹层内容纵向滚动兜底(flex子项min-height:auto导致overflow失效的老WebView兼容) */
+.flex-1.scroll-y{min-height:0;}
+.modal-overlay.show{display:flex;animation:fadeIn .2s;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal-sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;max-height:80vh;overflow-y:auto;animation:slideUp .3s ease-out;}
+.modal-center{background:#fff;width:90%;max-width:360px;border-radius:16px;overflow:hidden;animation:scaleIn .25s ease-out;}
+
+/* Toast */
+.toast{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:400;opacity:0;pointer-events:none;transition:opacity .15s;white-space:nowrap;max-width:90%;}
+.toast.show{opacity:1;}
+
+/* Bottom sheet item */
+.bs-item{padding:14px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s;}
+.bs-item:active{background:#f9fafb;}
+.bs-item.selected{color:#2563eb;font-weight:600;}
+.bs-item.selected::after{content:'';width:20px;height:20px;background:#2563eb;border-radius:50%;display:flex;}
+
+/* V10.1 问题3修复: 组员管理红点通知——有待审核注册时入口显示红色数字角标 */
+.red-dot{position:absolute;top:8px;right:16px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#ef4444;color:#fff;font-size:11px;font-weight:600;line-height:18px;text-align:center;display:none;box-shadow:0 0 0 2px #fff;z-index:5;}
+/* V10.3 问题5.2: 云端新数据红点(数据同步入口提示,组员端主要感知通道) */
+.new-data-dot{position:relative;display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:6px;vertical-align:middle;box-shadow:0 0 0 2px #fff;animation:pulse 1.6s ease-in-out infinite;}
+.new-data-dot.hidden{display:none;}
+.red-dot.show{display:inline-block;animation:badgePop .3s ease-out;}
+@keyframes badgePop{from{transform:scale(0);}to{transform:scale(1);}}
+
+/* V10.1 问题2修复: 批量导出折叠面板展开箭头 */
+.chevron-rotate{transition:transform .2s ease-out;}
+
+/* Photo viewer */
+.photo-viewer{position:absolute;inset:0;background:#000;z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;}
+.photo-viewer.show{display:flex;}
+.photo-viewer img{max-width:100%;max-height:100%;transition:transform .2s;transform-origin:center;}
+
+/* Video player */
+.video-player{position:absolute;inset:0;background:#000;z-index:500;display:none;flex-direction:column;}
+.video-player.show{display:flex;}
+.video-player video{flex:1;width:100%;object-fit:contain;}
+/* V5.8.2: 视频加载状态指示器——播放前验证(方案步骤二) */
+.video-loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:14px;text-align:center;z-index:501;display:none;}
+.video-loading.show{display:block;}
+.video-loading .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.video-error-msg{color:#ef4444;font-size:13px;text-align:center;padding:12px;background:rgba(0,0,0,.7);border-radius:8px;display:none;}
+.video-error-msg.show{display:block;}
+/* V5.8.2: 返回按钮可达性增强(ARIA) */
+.back-btn{min-width:44px;min-height:44px;display:flex;align-items:center;gap:4px;}
+.back-btn[aria-label]{cursor:pointer;}
+
+/* Outdoor mode (high contrast) */
+.outdoor{--bg:#000;--card:#1a1a1a;--text:#fff;--text2:#ccc;--border:#333;--primary:#FFD700;--blue:#FFD700;}
+.outdoor .bg-white{background:#1a1a1a !important;}
+.outdoor .bg-gray-50,.outdoor .bg-gray-100,.outdoor .bg-gray-200{background:#2a2a2a !important;}
+.outdoor .text-gray-900,.outdoor .text-gray-800,.outdoor .text-gray-700{color:#fff !important;}
+.outdoor .text-gray-600,.outdoor .text-gray-500,.outdoor .text-gray-400{color:#ccc !important;}
+.outdoor .text-blue-600,.outdoor .text-blue-500,.outdoor .text-blue-700{color:#FFD700 !important;}
+.outdoor .border-gray-100,.outdoor .border-gray-200,.outdoor .border-gray-300{border-color:#444 !important;}
+.outdoor .bg-blue-600,.outdoor .bg-blue-500,.outdoor .bg-blue-700{background:#FFD700 !important;color:#000 !important;}
+.outdoor .bg-blue-50,.outdoor .bg-blue-100{background:#333 !important;}
+.outdoor .from-blue-600{background:linear-gradient(135deg,#FFD700,#FFA500) !important;}
+.outdoor #screen-vehicles,.outdoor #screen-data,.outdoor #screen-my,.outdoor #screen-detail,.outdoor #screen-edit,.outdoor #screen-sync,.outdoor #screen-members,.outdoor #screen-password{background:#000 !important;}
+.outdoor .bottom-nav{background:#1a1a1a !important;border-color:#333 !important;}
+.outdoor .nav-tab{color:#666;}
+.outdoor .nav-tab.active{color:#FFD700;}
+.outdoor .shadow-sm{box-shadow:none !important;border:1px solid #444 !important;}
+.outdoor .shadow{box-shadow:none !important;}
+.outdoor .pt-纯电,.outdoor .pt-插混,.outdoor .pt-油混,.outdoor .pt-燃油,.outdoor .pt-氢燃料{background:#333 !important;color:#FFD700 !important;}
+.outdoor .status-pending{background:#4a3000 !important;color:#FFD700 !important;}
+.outdoor .status-done{background:#1a3a00 !important;color:#90EE90 !important;}
+.outdoor input,.outdoor textarea,.outdoor select{background:#2a2a2a !important;color:#fff !important;border-color:#555 !important;}
+.outdoor input::placeholder,.outdoor textarea::placeholder{color:#888 !important;}
+.outdoor .fab{background:linear-gradient(135deg,#FFD700,#FFA500) !important;color:#000 !important;}
+
+/* Toggle switch */
+.toggle{width:44px;height:24px;border-radius:12px;background:#d1d5db;padding:2px;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.toggle.on{background:#2563eb;}
+.toggle .knob{width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;}
+.toggle.on .knob{transform:translateX(20px);}
+
+/* Step number circle */
+.step-circle{width:26px;height:26px;border-radius:50%;border:2px solid #2563eb;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;color:#2563eb;background:#eff6ff;}
+.step-circle.done{background:#2563eb;color:#fff;border-color:#2563eb;}
+
+/* Key handling text area - spacious */
+.key-textarea{min-height:80px;line-height:1.8;padding:12px 14px;border-radius:10px;border:1px solid #e5e7eb;font-size:14px;resize:vertical;width:100%;background:#fafafa;transition:border-color .2s;}
+.key-textarea:focus{border-color:#2563eb;background:#fff;outline:none;}
+
+/* Checkbox */
+.chk{width:20px;height:20px;border-radius:5px;border:2px solid #d1d5db;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;}
+.chk.on{background:#2563eb;border-color:#2563eb;}
+.chk.on::after{content:'';width:6px;height:10px;border:2px solid #fff;border-top:0;border-left:0;transform:rotate(45deg) translate(-1px,-1px);}
+
+/* Safe area padding for status bar */
+/* V10.9.0 问题2: 修复Android WebView safe-area-inset-top恒为0时顶部标题被状态栏遮挡——
+ *   旧版覆写把pt-12(48px)降到safe-top+12px,Android上--safe-top=0即仅12px,不够;
+ *   修正为safe-top+48px,无安全区时48px(与原Tailwind pt-12一致),有安全区时叠加 */
+.phone-frame .pt-12{padding-top:calc(var(--safe-top) + 48px);}
+/* V10.9.0 问题2: 修复底部按钮被导航栏遮挡——旧版覆写pb-24(96px)降到safe-bottom+24px,
+ *   Android上--safe-bottom=0即仅24px<底部导航64px,按钮被nav遮挡;修正为safe-bottom+96px */
+.phone-frame .pb-24{padding-bottom:calc(var(--safe-bottom) + 96px);}
+
+/* ===================== V10.7.0 问题4: 全界面自适应近10年主流手机屏 =====================
+ * 目标设备带(2016-2026主流机型): 320×568(iPhone SE/小屏Android) ~ 480×960(折叠屏外屏/平板手机)
+ * 覆盖维度: ①安全区(刘海/挖孔/手势条) ②小屏(≤360px)防挤压 ③大屏(≥412px)防稀疏
+ *           ④矮屏(高≤620px)防溢出 ⑤超长屏(高≥850px)留白节奏 ⑥老旧WebView文本自缩放纠正
+ * 实现策略: 基线布局(100vw/dvh+safe-area变量) + 断点微调(间距/字号/网格),不动DOM结构零回归风险 */
+*{-webkit-text-size-adjust:100%;text-size-adjust:100%;} /* 老WebView禁用字体自动膨胀,布局不被撑破 */
+img,svg,video{max-width:100%;}
+.break-all{word-break:break-all;} /* 长车牌/长步骤文本在小屏不横向溢出 */
+
+/* ① 底部导航/FAB/Toast 抬升出手势条安全区(原固定px在全面屏上被系统手势条遮挡) */
+.bottom-nav{height:calc(64px + var(--safe-bottom));padding-bottom:var(--safe-bottom);}
+.fab{bottom:calc(80px + var(--safe-bottom));}
+.toast{bottom:calc(90px + var(--safe-bottom));white-space:normal;} /* 长提示自动换行,小屏不被截断 */
+
+/* ② 小屏(≤360px): 2016-2019入门机/SE——压缩间距与字号,关键操作区仍≥44px触控标准 */
+@media (max-width:360px){
+  .nav-tab{font-size:9px;padding:4px 10px;}
+  .nav-tab svg{width:22px;height:22px;}
+  .bs-item{padding:12px 14px;}
+  .phone-frame .text-lg{font-size:17px;}
+  .modal-sheet{max-height:86vh;} /* 小屏弹层给更多可视高度 */
+  .fab{width:48px;height:48px;right:14px;}
+}
+
+/* ③ 大屏(≥412px): 近年主流大屏机——内容卡片区限宽居中,避免文字行宽过长难读 */
+@media (min-width:412px){
+  .modal-center{max-width:400px;}
+  .modal-sheet{max-height:78vh;}
+}
+
+/* ④ 矮屏(高≤620px): 横屏/小尺寸机——压缩顶栏与最近查看区,保证列表可视高度 */
+@media (max-height:620px){
+  .phone-frame .pt-12{padding-top:calc(var(--safe-top) + 6px);}
+  #recent-section{display:none;} /* 矮屏隐藏"最近查看",列表区让位核心功能 */
+}
+
+/* ⑤ 超长屏(高≥850px): 21:9长比例机——底部导航上浮呼吸感,防误触手势条 */
+@media (min-height:850px){
+  .bottom-nav{height:calc(68px + var(--safe-bottom));}
+}
+
+/* ⑥ 横屏: 刘海/挖孔随旋转到侧边,内容左右同步内收安全区(竖屏变量在横屏恒为0,无副作用) */
+@media (orientation:landscape){
+  .phone-frame{padding-left:var(--safe-left);padding-right:var(--safe-right);}
+  .phone-frame .pt-12{padding-top:calc(var(--safe-top) + 6px);} /* 横屏顶栏更贴边,多给列表高度 */
+}

@@ -10,7 +10,47 @@ try { JSDOM = require('jsdom').JSDOM; }
 catch(e) { console.error('请先安装: npm i jsdom'); process.exit(2); }
 
 const REPO = '.';
-const html = fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8');
+let html = fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8');
+
+/** V10.12 A2 拆分后 demo.html 骨架化: 9 个<script defer src="js/*.js">引用。
+ *  JSDOM 的 runScripts:'dangerously' 默认不会从本地文件系统拉取子资源(相对路径),
+ *  导致 defer 脚本不执行 → goBack/APP_VERSION等全为undefined。
+ *  这里做一次性"测试兼容内联":
+ *  ① 按文件名排序读 js/*.js, 把 defer 标签替换成等价 <script>…(内容)</script>;
+ *  ② 内联内容做 HTML-tokenizer 净化: 字面 </script>(如00-bootstrap注释里的注入
+ *     说明)会提前闭合块、<!-- (03-vehicles模板串)会触发script-data-escaped状态机,
+ *     均替换为 JS 语义等价转义 <\/script / <\!-- (运行时字符串值不变);
+ *  ③ 内联块统一定位到 </body> 之前——原单文件版主 script 就在 body 末尾
+ *     (启动INIT副作用依赖已解析的DOM),defer 的真实语义也等价 body-end,
+ *     避免 head 内联时 getElementById 拿到 null。
+ *  单文件旧版 html 也兼容(未找到 defer tag → 跳过)。 */
+(function inlineDeferScripts() {
+  const re = /[ \t]*<script[^>]+defer[^>]+src="(js\/[^"]+\.js)"[^>]*><\/script>[ \t]*(?:\r?\n|$)/g;
+  const matches = [...html.matchAll(re)];
+  if (matches.length === 0) return;
+  const inlined = [];
+  let replaced = html;
+  for (const m of matches) {
+    replaced = replaced.replace(m[0], ''); // 从原位移除
+    const srcFile = path.join(REPO, m[1]);
+    if (!fs.existsSync(srcFile)) {
+      console.error('[warn] V57 inline: 缺少 ' + srcFile + ' → jsdom可能加载失败');
+      continue;
+    }
+    const content = fs.readFileSync(srcFile, 'utf8')
+      .replace(/<\/script/gi, '<\\/script')
+      .replace(/<!--/g, '<\\!--');
+    inlined.push(`<script>\n${content}\n</script>\n`);
+  }
+  const closeIdx = replaced.lastIndexOf('</body>');
+  if (closeIdx >= 0) {
+    replaced = replaced.slice(0, closeIdx) + inlined.join('') + replaced.slice(closeIdx);
+  } else {
+    replaced += inlined.join('');
+  }
+  html = replaced;
+  console.log(`[V57] A2 拆分兼容: 内联 ${inlined.length} 个 js/*.js → 移至</body>前(JSDOM 可直接执行)。`);
+})();
 
 const PASSED = [], FAILED = [];
 function check(name, cond, detail='') {
@@ -62,13 +102,25 @@ setTimeout(async () => {
   console.log('='.repeat(62));
   check('1.1 demo.html 无JS语法错误(内联脚本已执行)', typeof G('goBack') === 'function');
   check('1.2 APP_VERSION 为语义化三段版本', /^\d+\.\d+\.\d+$/.test(String(G('APP_VERSION'))), String(G('APP_VERSION')));
-  check('1.3 DEFAULT_FEISHU_CONFIG 内置凭证', G('DEFAULT_FEISHU_CONFIG.appId') === 'cli_aa0ce4fd91f85be8');
-  // V5.7.1 安全规范: 不在代码中比对明文Secret, 改为格式校验(32位) + 可选环境变量比对
-  const _decSecret = G('DEFAULT_FEISHU_CONFIG.appSecret');
-  check('1.4 内置Secret解码正确(32位格式)', typeof _decSecret === 'string' && /^[A-Za-z0-9]{32}$/.test(_decSecret),
-        _decSecret ? `长度${String(_decSecret).length}` : '解码失败');
+  check('1.3 DEFAULT_FEISHU_CONFIG 内置公开字段', G('DEFAULT_FEISHU_CONFIG.appId') === 'cli_aa0ce4fd91f85be8');
+  // V10.12 安全基线升级: 源码不再硬编码appSecret(XOR key+hex解密函数一同移除,
+  // 改为构建期注入window.__BUILD_SECRETS__, 首次getFeishuCfg读取后立即delete)。
+  // 安全断言改为: DEFAULT_FEISHU_CONFIG.appSecret 未声明或为空; _fsDec/_FS_XOR_KEY 全局不存在
+  const builtInSecret = G('DEFAULT_FEISHU_CONFIG.appSecret');
+  check('1.4 DEFAULT_FEISHU_CONFIG.appSecret 源码无硬编码(防反编译还原)',
+        builtInSecret === void 0 || builtInSecret === null || String(builtInSecret) === '',
+        builtInSecret ? ('仍保留硬编码,长度=' + String(builtInSecret).length) : '已移除硬编码 ✓');
+  check('1.4b 旧版_fsDec/_FS_XOR_KEY 已移除(杜绝同源文件内密文+算法还原)',
+        typeof G('_fsDec') !== 'function' && typeof G('_FS_XOR_KEY') !== 'string');
+  check('1.4c 新注入路径存在: getFeishuCfg读window.__BUILD_SECRETS__并delete',
+        typeof G('getFeishuCfg') === 'function' &&
+        /window\.__BUILD_SECRETS__/.test(String(G('getFeishuCfg'))) &&
+        /delete\s+window\.__BUILD_SECRETS__/.test(String(G('getFeishuCfg'))));
   if (process.env.TCG_FEISHU_APP_SECRET) {
-    check('1.4b 内置Secret与环境变量一致', _decSecret === process.env.TCG_FEISHU_APP_SECRET);
+    // 若提供注入环境变量, 模拟构建注入验证归并优先级(手动写入->注入->默认)
+    G("window.__BUILD_SECRETS__={appId:'cli_xx',appSecret:'" + String(process.env.TCG_FEISHU_APP_SECRET).replace(/'/g,"\\'") + "',folderToken:'xx'}");
+    const after = G("(function(){var c=getFeishuCfg(); return c.appSecret;})()");
+    check('1.4d 构建注入Secret优先归并(非localStorage场景)', after === process.env.TCG_FEISHU_APP_SECRET);
   }
   check('1.5 数据分仓四子目录配置', !!G('DEFAULT_FEISHU_CONFIG.syncSub') && !!G('DEFAULT_FEISHU_CONFIG.pendingSub') && !!G('DEFAULT_FEISHU_CONFIG.approvedSub') && !!G('DEFAULT_FEISHU_CONFIG.backupSub'));
 
@@ -161,8 +213,18 @@ setTimeout(async () => {
     console.log('='.repeat(62));
     console.log('维度4: 飞书配置与数据分仓 (issue 4)');
     console.log('='.repeat(62));
-    check('4.1 getFeishuCfg 默认齐全', !!G('(()=>{const c=getFeishuCfg();return c.appId&&c.appSecret&&c.folder&&c.dataFolder})()'));
-    check('4.2 feishuCfgReady 默认通过(开箱即用)', G('feishuCfgReady(getFeishuCfg())') === true);
+    // V10.12 安全基线: 默认配置不再含appSecret(与1.4呼应)。"开箱即用"语义迁移为:
+    //   默认未配置 → feishuCfgReady=false(安全拦截,提示用户配置) —— 这是正确行为;
+    //   构建注入(window.__BUILD_SECRETS__) → 立即就绪 —— 真机APK的实际出厂形态。
+    check('4.1 getFeishuCfg 默认齐全(非Secret字段全备+无硬编码Secret)',
+      G('(()=>{const c=getFeishuCfg();return c.appId&&c.folder&&c.dataFolder&&c.syncSub&&c.pendingSub&&c.approvedSub&&c.backupSub&&c.interval&&!c.appSecret})()'));
+    check('4.2a 默认未注入时 feishuCfgReady=false(安全拦截,非静默失败)',
+      G('feishuCfgReady(getFeishuCfg())') === false);
+    G("window.__BUILD_SECRETS__={appId:'cli_test',appSecret:'test_secret_for_jsdom_injection_32',folderToken:'fldcnTestToken'}");
+    check('4.2b 构建注入后 feishuCfgReady=true(真机APK出厂形态)',
+      G('feishuCfgReady(getFeishuCfg())') === true);
+    check('4.2c 注入Secret用完即焚(读取后__BUILD_SECRETS__已delete)',
+      G('window.__BUILD_SECRETS__') === undefined);
     // 4.3 缓存失效
     G("localStorage.setItem('tcg_sub_同步数据','stale')"); G("localStorage.setItem('tcg_data_folder','stale')");
     G('invalidateDataFolderCache()');

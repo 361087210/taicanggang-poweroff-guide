@@ -23,7 +23,8 @@ try { JSDOM = require('jsdom').JSDOM; }
 catch(e) { console.error('请先安装: npm i jsdom'); process.exit(2); }
 
 const REPO = '.';
-const html = fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8');
+const _h = require('./e2e_harness'); // A2拆分兼容: js/*.js defer 内联回原时序 + css/app.css 内联回原文
+const html = _h.inlineStylesheets(_h.inlineDeferScripts(fs.readFileSync(path.join(REPO, 'demo.html'), 'utf8')));
 const configXml = fs.readFileSync(path.join(REPO, 'config.xml'), 'utf8');
 const versionJson = JSON.parse(fs.readFileSync(path.join(REPO, 'version.json'), 'utf8'));
 
@@ -115,16 +116,18 @@ check('A15 菜单权限裁剪保留',
   html.includes("side-menu-members") && html.includes("canEdit()?'flex':'none'"),
   '组员端菜单隐藏组员管理入口继承自V10.7.0');
 
-// A16: 版本号10.8.0一致性
+// A16: 版本号三端一致性(动态校验——发版免改测试; versionCode=major*10000+minor*100+patch)
 const cfgVer = (configXml.match(/version="([^"]+)"/) || [])[1];
 const cfgCode = (configXml.match(/android-versionCode="(\d+)"/) || [])[1];
-check('A16 版本号10.8.0一致性',
-  html.includes("APP_VERSION='10.8.0'") &&
-  html.includes('V10.8.0') &&
-  cfgVer === '10.8.0' &&
-  cfgCode === '100800' &&
-  versionJson.version === '10.8.0',
-  `config.xml=${cfgVer}/${cfgCode}, version.json=${versionJson.version}`);
+const appVerM = html.match(/APP_VERSION='([^']+)'/);
+const expectCode = (() => { const p = (versionJson.version || '').split('.').map(Number); return p.length === 3 && p.every(Number.isFinite) ? String(p[0] * 10000 + p[1] * 100 + p[2]) : ''; })();
+check('A16 版本号三端一致(demo APP_VERSION/config.xml/version.json)',
+  !!appVerM && appVerM[1] === versionJson.version &&
+  cfgVer === versionJson.version &&
+  cfgCode === expectCode &&
+  String(versionJson.versionCode) === expectCode &&
+  (versionJson.releaseNotes || []).join('\n').includes('V' + versionJson.version),
+  `demo=${appVerM ? appVerM[1] : '?'} config.xml=${cfgVer}/${cfgCode}, version.json=${versionJson.version}/${versionJson.versionCode}`);
 
 // ===================== B. 运行时行为验证 =====================
 console.log('\n--- B. 运行时行为验证 ---');
