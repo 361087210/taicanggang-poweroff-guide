@@ -80,12 +80,17 @@ class FeishuClient {
   async headers() { return { Authorization: 'Bearer ' + (await this.getToken()) }; }
 
   async listFiles(folderToken) {
-    const r = await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${folderToken}&page_size=200`, {
-      headers: await this.headers()
-    });
-    const d = await r.json();
-    if (d.code !== 0) throw new Error('listFiles 失败: ' + d.msg);
-    return d.data.files || [];
+    let files = [];
+    let pageToken = null;
+    do {
+      const url = `https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${folderToken}&page_size=200` + (pageToken ? `&page_token=${pageToken}` : '');
+      const r = await fetch(url, { headers: await this.headers() });
+      const d = await r.json();
+      if (d.code !== 0) throw new Error('listFiles 失败: ' + d.msg);
+      files = files.concat(d.data.files || []);
+      pageToken = (d.data.has_more && d.data.page_token) ? d.data.page_token : null;
+    } while (pageToken);
+    return files;
   }
 
   async ensureSubFolder(name, parentToken) {
