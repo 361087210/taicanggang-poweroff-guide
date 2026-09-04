@@ -23,12 +23,16 @@ const OUT_JSON = path.join(ROOT, 'docs', 'vehicle_media_mapping.json');
 const OUT_CSV = path.join(ROOT, 'docs', 'vehicle_media_mapping.csv');
 const CHECK_MODE = process.argv.includes('--check');
 
-/** 从 vehicles_data.js 安全提取 VEHICLES 数组(不用 eval, 受限表达式求值) */
+/** 从 vehicles_data.js 安全提取 VEHICLES 数组(不用 eval, 受限表达式求值)
+ * V10.14.0 基建修复: vehicles_data.js 经 sync_feishu_local.js 云端同步重写后,
+ * 声明格式从 `const VEHICLES=` 变为 `window.VEHICLES = [`(写回保持该格式),
+ * 旧版单点 indexOf('const VEHICLES=') 直接抛错导致 CI「映射表一致性校验」
+ * 连续失败(main + 发版分支双线受阻)。此处兼容两种声明,历史/新格式均可解析。 */
 function loadVehicles() {
   const src = fs.readFileSync(path.join(ROOT, 'vehicles_data.js'), 'utf8');
-  const vIdx = src.indexOf('const VEHICLES=');
-  if (vIdx < 0) throw new Error('vehicles_data.js 中未找到 "const VEHICLES=" 声明');
-  const start = src.indexOf('[', vIdx);
+  const declMatch = src.match(/(?:const\s+VEHICLES\s*=|window\.VEHICLES\s*=)/);
+  if (!declMatch) throw new Error('vehicles_data.js 中未找到 "const VEHICLES=" 或 "window.VEHICLES =" 声明');
+  const start = src.indexOf('[', declMatch.index);
   const end = src.lastIndexOf(']');
   if (start < 0 || end <= start) throw new Error('无法定位 VEHICLES 数组边界');
   const arrText = src.slice(start, end + 1);

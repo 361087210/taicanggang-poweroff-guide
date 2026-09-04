@@ -30,6 +30,8 @@ SHA-256: 运行时生成 `release/tcg_poweroff_v10.14.0.apk.sha256`
 | 🤖CI发布 | android-release.yml 追加 SHA-256 step + 上传 Release APK+SHA 双文件 | .github/workflows/android-release.yml | 发布可校验,防CDN脏缓存中间人替换 |
 | ✅测试 | V10.14 真机级 Mock 10 专项 49 断言 | tests/test_v1014_zero_config_member.js | 覆盖 A/B/C 三类修复全路径 |
 | ✅测试 | 基建兼容修复(DEMO_BLOCKS注入顺序/V1013版本断言动态化) | tests/e2e_harness.js / tests/test_v1013_a3.js | 升级到新版本后老测试套件不漂移红 |
+| 🚑CI基建修复 | `gen_media_mapping.js` 兼容 `window.VEHICLES =` 新声明格式(正则双格式) | scripts/gen_media_mapping.js `loadVehicles()` | **解除发版阻断**: main 与发版分支 CI 因解析崩溃连续失败,修复后映射表 73 条校验通过 |
+| 📚4文档成套 | 根因/方案/测试/发布 四文档 + 开发日志 | docs/ROOT_CAUSE_V10140.md · SOLUTIONS_V10140.md · TEST_REPORT_V10140.md · RELEASE_V10140.md · DEVLOG_V10140.md | 发版知识沉淀,对齐 V10.10.0 文档标准 |
 
 ---
 
@@ -168,3 +170,33 @@ const pick = (k, def, fromMemberRole = user.role === 'user') => {
 1. **后端选型升级评估 Supabase/飞书Bitable 替代纯飞书Drive JSON**
 2. **APK 自动热更新(Cordova Code Push / Capacitor Updater)替代整包下载**
 3. **Android/iOS 原生代码加固(防反编译提取飞书appSecret)**
+
+CR 审查非阻断观察项(详见 [TEST_REPORT_V10140.md §4.3](./TEST_REPORT_V10140.md)):
+4. `sameIds` 数组 `includes` O(n²)——数据量>1000 台时换 Set
+5. CI 摘要中 `v1014_report.log` 引用清理
+
+---
+
+## 八、发版流程(签名流水线)
+
+### 8.1 发版前检查(本报告出具时已全部完成)
+1. ✅ 版本四处对齐: `js/00-bootstrap.js` APP_VERSION = `config.xml` = `version.json` = `demo.html` = **10.14.0 / 101400**
+2. ✅ 专项+全量回归: 454 断言 0 失败(见 [TEST_REPORT_V10140.md](./TEST_REPORT_V10140.md))
+3. ✅ 基建修复: `gen_media_mapping.js --check` 通过(73 条一致),CI 阻断解除
+4. ✅ CR 审查: 0 阻断项
+5. ✅ 4文档成套: 根因/方案/测试/发布 + DEVLOG
+
+### 8.2 签名流水线(自动)
+```
+合并 main → 提交(版本对齐+基建修复+文档) → 推送 origin main
+→ 打标签 git tag -a v10.14.0 → 推送标签
+→ GitHub Actions「Android CI Build & Release」自动触发:
+   config.xml 读取版本 → Cordova 构建 → zipalign → V1+V2 签名(KEYSTORE_BASE64 Secrets)
+   → apksigner verify 自校验 → 生成 SHA-256 → Release 挂载 APK + .apk.sha256 双资产
+```
+
+### 8.3 发版后核验
+1. CI 工作流全绿(重点: 「映射表一致性校验」步骤——本次基建修复的最终回归验证)
+2. Release v10.14.0 资产完整: `tcg_poweroff_v10.14.0.apk`(约16MB) + `.apk.sha256`
+3. `version.json.downloadUrl` 指向 v10.14.0 资产(APP 内检查更新链路)
+4. APK 签名校验: `apksigner verify --print-certs` 输出与历史版本一致(同 KEYSTORE)

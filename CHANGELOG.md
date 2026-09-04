@@ -27,6 +27,8 @@
 - 新增 `scripts/build_ios.sh`: TEAM_ID / Automatic / Manual 签名三态；TEAM_ID缺失仅 cordova prepare 停止(工程检查形态)；xcodebuild archive → ExportOptions.plist 生成 → xcodebuild -exportArchive；IPA/SHA/xcarchive(.dSYM符号) 统一到 release/；三种签名路径注释占位：本地自动签名/GitHub Actions证书base64注入秘钥链/Fastlane match+gym+pilot企业推荐
 - `.github/workflows/android-release.yml` 现有内联签名流程后追加「Generate APK SHA-256 Checksum」step；Upload artifact/Create Release files 均数组化同时上传 `APK + .apk.sha256`；新增 body_path 注释引用 RELEASE_Vxx.md(取消注释即可直接拼 Release Note 详情)
 - `.github/workflows/ci.yml` 追加 V10.14 专项 step(npm run test:v1014)；上传校验摘要新增 版本号/V10.14 通过失败统计 两行输出
+- **🚑CI阻断解除(发版流水线修复)**: `scripts/gen_media_mapping.js` `loadVehicles()` 由单点 `indexOf('const VEHICLES=')` 升级为正则双格式兼容 `/(?:const\s+VEHICLES\s*=|window\.VEHICLES\s*=)/`——`sync_feishu_local.js` 云端同步重写 `vehicles_data.js` 后声明格式变为 `window.VEHICLES = [`,旧解析直接抛「未找到声明」导致 main 与发版分支 CI「映射表一致性校验」连续失败(2026-09-01起3次)；修复后映射表 73 条记录再生成并校验通过,记录本身无漂移(仅解析崩溃)
+- **📚4文档成套**: 新增 `docs/ROOT_CAUSE_V10140.md`(4根因证据链) + `docs/SOLUTIONS_V10140.md`(4问题×5方案选型矩阵) + `docs/TEST_REPORT_V10140.md`(454断言矩阵+基建验证+CR结论) + 更新 `docs/RELEASE_V10140.md`(交付清单/发版流程§8)
 
 #### ✅ Clean Code 代码审查:
 - **空Catch治理**: 合计补充 17 处关键路径 空catch日志——同步关键路径10处(05-sync.js)区分 console.debug(预期失败/新旧位置回退)/console.warn(API异常/列表失败)；localStorage配额满(00-bootstrap.js)；震动设备不支持(06-media.js)；OTA 三个版本源 回退失败(07-cache.js)。全部禁止裸 `catch(e){}` 或纯注释
