@@ -127,19 +127,24 @@ jobs:
         id: scheme
         working-directory: ./tcg_app
         run: |
-          # V10.14.1基建修复: 旧写法 grep -A1 "Schemes:" | tail -1 恒取第一个 scheme,
-          # 而Cordova工程列表首项是"Cordova"(CordovaLib框架库), 导致只构建框架不构建APP本体
-          # 修复: 列出全部 scheme 后排除 "Cordova", 取应用本体 scheme; 再逐级回退
-          SCHEME=$(xcodebuild -list -project platforms/ios/*.xcodeproj 2>/dev/null \
-            | sed -n '/Schemes:/,$p' | sed '1d;/^[[:space:]]*$/d;s/^[[:space:]]*//;s/[[:space:]]*$//' \
-            | grep -v '^Cordova$' | head -1)
-          if [ -z "$SCHEME" ]; then
-            # fallback1: config.xml <name>(Cordova工程 scheme 名即项目名)
-            SCHEME=$(sed -nE 's:.*<name>([^<]+)</name>.*:\1:p' config.xml | head -1 | xargs)
+          # V10.14.1基建修复: Cordova工程scheme列表含 Cordova/CordovaLib(框架库)与应用本体
+          # 三项; 旧写法恒取首项(框架库)导致只构建框架不构建APP。修复策略(双保险):
+          #   1) 精确匹配: 应用scheme即 config.xml <name>(Cordova工程约定), 列表中存在则直接采用
+          #   2) 回退: 前缀排除全部 Cordova 系scheme(Cordova/CordovaLib), 取剩余首项
+          ALL_SCHEMES=$(xcodebuild -list -project platforms/ios/*.xcodeproj 2>/dev/null \
+            | sed -n '/Schemes:/,$p' | sed '1d;/^[[:space:]]*$/d;s/^[[:space:]]*//;s/[[:space:]]*$//')
+          echo "All schemes: ${ALL_SCHEMES}"
+          APP_NAME=$(sed -nE 's:.*<name>([^<]+)</name>.*:\1:p' config.xml | head -1 | xargs)
+          SCHEME=""
+          if [ -n "$APP_NAME" ] && echo "$ALL_SCHEMES" | grep -qxF "$APP_NAME"; then
+            SCHEME="$APP_NAME"
           fi
           if [ -z "$SCHEME" ]; then
-            # fallback2: plist CFBundleName
-            SCHEME=$(defaults read platforms/ios/*/Info.plist CFBundleName 2>/dev/null || echo "TCG Poweroff")
+            SCHEME=$(echo "$ALL_SCHEMES" | grep -v '^Cordova' | head -1)
+          fi
+          if [ -z "$SCHEME" ]; then
+            # fallback: plist CFBundleName
+            SCHEME=$(defaults read platforms/ios/*/Info.plist CFBundleName 2>/dev/null || echo "")
           fi
           if [ -z "$SCHEME" ]; then
             echo "ERROR: 未探测到应用 scheme"; exit 1
