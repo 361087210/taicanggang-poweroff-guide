@@ -213,6 +213,12 @@ setTimeout(async () => {
     console.log('='.repeat(62));
     console.log('维度4: 飞书配置与数据分仓 (issue 4)');
     console.log('='.repeat(62));
+    /* V10.14.1 修复测试状态污染: 1.4d 用例(设置了TCG_FEISHU_APP_SECRET环境变量时)会
+     * 提前消费一次 getFeishuCfg(),注入秘钥按"首读即焚"语义进入闭包缓存
+     * _INJECTED_SECRETS_CACHE 并常驻——导致本维度"默认未注入"三断言(4.1/4.2a/4.2c)
+     * 全部失真(appSecret非空/ready=true/二次注入不消费)。此处重置闭包缓存,
+     * 等价模拟"全新页面加载"的干净初始态;未设置环境变量时本行为幂等无副作用。 */
+    G('_INJECTED_SECRETS_CACHE=null');
     // V10.12 安全基线: 默认配置不再含appSecret(与1.4呼应)。"开箱即用"语义迁移为:
     //   默认未配置 → feishuCfgReady=false(安全拦截,提示用户配置) —— 这是正确行为;
     //   构建注入(window.__BUILD_SECRETS__) → 立即就绪 —— 真机APK的实际出厂形态。

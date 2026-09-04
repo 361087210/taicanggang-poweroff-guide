@@ -1,16 +1,14 @@
 {
-  "version": "10.14.0",
-  "versionCode": 101400,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.14.0/tcg_poweroff_v10.14.0.apk",
+  "version": "10.14.1",
+  "versionCode": 101401,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.14.1/tcg_poweroff_v10.14.1.apk",
   "releaseNotes": [
-    "V10.14.0 组员零配置同步修复版。一句话总结: 解决组长组员镜像源数据同步失败问题(A注入秘钥闭包永久化+B双通道镜像决策+C组员端UI深度防御)+补齐V10.12/V10.13发版说明+同步脚本过期值治理+真机级模拟测试全通过",
-    "修复A(秘钥闭包缓存永久化): window.__BUILD_SECRETS__注入后首次读取即浅克隆到_INJECTED_SECRETS_CACHE脚本私有闭包,之后delete window引用;组员即使清localStorage/WebView重启仍能取回appSecret;完全消除清除缓存后秘钥永久丢失被迫手动填写问题",
-    "修复B(镜像同步双通道决策): doSyncDownload从单一timestamp判新,升级为timestamp OR ID集合差集双触发;覆盖同秒上传加删除、时钟回拨/设备时区漂移、组员新安装首次同步ID集合空3类真机必走链路,保证删除传播100%镜像",
-    "修复C(组员端零配置横幅加写入防御): loadFeishuConfig三色横幅状态机(绿色=组员有注入/琥珀色=组员未注入/蓝色=组长可编辑);成员端AppId/Secret/Token三输入框readonly加灰化加disabled,同步间隔disabled,保存配置按钮隐藏;getFeishuCfg pick()成员端忽略localStorage历史脏配置,只信任admin标记写入值或注入缓存",
-    "文档:新增RELEASE_V10120.md和RELEASE_V10130.md两份完整发版说明,涵盖单向收敛/九模块拆分/Secret构建注入/导航栈封装/嵌套深度降压/CSS提取/XSS全量转义/A3四刀切/渲染业务分离/State守卫/XSS绊线等交付详情",
-    "同步脚本治理: backup_to_feishu.py从version.json加环境变量动态读取folderToken(替换V5.3硬编码过期值为正确公开值),推送到与APP端完全对齐的6个子目录;push_github_final.sh参数化,GH_TAG/APK_PATH/REPO从环境变量或version.json动态取,加APK大小预检5MB到120MB/sha256sum自动生成加上传/Release旧资产清理/Draft转正式发布五步流程",
-    "测试:新增test_v1014_zero_config_member.js真机级10用例(Z1闭包缓存/Z6安全/Z7稳定性/Z2琥珀横幅/Z3绿色横幅/Z4蓝色横幅/Z8三色状态机/Z9成员深度防御/Z10脏配置覆盖防御/Z5镜像决策6子场景),加V10.11镜像同步6项、V10.10大文件分片E2E18项、V10.9.x到V53历史全量回归、A3复杂度68专项,全部通过",
-    "继承V10.13.0(A3四刀切/渲染分离/State守卫/XSS绊线)+V10.12.0(单向收敛/九模块拆分/Secret构建注入/导航栈封装/嵌套降压/XSS转义)+V10.11.0(镜像同步删除传播)+V10.10.0(大文件分片上传)全部能力"
+    "V10.14.1 同步配置出口统一修复版。一句话总结: js/05-sync.js五处直读localStorage绕过getFeishuCfg()统一出口,导致组员端(及依赖构建注入凭据的组长端)被'飞书配置不完整'门禁误拦、数据无法上下云——本次全部改走统一出口并配50断言专项测试+真机跨网络16项链路验证",
+    "根因: loadFeishuConfig/doSyncDownload/checkCloudDataUpdate/exportSyncConfig/_syncUploadPipeline五处直接JSON.parse(localStorage.getItem('feishu_config'))——组员端本地从未保存过该键,appSecret恒取DEFAULT_FEISHU_CONFIG空串,feishuCfgReady恒false,三色横幅误报'未注入同步凭据'且上传/拉取/轮询/导出四条链路全部被拦",
+    "修复(统一出口): 五处全部改走getFeishuCfg()——优先消费构建期注入秘钥的闭包缓存_INJECTED_SECRETS_CACHE(与syncPendingToFeishu等8处既有出口对齐),组员零配置场景仍返回完整可用配置;syncSub/pendingSub/approvedSub/backupSub全部子目录字段随统一出口返回,V10.10.0根因修复②语义保留",
+    "安全语义保留: Secret输入框仅回显用户手动保存值(注入秘钥只在闭包内存供同步链路使用,不落DOM可读值);interval为用户偏好保留回显;admin显式保存(_writer=admin)手动值仍优先覆盖注入值",
+    "测试:新增test_v1015_member_sync_gate.js专项50断言11场景(B1-B11:组长/组员/注入/零本地/脏配置/导出/轮询/安全守卫矩阵),红绿红三步验证;修复test:v107 B6 fixture现代化(补_writer=admin标记);修复test:cross真机harness(模拟APK构建期注入__BUILD_SECRETS__,跨网络注册审批16项全绿);修复test:logic维度4状态污染(闭包缓存重置)",
+    "继承V10.14.0(组员零配置同步修复:闭包永久化+双通道镜像决策+三色横幅+写入深度防御)+V10.13.0(A3四刀切/渲染分离/State守卫/XSS绊线)+V10.12.0(单向收敛/九模块拆分/Secret构建注入)+V10.11.0(镜像同步删除传播)+V10.10.0(大文件分片上传)全部能力"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",

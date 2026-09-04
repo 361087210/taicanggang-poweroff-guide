@@ -598,12 +598,19 @@ async function doBackup(){
 
 // ===================== SYNC =====================
 function loadFeishuConfig(){
+  /* V10.14.1 修复【组员端"飞书配置不完整"误报】: 配置解析改走 getFeishuCfg() 统一出口。
+   * 根因: 此处直读 localStorage——组员端本地从未保存过 feishu_config,appSecret 恒取
+   * DEFAULT_FEISHU_CONFIG 空串 → cfgReady 恒 false → 三色横幅误报"未注入同步凭据";
+   * getFeishuCfg() 优先消费构建期注入秘钥的闭包缓存(_INJECTED_SECRETS_CACHE),
+   * 组员零配置场景仍返回完整可用配置(与 syncPendingToFeishu 等8处既有出口对齐)。 */
+  const cfg=getFeishuCfg();
+  // 安全+UX保留: Secret 输入框仅回显用户手动保存值(注入秘钥只在闭包内存中供同步
+  // 链路使用,不落DOM可读值);interval 为用户偏好(数字类型不参与秘钥解析),保留回显
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
   const a=document.getElementById('feishu-appid');if(a)a.value=cfg.appId||'';
-  const s=document.getElementById('feishu-secret');if(s)s.value=cfg.appSecret||'';
+  const s=document.getElementById('feishu-secret');if(s)s.value=saved.appSecret||'';
   const f=document.getElementById('feishu-folder');if(f)f.value=cfg.folder||'';
-  const iv=document.getElementById('feishu-interval');if(iv)iv.value=cfg.interval||30;
+  const iv=document.getElementById('feishu-interval');if(iv)iv.value=saved.interval||cfg.interval||30;
   const st=document.getElementById('feishu-status');
   // --- V10.14.0 修复C【组员零配置横幅】: 按角色+配置就绪度显横幅 ---
   const banner = document.getElementById('feishu-role-banner');
@@ -1071,11 +1078,11 @@ async function syncUploadVehicleVideos(token,vehicles){
  * @returns {Promise<{ok:boolean,vehicles:number,photos:number,version:string,msg?:string}>}
  */
 async function _syncUploadPipeline(){
-  const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval,
-    // V10.10.0 根因修复②: 旧版cfg漏配syncSub→同步JSON被传到"APP数据备份"根
-    // 而非"同步数据"子目录,随后被迁移清理逻辑当旧档删除,组员端永远拉不到数据
-    syncSub:saved.syncSub||DEFAULT_FEISHU_CONFIG.syncSub};
+  /* V10.14.1 修复【上传管线配置出口统一】: 原直读 localStorage 绕过注入秘钥闭包缓存,
+   * 组长端未在设置页手动保存过配置时(依赖构建注入凭据)被 feishuCfgReady 恒拦截,
+   * "飞书配置不完整"→数据无法上云。改走 getFeishuCfg() 统一出口(含全部子目录字段
+   * syncSub/pendingSub/approvedSub/backupSub,V10.10.0 根因修复②语义保留)。 */
+  const cfg=getFeishuCfg();
   if(!feishuCfgReady(cfg,true))return {ok:false,msg:'飞书配置不完整: 请在设置中填写 App Secret'}; // V5.3.4: appId+appSecret双查
   const token=await getFeishuToken(cfg,2);
   /* V10.6.0 问题4: 照片分离上传——先把现场拍照(base64)单独传至
@@ -1249,9 +1256,11 @@ async function _runAutoSyncAfterSave(){
  * @returns {Promise<{ok:boolean,msg?:string,added:number,updated:number,removed:number,skipped?:boolean}>}
  */
 async function doSyncDownload(){
-  const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval,
-    syncSub:saved.syncSub||DEFAULT_FEISHU_CONFIG.syncSub}; // V10.10.0 根因修复②: 补齐syncSub,否则永远读不到"同步数据"子目录
+  /* V10.14.1 修复【组员拉取被配置门禁误拦】: 原直读 localStorage——组员端本地无
+   * 保存配置时 appSecret 恒空,feishuCfgReady 拦截"飞书配置不完整",云端数据永远
+   * 拉不下来(本次"组长组员数据无法同步"主根因)。改走 getFeishuCfg()(syncSub 等
+   * 全部子目录字段随统一出口返回,V10.10.0 根因修复②语义保留)。 */
+  const cfg=getFeishuCfg();
   if(!feishuCfgReady(cfg,true))return; // V5.3.4: appId+appSecret双查,缺失即引导填写(诊断根因1)
   showToast('正在从飞书获取数据...');
   try{
@@ -1386,9 +1395,10 @@ async function checkCloudDataUpdate(force){
   _cloudCheckBusy=true;
   _cloudCheckLastTs=now;
   try{
-    const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-    const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval,
-      syncSub:saved.syncSub||DEFAULT_FEISHU_CONFIG.syncSub}; // V10.10.0 根因修复②: 补齐syncSub,通知文件读取与组长端写入位置对齐
+    /* V10.14.1 修复【云端更新感知静默失效】: 原直读 localStorage——组员端本地无
+     * 保存配置时恒被 feishuCfgReady 静默拦截,60秒轻量通知轮询形同虚设(红点永不
+     * 亮)。改走 getFeishuCfg() 统一出口(syncSub 随之正确解析,V10.10.0 语义保留)。 */
+    const cfg=getFeishuCfg();
     if(!feishuCfgReady(cfg))return; // 未配置同步:跳过
     /* V10.7.0 问题2: 组员端轻量感知通道——优先读云端"数据更新通知"文件
      * (data_update_notice.json,数百字节)。组长端上传成功后写入该文件,
@@ -1471,14 +1481,17 @@ function renderBackupHistory(){
  * 保留: 车辆数据随行导出(本项目自V5.3以来的配置+数据一体备份习惯,向后兼容)
  */
 async function exportSyncConfig(){
+  /* V10.14.1 修复【导出配置值残缺】: 原直读 localStorage——组员端导出的 appId/folder
+   * 可能为空或历史脏值。改走 getFeishuCfg()(导出 payload 本就不含 Secret,无泄密面);
+   * interval 为用户偏好数字,保留 localStorage 回显语义。 */
+  const cfg=getFeishuCfg();
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
-  const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval};
   const exportData={
     type:'sync_config_backup',
     exportedAt:new Date().toISOString(),
     version:'v'+APP_VERSION,
     timestamp:new Date().toISOString(),
-    feishuConfig:{appId:cfg.appId,folder:cfg.folder,interval:cfg.interval},
+    feishuConfig:{appId:cfg.appId,folder:cfg.folder,interval:saved.interval||cfg.interval},
     vehicleCount:VEHICLES.length,
     vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
   };

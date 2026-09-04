@@ -4,6 +4,23 @@
 
 ## [未发布]
 
+### V10.14.1 同步配置出口统一修复(组长组员数据无法同步·组员端"飞书配置不完整"误报根因闭环)
+
+#### 🔴 根因与核心修复:
+- **根因**: `js/05-sync.js` 中 `loadFeishuConfig`/`_syncUploadPipeline`/`doSyncDownload`/`checkCloudDataUpdate`/`exportSyncConfig` 五处直接 `JSON.parse(localStorage.getItem('feishu_config'))` 解析配置,绕过了 V10.14.0 建立的 `getFeishuCfg()` 统一出口——组员端本地从未保存过该键,`appSecret` 恒取 `DEFAULT_FEISHU_CONFIG` 空串 → `feishuCfgReady` 恒 false → ①三色横幅误报「未注入同步凭据」;②上传管线被"飞书配置不完整"门禁拦截(组长端依赖构建注入凭据、未在设置页手动保存时同样中招);③组员拉取云端数据被门禁拦截(本次"组长组员数据无法同步"主根因);④60秒轻量通知轮询形同虚设(红点永不亮);⑤导出的同步配置为空
+- **修复(五处全部改走 `getFeishuCfg()` 统一出口)**: 优先消费构建期注入秘钥的闭包缓存 `_INJECTED_SECRETS_CACHE`(与 `syncPendingToFeishu` 等8处既有出口对齐),组员零配置场景仍返回完整可用配置;`syncSub/pendingSub/approvedSub/backupSub` 全部子目录字段随统一出口返回(V10.10.0 根因修复②语义保留)
+- **安全语义保留**: Secret 输入框仅回显用户手动保存值(注入秘钥只在闭包内存供同步链路使用,不落DOM可读值);`interval` 为用户偏好保留回显;admin 显式保存(`_writer='admin'`)手动值仍优先覆盖注入值(覆盖语义不变)
+
+#### ✅ 版本专项测试(红-绿-红三步验证):
+- 新增 `tests/test_v1015_member_sync_gate.js` 专项 50 断言 11 场景(B1-B11: 组长/组员 × 注入/零本地/脏配置 × 上传/拉取/轮询/导出/安全守卫全矩阵);修复前 34 项失败复现 bug,修复后 50/50 通过,git stash 回退修复后测试重新失败(证明测试真实捕捉回归)
+- **修复 `test:v107` B6 回归**: fixture 现代化——V10.14.0 起 `getFeishuCfg()` 对组员端只信任 admin 显式写入(或构建期注入)的配置,旧 fixture 无标记写入被安全忽略;补 `_writer:'admin'` 标记后轻量通知通道用例恢复通过(31/31)
+- **修复 `test:cross` 真机跨网络 harness(既有缺陷,V10.12.0 秘钥剥离时遗留)**: `makePhone` 未模拟发版 APK 的构建期 `window.__BUILD_SECRETS__` 注入,加载干净源码时模拟手机内 `getFeishuCfg().appSecret` 恒空 → 注册申请/审批回推全部静默拦截(2.3 起 9 项连锁失败,基线复现确认与本次修复无关);harness 补注入后组员注册→云端落盘→组长拉取审批→新设备登录 16/16 全绿
+- **修复 `test:logic` 维度4状态污染(既有缺陷)**: 1.4d 用例(设置 `TCG_FEISHU_APP_SECRET` 环境变量时)提前消费 `getFeishuCfg()` 致注入秘钥进入闭包缓存常驻,"默认未注入"三断言(4.1/4.2a/4.2c)失真;维度4前重置闭包缓存等价模拟全新页面加载,有/无环境变量两场景均通过(35/35、34/34)
+
+#### 🚩 版本一致性升级 10.14.0 → 10.14.1(versionCode 101401):
+- `js/00-bootstrap.js` APP_VERSION / `config.xml` version+versionCode / `version.json` version+versionCode+downloadUrl+releaseNotes(6条) / `demo.html` sync-local-ver 静态默认值 / `tests/test_v1014` 版本断言与sandbox stub / `package.json` 新增 test:v1015 并入 test:all / `ci.yml` 追加 V10.14.1 专项 step / `ios-release.yml` workflow_dispatch 默认版本号
+- **全量回归 16 套件 0 FAIL**(带真实飞书凭据): V53运行时21 + V57逻辑35 + **V57跨网络真机16** + V103-V109 + V1010分片18 + V1011镜像6 + V1013复杂度68 + V1014零配置49 + **V1015出口统一50(新增)**
+
 ### iOS发版流水线基建修复(tag v10.14.0 触发后暴露的三处环境级缺陷, 不涉及APP业务代码)
 - **修复1(macOS grep兼容)**: `ios-release.yml` 版本解析 `grep -oP`(GNU扩展)在 macOS BSD grep 下报 `invalid option -- P` 导致 APP_VERSION 空串; 改用 `sed -nE` BSD/GNU双兼容写法 + 空版本号显式阻断
 - **修复2(Xcode版本随镜像演进)**: `XCODE_VERSION` 固定 `15.4` 已从 macos-latest 镜像移除(现仅 26.x), `setup-xcode` 报 `Could not find Xcode version`; 改用 `latest-stable` 随镜像演进不再过期

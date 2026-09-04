@@ -90,6 +90,11 @@ jobs:
       - name: 版本专项测试(V10.14组员零配置镜像同步+横幅防御+脏配置)
         run: npm run test:v1014
 
+      # V10.14.1: 同步配置出口统一专项(js/05-sync.js五处直读localStorage改走getFeishuCfg)
+      #   - 组长/组员 × 注入/零本地/脏配置 × 上传/拉取/轮询/导出矩阵 ≈50 项断言, 0 FAIL 才能合并
+      - name: 版本专项测试(V10.14.1同步配置出口统一门禁修复)
+        run: npm run test:v1015
+
       - name: 上传校验摘要
         if: always()
         run: |
