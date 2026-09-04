@@ -137,7 +137,7 @@ function makeSandbox(role /* 'admin'|'user'|null */, opts) {
     showToast: m => { stubs.toasts.push(String(m)); },
     addSyncLog: (m, c) => stubs.syncLogs.push({ m, c }),
     feishuCfgReady: (cfg, wt) => !!(cfg && cfg.appId && cfg.appSecret),
-    APP_VERSION: '10.14.0',
+    APP_VERSION: '10.14.1',
     state: {
       searchQuery: '', brandFilter: 'all', viewMode: 'flat',
       expandedBrands: new Set(),
@@ -472,7 +472,7 @@ section('Z5: 【修复B核心】时间戳相等但ID集合不等 → 镜像删�
 }
 
 // =============================================================
-section('版本一致性 V10.14.0 (bootstrap.js / config.xml / version.json)');
+section('版本一致性 V10.14.1 (bootstrap.js / config.xml / version.json)');
 // =============================================================
 {
   const vj = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
@@ -481,11 +481,11 @@ section('版本一致性 V10.14.0 (bootstrap.js / config.xml / version.json)');
   const verMatch = bootstrap.match(/const APP_VERSION='([^']+)'/);
   const xmlVer = xml.match(/version="([0-9.]+)"/);
   const xmlCode = xml.match(/android-versionCode="(\d+)"/);
-  check('version.json.version === 10.14.0', vj.version === '10.14.0');
-  check('version.json.versionCode === 101400', vj.versionCode === 101400);
-  check('js/00-bootstrap.js APP_VERSION === 10.14.0', verMatch && verMatch[1] === '10.14.0');
-  check('config.xml version  === 10.14.0', xmlVer && xmlVer[1] === '10.14.0');
-  check('config.xml android-versionCode === 101400', xmlCode && xmlCode[1] === '101400');
+  check('version.json.version === 10.14.1', vj.version === '10.14.1');
+  check('version.json.versionCode === 101401', vj.versionCode === 101401);
+  check('js/00-bootstrap.js APP_VERSION === 10.14.1', verMatch && verMatch[1] === '10.14.1');
+  check('config.xml version  === 10.14.1', xmlVer && xmlVer[1] === '10.14.1');
+  check('config.xml android-versionCode === 101401', xmlCode && xmlCode[1] === '101401');
 }
 
 // =============================================================

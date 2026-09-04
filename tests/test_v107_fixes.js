@@ -270,7 +270,10 @@ setTimeout(async () => {
     const r6 = await GAsync(`(async()=>{
       // 构造: 本地水位早于通知 → 应命中"有新数据"
       localStorage.setItem('feishu_sync_data',JSON.stringify({timestamp:'2026-08-20T00:00:00.000Z',version:'v10.6.0'}));
-      localStorage.setItem('feishu_config',JSON.stringify({appId:'cli_test',appSecret:'test_secret',folder:'fld_test',syncSub:'同步数据'}));
+      /* V10.14.1 fixture现代化: 补 _writer:'admin' 标记。V10.14.0 起 getFeishuCfg() 对组员端
+       * 只信任 admin 显式写入(或构建期注入)的配置,无标记的历史/调试写入一律忽略;
+       * 本用例验证"组员端轻量通知感知",需一条被信任的配置走通门禁(语义不变)。 */
+      localStorage.setItem('feishu_config',JSON.stringify({appId:'cli_test',appSecret:'test_secret',folder:'fld_test',syncSub:'同步数据',_writer:'admin'}));
       state.currentUser={id:2,name:'组员',phone:'13800000002',role:'user',status:'active'};
       // mock: 通知文件返回新时间戳; 全量下载被调用则标记
       window.__fullDownloadCalled=false;

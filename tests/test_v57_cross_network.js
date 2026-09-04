@@ -19,6 +19,16 @@ function makePhone(name) {
     beforeParse(w) {
       const { webcrypto } = require('crypto');
       try { Object.defineProperty(w, 'crypto', { value: webcrypto, configurable: true, writable: true }); } catch(_){}
+      /* V10.14.1 测试harness修复: 模拟发版APK的构建期秘钥注入。
+       * 根因: V10.12.0 起源码demo.html移除硬编码appSecret(改为scripts/inject_build_secrets.js
+       * 构建期注入window.__BUILD_SECRETS__),本测试加载的是剥离后的干净源码,模拟手机内
+       * getFeishuCfg().appSecret 恒空 → feishuCfgReady 静默拦截 → 注册申请/审批回推全部
+       * 无法上云(2.3起9项连锁失败)。真机上此值由APK注入,此处等价注入后行为一致。 */
+      const PHONE_SECRET = process.env.TCG_FEISHU_APP_SECRET || '';
+      if (PHONE_SECRET) {
+        Object.defineProperty(w, '__BUILD_SECRETS__', { configurable: true, writable: true,
+          value: { appId: 'cli_aa0ce4fd91f85be8', appSecret: PHONE_SECRET, folderToken: 'nodcnGA95g93RhIUSdCeTkhKlQc' } });
+      }
       Object.defineProperty(w, 'localStorage', { configurable: true,
         getItem: k => (k in store ? store[k] : null),
         setItem: (k,v) => { store[k]=String(v); },
