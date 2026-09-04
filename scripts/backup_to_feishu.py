@@ -74,16 +74,25 @@ def get_token():
 
 
 def list_children(token, folder_token, page_size=200):
-    """列出指定目录的子文件/文件夹(飞书Drive API v1)"""
+    """列出指定目录的子文件/文件夹(飞书Drive API v1)
+    V10.14.1基建修复: 原用 GET /drive/v1/files/{token}/children 路径形态, 该应用调用恒返回404;
+    改用与APP端 feishu-api.js driveListFiles 完全一致的查询参数形态 ?folder_token= 并补分页"""
     headers = {"Authorization": f"Bearer {token}"}
-    resp = requests.get(
-        f"{FEISHU_API}/drive/v1/files/{folder_token}/children?page_size={page_size}",
-        headers=headers, timeout=30
-    )
-    data = resp.json()
-    if data.get("code") != 0:
-        raise Exception(f"列出文件失败(folder={folder_token}): {data}")
-    return {f.get("name"): f for f in data.get("data", {}).get("files", [])}
+    files, page_token = [], None
+    while True:
+        url = f"{FEISHU_API}/drive/v1/files?folder_token={folder_token}&page_size={page_size}"
+        if page_token:
+            url += f"&page_token={page_token}"
+        resp = requests.get(url, headers=headers, timeout=30)
+        data = resp.json()
+        if data.get("code") != 0:
+            raise Exception(f"列出文件失败(folder={folder_token}): {data}")
+        d = data.get("data") or {}
+        files.extend(d.get("files", []))
+        if not d.get("has_more"):
+            break
+        page_token = d.get("page_token")
+    return {f.get("name"): f for f in files}
 
 
 def get_or_create_folder(token, parent_token, name):

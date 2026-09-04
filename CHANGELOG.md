@@ -11,6 +11,11 @@
 - **修复4(插件源码与新SDK兼容)**: `cordova-plugin-advanced-http@3.3.1` 内置 AFNetworking 直接 `#import <netinet6/in6.h>`, 该头文件自 iOS 26.5 SDK 起为私有模块头, 编译报 `Use of private header from outside its module`; 构建步骤内在 cordova build(prepare 重拷源码)之后、xcodebuild 编译之前插入外科手术式补丁删除该冗余 import(`<netinet/in.h>` 已传递包含, 语义等价)
 - 附带: workflow_dispatch 默认版本号 10.13.0 → 10.14.0
 
+### 发版产物飞书双通道分发工具链(补齐"GitHub Release + 飞书云空间"双端产物同步能力)
+- 新增 `scripts/sync_release_to_feishu.py`: 发版产物(APK/IPA/SHA256/发版说明)一键同步到飞书 `APP数据备份/发版产物/v{version}/`, 与 `push_github_final.sh` 构成双通道分发(组员可在飞书端直接下载官方签名安装包, 规避 GitHub 直链国内可达性问题); 版本号/folderToken 从 version.json 动态读取; 目录列举用 `GET /drive/v1/files?folder_token=` 查询参数形态(APP端生产验证); ≤16MB `upload_all`、>16MB 分片上传(upload_prepare/upload_part/upload_finish, 500MB上限); 220ms QPS门控 + 1061021事务过期整段重传 + 1061045频控退避(与APP端 feishu-api.js 完全对齐); 同名文件先删后传保证幂等; 终验重新列举目录全量核对
+- **修复5(backup脚本列目录端点)**: `backup_to_feishu.py` `list_children` 原用 `GET /drive/v1/files/{token}/children` 路径形态, 该应用调用恒返回 404(脚本一旦运行即失败); 改为与APP端一致的查询参数形态并补 `has_more/page_token` 分页
+- V10.14.0 五件产物(APK/APK.sha256/IPA/IPA.sha256/RELEASE_V10140.md)已实际同步至飞书并完成云端回下载 SHA256 端到端校验一致
+
 ## [10.14.0] - 2026-09-04
 
 ### 组员零配置同步修复版(组长-组员镜像数据一致性 + 双端同步脚本治理 + 签名构建基建补齐)
