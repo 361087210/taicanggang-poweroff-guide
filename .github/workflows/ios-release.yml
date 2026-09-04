@@ -158,6 +158,19 @@ jobs:
         run: |
           # 跳过签名: CODE_SIGNING_ALLOWED=NO
           cordova build ios --device -- --buildFlag="-UseModernBuildSystem=YES"
+          # V10.14.1基建修复: cordova-plugin-advanced-http@3.3.1 内置 AFNetworking 直接
+          # #import <netinet6/in6.h>, 该头文件自 iOS 26.5 SDK 起为私有模块头, 编译报
+          # "Use of private header from outside its module"; <netinet/in.h> 已传递包含
+          # in6.h, 删除该冗余 import 语义等价(社区通用解法)。
+          # 时序: 置于 cordova build(prepare 阶段会重拷插件源码)之后、xcodebuild 编译之前,
+          # 确保补丁不被 prepare 覆盖
+          PATCHED=0
+          while IFS= read -r f; do
+            sed -i '' '/netinet6\/in6\.h/d' "$f"
+            echo "[Xcode26 SDK补丁] $f"
+            PATCHED=$((PATCHED+1))
+          done < <(grep -rl 'netinet6/in6.h' platforms/ios --include='*.m' --include='*.h' 2>/dev/null)
+          echo "netinet6 补丁文件数: $PATCHED"
           cd platforms/ios
           # V10.14.1基建修复: 显式 -derivedDataPath 把产物固定到工程内已知路径,
           # 避免落入 ~/Library/Developer/Xcode/DerivedData 导致 Collect IPA 找不到

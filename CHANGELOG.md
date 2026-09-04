@@ -8,6 +8,7 @@
 - **修复1(macOS grep兼容)**: `ios-release.yml` 版本解析 `grep -oP`(GNU扩展)在 macOS BSD grep 下报 `invalid option -- P` 导致 APP_VERSION 空串; 改用 `sed -nE` BSD/GNU双兼容写法 + 空版本号显式阻断
 - **修复2(Xcode版本随镜像演进)**: `XCODE_VERSION` 固定 `15.4` 已从 macos-latest 镜像移除(现仅 26.x), `setup-xcode` 报 `Could not find Xcode version`; 改用 `latest-stable` 随镜像演进不再过期
 - **修复3(scheme误选框架库+产物路径漂移)**: Cordova 工程 scheme 列表含 `Cordova`/`CordovaLib`(框架库)与应用本体三项, 旧探测恒取首项导致仅构建框架(1 target)且产物落入 DerivedData, `Collect IPA` 找不到产物 exit 1; 升级为「config.xml `<name>` 精确匹配 + `^Cordova` 前缀排除」双保险探测, xcodebuild 追加 `-derivedDataPath build/dd` 固定产物路径, Collect IPA 三级回退搜索
+- **修复4(插件源码与新SDK兼容)**: `cordova-plugin-advanced-http@3.3.1` 内置 AFNetworking 直接 `#import <netinet6/in6.h>`, 该头文件自 iOS 26.5 SDK 起为私有模块头, 编译报 `Use of private header from outside its module`; 构建步骤内在 cordova build(prepare 重拷源码)之后、xcodebuild 编译之前插入外科手术式补丁删除该冗余 import(`<netinet/in.h>` 已传递包含, 语义等价)
 - 附带: workflow_dispatch 默认版本号 10.13.0 → 10.14.0
 
 ## [10.14.0] - 2026-09-04
