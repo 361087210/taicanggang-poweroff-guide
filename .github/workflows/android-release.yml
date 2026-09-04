@@ -159,18 +159,33 @@ jobs:
             --out "$APK_OUT" "$APK_ALIGNED"
           $ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs "$APK_OUT"
 
-      - name: Upload artifact
+      # V10.14.0: 生成 APK SHA-256 校验文件,发布时一起上传,避免中间人替换/CDN缓存脏数据校验失败
+      - name: Generate APK SHA-256 Checksum
+        working-directory: ./tcg_app
+        run: |
+          APK_OUT=../release/tcg_poweroff_v${APP_VERSION}.apk
+          (cd ../release && sha256sum "tcg_poweroff_v${APP_VERSION}.apk" > "tcg_poweroff_v${APP_VERSION}.apk.sha256")
+          echo "=== SHA-256 ===" && cat ../release/tcg_poweroff_v${APP_VERSION}.apk.sha256
+          echo "=== size ===" && stat -c "%s bytes" "$APK_OUT" || stat -f "%z bytes" "$APK_OUT"
+
+      - name: Upload artifact (APK + SHA256 + signer verify output)
         uses: actions/upload-artifact@v5
         with:
           name: tcg-poweroff-apk
-          path: release/tcg_poweroff_v${{ env.APP_VERSION }}.apk
+          path: |
+            release/tcg_poweroff_v${{ env.APP_VERSION }}.apk
+            release/tcg_poweroff_v${{ env.APP_VERSION }}.apk.sha256
 
-      - name: Create Release
+      - name: Create Release (tag 触发 → 正式发布)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
-          files: release/tcg_poweroff_v${{ env.APP_VERSION }}.apk
+          files: |
+            release/tcg_poweroff_v${{ env.APP_VERSION }}.apk
+            release/tcg_poweroff_v${{ env.APP_VERSION }}.apk.sha256
           generate_release_notes: true
+          # V10.14.0: 若 release notes 需要直接引用详细的 RELEASE_Vxx.md,取消下行注释,构建时 docs/RELEASE 会自动拼接
+          # body_path: docs/RELEASE_V${{ env.APP_VERSION_DOTTED }}0.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

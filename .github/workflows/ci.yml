@@ -84,10 +84,18 @@ jobs:
       - name: 版本专项测试(V10.13复杂度治理A3)
         run: npm run test:v1013
 
+      # V10.14.0: 组员零配置同步专项(秘钥闭包永久化/双通道镜像决策/三色横幅/写入深度防御)
+      #   - 本地mock飞书全链路 ≈49 项断言, 0 FAIL 才能合并
+      #   - 真实跨网络端到端(test:cross)因需飞书 Secret,已从ci.yml去掉(在 release.yml 中按需执行)
+      - name: 版本专项测试(V10.14组员零配置镜像同步+横幅防御+脏配置)
+        run: npm run test:v1014
+
       - name: 上传校验摘要
         if: always()
         run: |
           echo "## CI 校验结果" >> $GITHUB_STEP_SUMMARY
           echo "- 校验时间: $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- 版本: $(node -e "console.log(require('./version.json').version)") (versionCode=$(node -e "console.log(require('./version.json').versionCode)"))" >> $GITHUB_STEP_SUMMARY
+          echo "- V10.14专项(组员零配置): PASS=$(grep -c 'PASS\]' v1014_report.log 2>/dev/null || echo 0) FAIL=$(grep -c 'FAIL\]' v1014_report.log 2>/dev/null || echo 0) — $(test -s v1014_report.log && node tests/test_v1014_zero_config_member.js 2>&1 | tail -2 | head -1 || echo '见jobs日志')" >> $GITHUB_STEP_SUMMARY
           echo "- 车型映射记录数: $(node -e "console.log(require('./docs/vehicle_media_mapping.json').records.length)")" >> $GITHUB_STEP_SUMMARY
           echo "- 视频待云端补录数: $(node -e "console.log(require('./docs/vehicle_media_mapping.json').records.filter(r=>r['视频匹配状态'].includes('补录')).length)")" >> $GITHUB_STEP_SUMMARY

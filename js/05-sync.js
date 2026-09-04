@@ -70,7 +70,7 @@ function watchRegistrationActivation(user){
         clearInterval(_regWatchTimer);_regWatchTimer=null;
         showToast('✅ 您的账号已激活，请登录');
       }
-    }catch(e){/* 网络抖动: 下一轮重试 */}
+    }catch(e){console.debug("[PendingPoll]轮询请求网络抖动跳过(下轮重试):",e&&e.message||String(e))}
   },12000);
 }
 
@@ -177,7 +177,7 @@ async function applyApprovalRules(pendings){
           crossSilentCount++;
         }
         // 即消费即删: 清理云端申请文件(幂等,失败不影响主流程)
-        try{await deletePendingFileFromFeishu(u.phone);}catch(e){/* 清理失败下轮重试 */}
+        try{await deletePendingFileFromFeishu(u.phone);}catch(e){console.warn("[ApprovalCleanup]云端pending申请文件删除失败(下轮重试): phone=%s err=%s stack=%s",u.phone,e.message,e.stack)}
       }else{
         const u=pendingData.user;
         if(!existingUser){
@@ -282,8 +282,8 @@ async function deletePendingFileFromFeishu(phone){
     const fileName=`pending_reg_${phone}.json`;
     // 双位置清理(新子目录+旧数据区根)
     const locations=[];
-    try{locations.push(await getDataSubFolderToken(token,cfg.pendingSub));}catch(e){}
-    try{locations.push(await getDataFolderToken(token));}catch(e){}
+    try{locations.push(await getDataSubFolderToken(token,cfg.pendingSub));}catch(e){console.debug("[PullPending]新pending子目录token读取失败(回退旧位置):",e.message)}
+    try{locations.push(await getDataFolderToken(token));}catch(e){console.debug("[PullPending]根目录token读取失败(仅旧位置链路可用):",e.message)}
     for(const loc of locations){
       const olds=(await feishuListFiles(token,loc)||[]).filter(f=>f.name===fileName);
       for(const f of olds){
@@ -375,7 +375,7 @@ async function pullApprovedStatusFromFeishu(userParam,fullMerge){
       data=await downloadJsonFromDataFeishu(token,'approved_users.json',cfg.approvedSub);
     }catch(e){console.warn('新位置(审批结果)读取失败,回退旧位置:',e.message);}
     if(!data){
-      try{data=await downloadJsonFromDataFeishu(token,'approved_users.json');}catch(e){/* 无旧档 */}
+      try{data=await downloadJsonFromDataFeishu(token,'approved_users.json');}catch(e){console.debug('[ApprovalPull]旧位置(根)approved_users.json不存在(首次运行正常):',e.message)}
     }
     if(!data||!data.users)return false;
     let me=null;
@@ -470,9 +470,9 @@ async function checkMemberAccountAlive(){
     const token=await getFeishuToken(cfg);
     // 优先新位置(审批结果/),回退旧位置(数据区根)——与pullApprovedStatusFromFeishu一致
     let data=null;
-    try{data=await downloadJsonFromDataFeishu(token,'approved_users.json',cfg.approvedSub);}catch(e){/* 新位置无 */}
+    try{data=await downloadJsonFromDataFeishu(token,'approved_users.json',cfg.approvedSub);}catch(e){console.debug('[ApprovalPull]新位置(审批结果/)approved_users.json不存在(回退旧位置):',e.message)}
     if(!data){
-      try{data=await downloadJsonFromDataFeishu(token,'approved_users.json');}catch(e){/* 旧位置无 */}
+      try{data=await downloadJsonFromDataFeishu(token,'approved_users.json');}catch(e){console.debug('[ApprovalPull]旧位置approved_users.json也不存在(首次运行正常):',e.message)}
     }
     // 云端无有效用户表→本轮跳过,不能作为"账号已删"的证据
     if(!data||!Array.isArray(data.users)||!data.users.length)return true;
@@ -605,18 +605,62 @@ function loadFeishuConfig(){
   const f=document.getElementById('feishu-folder');if(f)f.value=cfg.folder||'';
   const iv=document.getElementById('feishu-interval');if(iv)iv.value=cfg.interval||30;
   const st=document.getElementById('feishu-status');
+  // --- V10.14.0 修复C【组员零配置横幅】: 按角色+配置就绪度显横幅 ---
+  const banner = document.getElementById('feishu-role-banner');
+  const isMemberNow = state.currentUser && state.currentUser.role !== 'admin';
+  const cfgReady = !!(cfg.appId && cfg.appSecret);
+  // 横幅与输入框样式(零配置提示)
+  if(banner){
+    banner.classList.remove('hidden');
+    if(isMemberNow){
+      if(cfgReady){
+        banner.className = 'mb-3 rounded-xl px-3 py-2.5 text-xs leading-relaxed border border-green-200 bg-green-50 text-green-700';
+        banner.innerHTML = '<span class="font-semibold">✅ 组员账号：云端配置已内置，无需手动填写</span><br>安装包已加密注入飞书同步凭据，可直接从「数据同步」页面拉取组长发布的最新车辆手册。<span class="text-green-600">若同步失败请更新至最新官方安装包。</span>';
+      }else{
+        banner.className = 'mb-3 rounded-xl px-3 py-2.5 text-xs leading-relaxed border border-amber-200 bg-amber-50 text-amber-700';
+        banner.innerHTML = '<span class="font-semibold">⚠️ 组员账号：当前安装包未注入同步凭据</span><br>请前往<span class="font-medium">Release 下载官方签名安装包</span>重新安装（无需注册新账号）。未签名开发构建/手动安装的调试 APK 不含云端凭据，将无法拉取云端车辆数据。';
+      }
+    }else{
+      // 组长/未登录: 仍然显示一段简短说明,不打扰
+      banner.className = 'mb-3 rounded-xl px-3 py-2.5 text-xs leading-relaxed border border-blue-200 bg-blue-50 text-blue-700';
+      banner.innerHTML = '<span class="font-semibold">🛠 组长管理员设置区：</span>此处可切换飞书应用（自建租户场景）。普通组员无需修改本页任何内容，安装包已内置默认同步凭据。';
+    }
+  }
+  // 组员端：AppSecret/Token输入框改为只读(视觉+交互不可编辑),保存按钮隐藏
+  const inputs = [a, s, f];
+  const saveBtn = document.querySelector('button[onclick="saveFeishuConfig()"]');
+  inputs.forEach(inp => {
+    if(!inp) return;
+    if(isMemberNow){ inp.setAttribute('readonly','readonly'); inp.classList.add('bg-gray-100','cursor-not-allowed'); inp.classList.remove('focus:border-blue-500'); }
+    else{ inp.removeAttribute('readonly'); inp.classList.remove('bg-gray-100','cursor-not-allowed'); inp.classList.add('focus:border-blue-500'); }
+  });
+  if(iv){
+    if(isMemberNow){ iv.setAttribute('disabled','disabled'); iv.classList.add('bg-gray-100','cursor-not-allowed'); }
+    else{ iv.removeAttribute('disabled'); iv.classList.remove('bg-gray-100','cursor-not-allowed'); }
+  }
+  if(saveBtn){
+    if(isMemberNow){ saveBtn.classList.add('hidden'); }
+    else{ saveBtn.classList.remove('hidden'); }
+  }
   if(st)st.textContent=cfg.appId?'飞书账号已配置 ✓':'未配置飞书账号';
   const cv=document.getElementById('sync-cloud-ver');
   if(cv)cv.textContent=cfg.appId?'已连接 · v'+APP_VERSION:'未连接';
 }
 
 function saveFeishuConfig(){
+  // V10.14.0 修复C-深度防御: 组员账号禁止写入飞书配置(即使前端被调试验证绕过)
+  // 组员写入会污染localStorage,使getFeishuCfg的pick()优先取错值并遮蔽注入秘钥缓存
+  if(state.currentUser && state.currentUser.role!=='admin'){
+    showToast('组员账号无需手动配置飞书同步，已内置官方凭据');
+    return;
+  }
   const appId=document.getElementById('feishu-appid').value.trim();
   const appSecret=document.getElementById('feishu-secret').value.trim();
   const folder=document.getElementById('feishu-folder').value.trim();
   const interval=parseInt(document.getElementById('feishu-interval').value)||30;
   if(!appId||!appSecret){showToast('请填写飞书 App ID 和 App Secret');return;}
-  const cfg={appId,appSecret,folder,interval,updatedAt:new Date().toISOString()};
+  // V10.14.0 修复C: 写入_writer='admin'标记,getFeishuCfg在成员端识别此配置是可信的
+  const cfg={appId,appSecret,folder,interval,updatedAt:new Date().toISOString(),_writer:'admin'};
   localStorage.setItem('feishu_config',JSON.stringify(cfg));
   const st=document.getElementById('feishu-status');
   if(st)st.textContent='飞书账号已配置 ✓';
@@ -836,7 +880,7 @@ async function downloadSyncDataMigrated(cfg){
         data=await downloadJsonFromDataFeishu(token,'vehicle_sync_data.json',cfg.syncSub);
       }catch(e){console.warn('新位置(同步数据/)读取失败,回退:',e.message);}
       if(!data){
-        try{data=await downloadJsonFromDataFeishu(token,'vehicle_sync_data.json');}catch(e){/* 继续回退 */}
+        try{data=await downloadJsonFromDataFeishu(token,'vehicle_sync_data.json');}catch(e){console.debug('[SyncDownload]旧位置vehicle_sync_data.json不存在(回退):',e.message)}
       }
       if(!data)data=await downloadJsonFromFolder(token,cfg.folder,'vehicle_sync_data.json');
       return data;
@@ -915,7 +959,7 @@ async function syncUploadVehiclePhotos(token,vehicles){
   let cloudNames=new Set();
   try{
     (await feishuListFiles(token,folder)||[]).filter(f=>f.type==='file').forEach(f=>cloudNames.add(f.name));
-  }catch(e){/* 列表失败则全部走上传,幂等由服务端同名覆盖兜底 */}
+  }catch(e){console.warn('[SyncUpload]vehicle_images云端列表API失败(全部降级为重传,幂等兜底):',e.message,e.stack)}
   for(const {v,i} of pending){
     const raw=v.photoPaths[i];
     try{
@@ -978,7 +1022,7 @@ async function syncUploadVehicleVideos(token,vehicles){
   let cloudNames=new Set();
   try{
     (await feishuListFiles(token,folder)||[]).filter(f=>f.type==='file').forEach(f=>cloudNames.add(f.name));
-  }catch(e){/* 列表失败则全部走上传,幂等由服务端同名覆盖兜底 */}
+  }catch(e){console.warn('[SyncUpload]vehicle_videos云端列表API失败(全部降级为重传,幂等兜底):',e.message,e.stack)}
   for(const {v,i} of pending){
     const raw=v.videoPaths[i];
     try{
@@ -1188,6 +1232,22 @@ async function _runAutoSyncAfterSave(){
   }
 }
 
+/**
+ * 【为什么采用 timestamp + ID集合差集 双通道镜像决策】
+ *  单看 timestamp>lastSyncTs 在 3 类真机场景会漏掉镜像:
+ *   ①同秒操作: 组长 14:00:03 上传,同时(秒级内)删除一台车+修改一台车,
+ *     组员 14:00:05 首次拉取, lastSyncTs=0,正常同步; 但组员 14:00:04 已拉过(ts=0→3),
+ *     下一轮 lastSyncTs=3,云端 ts=3,不触发同步,删除永远传播不到。
+ *   ②时钟回拨: 组长 Android 设备时区漂移/连接NTP后时钟跳回 5s,
+ *     新上传 timestamp 小于 lastSyncTs, 单 timestamp 判新会漏掉。
+ *   ③新安装组员: 新安装的手机 VEHICLES 是空/默认内置,lastSyncTs=Date.now()(初始化时刻),
+ *     但云端的「真实唯一ID全集」才是Ground Truth。
+ *  V10.14.0 修复B: 在 timestamp> 之外 **OR** 增加 cloudIds 与 localIds
+ *  全量 ID 字符串集合比较,只要 ID 集合不一样就强制镜像(added/updated/removed三计数)。
+ *  ⚠️ 仍保留「云端为空 & 本地非空」熔断: 若组长上传中断导致云端 vehicle_sync_data.json=[]
+ *  时跳过镜像,防止误清空组员本地已有数据。
+ * @returns {Promise<{ok:boolean,msg?:string,added:number,updated:number,removed:number,skipped?:boolean}>}
+ */
 async function doSyncDownload(){
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
   const cfg={appId:saved.appId||DEFAULT_FEISHU_CONFIG.appId,appSecret:saved.appSecret||DEFAULT_FEISHU_CONFIG.appSecret,folder:saved.folder||DEFAULT_FEISHU_CONFIG.folder,interval:saved.interval||DEFAULT_FEISHU_CONFIG.interval,
@@ -1212,7 +1272,21 @@ async function doSyncDownload(){
         const cloudTs=new Date(syncData.timestamp||0).getTime();
         const localSyncTs=JSON.parse(localStorage.getItem('feishu_sync_data')||'{}');
         const lastSyncTs=localSyncTs.timestamp?new Date(localSyncTs.timestamp).getTime():0;
-        if(cloudTs>lastSyncTs){
+        /* V10.14.0 修复B【镜像同步双通道比对兜底】
+         * 旧版仅 cloudTs>lastSyncTs 触发镜像,存在两处漏同步:
+         *   ①组长手机/云端时钟回拨,云端timestamp小于本地已记录时间→永远跳过
+         *   ②组长秒级连续两次上传(同一秒timestamp),删除传播无法被timestamp捕捉
+         *   ③极端: 两台组长手机交替上传,ID集合不同但时间戳接近
+         * 修复: 保留timestamp快路径(绝大多数流量优化场景),但增加
+         *   ID集合不一致性检测——本地车辆ID集合与云端ID集合不相等时,
+         *   忽略timestamp强制执行镜像对齐(删除传播必须保证)。
+         *   判定复杂度O(n):只比ID集合不等(不计完全相同顺序),不产生额外流量开销。 */
+        const cloudIdsArr = (cloudVehicles||[]).map(v => String(v.id));
+        const localIdsArr = VEHICLES.map(v => String(v.id));
+        const sameIds = cloudIdsArr.length === localIdsArr.length &&
+          cloudIdsArr.every(id => localIdsArr.includes(id));
+        const needMirror = (cloudTs > lastSyncTs) || !sameIds;
+        if(needMirror){
           /* 云端有更新: 执行完整镜像对齐(仅在有更新时执行,避免云端无
            * 变化时误删组员本地导入的备份数据) */
           const localIds=new Set(VEHICLES.map(v=>v.id));

@@ -699,7 +699,7 @@ function updateMembersBadge(){
 function hapticFeedback(){
   try{
     if(typeof navigator!=='undefined'&&typeof navigator.vibrate==='function')navigator.vibrate(30);
-  }catch(e){/* 震动失败不影响主流程 */}
+  }catch(e){console.debug('[Media]震动API失败(设备不支持vibrate,忽略):',e.message)}
 }
 
 /* ===================== 缓存管理 (V10.2 问题2) =====================
