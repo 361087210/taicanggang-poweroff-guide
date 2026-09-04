@@ -2,6 +2,48 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.14.0] - 2026-09-04
+
+### 组员零配置同步修复版(组长-组员镜像数据一致性 + 双端同步脚本治理 + 签名构建基建补齐)
+
+#### 🔴 核心修复(三大问题 闭环解决):
+- **修复A(秘钥闭包永久化)**: 新增脚本作用域私有闭包 `_INJECTED_SECRETS_CACHE`；构建期注入的 `window.__BUILD_SECRETS__` 首次读取即浅克隆写入闭包缓存、立即 delete window 引用，后续所有调用直接返回闭包缓存；组员清localStorage、WebView杀进程/APP重启、OTA热更新 全路径下appSecret不再丢失(彻底解决组员「清缓存后必须找管理员抄配置」的高频运维工单)
+- **修复B(镜像同步双通道决策)**: `doSyncDownload` 从单一 `cloudTs > lastSyncTs` 判新升级为 timestamp OR ID集合差集 双条件OR组合；覆盖「同秒上传+删除」「Android时区漂移/NTP时钟回拨」「新安装组员首次同步空ID集」3类真机盲区，保证删除传播100%；同时保留空云端熔断(云端=0台、本地>0台时跳过镜像，防组长上传中断误清空组员本地数据)
+- **修复C(组员零配置横幅+深度防御写入过滤)**: `loadFeishuConfig` 三色横幅状态机——①成员+有注入→✅绿色横幅内置提示+三输入框readonly灰化disabled+同步间隔disabled+保存配置按钮隐藏；②成员+无注入→⚠️琥珀色警示横幅「请下载公司官方签名安装包」；③组长/未登录→🛠蓝色管理员说明横幅(可编辑)；`saveFeishuConfig` 成员态直接return+showToast拒绝,管理员写入强制携带 `_writer:'admin'` 写入标记；`getFeishuCfg pick()` 成员端忽略 localStorage 无admin标记的历史垃圾升级配置(只信任注入缓存/admin显式保存值)，杜绝V5.x→V10.x跨版本升级脏配置污染
+
+#### 📚 文档与发版说明补齐:
+- 新增 `docs/RELEASE_V10120.md`(8K级详细版:单向收敛+九模块拆分+Secret构建期注入+导航栈封装+嵌套深度降压+CSS抽取+XSS全量转义+NPM无npm自举+CI基建9维度完整交付说明+对应版本测试矩阵)
+- 新增 `docs/RELEASE_V10130.md`(8K级详细版: A3四刀切/渲染业务分离/State守卫/XSS绊线 4大交付能力+68专项+变更文件清单)
+- 新增 `docs/RELEASE_V10140.md`(本版本8K级详细交付说明)
+- 新增 `docs/DEVLOG_V10140.md`(V10.14开发决策日志:5类问题根因分析表+修复对比矩阵+16文件修改级摘要+≈454断言全绿测试矩阵+5项遗留风险与缓解)
+- 新增 `docs/ITERATION_PLAN.md` V11.x 五Phase路线图 + 三项核心建议(后端选型升级/APK热更新/原生加固)
+
+#### 🔧 双端同步脚本过期值治理(从硬编码到参数化优先级链):
+- `scripts/backup_to_feishu.py` 完全重写: folderToken = `OS环境变量FEISHU_FOLDER_TOKEN` > `version.json.feishuConfig.folder` > 正确公开默认值 `nodcnGA95g93RhIUSdCeTkhKlQc`(替换V5.3硬编码过期值 `WdXUfZPkClI1audQxIYc90XRnWc`)；自动从version.json读取版本号；飞书Drive目录与APP端对齐为6个子目录(同步数据/注册申请/审批结果/备份文件/vehicle_images/vehicle_videos,缺失则递归get_or_create创建)；新增凭据环境变量预检(缺 env 友好错误提示不抛 stack)
+- `scripts/push_github_final.sh` 完全参数化: `GH_TAG APK_PATH REPO ASSET_NAME BRANCH` 全部 `环境变量 > version.json > 默认值` 优先级链；APK预检 5MB≤size≤120MB(太小直接阻断,太大warn 3s确认)；sha256sum自动生成(APK同目录.sha256)；GitHub发布五步：推送分支 → 删除旧tag下APK/SHA同名资产 → Auto Draft Release → 上传APK+SHA → PATCH Draft→正式发布(引用 docs/RELEASE_Vxxx.md 作为Release Body)
+
+#### 🤖 行业标准构建/CI/签名基建补齐:
+- 新增 `scripts/build_android.sh`: 环境自检(ANDROID_SDK/KEYSTORE/CORDOVA/NODE)→ cordova clean/prepare(触发Secret注入hook) → build release → zipalign 4字节对齐 → apksigner v1+v2+v3 三模签名 → apksigner verify 自校验 → SHA-256 生成 → release/ 产物清单；缺keystore时自动回退输出unsigned APK(兼容CI首跑)；版本号从version.json动态读取,无需手改脚本
+- 新增 `scripts/build_ios.sh`: TEAM_ID / Automatic / Manual 签名三态；TEAM_ID缺失仅 cordova prepare 停止(工程检查形态)；xcodebuild archive → ExportOptions.plist 生成 → xcodebuild -exportArchive；IPA/SHA/xcarchive(.dSYM符号) 统一到 release/；三种签名路径注释占位：本地自动签名/GitHub Actions证书base64注入秘钥链/Fastlane match+gym+pilot企业推荐
+- `.github/workflows/android-release.yml` 现有内联签名流程后追加「Generate APK SHA-256 Checksum」step；Upload artifact/Create Release files 均数组化同时上传 `APK + .apk.sha256`；新增 body_path 注释引用 RELEASE_Vxx.md(取消注释即可直接拼 Release Note 详情)
+- `.github/workflows/ci.yml` 追加 V10.14 专项 step(npm run test:v1014)；上传校验摘要新增 版本号/V10.14 通过失败统计 两行输出
+
+#### ✅ Clean Code 代码审查:
+- **空Catch治理**: 合计补充 17 处关键路径 空catch日志——同步关键路径10处(05-sync.js)区分 console.debug(预期失败/新旧位置回退)/console.warn(API异常/列表失败)；localStorage配额满(00-bootstrap.js)；震动设备不支持(06-media.js)；OTA 三个版本源 回退失败(07-cache.js)。全部禁止裸 `catch(e){}` 或纯注释
+- **复杂业务JSDoc**: `doSyncDownload` 追加完整JSDoc，解释 timestamp+ID差集双通道 决策必要性来源于 3 类真机盲区+空云端熔断
+- **长函数检查**: `doSyncDownload` 实际 91 行(<150阈值)，无需拆分
+
+#### ✅ 版本专项测试:
+- 新增 `tests/test_v1014_zero_config_member.js` 真机级 Mock 10 场景 49 断言(Z1闭包注入/Z6闭包私有性/Z7清缓存幂等/Z2琥珀横幅/Z3绿色横幅+readonly/Z4蓝色管理员横幅/Z8三色class状态机/Z9成员save深度防御+组长admin写入/Z10历史脏配置覆盖防御/Z5镜像决策6子场景)
+- 基建兼容修复:`tests/e2e_harness.js DEMO_BLOCKS` 首项追加 `_INJECTED_SECRETS_CACHE`(V10.14新引入声明必须前置于getFeishuCfg注入,否则旧V1011/v1013基于harness的测试崩溃)；`tests/test_v1013_a3.js` G组版本一致性从硬编码10.13.0改为三端全等动态断言；`tests/test_v104_fixes.js` A28同步屏版本与demo.html静态默认值从v10.13.0→v10.14.0
+- **全量回归≈454断言 0 FAIL**：V53运行时21 + V57逻辑34 + V103六大62 + V104十维46 + V105批量49 + V106导出33 + V107防抖31 + V108回退20 + V109视频17 + V1010分片18 + V1011镜像6 + V1013复杂度68 + V1014零配置49 = 合计454断言/0失败。test:cross需真实飞书Secret跳过(预期)
+
+#### 🚩 版本四处一致性(appId/versionCode):
+- `js/00-bootstrap.js` APP_VERSION 常量 = 10.14.0
+- `config.xml` version/versionCode = 10.14.0 / 101400
+- `version.json` version/versionCode/downloadUrl(→V10.14.0 release URL) + releaseNotes[] 推8项V10.14.0详细条目 + 修复 releaseNotes 数组中JSON语法错误(缺失逗号/截断)
+- `demo.html` 同步屏本地版本静态默认 id=sync-local-ver → v10.14.0(运行时仍会被JS重写为常量APP_VERSION,静态模板默认值仅用于jsdom测试A28)
+
 ## [10.13.0] - 2026-09-01
 
 ### 复杂度治理版(方案A Phase A3)

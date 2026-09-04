@@ -321,8 +321,9 @@ section('G组: 版本一致性(三处对齐)');
   const appVer = extractNamedBlock(src, 'APP_VERSION').match(/'([^']+)'/)[1];
   const cfgXml = fs.readFileSync(path.join(ROOT, 'config.xml'), 'utf8');
   const mCfg = /version="([^"]+)"\s+android-versionCode="(\d+)"/.exec(cfgXml);
-  check('G1 version.json === APP_VERSION === config.xml (10.13.0)', vj.version === '10.13.0' && appVer === '10.13.0' && !!mCfg && mCfg[1] === '10.13.0');
-  check('G2 versionCode三处对齐(101300)', vj.versionCode === 101300 && !!mCfg && Number(mCfg[2]) === 101300);
+  // V10.14.0: 断言从硬编码改为三处值全等动态比较(当前项目 HEAD 版本与 A3 功能无关,仅验证三端对齐)
+  check(`G1 version.json(${vj.version}) === APP_VERSION(${appVer}) === config.xml`, !!mCfg && vj.version === appVer && appVer === mCfg[1]);
+  check(`G2 versionCode三处对齐(${vj.versionCode})`, !!mCfg && Number(mCfg[2]) === vj.versionCode);
 }
 
 // ---------- 汇总 ----------

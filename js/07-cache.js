@@ -514,7 +514,7 @@ async function fetchUpdateInfo(){
     try{
       const data=await fetchWithTimeout(url+'?t='+Date.now());
       consider(typeof data==='object'?data:null);
-    }catch(e){/* try next source */}
+    }catch(e){console.debug('[AutoUpdateCache]本地内置+CDN源解析失败(进入下一源):',e.message)}
   }
   try{
     const j=await fetchWithTimeout(UPDATE_API_SOURCE+'&t='+Date.now());
@@ -525,14 +525,14 @@ async function fetchUpdateInfo(){
       const data=JSON.parse(new TextDecoder('utf-8').decode(bytes));
       consider(data);
     }
-  }catch(e){/* github api source failed */}
+  }catch(e){console.debug('[AutoUpdateCache]GitHub raw API源失败(进入飞书回退):',e.message)}
   try{
     const cfg=DEFAULT_FEISHU_CONFIG;
     if(cfg.appId){
       const data=await downloadJsonFromFeishu(cfg,'version.json');
       consider(data);
     }
-  }catch(e){/* feishu fallback failed */}
+  }catch(e){console.warn('[AutoUpdateCache]全部版本源(内置/CDN/GitHub/飞书)失败:',e.message)}
   return best;
 }
 

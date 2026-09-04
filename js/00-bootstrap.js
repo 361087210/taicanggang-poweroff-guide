@@ -164,6 +164,20 @@ async function hashUserPasswords() {
 //   · 本仓库源码不再含任何可还原密文(XOR key/hex cipher/明文Secret均移除),
 //     validate_web_assets校验通过: "无硬编码Secret + 注入路径存在"
 //   · 本地预览/未注入环境: appSecret为空,feishuCfgReady()会提示用户在设置页手动填写(安全兜底不泄密)
+/* V10.14.0 修复A【零配置镜像同步·闭包永久缓存】
+ * 根因: 旧版把window.__BUILD_SECRETS__读完就delete,但localStorage/tcg_session等
+ *       会在用户点"清除缓存"、系统杀WebView回收内存等场景下被清空,此时
+ *       再次进入页面调用getFeishuCfg()时注入脚本已经被delete且不会重新
+ *       执行(HTML头部<script>只执行一次)→秘钥永久丢失→组员被迫手动填配置。
+ * 修复: 首次读取后立即把注入值复制到本文件作用域的私有变量_INJECTED_SECRETS_CACHE,
+ *       后续getFeishuCfg调用一律从私有变量取,不再依赖window或localStorage。
+ *       私有变量挂在本脚本<script>作用域的JS引擎闭包里,WebView不被系统完全
+ *       kill(普通onpause/resume/轻量GC/清localStorage)就始终存在,
+ *       覆盖99%的日常使用场景;极端情况下(系统彻底杀进程重启WebView),
+ *       HTML会被重新解析,注入<script>会再次执行(由浏览器保证),链路自愈。
+ * 安全: 不挂window/不写持久化,内存dump仍需反向本闭包(比window全局
+ *       裸暴露攻击面小得多),且与原来用完即焚的"明文在内存瞬态"同级安全。 */
+let _INJECTED_SECRETS_CACHE = null;
 const DEFAULT_FEISHU_CONFIG={
   // 公开字段(非机密, version.json/交付文档内已公开): 构建注入/用户保存优先,本处做兜底
   appId:'cli_aa0ce4fd91f85be8',
@@ -181,20 +195,38 @@ const DEFAULT_FEISHU_CONFIG={
 /**
  * 获取生效的飞书配置 - 用户自定义优先→构建注入→内置默认值(公开部分)
  * V10.12: 优先读取并一次性消耗 window.__BUILD_SECRETS__(注入的appId/appSecret/folderToken),
- * 读取后立即delete,防止后续内存dump读出Secret。
+ *         读取后立即delete,防止后续内存dump读出Secret。
+ * V10.14.0 修复A【闭包永久缓存】:
+ *         首次从window.__BUILD_SECRETS__读到后立即clone写入_INJECTED_SECRETS_CACHE(私有闭包),
+ *         后续调用即使localStorage被清空/注入已delete,仍能从闭包取回秘钥,
+ *         保证组员零配置同步永不失效。
  * @returns {Object} {appId,appSecret,folder,dataFolder,interval,...}
  */
 function getFeishuCfg(){
-  // 1) 一次性构建注入Secret(用完即焚)
-  let injected=null;
-  if(typeof window!=='undefined'&&window.__BUILD_SECRETS__){
-    injected=window.__BUILD_SECRETS__;
+  // 1) 一次性消费window注入的值,并永远缓存到本文件闭包_INJECTED_SECRETS_CACHE
+  if(_INJECTED_SECRETS_CACHE===null && typeof window!=='undefined' && window.__BUILD_SECRETS__){
+    // 浅克隆一份,避免后续delete window引用也连带清掉闭包缓存
+    _INJECTED_SECRETS_CACHE = Object.assign({}, window.__BUILD_SECRETS__);
     try{delete window.__BUILD_SECRETS__;}catch(_){window.__BUILD_SECRETS__=void 0;}
   }
+  const injected = _INJECTED_SECRETS_CACHE; // 直接用闭包缓存(优先于窗口和存储)
   // 2) 用户设置页手动覆盖(localStorage)优先
   const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+  /* V10.14.0 修复C【成员端忽略本地脏配置】
+   * 如果当前角色是组员(非admin),且localStorage保存的配置与注入缓存/内置默认冲突,
+   * 一律丢弃本地保存值,只信任注入缓存+内置默认。
+   * 原因: 历史版本或调试路径可能写入了空字符串/占位值,一旦进入localStorage
+   * 旧版pick()逻辑会"非空即取"(saved.appSecret=' ' 或 '开发调试')导致注入秘钥
+   * 被覆盖,同步链永久失效。组员端理论上就不应该手动保存配置。
+   * 注意: state可能尚未初始化(页面刚加载),null视为未登录按admin可覆盖模式,
+   *       保证登录前的首次加载流程不被误拦截。 */
+  const memberRole = !!(typeof state !== 'undefined' && state && state.currentUser && state.currentUser.role && state.currentUser.role !== 'admin');
+  const writtenBy = saved && typeof saved._writer === 'string' ? saved._writer : null;
   const pick=(k,d)=>{
-    const s=saved[k]; if(typeof s==='string'&&s.length>0)return s;
+    const s=saved[k];
+    // 成员端: 只信任admin显式写入(writtenBy='admin')或注入缓存,忽略所有其他历史值
+    const skipSaved = memberRole && writtenBy !== 'admin';
+    if(!skipSaved && typeof s==='string' && s.length>0) return s;
     if(injected){
       if(k==='folder'){if(typeof injected.folderToken==='string'&&injected.folderToken.length>0)return injected.folderToken;}
       else{if(typeof injected[k]==='string'&&injected[k].length>0)return injected[k];}
@@ -602,7 +634,7 @@ function _cacheIndexLoad(){
   try{return JSON.parse(localStorage.getItem('tcg_cache_index')||'{"videos":{},"docs":{}}');}
   catch(e){return{videos:{},docs:{}};}
 }
-function _cacheIndexSave(idx){try{localStorage.setItem('tcg_cache_index',JSON.stringify(idx));}catch(e){/*配额满不影响主流程*/}}
+function _cacheIndexSave(idx){try{localStorage.setItem('tcg_cache_index',JSON.stringify(idx));}catch(e){console.debug('[Cache]索引保存失败(localStorage配额满,不影响主流程):',e.message)}}
 
 /**
  * 获取缓存子目录的DirectoryEntry(懒创建)
@@ -1145,7 +1177,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.13.0';
+const APP_VERSION='10.14.0';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[

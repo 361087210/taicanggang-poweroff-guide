@@ -192,7 +192,7 @@ function createLocalStorage() {
  *  —— 若测试需要mock飞书配置,通过 opts.feishuConfig 传入(本文件下方已支持注入)
  */
 const DEMO_BLOCKS = [
-  'DEFAULT_FEISHU_CONFIG', 'getFeishuCfg', 'feishuCfgReady',
+  'DEFAULT_FEISHU_CONFIG', '_INJECTED_SECRETS_CACHE', 'getFeishuCfg', 'feishuCfgReady',
   'httpFetch', 'httpUploadFile',
   'FEISHU_UPLOAD_ALL_LIMIT', 'FEISHU_MULTIPART_THRESHOLD', 'FEISHU_MULTIPART_MAX',
   '_feishuUploadLastTs', '_feishuQpsGate', '_adler32', '_sanitizeFeishuFileName',
