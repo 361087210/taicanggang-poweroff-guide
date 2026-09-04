@@ -127,11 +127,22 @@ jobs:
         id: scheme
         working-directory: ./tcg_app
         run: |
-          # Cordova 自动生成 scheme 名 (通常等于 config.xml <name> 值或 widget id 最后一段)
-          SCHEME=$(xcodebuild -list -project platforms/ios/*.xcodeproj 2>/dev/null | grep -A1 "Schemes:" | tail -1 | xargs)
+          # V10.14.1基建修复: 旧写法 grep -A1 "Schemes:" | tail -1 恒取第一个 scheme,
+          # 而Cordova工程列表首项是"Cordova"(CordovaLib框架库), 导致只构建框架不构建APP本体
+          # 修复: 列出全部 scheme 后排除 "Cordova", 取应用本体 scheme; 再逐级回退
+          SCHEME=$(xcodebuild -list -project platforms/ios/*.xcodeproj 2>/dev/null \
+            | sed -n '/Schemes:/,$p' | sed '1d;/^[[:space:]]*$/d;s/^[[:space:]]*//;s/[[:space:]]*$//' \
+            | grep -v '^Cordova$' | head -1)
           if [ -z "$SCHEME" ]; then
-            # fallback: 用 plist 里的 CFBundleName
+            # fallback1: config.xml <name>(Cordova工程 scheme 名即项目名)
+            SCHEME=$(sed -nE 's:.*<name>([^<]+)</name>.*:\1:p' config.xml | head -1 | xargs)
+          fi
+          if [ -z "$SCHEME" ]; then
+            # fallback2: plist CFBundleName
             SCHEME=$(defaults read platforms/ios/*/Info.plist CFBundleName 2>/dev/null || echo "TCG Poweroff")
+          fi
+          if [ -z "$SCHEME" ]; then
+            echo "ERROR: 未探测到应用 scheme"; exit 1
           fi
           echo "SCHEME=${SCHEME}" >> $GITHUB_ENV
           echo "Detected Xcode scheme: ${SCHEME}"
@@ -143,8 +154,11 @@ jobs:
           # 跳过签名: CODE_SIGNING_ALLOWED=NO
           cordova build ios --device -- --buildFlag="-UseModernBuildSystem=YES"
           cd platforms/ios
+          # V10.14.1基建修复: 显式 -derivedDataPath 把产物固定到工程内已知路径,
+          # 避免落入 ~/Library/Developer/Xcode/DerivedData 导致 Collect IPA 找不到
           xcodebuild -workspace *.xcworkspace -scheme "${SCHEME}" -configuration Debug \
             -destination generic/platform=iOS \
+            -derivedDataPath build/dd \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
@@ -188,11 +202,22 @@ jobs:
 
       - name: Collect IPA
         run: |
-          IPA_PATH=$(find tcg_app/platforms/ios/build -name "*.ipa" -o -name "*.app" | head -1)
+          # V10.14.1基建修复: 三级回退搜索产物——
+          #   优先: 显式 -derivedDataPath build/dd 的确定性输出(scheme=应用本体)
+          #   回退1: legacy cordova-ios(<7) platforms/ios/build 输出
+          #   回退2: Xcode 默认 DerivedData(Debug-iphoneos, 排除CordovaLib)
+          IPA_PATH=$(find tcg_app/platforms/ios/build/dd/Build/Products -maxdepth 2 -name "*.app" 2>/dev/null | head -1)
+          if [ -z "$IPA_PATH" ]; then
+            IPA_PATH=$(find tcg_app/platforms/ios/build \( -name "*.ipa" -o -name "*.app" \) 2>/dev/null | head -1)
+          fi
+          if [ -z "$IPA_PATH" ]; then
+            IPA_PATH=$(find "$HOME/Library/Developer/Xcode/DerivedData" -name "*.app" -path "*iphoneos*" -not -path "*CordovaLib*" 2>/dev/null | head -1)
+          fi
           echo "Found: $IPA_PATH"
           if [ -z "$IPA_PATH" ]; then
-            echo "No IPA found, listing build dir:"
-            ls -la tcg_app/platforms/ios/build/ || true
+            echo "No IPA found, listing build dirs:"
+            ls -la tcg_app/platforms/ios/build/ 2>/dev/null || true
+            ls -la tcg_app/platforms/ios/build/dd/Build/Products/ 2>/dev/null || true
             exit 1
           fi
           # 如果只找到 .app, 打包成 .ipa
