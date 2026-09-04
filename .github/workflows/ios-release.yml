@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (e.g. 10.13.0)'
+        description: 'Version to build (e.g. 10.14.0)'
         required: true
-        default: '10.13.0'
+        default: '10.14.0'
       build_type:
         description: 'Build type (development=无签名 IPA | release=需要Apple证书)'
         required: true
@@ -23,7 +23,9 @@ permissions:
   contents: write
 
 env:
-  XCODE_VERSION: '15.4'
+  # V10.14.1基建修复: macos-latest镜像已移除Xcode 15.4(现仅26.x), 固定旧版本号导致
+  # setup-xcode直接报"Could not find Xcode version"; 改用latest-stable随镜像演进, 避免再次过期
+  XCODE_VERSION: 'latest-stable'
 
 jobs:
   build:
@@ -37,7 +39,12 @@ jobs:
       - name: Derive version from config.xml
         id: ver
         run: |
-          APP_VERSION=$(grep -oP 'version="\K[0-9.]+' config.xml | head -1)
+          # V10.14.1基建修复: macOS BSD grep不支持-P(-oP为GNU扩展), 旧写法在macos runner上
+          # 报"grep: invalid option -- P"导致APP_VERSION为空串; 改用BSD/GNU双兼容的sed -nE
+          APP_VERSION=$(sed -nE 's/.*[[:space:]]version="([0-9][0-9.]*)".*/\1/p' config.xml | head -1)
+          if [ -z "$APP_VERSION" ]; then
+            echo "ERROR: 未从config.xml解析到版本号"; exit 1
+          fi
           echo "APP_VERSION=${APP_VERSION}" >> $GITHUB_ENV
           echo "Detected version=${APP_VERSION}"
 
