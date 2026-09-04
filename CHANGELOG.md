@@ -2,6 +2,14 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### iOS发版流水线基建修复(tag v10.14.0 触发后暴露的三处环境级缺陷, 不涉及APP业务代码)
+- **修复1(macOS grep兼容)**: `ios-release.yml` 版本解析 `grep -oP`(GNU扩展)在 macOS BSD grep 下报 `invalid option -- P` 导致 APP_VERSION 空串; 改用 `sed -nE` BSD/GNU双兼容写法 + 空版本号显式阻断
+- **修复2(Xcode版本随镜像演进)**: `XCODE_VERSION` 固定 `15.4` 已从 macos-latest 镜像移除(现仅 26.x), `setup-xcode` 报 `Could not find Xcode version`; 改用 `latest-stable` 随镜像演进不再过期
+- **修复3(scheme误选框架库+产物路径漂移)**: Cordova 工程 scheme 列表含 `Cordova`/`CordovaLib`(框架库)与应用本体三项, 旧探测恒取首项导致仅构建框架(1 target)且产物落入 DerivedData, `Collect IPA` 找不到产物 exit 1; 升级为「config.xml `<name>` 精确匹配 + `^Cordova` 前缀排除」双保险探测, xcodebuild 追加 `-derivedDataPath build/dd` 固定产物路径, Collect IPA 三级回退搜索
+- 附带: workflow_dispatch 默认版本号 10.13.0 → 10.14.0
+
 ## [10.14.0] - 2026-09-04
 
 ### 组员零配置同步修复版(组长-组员镜像数据一致性 + 双端同步脚本治理 + 签名构建基建补齐)
