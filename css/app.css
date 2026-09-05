@@ -154,12 +154,12 @@ body{margin:0;background:#f5f6fa;display:block;min-height:100vh;}
 .chk.on::after{content:'';width:6px;height:10px;border:2px solid #fff;border-top:0;border-left:0;transform:rotate(45deg) translate(-1px,-1px);}
 
 /* Safe area padding for status bar */
-/* V10.9.0 问题2: 修复Android WebView safe-area-inset-top恒为0时顶部标题被状态栏遮挡——
- *   旧版覆写把pt-12(48px)降到safe-top+12px,Android上--safe-top=0即仅12px,不够;
- *   修正为safe-top+48px,无安全区时48px(与原Tailwind pt-12一致),有安全区时叠加 */
+/* V10.9.0 问题2 + V10.14.4安卓端留白修复:
+ *   Android端StatusBarOverlaysWebView=false,WebView从状态栏下方开始,
+ *   safe-top恒为0 → pt-12=48px(纯标题栏高度),无多余顶部留白;
+ *   iOS端safe-top=刘海/灵动岛高度,标题栏自动避开安全区。 */
 .phone-frame .pt-12{padding-top:calc(var(--safe-top) + 48px);}
-/* V10.9.0 问题2: 修复底部按钮被导航栏遮挡——旧版覆写pb-24(96px)降到safe-bottom+24px,
- *   Android上--safe-bottom=0即仅24px<底部导航64px,按钮被nav遮挡;修正为safe-bottom+96px */
+/* 底部按钮区抬升: pb-24 = 底部导航64px + 安全间距,防止被系统手势条遮挡 */
 .phone-frame .pb-24{padding-bottom:calc(var(--safe-bottom) + 96px);}
 
 /* ===================== V10.7.0 问题4: 全界面自适应近10年主流手机屏 =====================
@@ -215,7 +215,6 @@ img,svg,video{max-width:100%;}
  * 机制: demo.html检测standalone后在<html>加pwa-standalone类,此处统一适配;
  *       浏览器/Android APK环境无该类,零影响(纯增量) */
 html.pwa-standalone .phone-frame{padding-top:var(--safe-top);} /* 顶栏避开刘海/灵动岛 */
-html.pwa-standalone .phone-frame .pt-12{padding-top:calc(var(--safe-top) + 48px);} /* 与既有规则叠加语义一致 */
 html.pwa-standalone .toast{bottom:calc(90px + var(--safe-bottom));} /* Toast抬离底部手势条 */
 /* standalone下禁止文本选择呼出菜单干扰操作(原生APP行为对齐) */
 html.pwa-standalone .phone-frame{-webkit-user-select:none;user-select:none;}
