@@ -26,6 +26,11 @@ name: Sync Web Data from Feishu
 on:
   schedule:
     - cron: '*/5 * * * *'   # 每5分钟(即时同步上限,GitHub调度最短间隔)
+  push:                      # 同步链路自身代码变更时立即执行一次镜像
+    branches: [main]         # (GITHUB_TOKEN的推送不会触发本工作流,无循环风险)
+    paths:
+      - 'scripts/sync_web_data.js'
+      - '.github/workflows/sync-web-data.yml'
   workflow_dispatch:          # 支持手动触发立即同步
 
 permissions:
