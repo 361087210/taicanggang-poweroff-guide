@@ -128,7 +128,7 @@
  "pendingRegCount": 0,
  "backups": [],
  "sources": {
-  "vehicle": "开发者主档:(项目根)/APP数据备份/同步数据/vehicles_data.json",
+  "vehicle": "本地快照:(项目根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_1788251773640.json",
   "notice": null,
   "users": "approved:(项目根)/APP数据备份/审批结果/approved_users.json"
  },
