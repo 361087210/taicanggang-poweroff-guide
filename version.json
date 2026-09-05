@@ -1,14 +1,12 @@
 {
-  "version": "10.14.1",
-  "versionCode": 101401,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.14.1/tcg_poweroff_v10.14.1.apk",
+  "version": "10.14.2",
+  "versionCode": 101402,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.14.2/tcg_poweroff_v10.14.2.apk",
   "releaseNotes": [
-    "V10.14.1 同步配置出口统一修复版。一句话总结: js/05-sync.js五处直读localStorage绕过getFeishuCfg()统一出口,导致组员端(及依赖构建注入凭据的组长端)被'飞书配置不完整'门禁误拦、数据无法上下云——本次全部改走统一出口并配50断言专项测试+真机跨网络16项链路验证",
-    "根因: loadFeishuConfig/doSyncDownload/checkCloudDataUpdate/exportSyncConfig/_syncUploadPipeline五处直接JSON.parse(localStorage.getItem('feishu_config'))——组员端本地从未保存过该键,appSecret恒取DEFAULT_FEISHU_CONFIG空串,feishuCfgReady恒false,三色横幅误报'未注入同步凭据'且上传/拉取/轮询/导出四条链路全部被拦",
-    "修复(统一出口): 五处全部改走getFeishuCfg()——优先消费构建期注入秘钥的闭包缓存_INJECTED_SECRETS_CACHE(与syncPendingToFeishu等8处既有出口对齐),组员零配置场景仍返回完整可用配置;syncSub/pendingSub/approvedSub/backupSub全部子目录字段随统一出口返回,V10.10.0根因修复②语义保留",
-    "安全语义保留: Secret输入框仅回显用户手动保存值(注入秘钥只在闭包内存供同步链路使用,不落DOM可读值);interval为用户偏好保留回显;admin显式保存(_writer=admin)手动值仍优先覆盖注入值",
-    "测试:新增test_v1015_member_sync_gate.js专项50断言11场景(B1-B11:组长/组员/注入/零本地/脏配置/导出/轮询/安全守卫矩阵),红绿红三步验证;修复test:v107 B6 fixture现代化(补_writer=admin标记);修复test:cross真机harness(模拟APK构建期注入__BUILD_SECRETS__,跨网络注册审批16项全绿);修复test:logic维度4状态污染(闭包缓存重置)",
-    "继承V10.14.0(组员零配置同步修复:闭包永久化+双通道镜像决策+三色横幅+写入深度防御)+V10.13.0(A3四刀切/渲染分离/State守卫/XSS绊线)+V10.12.0(单向收敛/九模块拆分/Secret构建注入)+V10.11.0(镜像同步删除传播)+V10.10.0(大文件分片上传)全部能力"
+    "V10.14.2 车辆详情页多视频支持+iOS方案A(PWA)版。一句话总结: 车辆详情页视频区域支持添加和播放多个教学视频(视频列表+切换播放),iOS端按方案A实现PWA网页应用(manifest.json+Service Worker离线缓存+添加到主屏幕全屏模式),组员iPhone用Safari打开即可添加到桌面像原生APP一样使用",
+    "多视频功能: 详情页视频区域从单视频改为多视频列表展示,每个视频可独立点击播放;播放器内支持视频切换(上一个/下一个);编辑表单已支持多视频选择(继承V10.14.1能力);视频上传飞书云端链路不变(vehicle_videos目录),新增视频自动继承五源回退链",
+    "iOS方案A(PWA): 新增manifest.json(应用名称/图标/全屏模式/独立显示)+Service Worker(sw.js离线缓存壳+资源预缓存+离线降级);demo.html注入PWA meta标签(apple-mobile-web-app-capable/状态栏样式/触摸图标)+SW注册脚本;iOS Safari打开→分享→添加到主屏幕→全屏图标体验接近原生APP",
+    "继承V10.14.1(同步配置出口统一修复:五处直读localStorage改走getFeishuCfg()统一出口)+V10.14.0(组员零配置同步修复)+V10.13.0(A3四刀切/渲染分离/State守卫/XSS绊线)+V10.12.0(单向收敛/九模块拆分/Secret构建注入)全部能力"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",

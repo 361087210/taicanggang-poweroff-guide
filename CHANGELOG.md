@@ -4,6 +4,18 @@
 
 ## [未发布]
 
+### V10.14.2 车辆详情页多视频支持 + iOS方案A(PWA网页应用)
+
+#### ✨ 新功能:
+- **车辆详情页多视频列表**: 详情页视频区域从单视频卡片改为多视频垂直列表展示,每个视频独立点击播放;区域标题多视频时显示"视频演示(N个)";卡片右上角显示序号标记;第一个视频标题为"断电教学视频",其余为"补充视频N"
+- **播放器内视频切换**: 新增`_currentVideoIndex`索引追踪;`switchVideo(direction)`无缝切换上一个/下一个(循环),切换时清理当前视频状态后复用`openVideoPlayer`五源回退链重新加载;播放器顶部显示"视频 1/N"序号+导航按钮(单视频时隐藏)
+- **上传回调回到当前索引**: `pickVideoFile`上传完成后`openVideoPlayer(_currentVideoIndex)`回到当前视频而非第一个;`pickVideoFile`文件名取`v.videoPaths[_currentVideoIndex]`而非硬编码`[0]`
+- **iOS方案A PWA**: 新增`manifest.json`(应用名称/图标/全屏模式/竖屏/主题色) + `sw.js`(应用壳预缓存+静态资源缓存优先+API网络优先+离线导航降级) + `icon.svg`(512x512矢量图标);`demo.html`注入PWA meta标签(apple-mobile-web-app-capable/status-bar-style/touch-icon/theme-color)+Service Worker注册脚本;iOS Safari打开→添加到主屏幕→全屏图标体验接近原生APP,离线可用
+
+#### 🚩 版本一致性升级 10.14.1 → 10.14.2(versionCode 101402):
+- `js/00-bootstrap.js` APP_VERSION / `config.xml` version+versionCode / `version.json` version+versionCode+downloadUrl+releaseNotes / `demo.html` / `tests/test_v1014`+`tests/test_v1015` 版本断言 / `ios-release.yml` workflow_dispatch 默认版本号
+- **V10.14.1代码未改动**: 仅版本号断言升级,同步配置出口统一等核心逻辑零变更
+
 ### V10.14.1 同步配置出口统一修复(组长组员数据无法同步·组员端"飞书配置不完整"误报根因闭环)
 
 #### 🔴 根因与核心修复:

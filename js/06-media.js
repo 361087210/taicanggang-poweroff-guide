@@ -71,18 +71,24 @@ function resetZoom(){state.photoZoom=1;document.getElementById('photo-viewer-img
  *  - closeVideoPlayer递增会话号使所有在途回调全部失效。
  */
 let _videoSession=0;
+let _currentVideoIndex=0; // V10.14.2: 当前播放视频索引(多视频支持)
 
-async function openVideoPlayer(){
+async function openVideoPlayer(videoIndex){
+  videoIndex=videoIndex||0;
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v||!v.videoPaths||!v.videoPaths.length){
     showToast('该车辆暂无视频');
     return;
   }
+  if(videoIndex>=v.videoPaths.length)videoIndex=0;
+  _currentVideoIndex=videoIndex;
   const session=++_videoSession; // 开启新播放会话,旧会话的源链自动失效
   document.getElementById('video-player').classList.add('show');
+  // V10.14.2: 更新播放器内视频导航信息
+  _updateVideoNav(v.videoPaths.length,videoIndex);
   const video=document.getElementById('video-element');
   const cdnBase=`https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@${GITHUB_BRANCH}`;
-  const fileName=v.videoPaths[0].split('/').pop();
+  const fileName=v.videoPaths[videoIndex].split('/').pop();
 
   // 清除旧的事件监听器与错误提示
   video.onerror=null;
@@ -116,16 +122,16 @@ async function openVideoPlayer(){
   // V10.2 问题1修复: 网络源链抽为独立函数,供磁盘缓存未命中/缓存损坏两条路径复用
   const playFromNetwork=()=>{
     // 源①: 本地APK内路径
-    tryPlaySource(video,v.videoPaths[0],()=>{
+    tryPlaySource(video,v.videoPaths[videoIndex],()=>{
       if(session!==_videoSession)return; // 用户已退出,终止源链
       // 源②: GitHub Release直链(V5.3.5, 免鉴权+Range流式秒开)
       const directUrl=mediaDirectUrl(fileName);
       if(directUrl){
         // V10.2: 流式播放成功后异步抓取落盘,下次秒开
-        tryPlaySource(video,directUrl,()=>tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0],session),session,()=>{cacheUrlToDisk(directUrl,fileName);});
+        tryPlaySource(video,directUrl,()=>tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[videoIndex],session),session,()=>{cacheUrlToDisk(directUrl,fileName);});
       }else{
         // 未映射的视频(组长新上传)直接走飞书云端
-        tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[0],session);
+        tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[videoIndex],session);
       }
     },session);
   };
@@ -146,6 +152,58 @@ async function openVideoPlayer(){
     return;
   }
   playFromNetwork();
+}
+
+/**
+ * V10.14.2: 更新视频播放器内的导航信息(当前序号/总数/切换按钮可见性)
+ * @param {number} total - 视频总数
+ * @param {number} current - 当前视频索引(0-based)
+ */
+function _updateVideoNav(total,current){
+  const navEl=document.getElementById('video-nav-info');
+  if(navEl){
+    if(total>1){
+      navEl.style.display='';
+      navEl.textContent=`视频 ${current+1}/${total}`;
+    }else{
+      navEl.style.display='none';
+    }
+  }
+  const prevBtn=document.getElementById('video-prev-btn');
+  const nextBtn=document.getElementById('video-next-btn');
+  if(prevBtn)prevBtn.style.display=total>1?'':'none';
+  if(nextBtn)nextBtn.style.display=total>1?'':'none';
+}
+
+/**
+ * V10.14.2: 切换视频(上一个/下一个)
+ * 多视频支持——播放器内直接切换,无需关闭重开
+ * @param {number} direction - -1=上一个, 1=下一个
+ */
+function switchVideo(direction){
+  const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
+  if(!v||!v.videoPaths||v.videoPaths.length<=1)return;
+  let newIdx=_currentVideoIndex+direction;
+  if(newIdx<0)newIdx=v.videoPaths.length-1;
+  if(newIdx>=v.videoPaths.length)newIdx=0;
+  // 清理当前视频状态(复用closeVideoPlayer的清理逻辑,但不移除overlay)
+  _videoSession++; // 使当前会话的所有异步回调失效
+  const video=document.getElementById('video-element');
+  if(video._currentTimer){clearTimeout(video._currentTimer);video._currentTimer=null;}
+  video.onerror=null;
+  video.onloadeddata=null;
+  if(video._playedHook){
+    video.removeEventListener('timeupdate',video._playedHook);
+    video.removeEventListener('ended',video._playedHook);
+  }
+  try{video.pause();}catch(e){}
+  video.removeAttribute('src');
+  video.load();
+  clearVideoError();
+  const loadingEl=document.getElementById('video-loading');
+  if(loadingEl)loadingEl.classList.remove('show');
+  // 以新索引重新打开(复用openVideoPlayer的五源回退链)
+  openVideoPlayer(newIdx);
 }
 
 /**
@@ -432,7 +490,7 @@ function clearVideoError(){
 function pickVideoFile(){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v||!v.videoPaths||!v.videoPaths.length)return;
-  const fileName=_sanitizeFeishuFileName(v.videoPaths[0].split('/').pop());
+  const fileName=_sanitizeFeishuFileName(v.videoPaths[_currentVideoIndex].split('/').pop());
   const input=document.createElement('input');
   input.type='file';
   input.accept='video/mp4,video/quicktime,video/webm';
@@ -466,7 +524,7 @@ function pickVideoFile(){
       showToast('视频上传成功,全组设备已可播放');
       addSyncLog(`视频上传成功 · ${fileName} · ${(file.size/1048576).toFixed(1)}MB`,'green');
       clearVideoError();
-      openVideoPlayer();
+      openVideoPlayer(_currentVideoIndex);
     }catch(err){
       console.error('Video upload failed:',err);
       showToast('视频上传失败: '+(err.message||err));

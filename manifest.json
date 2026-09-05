@@ -1,0 +1,19 @@
+{
+  "name": "太仓港断电指导",
+  "short_name": "太仓港断电",
+  "description": "太仓港商品车断电操作标准化指导平台",
+  "start_url": "./demo.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1a2e",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
