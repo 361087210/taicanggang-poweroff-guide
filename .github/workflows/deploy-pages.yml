@@ -1,0 +1,69 @@
+name: Deploy Web to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'demo.html'
+      - 'css/**'
+      - 'js/**'
+      - 'vendor/**'
+      - 'vehicle_images/**'
+      - 'manifest.json'
+      - 'sw.js'
+      - 'feishu-api.js'
+      - 'vehicles_data.js'
+      - 'version.json'
+      - 'icon-*.png'
+      - 'icon.svg'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare publish directory
+        run: |
+          mkdir -p _publish
+          cp demo.html _publish/
+          cp manifest.json _publish/
+          cp sw.js _publish/
+          cp feishu-api.js _publish/
+          cp vehicles_data.js _publish/
+          cp version.json _publish/
+          cp icon-*.png _publish/ 2>/dev/null || true
+          cp icon.svg _publish/ 2>/dev/null || true
+          cp -r css _publish/
+          cp -r js _publish/
+          cp -r vendor _publish/
+          cp -r vehicle_images _publish/
+          echo "Publish dir contents:"
+          ls -la _publish/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './_publish'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
