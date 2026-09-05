@@ -2,8 +2,8 @@
  "rootFolderToken": "nodcnGA95g93RhIUSdCeTkhKlQc",
  "walkSummary": {
   "folders": 10,
-  "nodes": 23,
-  "files": 14,
+  "nodes": 25,
+  "files": 16,
   "errors": []
  },
  "tree": [
@@ -13,14 +13,59 @@
    "m": 1788526907
   },
   {
+   "p": "(云盘根)/APP数据备份/同步数据",
+   "t": "folder",
+   "m": 1788636740
+  },
+  {
+   "p": "(云盘根)/APP数据备份/同步数据/本地备份",
+   "t": "folder",
+   "m": 1788251775
+  },
+  {
+   "p": "(云盘根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****3640.json",
+   "t": "file",
+   "m": 1788251773
+  },
+  {
+   "p": "(云盘根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****2892.json",
+   "t": "file",
+   "m": 1788251672
+  },
+  {
+   "p": "(云盘根)/APP数据备份/同步数据/data_update_notice.json",
+   "t": "file",
+   "m": 1788636739
+  },
+  {
+   "p": "(云盘根)/APP数据备份/同步数据/vehicle_sync_data.json",
+   "t": "file",
+   "m": 1788636734
+  },
+  {
+   "p": "(云盘根)/APP数据备份/同步数据/version.json",
+   "t": "file",
+   "m": 1788251771
+  },
+  {
+   "p": "(云盘根)/APP数据备份/同步数据/vehicles_data.json",
+   "t": "file",
+   "m": 1788251766
+  },
+  {
+   "p": "(云盘根)/APP数据备份/同步数据/_sync_verify_178****9332.json",
+   "t": "file",
+   "m": 1788231110
+  },
+  {
    "p": "(云盘根)/APP数据备份/审批结果",
    "t": "folder",
-   "m": 1788587763
+   "m": 1788636738
   },
   {
    "p": "(云盘根)/APP数据备份/审批结果/approved_users.json",
    "t": "file",
-   "m": 1788587759
+   "m": 1788636736
   },
   {
    "p": "(云盘根)/APP数据备份/注册申请",
@@ -83,41 +128,6 @@
    "m": 1788526909
   },
   {
-   "p": "(云盘根)/APP数据备份/同步数据",
-   "t": "folder",
-   "m": 1788251773
-  },
-  {
-   "p": "(云盘根)/APP数据备份/同步数据/本地备份",
-   "t": "folder",
-   "m": 1788251775
-  },
-  {
-   "p": "(云盘根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****3640.json",
-   "t": "file",
-   "m": 1788251773
-  },
-  {
-   "p": "(云盘根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****2892.json",
-   "t": "file",
-   "m": 1788251672
-  },
-  {
-   "p": "(云盘根)/APP数据备份/同步数据/version.json",
-   "t": "file",
-   "m": 1788251771
-  },
-  {
-   "p": "(云盘根)/APP数据备份/同步数据/vehicles_data.json",
-   "t": "file",
-   "m": 1788251766
-  },
-  {
-   "p": "(云盘根)/APP数据备份/同步数据/_sync_verify_178****9332.json",
-   "t": "file",
-   "m": 1788231110
-  },
-  {
    "p": "(云盘根)/APP数据备份/备份文件",
    "t": "folder",
    "m": 1788231099
@@ -126,15 +136,20 @@
  "pendingRegCount": 0,
  "backups": [],
  "sources": {
-  "vehicle": "本地快照:(云盘根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_1788251773640.json",
-  "notice": null,
+  "vehicle": "安卓主档:(云盘根)/APP数据备份/同步数据/vehicle_sync_data.json",
+  "notice": "sync:(云盘根)/APP数据备份/同步数据/data_update_notice.json",
   "users": "approved:(云盘根)/APP数据备份/审批结果/approved_users.json"
  },
  "vehicleCandidates": [
   {
    "kind": "安卓主档",
-   "count": 0,
-   "files": []
+   "count": 1,
+   "files": [
+    {
+     "p": "(云盘根)/APP数据备份/同步数据/vehicle_sync_data.json",
+     "m": 1788636734
+    }
+   ]
   },
   {
    "kind": "开发者主档",
@@ -164,9 +179,9 @@
  "approvedHits": [
   {
    "p": "(云盘根)/APP数据备份/审批结果/approved_users.json",
-   "m": 1788587759
+   "m": 1788636736
   }
  ],
- "vehicleCount": 73,
- "accountCount": 1
+ "vehicleCount": 82,
+ "accountCount": 10
 }
