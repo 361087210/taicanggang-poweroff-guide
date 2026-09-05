@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * ============================================================
- * 网页版数据镜像同步脚本 V2.0 (V10.14.3 配套)
+ * 网页版数据镜像同步脚本 V2.1 (V10.14.3 配套)
  * ============================================================
  * 背景: 飞书OpenAPI响应头不携带Access-Control-Allow-Origin,
  *      浏览器(GitHub Pages网页版)直接fetch飞书API会被CORS策略100%拦截;
@@ -14,18 +14,21 @@
  * 数据流: 组长安卓端上传 → 飞书云盘 → [本脚本定时镜像] → 仓库web-data/
  *        → GitHub Pages部署 → 网页版同源fetch(60秒轮询感知更新)
  *
- * V2.0 变更(修复"网页版只有73组内置数据"问题):
- *   1. 多位置候选查找: 与安卓端三级回退完全对齐——
- *      vehicle_sync_data.json / approved_users.json 在以下位置全部搜索,
- *      跨位置取 modified_time 最新的一份(安卓端靠localStorage缓存token,
- *      云端目录结构变化后其实际读写位置可能与"根目录→APP数据备份"标准
- *      结构不一致,单一位置查找会落空):
- *        ① APP数据备份/同步数据(或审批结果)/   V5.7+标准位置
- *        ② APP数据备份/根                      V5.3.4-5.6旧位置
- *        ③ 项目根目录/                          V5.3.3-及更早
- *        ④ 项目根目录/同步数据/                 防御性候选
- *   2. 取证模式: 把实际看到的云端目录结构快照写入web-data/debug_structure.json
- *      (仅含名称/类型/修改时间,不含易变时间戳避免空提交),用于诊断目录漂移。
+ * V2.1 变更(修复"网页版只有73组内置数据 + 组员账号无法登录"):
+ *   V2.0多位置候选仍落空——取证快照显示 APP数据备份/同步数据/ 存在4个文件
+ *   却按名字找不到vehicle_sync_data.json,证明云端实际结构漂移超出预设候选。
+ *   V2.1改为全盘树遍历,彻底消除"位置假设":
+ *   1. 从应用云盘根 + 配置根目录(FEISHU_FOLDER_TOKEN)双入口递归遍历全树
+ *      (folder_token去重防环,深度≤5防御异常深层嵌套)
+ *   2. 三个核心JSON(vehicle_sync_data/data_update_notice/approved_users)
+ *      按文件名在全树范围搜索,跨位置取modified_time最新一份——数据无论
+ *      漂移到哪个文件夹都能命中,与安卓端三级回退语义对齐且更宽
+ *   3. 备份回退: vehicle_sync_data.json全树不存在时,取最新
+ *      vehicle_backup_*.json(组长手动备份,含vehicles+users全量快照)作为
+ *      车型与账号数据源——云端主数据丢失/损坏时网页版仍可从备份恢复;
+ *      approved_users.json缺失/为空/备份更新且账号更多时同样回退
+ *   4. 完整树形取证快照写入web-data/debug_structure.json
+ *      (文件名中11位手机号脱敏;仅名称/类型/修改时间,不含文件内容)
  *
  * 镜像内容:
  *   1. vehicle_sync_data.json  → web-data/vehicle_sync_data.json   (车型数据)
@@ -52,13 +55,10 @@ const { execSync } = require('child_process');
 // ---------- 配置 ----------
 const SALT = 'tcg-web-2026'; // ⚠️ 必须与 js/09-web-sync.js 中 WEB_SYNC_SALT 完全一致
 const ROOT_FOLDER = process.env.FEISHU_FOLDER_TOKEN || 'nodcnGA95g93RhIUSdCeTkhKlQc';
-const DATA_FOLDER_NAME = 'APP数据备份';
-const SYNC_SUB = '同步数据';
-const APPROVED_SUB = '审批结果';
-const PENDING_SUB = '注册申请';
 const IMAGES_DIR_NAME = 'vehicle_images';
 const WEB_DATA_DIR = 'web-data';
 const MAX_IMAGE_DOWNLOADS = 80; // 单次运行最多镜像图片数(防超时,余量下次继续)
+const MAX_WALK_DEPTH = 5;       // 树遍历深度上限(防御异常深层嵌套)
 const API_BASE = 'https://open.feishu.cn/open-apis';
 
 const APP_ID = process.env.FEISHU_APP_ID;
@@ -114,39 +114,21 @@ async function downloadFile(token, fileToken) {
   return Buffer.from(await resp.arrayBuffer());
 }
 
-/** 在文件列表中按名字取修改时间最新的一份(与前端语义一致) */
-function latestByName(files, name) {
-  const matches = files.filter(f => f.name === name && f.type === 'file');
-  if (!matches.length) return null;
-  return matches.reduce((a, b) =>
-    (parseInt(b.modified_time || 0, 10) || 0) > (parseInt(a.modified_time || 0, 10) || 0) ? b : a);
+/** 下载并解析JSON(容错BOM) */
+async function downloadJson(token, fileToken) {
+  const buf = await downloadFile(token, fileToken);
+  return JSON.parse(buf.toString('utf8').replace(/^\uFEFF/, ''));
 }
 
 function mtime(f) { return parseInt(f && f.modified_time || 0, 10) || 0; }
-
-/** 在多个候选位置中按名字找文件,跨位置取modified_time最新的一份 */
-function findLatestAcross(locations, name) {
-  let best = null;
-  for (const loc of locations) {
-    const f = latestByName(loc.files, name);
-    if (f && (!best || mtime(f) > mtime(best.f))) best = { loc: loc.label, f };
-  }
-  return best;
-}
-
-/** 在文件夹下按名字找子文件夹token */
-function findSubFolder(files, name) {
-  const hit = files.find(f => f.name === name && f.type === 'folder');
-  return hit ? hit.token : null;
-}
 
 function sha256Hex(s) {
   return crypto.createHash('sha256').update(s, 'utf8').digest('hex');
 }
 
-/** 目录结构摘要(写公开取证文件用): 仅名称/类型/修改时间——修改时间只在云端变化时变,不会造成空提交 */
-function summarize(files) {
-  return (files || []).map(f => ({ n: f.name, t: f.type, m: f.modified_time || '' }));
+/** 文件名脱敏(公开取证文件用): 11位手机号段打码,其余保留 */
+function redactName(name) {
+  return String(name).replace(/\d{11}/g, m => m.slice(0, 3) + '****' + m.slice(-2));
 }
 
 // ---------- GitHub Actions输出(供workflow条件部署Pages) ----------
@@ -163,114 +145,129 @@ async function main() {
     setOutput('armed', 'false'); // 无凭证: 工作流不续链(避免无意义循环)
     return;
   }
-  log('开始镜像飞书云端数据...');
+  log('开始镜像飞书云端数据(V2.1全盘树遍历)...');
   const token = await getToken();
   log('飞书认证成功');
 
-  // ---- 目录结构探测(V2.0: 多位置候选 + 取证快照) ----
-  const debug = {
-    rootFolderToken: ROOT_FOLDER, // 暴露实际使用的根目录(诊断secret与内置值是否一致)
-    rootFiles: [],
-    dataFolder: null,
-    driveRoot: null,
-    driveRootError: null,
-    pendingCount: null,
-    locations: [],
-    found: {},
-    notes: [],
-  };
-
-  // ③ 候选: 项目根目录
-  const rootFiles = await listAllFiles(token, ROOT_FOLDER);
-  debug.rootFiles = summarize(rootFiles);
-
-  // ①② 候选: APP数据备份(根 + 各子目录)
-  let dataFiles = [];
-  const dataFolderToken = findSubFolder(rootFiles, DATA_FOLDER_NAME);
-  if (dataFolderToken) {
-    dataFiles = await listAllFiles(token, dataFolderToken);
-    debug.dataFolder = { token: dataFolderToken, files: summarize(dataFiles) };
-  } else {
-    debug.notes.push(`根目录下无"${DATA_FOLDER_NAME}"文件夹`);
-    warn(`根目录下未找到"${DATA_FOLDER_NAME}"文件夹,将只用根目录及根下子目录作为候选`);
+  // ---- ① 全盘树遍历: 应用云盘根 + 配置根目录双入口,token去重防环 ----
+  const nodes = [];              // {path,name,type,mtime,token}
+  const walkErrors = [];
+  const walkedFolders = new Set();
+  async function walk(folderToken, pathLabel, depth) {
+    if (depth > MAX_WALK_DEPTH || walkedFolders.has(folderToken)) return;
+    walkedFolders.add(folderToken);
+    let files;
+    try { files = await listAllFiles(token, folderToken); }
+    catch (e) { walkErrors.push(`${pathLabel}: ${String(e.message || e).slice(0, 120)}`); return; }
+    for (const f of files) {
+      nodes.push({ path: pathLabel + f.name, name: f.name, type: f.type, mtime: mtime(f), token: f.token });
+      if (f.type === 'folder') await walk(f.token, pathLabel + f.name + '/', depth + 1);
+    }
   }
-
-  // ④ 防御候选: 根目录/同步数据、根目录/审批结果
-  const rootSyncSub = findSubFolder(rootFiles, SYNC_SUB);
-  const rootApprovedSub = findSubFolder(rootFiles, APPROVED_SUB);
-
-  const locations = [];
-  async function addLocation(label, folderToken, listedFiles) {
-    const files = listedFiles || (folderToken ? await listAllFiles(token, folderToken) : []);
-    locations.push({ label, files });
-    debug.locations.push({ label, fileCount: files.length });
-  }
-  if (dataFolderToken) {
-    const syncSubToken = findSubFolder(dataFiles, SYNC_SUB);
-    const approvedSubToken = findSubFolder(dataFiles, APPROVED_SUB);
-    if (syncSubToken) await addLocation(`APP数据备份/${SYNC_SUB}/`, syncSubToken);
-    await addLocation(`APP数据备份/`, dataFolderToken, dataFiles); // ②旧位置兜底
-    if (approvedSubToken) await addLocation(`APP数据备份/${APPROVED_SUB}/`, approvedSubToken);
-  } else {
-    if (rootSyncSub) await addLocation(`根目录/${SYNC_SUB}/`, rootSyncSub);
-    if (rootApprovedSub) await addLocation(`根目录/${APPROVED_SUB}/`, rootApprovedSub);
-  }
-  await addLocation(`项目根目录/`, ROOT_FOLDER, rootFiles); // ③最旧位置兜底
-
-  // 取证: 尝试列出应用云盘根空间(诊断数据目录是否漂移到根空间)
+  // 获取应用云盘根token(飞书规范端点; 空folder_token调files接口会被拒)
+  let driveRootToken = '';
   try {
-    const driveRoot = await listAllFiles(token, '');
-    debug.driveRoot = summarize(driveRoot);
-  } catch (e) { debug.driveRootError = String(e.message || e).slice(0, 200); }
+    const rd = await apiGet(token, `${API_BASE}/drive/explorer/v2/root_folder_token`);
+    driveRootToken = String((rd && (rd.token || rd.root_folder_token)) || '');
+    if (driveRootToken) log(`云盘根token: ${driveRootToken.slice(0, 6)}...`);
+  } catch (e) { walkErrors.push(`获取云盘根token失败: ${String(e.message || e).slice(0, 100)}`); }
+  if (driveRootToken) await walk(driveRootToken, '(云盘根)/', 0);   // 应用云盘根(覆盖全部可达空间)
+  if (ROOT_FOLDER && !walkedFolders.has(ROOT_FOLDER)) {
+    await walk(ROOT_FOLDER, '(项目根)/', 0);                          // 配置根目录(若与云盘根不同树,补充遍历)
+  }
+  log(`树遍历完成: ${walkedFolders.size}个文件夹 / ${nodes.length}个节点`);
 
-  // 取证: 注册申请数量(仅数量,文件名含手机号不上公开仓库)
-  const pendingSubToken = dataFolderToken
-    ? findSubFolder(dataFiles, PENDING_SUB)
-    : findSubFolder(rootFiles, PENDING_SUB);
-  if (pendingSubToken) {
-    const pendingFiles = await listAllFiles(token, pendingSubToken);
-    debug.pendingCount = pendingFiles.filter(f => f.type === 'file').length;
+  // 全树文件检索工具
+  const fileNodes = nodes.filter(n => n.type === 'file');
+  const latest = arr => arr.reduce((a, b) => (b.mtime > a.mtime ? b : a));
+
+  // ---- ② 备份候选(全树): vehicle_backup_*.json 取最新 ----
+  let backupNode = null, backupData = null;
+  const backupHits = fileNodes.filter(n => /^vehicle_backup_.+\.json$/.test(n.name));
+  if (backupHits.length) {
+    backupNode = latest(backupHits);
+    try {
+      backupData = await downloadJson(token, backupNode.token);
+      log(`找到备份: ${backupNode.path} · 车型${(backupData.vehicles || []).length}条 · 账号${(backupData.users || []).length}个`);
+    } catch (e) { warn(`备份${backupNode.path}下载/解析失败: ${e.message}`); backupNode = null; backupData = null; }
   }
 
-  // ---- 在全部候选位置中找三个核心JSON(跨位置取最新) ----
-  const results = { vehicle: null, notice: null, approved: null, images: 0 };
-
-  const vehicleHit = findLatestAcross(locations, 'vehicle_sync_data.json');
-  debug.found.vehicle = vehicleHit ? { at: vehicleHit.loc, modified: vehicleHit.f.modified_time } : null;
-  if (vehicleHit) {
+  // ---- ③ 车型主数据: vehicle_sync_data.json 全树搜索取最新;缺失则备份回退 ----
+  let vehicleData = null, vehicleSource = '';
+  const vehicleHits = fileNodes.filter(n => n.name === 'vehicle_sync_data.json');
+  if (vehicleHits.length) {
+    const vNode = latest(vehicleHits);
     try {
-      const buf = await downloadFile(token, vehicleHit.f.token);
-      results.vehicle = JSON.parse(buf.toString('utf8').replace(/^\uFEFF/, ''));
-      log(`车型数据: ${results.vehicle.vehicleCount || (results.vehicle.vehicles || []).length}条 · ${results.vehicle.version || ''} · 位置:${vehicleHit.loc}`);
-    } catch (e) { warn(`vehicle_sync_data.json下载/解析失败: ${e.message}`); }
-  } else { warn('所有候选位置均无vehicle_sync_data.json'); }
+      vehicleData = await downloadJson(token, vNode.token);
+      vehicleSource = `sync:${vNode.path}`;
+      log(`车型数据(云端主档): ${vehicleData.vehicleCount || (vehicleData.vehicles || []).length}条 · ${vehicleData.version || ''} · ${vNode.path}`);
+    } catch (e) { warn(`vehicle_sync_data.json(${vNode.path})下载/解析失败: ${e.message}`); }
+  }
+  if (!vehicleData && backupData && Array.isArray(backupData.vehicles) && backupData.vehicles.length) {
+    vehicleData = {
+      version: backupData.version || '(备份恢复)',
+      timestamp: backupData.timestamp || new Date(backupNode.mtime * 1000).toISOString(),
+      uploadedBy: '备份回退:' + backupNode.name,
+      vehicleCount: backupData.vehicleCount || backupData.vehicles.length,
+      vehicles: backupData.vehicles,
+    };
+    vehicleSource = `backup:${backupNode.path}`;
+    warn(`⚠️ 云端无vehicle_sync_data.json,已从备份恢复车型数据(${backupNode.path})`);
+  }
 
-  const noticeHit = findLatestAcross(locations, 'data_update_notice.json');
-  debug.found.notice = noticeHit ? { at: noticeHit.loc, modified: noticeHit.f.modified_time } : null;
-  if (noticeHit) {
+  // ---- ④ 更新通知: data_update_notice.json 全树搜索;缺失则由车型数据合成 ----
+  let noticeData = null, noticeSource = '';
+  const noticeHits = fileNodes.filter(n => n.name === 'data_update_notice.json');
+  if (noticeHits.length) {
+    const nNode = latest(noticeHits);
     try {
-      const buf = await downloadFile(token, noticeHit.f.token);
-      results.notice = JSON.parse(buf.toString('utf8').replace(/^\uFEFF/, ''));
-      log(`更新通知: ${results.notice.version || ''} · ${results.notice.timestamp || ''}`);
+      noticeData = await downloadJson(token, nNode.token);
+      noticeSource = `sync:${nNode.path}`;
+      log(`更新通知: ${noticeData.version || ''} · ${noticeData.timestamp || ''}`);
     } catch (e) { warn(`data_update_notice.json下载失败: ${e.message}`); }
   }
 
-  const approvedHit = findLatestAcross(locations, 'approved_users.json');
-  debug.found.approved = approvedHit ? { at: approvedHit.loc, modified: approvedHit.f.modified_time } : null;
-  if (approvedHit) {
+  // ---- ⑤ 账号表: approved_users.json 全树搜索取最新;缺失/为空/备份更新且更多则回退 ----
+  let approvedData = null, approvedNode = null, usersSource = '';
+  const approvedHits = fileNodes.filter(n => n.name === 'approved_users.json');
+  if (approvedHits.length) {
+    approvedNode = latest(approvedHits);
     try {
-      const buf = await downloadFile(token, approvedHit.f.token);
-      results.approved = JSON.parse(buf.toString('utf8').replace(/^\uFEFF/, ''));
-      log(`账号表: ${(results.approved.users || []).length}个账号 · 位置:${approvedHit.loc}`);
-    } catch (e) { warn(`approved_users.json下载失败: ${e.message}`); }
-  } else { warn('所有候选位置均无approved_users.json'); }
+      approvedData = await downloadJson(token, approvedNode.token);
+      usersSource = `approved:${approvedNode.path}`;
+      log(`账号表(云端主档): ${(approvedData.users || []).length}个账号 · ${approvedNode.path}`);
+    } catch (e) { warn(`approved_users.json(${approvedNode.path})下载/解析失败: ${e.message}`); approvedData = null; }
+  }
+  const approvedCount = approvedData && Array.isArray(approvedData.users) ? approvedData.users.length : 0;
+  const backupUsers = backupData && Array.isArray(backupData.users) ? backupData.users : null;
+  if (backupUsers && backupUsers.length) {
+    if (!approvedData || approvedCount === 0) {
+      approvedData = { version: backupData.version || '', timestamp: backupData.timestamp || '', users: backupUsers };
+      usersSource = `backup:${backupNode.path}(云端账号表缺失)`;
+      warn(`⚠️ 云端账号表缺失,已从备份恢复${backupUsers.length}个账号`);
+    } else if (backupUsers.length > approvedCount) {
+      const backupTs = new Date(backupData.timestamp || backupNode.mtime * 1000).getTime();
+      const approvedTs = new Date(approvedData.timestamp || approvedNode.mtime * 1000).getTime();
+      if (backupTs > approvedTs) {
+        approvedData = { version: backupData.version || approvedData.version, timestamp: backupData.timestamp, users: backupUsers };
+        usersSource = `backup:${backupNode.path}(较新且账号更多:${backupUsers.length}>${approvedCount})`;
+        warn(`⚠️ 备份(${backupUsers.length}账号)比云端账号表(${approvedCount}账号)更新,已采用备份账号`);
+      }
+    }
+  }
+  if (!approvedData && !backupUsers) warn('全树无approved_users.json且无可用备份,账号表无法镜像');
 
-  // ---- 镜像新增图片(云端vehicle_images → 仓库vehicle_images) ----
-  const imagesFolderToken = (dataFolderToken && findSubFolder(dataFiles, IMAGES_DIR_NAME))
-    || findSubFolder(rootFiles, IMAGES_DIR_NAME);
-  if (imagesFolderToken && results.vehicle && Array.isArray(results.vehicle.vehicles)) {
+  // ---- ⑥ 镜像新增图片(全树定位vehicle_images目录,取文件数最多的一份) ----
+  let imagesMirrored = 0;
+  if (vehicleData && Array.isArray(vehicleData.vehicles)) {
+    const imgFolders = nodes.filter(n => n.type === 'folder' && n.name === IMAGES_DIR_NAME);
+    let imgFolder = null, imgCount = -1;
+    for (const f of imgFolders) {
+      const cnt = fileNodes.filter(n => n.path.startsWith(f.path + '/')).length;
+      if (cnt > imgCount) { imgCount = cnt; imgFolder = f; }
+    }
     const needed = new Set();
-    results.vehicle.vehicles.forEach(v => {
+    vehicleData.vehicles.forEach(v => {
       (v.photoPaths || []).forEach(p => {
         if (typeof p === 'string' && p.startsWith('vehicle_images/')) needed.add(p.split('/').pop());
       });
@@ -278,55 +275,56 @@ async function main() {
     const localImgDir = path.join(REPO_DIR, IMAGES_DIR_NAME);
     const localImgs = new Set(fs.existsSync(localImgDir) ? fs.readdirSync(localImgDir) : []);
     const missing = [...needed].filter(n => !localImgs.has(n));
-    if (missing.length) {
-      log(`需镜像图片${missing.length}张(本地缺失), 单次上限${MAX_IMAGE_DOWNLOADS}张`);
-      const cloudImgs = await listAllFiles(token, imagesFolderToken);
-      const cloudMap = new Map(cloudImgs.filter(f => f.type === 'file').map(f => [f.name, f.token]));
-      let downloaded = 0;
+    if (missing.length && imgFolder) {
+      log(`需镜像图片${missing.length}张(本地缺失), 源:${imgFolder.path}(${imgCount}张), 单次上限${MAX_IMAGE_DOWNLOADS}张`);
+      const cloudMap = new Map(
+        fileNodes.filter(n => n.path.startsWith(imgFolder.path + '/')).map(n => [n.name, n.token])
+      );
       for (const name of missing.slice(0, MAX_IMAGE_DOWNLOADS)) {
         const ft = cloudMap.get(name);
         if (!ft) { warn(`云端vehicle_images中未找到${name}`); continue; }
         try {
           const buf = await downloadFile(token, ft);
           fs.writeFileSync(path.join(localImgDir, name), buf);
-          downloaded++;
+          imagesMirrored++;
         } catch (e) { warn(`图片${name}下载失败: ${e.message}`); }
       }
-      results.images = downloaded;
-      log(`本次实际镜像图片${downloaded}张`);
-    } else { log('图片已全部同步(本地齐全)'); }
+      log(`本次实际镜像图片${imagesMirrored}张`);
+    } else if (!missing.length) { log('图片已全部同步(本地齐全)'); }
+    else if (!imgFolder) { warn('全树未找到vehicle_images文件夹,跳过图片镜像'); }
   }
 
-  // ---- 写入web-data/ ----
+  // ---- ⑦ 写入web-data/ ----
   if (!fs.existsSync(path.join(REPO_DIR, WEB_DATA_DIR))) fs.mkdirSync(path.join(REPO_DIR, WEB_DATA_DIR), { recursive: true });
   const written = [];
-  if (results.vehicle) {
-    fs.writeFileSync(path.join(REPO_DIR, WEB_DATA_DIR, 'vehicle_sync_data.json'), JSON.stringify(results.vehicle));
+  if (vehicleData) {
+    fs.writeFileSync(path.join(REPO_DIR, WEB_DATA_DIR, 'vehicle_sync_data.json'), JSON.stringify(vehicleData));
     written.push('vehicle_sync_data.json');
-  }
-  if (results.notice) {
-    fs.writeFileSync(path.join(REPO_DIR, WEB_DATA_DIR, 'data_update_notice.json'), JSON.stringify(results.notice));
+  } else { warn('全树无车型数据(主档+备份均缺失),车型镜像跳过'); }
+  if (noticeData) {
+    fs.writeFileSync(path.join(REPO_DIR, WEB_DATA_DIR, 'data_update_notice.json'), JSON.stringify(noticeData));
     written.push('data_update_notice.json');
-  } else if (results.vehicle && results.vehicle.timestamp) {
-    // 兜底: 云端无notice(老版本组长端)时用车型数据时间戳合成,保证前端有轻量探测点
+  } else if (vehicleData && vehicleData.timestamp) {
+    // 兜底: 云端无notice时用车型数据时间戳合成,保证前端有轻量探测点
     const synth = {
       type: 'data_update_notice',
-      timestamp: results.vehicle.timestamp,
-      version: results.vehicle.version || '',
-      vehicleCount: results.vehicle.vehicleCount || (results.vehicle.vehicles || []).length,
-      uploadedBy: '镜像合成',
+      timestamp: vehicleData.timestamp,
+      version: vehicleData.version || '',
+      vehicleCount: vehicleData.vehicleCount || (vehicleData.vehicles || []).length,
+      uploadedBy: vehicleData.uploadedBy || '镜像合成',
     };
     fs.writeFileSync(path.join(REPO_DIR, WEB_DATA_DIR, 'data_update_notice.json'), JSON.stringify(synth));
     written.push('data_update_notice.json(合成)');
   }
-  if (results.approved && Array.isArray(results.approved.users)) {
+  if (approvedData && Array.isArray(approvedData.users)) {
     // 脱敏: 手机号 → sha256(SALT+phone); 姓名与密码哈希保留(登录校验必需)
+    // (备份来源users含pending/rejected态,登录侧按status守卫,与安卓语义一致)
     const web = {
       type: 'approved_users_web',
-      version: results.approved.version || '',
-      timestamp: results.approved.timestamp || '',
+      version: approvedData.version || '',
+      timestamp: approvedData.timestamp || '',
       syncedAt: new Date().toISOString(),
-      users: results.approved.users
+      users: approvedData.users
         .filter(u => u && u.phone)
         .map(u => ({
           id: u.id, name: u.name || '',
@@ -336,11 +334,24 @@ async function main() {
         })),
     };
     fs.writeFileSync(path.join(REPO_DIR, WEB_DATA_DIR, 'approved_users.web.json'), JSON.stringify(web));
-    written.push('approved_users.web.json(脱敏)');
-  }
+    written.push(`approved_users.web.json(脱敏${web.users.length}个)`);
+  } else { warn('账号表镜像跳过(无数据)'); }
   log(`已写入: ${written.join(', ') || '(无数据文件)'}`);
 
-  // ---- 取证快照(仅结构变化才写,不产生空提交) ----
+  // ---- ⑧ 取证快照: 全树结构(脱敏)+数据源结论,仅结构变化才写避免空提交 ----
+  const debug = {
+    rootFolderToken: ROOT_FOLDER,
+    walkSummary: { folders: walkedFolders.size, nodes: nodes.length, files: fileNodes.length, errors: walkErrors },
+    tree: nodes.map(n => ({ p: redactName(n.path), t: n.type, m: n.mtime })),
+    pendingRegCount: fileNodes.filter(n => /^pending_reg_.+\.json$/.test(n.name)).length,
+    backups: backupHits.map(n => ({ p: redactName(n.path), m: n.mtime })),
+    sources: { vehicle: vehicleSource || null, notice: noticeSource || null, users: usersSource || null },
+    vehicleHits: vehicleHits.map(n => ({ p: redactName(n.path), m: n.mtime })),
+    approvedHits: approvedHits.map(n => ({ p: redactName(n.path), m: n.mtime })),
+    vehicleCount: vehicleData ? (vehicleData.vehicleCount || (vehicleData.vehicles || []).length) : null,
+    accountCount: approvedData && approvedData.users ? approvedData.users.length : 0,
+    generatedAt: undefined, // 不写时间戳: 结构无变化时不产生空提交
+  };
   const debugPath = path.join(REPO_DIR, WEB_DATA_DIR, 'debug_structure.json');
   const debugStr = JSON.stringify(debug, null, 1);
   if (fs.existsSync(debugPath) && fs.readFileSync(debugPath, 'utf8') === debugStr) {
@@ -350,7 +361,7 @@ async function main() {
     written.push('debug_structure.json(取证)');
   }
 
-  // ---- git提交(有变化才提交) ----
+  // ---- ⑨ git提交(有变化才提交) ----
   // ⚠️ meta.json含本次镜像时间戳,必须在变更检测之后写入——否则每5分钟
   //    产生一次空提交(288次/天),污染提交历史并频繁触发Pages重部署
   const git = (cmd) => execSync(cmd, { cwd: REPO_DIR, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
@@ -358,17 +369,19 @@ async function main() {
   if (!status) { log('无数据变化,跳过提交(不写meta.json避免空提交)'); setOutput('changed', 'false'); setOutput('armed', 'true'); return; }
   fs.writeFileSync(path.join(REPO_DIR, WEB_DATA_DIR, 'meta.json'), JSON.stringify({
     syncedAt: new Date().toISOString(),
-    vehicleVersion: results.vehicle ? (results.vehicle.version || '') : null,
-    vehicleCount: results.vehicle ? (results.vehicle.vehicleCount || (results.vehicle.vehicles || []).length) : null,
-    accountCount: results.approved && results.approved.users ? results.approved.users.length : 0,
+    vehicleVersion: vehicleData ? (vehicleData.version || '') : null,
+    vehicleCount: vehicleData ? (vehicleData.vehicleCount || (vehicleData.vehicles || []).length) : null,
+    accountCount: approvedData && approvedData.users ? approvedData.users.length : 0,
+    vehicleSource: vehicleSource || null,
+    usersSource: usersSource || null,
   }));
   git('git config user.name "github-actions[bot]"');
   git('git config user.email "41898282+github-actions[bot]@users.noreply.github.com"');
   git('git add web-data vehicle_images');
   const parts = [];
-  if (results.vehicle) parts.push(`车型${results.vehicle.vehicleCount || (results.vehicle.vehicles || []).length}条`);
-  if (results.approved) parts.push(`账号${(results.approved.users || []).length}个`);
-  if (results.images) parts.push(`图片${results.images}张`);
+  if (vehicleData) parts.push(`车型${vehicleData.vehicleCount || (vehicleData.vehicles || []).length}条`);
+  if (approvedData) parts.push(`账号${(approvedData.users || []).length}个`);
+  if (imagesMirrored) parts.push(`图片${imagesMirrored}张`);
   git(`git commit -m "chore(web-data): 镜像飞书云端最新数据 ${parts.join('/')}"`);
   try {
     git('git pull --rebase origin main');
