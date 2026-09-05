@@ -1,0 +1,34 @@
+# Trae 索引排除文件
+# 减少无效文件扫描，降低Token消耗
+
+# 依赖与构建
+node_modules/
+dist/
+build/
+_publish/
+web-dist/
+
+# 版本控制
+.git/
+
+# 日志与缓存
+*.log
+.cache/
+__pycache__/
+
+# 测试产物（保留测试源码，排除结果文件）
+tests/*.json
+tests/v1010_e2e_results.json
+tests/v1010_solutions_results.json
+tests/v1011_mirror_sync_results.json
+
+# 媒体大文件（索引时仅读取路径，不读内容）
+vehicle_images/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+
+# 第三方库（只读引用，不做修改建议）
+vendor/

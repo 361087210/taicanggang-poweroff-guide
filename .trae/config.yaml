@@ -1,0 +1,22 @@
+# 全局Token优化核心配置 V10.14.3 配套
+
+filegranularity: function
+maxcontextlines: 80
+autoreference: false
+gitdiffonly: true
+encoding:
+  method: "mixedprecision"
+  threshold: 1024
+
+# 排除无关文件，加速索引减少无效消耗
+exclude:
+  - node_modules
+  - dist
+  - build
+  - .git
+  - .log
+  - node_modules/**
+  - __pycache__/**
+  - web-dist
+  - _publish
+  - tests/*.json
