@@ -4,123 +4,121 @@
   "folders": 10,
   "nodes": 23,
   "files": 14,
-  "errors": [
-   "获取云盘根token失败: 响应非JSON: 404 page not found"
-  ]
+  "errors": []
  },
  "tree": [
   {
-   "p": "(项目根)/APP数据备份",
+   "p": "(云盘根)/APP数据备份",
    "t": "folder",
    "m": 1788526907
   },
   {
-   "p": "(项目根)/APP数据备份/审批结果",
+   "p": "(云盘根)/APP数据备份/审批结果",
    "t": "folder",
    "m": 1788587763
   },
   {
-   "p": "(项目根)/APP数据备份/审批结果/approved_users.json",
+   "p": "(云盘根)/APP数据备份/审批结果/approved_users.json",
    "t": "file",
    "m": 1788587759
   },
   {
-   "p": "(项目根)/APP数据备份/注册申请",
+   "p": "(云盘根)/APP数据备份/注册申请",
    "t": "folder",
    "m": 1788587758
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物",
+   "p": "(云盘根)/APP数据备份/发版产物",
    "t": "folder",
    "m": 1788587098
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物/v10.14.2",
+   "p": "(云盘根)/APP数据备份/发版产物/v10.14.2",
    "t": "folder",
    "m": 1788587106
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物/v10.14.2/tcg_poweroff_v10.14.2_ios.ipa",
+   "p": "(云盘根)/APP数据备份/发版产物/v10.14.2/tcg_poweroff_v10.14.2_ios.ipa",
    "t": "file",
    "m": 1788587105
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物/v10.14.2/tcg_poweroff_v10.14.2.apk.sha256",
+   "p": "(云盘根)/APP数据备份/发版产物/v10.14.2/tcg_poweroff_v10.14.2.apk.sha256",
    "t": "file",
    "m": 1788587102
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物/v10.14.2/tcg_poweroff_v10.14.2.apk",
+   "p": "(云盘根)/APP数据备份/发版产物/v10.14.2/tcg_poweroff_v10.14.2.apk",
    "t": "file",
    "m": 1788587100
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物/v10.14.0",
+   "p": "(云盘根)/APP数据备份/发版产物/v10.14.0",
    "t": "folder",
    "m": 1788526921
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物/v10.14.0/tcg_poweroff_v10.14.0_ios.ipa.sha256",
+   "p": "(云盘根)/APP数据备份/发版产物/v10.14.0/tcg_poweroff_v10.14.0_ios.ipa.sha256",
    "t": "file",
    "m": 1788526919
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物/v10.14.0/tcg_poweroff_v10.14.0_ios.ipa",
+   "p": "(云盘根)/APP数据备份/发版产物/v10.14.0/tcg_poweroff_v10.14.0_ios.ipa",
    "t": "file",
    "m": 1788526917
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物/v10.14.0/tcg_poweroff_v10.14.0.apk.sha256",
+   "p": "(云盘根)/APP数据备份/发版产物/v10.14.0/tcg_poweroff_v10.14.0.apk.sha256",
    "t": "file",
    "m": 1788526914
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物/v10.14.0/tcg_poweroff_v10.14.0.apk",
+   "p": "(云盘根)/APP数据备份/发版产物/v10.14.0/tcg_poweroff_v10.14.0.apk",
    "t": "file",
    "m": 1788526912
   },
   {
-   "p": "(项目根)/APP数据备份/发版产物/v10.14.0/RELEASE_V10140.md",
+   "p": "(云盘根)/APP数据备份/发版产物/v10.14.0/RELEASE_V10140.md",
    "t": "file",
    "m": 1788526909
   },
   {
-   "p": "(项目根)/APP数据备份/同步数据",
+   "p": "(云盘根)/APP数据备份/同步数据",
    "t": "folder",
    "m": 1788251773
   },
   {
-   "p": "(项目根)/APP数据备份/同步数据/本地备份",
+   "p": "(云盘根)/APP数据备份/同步数据/本地备份",
    "t": "folder",
    "m": 1788251775
   },
   {
-   "p": "(项目根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****3640.json",
+   "p": "(云盘根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****3640.json",
    "t": "file",
    "m": 1788251773
   },
   {
-   "p": "(项目根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****2892.json",
+   "p": "(云盘根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****2892.json",
    "t": "file",
    "m": 1788251672
   },
   {
-   "p": "(项目根)/APP数据备份/同步数据/version.json",
+   "p": "(云盘根)/APP数据备份/同步数据/version.json",
    "t": "file",
    "m": 1788251771
   },
   {
-   "p": "(项目根)/APP数据备份/同步数据/vehicles_data.json",
+   "p": "(云盘根)/APP数据备份/同步数据/vehicles_data.json",
    "t": "file",
    "m": 1788251766
   },
   {
-   "p": "(项目根)/APP数据备份/同步数据/_sync_verify_178****9332.json",
+   "p": "(云盘根)/APP数据备份/同步数据/_sync_verify_178****9332.json",
    "t": "file",
    "m": 1788231110
   },
   {
-   "p": "(项目根)/APP数据备份/备份文件",
+   "p": "(云盘根)/APP数据备份/备份文件",
    "t": "folder",
    "m": 1788231099
   }
@@ -128,9 +126,9 @@
  "pendingRegCount": 0,
  "backups": [],
  "sources": {
-  "vehicle": "本地快照:(项目根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_1788251773640.json",
+  "vehicle": "本地快照:(云盘根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_1788251773640.json",
   "notice": null,
-  "users": "approved:(项目根)/APP数据备份/审批结果/approved_users.json"
+  "users": "approved:(云盘根)/APP数据备份/审批结果/approved_users.json"
  },
  "vehicleCandidates": [
   {
@@ -143,7 +141,7 @@
    "count": 1,
    "files": [
     {
-     "p": "(项目根)/APP数据备份/同步数据/vehicles_data.json",
+     "p": "(云盘根)/APP数据备份/同步数据/vehicles_data.json",
      "m": 1788251766
     }
    ]
@@ -153,11 +151,11 @@
    "count": 2,
    "files": [
     {
-     "p": "(项目根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****3640.json",
+     "p": "(云盘根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****3640.json",
      "m": 1788251773
     },
     {
-     "p": "(项目根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****2892.json",
+     "p": "(云盘根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****2892.json",
      "m": 1788251672
     }
    ]
@@ -165,7 +163,7 @@
  ],
  "approvedHits": [
   {
-   "p": "(项目根)/APP数据备份/审批结果/approved_users.json",
+   "p": "(云盘根)/APP数据备份/审批结果/approved_users.json",
    "m": 1788587759
   }
  ],
