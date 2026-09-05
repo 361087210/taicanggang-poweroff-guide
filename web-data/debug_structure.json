@@ -1,0 +1,76 @@
+{
+ "rootFolderToken": "nodcnGA95g93RhIUSdCeTkhKlQc",
+ "rootFiles": [
+  {
+   "n": "APP数据备份",
+   "t": "folder",
+   "m": "1788526907"
+  }
+ ],
+ "dataFolder": {
+  "token": "VkYyfEAvBlQwREd05z3cTqodnPf",
+  "files": [
+   {
+    "n": "审批结果",
+    "t": "folder",
+    "m": "1788587763"
+   },
+   {
+    "n": "注册申请",
+    "t": "folder",
+    "m": "1788587758"
+   },
+   {
+    "n": "发版产物",
+    "t": "folder",
+    "m": "1788587098"
+   },
+   {
+    "n": "同步数据",
+    "t": "folder",
+    "m": "1788251773"
+   },
+   {
+    "n": "备份文件",
+    "t": "folder",
+    "m": "1788231099"
+   }
+  ]
+ },
+ "driveRoot": [
+  {
+   "n": "APP数据备份",
+   "t": "folder",
+   "m": "1788526907"
+  }
+ ],
+ "driveRootError": null,
+ "pendingCount": 0,
+ "locations": [
+  {
+   "label": "APP数据备份/同步数据/",
+   "fileCount": 4
+  },
+  {
+   "label": "APP数据备份/",
+   "fileCount": 5
+  },
+  {
+   "label": "APP数据备份/审批结果/",
+   "fileCount": 1
+  },
+  {
+   "label": "项目根目录/",
+   "fileCount": 1
+  }
+ ],
+ "found": {
+  "vehicle": null,
+  "notice": null,
+  "approved": {
+   "at": "APP数据备份/审批结果/",
+   "modified": "1788587759"
+  }
+ },
+ "notes": []
+}
