@@ -227,7 +227,21 @@ function _renderVehicleDetail(id){
   document.getElementById('detail-index').textContent=`${state.currentVehicleIndex+1}/${VEHICLES.length}`;
   const ptClass='pt-'+v.powerType;
   const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}" onerror="imgLoadError(this)"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join('');
-  const videoHtml=(v.videos>0||(v.videoPaths&&v.videoPaths.length))?`<div onclick="openVideoPlayer()" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="white" class="w-10 h-10"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class="absolute bottom-2 left-2 text-xs text-white">断电教学视频</span></div>`:`<div class="aspect-video rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">暂无视频</div>`;
+  // V10.14.2: 多视频支持——详情页视频区域从单视频改为多视频列表展示
+  const videoPaths=v.videoPaths||[];
+  const videoHtml=videoPaths.length?`
+    <div class="space-y-2">
+      ${videoPaths.map((vp,i)=>{
+        const fn=vp.split('/').pop().replace(/\.[^.]+$/,'');
+        const label=i===0?'断电教学视频':`补充视频${i}`;
+        return `<div onclick="openVideoPlayer(${i})" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative overflow-hidden">
+          <svg viewBox="0 0 24 24" fill="white" class="w-10 h-10"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          <span class="absolute bottom-2 left-2 text-xs text-white">${esc(label)}</span>
+          ${videoPaths.length>1?`<span class="absolute top-2 right-2 text-xs text-white bg-black/50 px-1.5 rounded">${i+1}/${videoPaths.length}</span>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+  `:`<div class="aspect-video rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">暂无视频</div>`;
   
   document.getElementById('detail-content').innerHTML=`
     <div class="px-4 pt-4">
@@ -268,7 +282,7 @@ function _renderVehicleDetail(id){
     <!-- Photos -->
     ${(v.photos>0||(v.photoPaths&&v.photoPaths.length))?`<div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="text-sm font-bold text-gray-700 mb-3">车辆照片</div><div class="grid grid-cols-2 gap-2">${photosHtml}</div></div></div>`:''}
     <!-- Video -->
-    <div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="text-sm font-bold text-gray-700 mb-3">视频演示</div>${videoHtml}</div></div>
+    <div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="text-sm font-bold text-gray-700 mb-3">${videoPaths.length>1?`视频演示(${videoPaths.length}个)`:videoPaths.length===1?'视频演示':'视频演示'}</div>${videoHtml}</div></div>
     <!-- Remarks -->
     ${v.remarks?`<div class="px-4 mt-3"><div class="bg-amber-50 rounded-2xl p-4 border border-amber-100"><div class="flex items-center gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" class="w-5 h-5"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg><span class="font-bold text-amber-900 text-sm">备注</span></div><div class="text-sm text-amber-800 mt-1">${esc(v.remarks)}</div></div></div>`:''}
     <!-- Export buttons -->
