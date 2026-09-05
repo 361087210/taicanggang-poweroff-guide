@@ -192,27 +192,53 @@ async function main() {
     } catch (e) { warn(`备份${backupNode.path}下载/解析失败: ${e.message}`); backupNode = null; backupData = null; }
   }
 
-  // ---- ③ 车型主数据: vehicle_sync_data.json 全树搜索取最新;缺失则备份回退 ----
+  // ---- ③ 车型主数据: 三名候选全树搜索(取车辆数最多且最新的一份) ----
+  // 候选链背景(2026-09取证): 云端"同步数据/"下实际是 sync_feishu_local.js --push
+  // 上传的 vehicles_data.json({updated,count,vehicles}) + vehicles_snapshot_*.json
+  // ({captured,vehicles}); vehicle_sync_data.json 仅安卓组长端上传,当前缺失。
+  // 三名候选按(车辆数,修改时间)取最优,任一有数据即可救活网页版。
   let vehicleData = null, vehicleSource = '';
-  const vehicleHits = fileNodes.filter(n => n.name === 'vehicle_sync_data.json');
-  if (vehicleHits.length) {
-    const vNode = latest(vehicleHits);
+  const VEHICLE_FILE_CANDIDATES = [
+    { name: 'vehicle_sync_data.json', kind: '安卓主档', tsKey: 'timestamp' },
+    { name: 'vehicles_data.json', kind: '开发者主档', tsKey: 'updated' },
+    { name: /^vehicles_snapshot_.+\.json$/, kind: '本地快照', tsKey: 'captured', regex: true },
+  ];
+  for (const cand of VEHICLE_FILE_CANDIDATES) {
+    const hits = cand.regex
+      ? fileNodes.filter(n => cand.name.test(n.name))
+      : fileNodes.filter(n => n.name === cand.name);
+    if (!hits.length) continue;
+    const node = latest(hits);
     try {
-      vehicleData = await downloadJson(token, vNode.token);
-      vehicleSource = `sync:${vNode.path}`;
-      log(`车型数据(云端主档): ${vehicleData.vehicleCount || (vehicleData.vehicles || []).length}条 · ${vehicleData.version || ''} · ${vNode.path}`);
-    } catch (e) { warn(`vehicle_sync_data.json(${vNode.path})下载/解析失败: ${e.message}`); }
+      const raw = await downloadJson(token, node.token);
+      const vehicles = Array.isArray(raw.vehicles) ? raw.vehicles : [];
+      const ts = raw[cand.tsKey] || new Date(node.mtime * 1000).toISOString();
+      log(`车型候选[${cand.kind}]: ${vehicles.length}条 · ${ts} · ${node.path}`);
+      if (vehicles.length && (!vehicleData || vehicles.length > (vehicleData.vehicles || []).length)) {
+        vehicleData = {
+          version: raw.version || raw.updated || raw.captured || `(镜像:${cand.kind})`,
+          timestamp: ts,
+          uploadedBy: `${cand.kind}:${node.path}`,
+          vehicleCount: raw.count || vehicles.length,
+          vehicles,
+        };
+        vehicleSource = `${cand.kind}:${node.path}`;
+      }
+    } catch (e) { warn(`车型候选${cand.kind}(${node.path})下载/解析失败: ${e.message}`); }
   }
-  if (!vehicleData && backupData && Array.isArray(backupData.vehicles) && backupData.vehicles.length) {
-    vehicleData = {
-      version: backupData.version || '(备份恢复)',
-      timestamp: backupData.timestamp || new Date(backupNode.mtime * 1000).toISOString(),
-      uploadedBy: '备份回退:' + backupNode.name,
-      vehicleCount: backupData.vehicleCount || backupData.vehicles.length,
-      vehicles: backupData.vehicles,
-    };
-    vehicleSource = `backup:${backupNode.path}`;
-    warn(`⚠️ 云端无vehicle_sync_data.json,已从备份恢复车型数据(${backupNode.path})`);
+  if (!vehicleData) {
+    // ---- ③b 备份回退: vehicle_backup_*.json 取最新 ----
+    if (backupData && Array.isArray(backupData.vehicles) && backupData.vehicles.length) {
+      vehicleData = {
+        version: backupData.version || '(备份恢复)',
+        timestamp: backupData.timestamp || new Date(backupNode.mtime * 1000).toISOString(),
+        uploadedBy: '备份回退:' + backupNode.name,
+        vehicleCount: backupData.vehicleCount || backupData.vehicles.length,
+        vehicles: backupData.vehicles,
+      };
+      vehicleSource = `backup:${backupNode.path}`;
+      warn(`⚠️ 三名候选均无数据,已从备份恢复车型数据(${backupNode.path})`);
+    } else warn('全树无任何车型数据(主档/开发者档/快照/备份均缺失),车型镜像跳过');
   }
 
   // ---- ④ 更新通知: data_update_notice.json 全树搜索;缺失则由车型数据合成 ----
@@ -256,6 +282,24 @@ async function main() {
     }
   }
   if (!approvedData && !backupUsers) warn('全树无approved_users.json且无可用备份,账号表无法镜像');
+
+  // ---- ⑤b 诊断: _sync_verify_*.json 顶层结构(排查账号与数据真源) ----
+  const verifyHits = fileNodes.filter(n => /^_sync_verify_.+\.json$/.test(n.name));
+  for (const v of verifyHits.slice(0, 2)) {
+    try {
+      const raw = await downloadJson(token, v.token);
+      const keys = Object.keys(raw).join(',');
+      const usersN = Array.isArray(raw.users) ? raw.users.length : null;
+      const vehN = Array.isArray(raw.vehicles) ? raw.vehicles.length : null;
+      log(`诊断[_sync_verify]: ${v.path} · 键[${keys}] · vehicles=${vehN} · users=${usersN}`);
+      // 若verify文件含更多users,并入账号候选(安卓端同步校验快照,可能比审批结果主档新)
+      if (usersN && usersN > (approvedData && approvedData.users ? approvedData.users.length : 0)) {
+        approvedData = { version: raw.version || '', timestamp: raw.timestamp || raw.updated || '', users: raw.users };
+        usersSource = `verify:${v.path}(${usersN}账号>主档)`;
+        warn(`⚠️ _sync_verify快照含${usersN}个账号(多于审批结果主档),已采用`);
+      }
+    } catch (e) { warn(`诊断[_sync_verify]${v.path}解析失败: ${e.message}`); }
+  }
 
   // ---- ⑥ 镜像新增图片(全树定位vehicle_images目录,取文件数最多的一份) ----
   let imagesMirrored = 0;
@@ -346,7 +390,10 @@ async function main() {
     pendingRegCount: fileNodes.filter(n => /^pending_reg_.+\.json$/.test(n.name)).length,
     backups: backupHits.map(n => ({ p: redactName(n.path), m: n.mtime })),
     sources: { vehicle: vehicleSource || null, notice: noticeSource || null, users: usersSource || null },
-    vehicleHits: vehicleHits.map(n => ({ p: redactName(n.path), m: n.mtime })),
+    vehicleCandidates: VEHICLE_FILE_CANDIDATES.map(c => {
+      const hits = c.regex ? fileNodes.filter(n => c.name.test(n.name)) : fileNodes.filter(n => n.name === c.name);
+      return { kind: c.kind, count: hits.length, files: hits.map(n => ({ p: redactName(n.path), m: n.mtime })) };
+    }),
     approvedHits: approvedHits.map(n => ({ p: redactName(n.path), m: n.mtime })),
     vehicleCount: vehicleData ? (vehicleData.vehicleCount || (vehicleData.vehicles || []).length) : null,
     accountCount: approvedData && approvedData.users ? approvedData.users.length : 0,
