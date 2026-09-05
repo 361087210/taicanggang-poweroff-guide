@@ -128,17 +128,47 @@
  "pendingRegCount": 0,
  "backups": [],
  "sources": {
-  "vehicle": null,
+  "vehicle": "开发者主档:(项目根)/APP数据备份/同步数据/vehicles_data.json",
   "notice": null,
   "users": "approved:(项目根)/APP数据备份/审批结果/approved_users.json"
  },
- "vehicleHits": [],
+ "vehicleCandidates": [
+  {
+   "kind": "安卓主档",
+   "count": 0,
+   "files": []
+  },
+  {
+   "kind": "开发者主档",
+   "count": 1,
+   "files": [
+    {
+     "p": "(项目根)/APP数据备份/同步数据/vehicles_data.json",
+     "m": 1788251766
+    }
+   ]
+  },
+  {
+   "kind": "本地快照",
+   "count": 2,
+   "files": [
+    {
+     "p": "(项目根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****3640.json",
+     "m": 1788251773
+    },
+    {
+     "p": "(项目根)/APP数据备份/同步数据/本地备份/vehicles_snapshot_178****2892.json",
+     "m": 1788251672
+    }
+   ]
+  }
+ ],
  "approvedHits": [
   {
    "p": "(项目根)/APP数据备份/审批结果/approved_users.json",
    "m": 1788587759
   }
  ],
- "vehicleCount": null,
+ "vehicleCount": 73,
  "accountCount": 1
 }
