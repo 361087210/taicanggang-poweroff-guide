@@ -220,3 +220,82 @@ html.pwa-standalone .toast{bottom:calc(90px + var(--safe-bottom));} /* Toast抬�
 /* standalone下禁止文本选择呼出菜单干扰操作(原生APP行为对齐) */
 html.pwa-standalone .phone-frame{-webkit-user-select:none;user-select:none;}
 html.pwa-standalone input,html.pwa-standalone textarea{-webkit-user-select:text;user-select:text;} /* 输入框保留选择 */
+
+/* ===================== V10.14.3: iOS网页端/浏览器环境专项优化 =====================
+ * 场景: iPhone组员通过Safari访问(未安装PWA或在浏览器中使用),
+ *       针对iOS Safari的特性做体验优化,尽量对齐原生APP手感。
+ * 作用域: html.web-env(由demo.js检测非Cordova环境后添加) */
+
+/* ① 触控优化: 消除双击缩放+300ms延迟+禁用长按呼出菜单,对齐原生APP交互手感 */
+html.web-env *{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+html.web-env .phone-frame{
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;user-select:none;
+}
+html.web-env input,html.web-env textarea,html.web-env select{
+  -webkit-user-select:text;user-select:text;
+  -webkit-touch-callout:default;
+  touch-action:auto;
+}
+
+/* ② 滚动优化: iOS惯性滚动+滚动条隐藏+减少橡皮筋卡顿 */
+html.web-env .scroll-y,html.web-env [style*="overflow-y"]{
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+}
+html.web-env .scroll-y::-webkit-scrollbar,
+html.web-env [style*="overflow-y"]::-webkit-scrollbar{
+  width:0;height:0;
+}
+
+/* ③ 底部导航/Toast 安全区抬升 */
+html.web-env .bottom-nav{height:calc(64px + var(--safe-bottom));padding-bottom:var(--safe-bottom);}
+html.web-env .fab{bottom:calc(80px + var(--safe-bottom));}
+html.web-env .toast{bottom:calc(70px + var(--safe-bottom));}
+html.web-env .phone-frame{padding-top:0;}
+
+/* ④ 键盘弹出适配 */
+@supports (bottom:env(keyboard-inset-bottom)){
+  html.web-env .bottom-nav{padding-bottom:calc(var(--safe-bottom) + env(keyboard-inset-bottom,0px));}
+  html.web-env .toast{bottom:calc(70px + var(--safe-bottom) + env(keyboard-inset-bottom,0px));}
+}
+
+/* ⑤ 输入框聚焦时自动滚入可视区 */
+html.web-env input:focus,html.web-env textarea:focus{
+  scroll-margin-bottom:30vh;
+}
+
+/* ⑥ 防止iOS Safari页面上下滑动时地址栏伸缩导致的布局抖动 */
+html.web-env body{
+  overscroll-behavior-y:none;
+}
+html.web-env .phone-screen{
+  min-height:100vh;
+  min-height:100dvh;
+}
+
+/* ⑦ 按钮触控反馈: 点击时缩放+轻微透明,模拟原生按压感 */
+html.web-env button:active{
+  transform:scale(0.97);
+  opacity:0.85;
+  transition:transform .08s ease,opacity .08s ease;
+}
+html.web-env .bs-item:active{
+  background-color:#f3f4f6;
+  transition:background-color .1s ease;
+}
+
+/* ⑧ 图片加载优化: 防止图片拖拽时出现幽灵预览 */
+html.web-env img{
+  -webkit-user-drag:none;
+  user-drag:none;
+  pointer-events:auto;
+}
+
+/* ⑨ 横屏模式: iOS Safari横屏时侧边安全区 */
+@media (orientation:landscape){
+  html.web-env .phone-frame{padding-left:var(--safe-left);padding-right:var(--safe-right);}
+}
