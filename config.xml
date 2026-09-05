@@ -25,6 +25,11 @@
         <preference name="SplashScreenDelay" value="0" />
         <preference name="FadeSplashScreen" value="false" />
         <preference name="ShowSplashScreen" value="false" />
+        <!-- V10.14.4 安卓端顶部留白修复: StatusBar不覆盖WebView,内容从状态栏下方开始,
+             配合CSS中pt-12仅保留标题栏高度,消除多余的顶部留白 -->
+        <preference name="StatusBarOverlaysWebView" value="false" />
+        <preference name="StatusBarBackgroundColor" value="#1e3a5f" />
+        <preference name="StatusBarStyle" value="lightcontent" />
         <edit-config file="app/src/main/AndroidManifest.xml" mode="merge" target="/manifest/application">
             <application android:usesCleartextTraffic="true" android:requestLegacyExternalStorage="true" android:allowBackup="false" />
         </edit-config>
