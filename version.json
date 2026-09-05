@@ -1,12 +1,13 @@
 {
-  "version": "10.14.2",
-  "versionCode": 101402,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.14.2/tcg_poweroff_v10.14.2.apk",
+  "version": "10.14.3",
+  "versionCode": 101403,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.14.3/tcg_poweroff_v10.14.3.apk",
   "releaseNotes": [
-    "V10.14.2 车辆详情页多视频支持+iOS方案A(PWA)版。一句话总结: 车辆详情页视频区域支持添加和播放多个教学视频(视频列表+切换播放),iOS端按方案A实现PWA网页应用(manifest.json+Service Worker离线缓存+添加到主屏幕全屏模式),组员iPhone用Safari打开即可添加到桌面像原生APP一样使用",
-    "多视频功能: 详情页视频区域从单视频改为多视频列表展示,每个视频可独立点击播放;播放器内支持视频切换(上一个/下一个);编辑表单已支持多视频选择(继承V10.14.1能力);视频上传飞书云端链路不变(vehicle_videos目录),新增视频自动继承五源回退链",
-    "iOS方案A(PWA): 新增manifest.json(应用名称/图标/全屏模式/独立显示)+Service Worker(sw.js离线缓存壳+资源预缓存+离线降级);demo.html注入PWA meta标签(apple-mobile-web-app-capable/状态栏样式/触摸图标)+SW注册脚本;iOS Safari打开→分享→添加到主屏幕→全屏图标体验接近原生APP",
-    "继承V10.14.1(同步配置出口统一修复:五处直读localStorage改走getFeishuCfg()统一出口)+V10.14.0(组员零配置同步修复)+V10.13.0(A3四刀切/渲染分离/State守卫/XSS绊线)+V10.12.0(单向收敛/九模块拆分/Secret构建注入)全部能力"
+    "V10.14.3 iOS PWA深化版。一句话总结: 修复iOS Safari不支持SVG图标的关键缺陷(新增PNG应用图标全家桶),新增iOS安装引导浮层(Safari打开自动提示添加到主屏幕)、新版本即时更新提示、standalone全屏模式安全区适配,组员iPhone体验进一步接近原生APP",
+    "PNG图标关键修复: iOS Safari不支持SVG作为apple-touch-icon——新增180/192/512/1024全尺寸PNG图标+192/512 maskable自适应图标,manifest.json图标声明全面PNG化,主屏幕图标在iOS上正确显示",
+    "iOS安装引导: 检测iOS Safari+未安装状态,自动弹出'添加到主屏幕'操作指引(含分享按钮图示),关闭后3天内不再打扰;安装引导浮层已做安全区适配",
+    "新版本更新提示: Service Worker检测到新版本等待激活时弹出'发现新版本'提示条,点'立即更新'即时接管刷新(无需等所有标签页关闭);standalone模式安全区适配(刘海/灵动岛/手势条)+禁用文本选择呼出菜单(对齐原生APP行为)",
+    "继承V10.14.2(车辆详情页多视频支持)+V10.14.1(同步配置出口统一修复)+V10.14.0(组员零配置同步修复)+V10.13.0(A3四刀切)+V10.12.0(单向收敛/九模块拆分)全部能力"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
