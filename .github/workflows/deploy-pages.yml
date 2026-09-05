@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'index.html'
       - 'demo.html'
       - 'css/**'
       - 'js/**'
@@ -41,6 +42,7 @@ jobs:
       - name: Prepare publish directory
         run: |
           mkdir -p _publish
+          cp index.html _publish/
           cp demo.html _publish/
           cp manifest.json _publish/
           cp sw.js _publish/
