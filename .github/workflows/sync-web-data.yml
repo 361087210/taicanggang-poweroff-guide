@@ -133,8 +133,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           NOW=$(date +%s)
-          RECENT=$(gh run list --workflow=sync-web-data.yml --limit=15 --json databaseId,createdAt \
-            --jq "[.[] | select(.databaseId != ${GITHUB_RUN_ID}) | select(($NOW - (.createdAt | fromdateiso8601)) < 300)] | length")
+          # 防分裂修正(2026-09-06): 只统计 queued/in_progress 的运行——
+          # 已取消/已完成的运行不是并发触发源。此前把同push产生的已取消
+          # 重复运行也算入,导致链条误判分裂而跳过续链,链条因此断裂。
+          RECENT=$(gh run list --workflow=sync-web-data.yml --limit=15 --json databaseId,createdAt,status \
+            --jq "[.[] | select(.databaseId != ${GITHUB_RUN_ID}) | select(.status == \"in_progress\" or .status == \"queued\") | select(($NOW - (.createdAt | fromdateiso8601)) < 300)] | length")
           if [ "$RECENT" -gt 0 ]; then
             echo "检测到并发触发源(${RECENT}个近期运行),跳过续链防分裂"
             exit 0
