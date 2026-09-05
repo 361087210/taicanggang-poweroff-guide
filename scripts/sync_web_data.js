@@ -192,12 +192,13 @@ async function main() {
     } catch (e) { warn(`备份${backupNode.path}下载/解析失败: ${e.message}`); backupNode = null; backupData = null; }
   }
 
-  // ---- ③ 车型主数据: 三名候选全树搜索(取车辆数最多且最新的一份) ----
+  // ---- ③ 车型主数据: 三名候选全树搜索(按修改时间最新且非空优先) ----
   // 候选链背景(2026-09取证): 云端"同步数据/"下实际是 sync_feishu_local.js --push
   // 上传的 vehicles_data.json({updated,count,vehicles}) + vehicles_snapshot_*.json
   // ({captured,vehicles}); vehicle_sync_data.json 仅安卓组长端上传,当前缺失。
-  // 三名候选按(车辆数,修改时间)取最优,任一有数据即可救活网页版。
-  let vehicleData = null, vehicleSource = '';
+  // 选择语义: 活跃数据源=修改时间最新的非空档——组长一旦上传vehicle_sync_data.json
+  // (mtime必新于开发者旧档)即自动成为主源;旧档仅在新档缺失/为空时兜底。
+  let vehicleData = null, vehicleSource = '', vehicleBestMtime = 0;
   const VEHICLE_FILE_CANDIDATES = [
     { name: 'vehicle_sync_data.json', kind: '安卓主档', tsKey: 'timestamp' },
     { name: 'vehicles_data.json', kind: '开发者主档', tsKey: 'updated' },
@@ -214,7 +215,7 @@ async function main() {
       const vehicles = Array.isArray(raw.vehicles) ? raw.vehicles : [];
       const ts = raw[cand.tsKey] || new Date(node.mtime * 1000).toISOString();
       log(`车型候选[${cand.kind}]: ${vehicles.length}条 · ${ts} · ${node.path}`);
-      if (vehicles.length && (!vehicleData || vehicles.length > (vehicleData.vehicles || []).length)) {
+      if (vehicles.length && node.mtime > vehicleBestMtime) {
         vehicleData = {
           version: raw.version || raw.updated || raw.captured || `(镜像:${cand.kind})`,
           timestamp: ts,
@@ -223,6 +224,7 @@ async function main() {
           vehicles,
         };
         vehicleSource = `${cand.kind}:${node.path}`;
+        vehicleBestMtime = node.mtime;
       }
     } catch (e) { warn(`车型候选${cand.kind}(${node.path})下载/解析失败: ${e.message}`); }
   }
