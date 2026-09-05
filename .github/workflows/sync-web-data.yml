@@ -16,7 +16,11 @@
 #   同步脚本push后,后续部署步骤直接用当前工作区(含最新web-data)
 #   构建并部署Pages,零跨工作流依赖。
 #
-# 节奏: 每5分钟镜像一次(Actions调度实际可能有1~3分钟排队延迟);
+# 节奏: 每5分钟镜像一次。⚠️ 实测本仓库GitHub cron调度不可靠(CodeQL周级
+#       定时也常丢),故V2.0采用"链式自续期"为主、cron为兜底:
+#       每轮运行结束时用GITHUB_TOKEN触发workflow_dispatch拉起下一轮——
+#       官方文档明确workflow_dispatch/repository_dispatch是GITHUB_TOKEN
+#       反递归规则的例外,可以正常创建新运行;cron仅在链断裂时复活链条。
 #       无数据变化时(changed=false)跳过提交与部署,零开销。
 # 密钥: 复用Android/IOS CI已有的 FEISHU_APP_ID / FEISHU_APP_SECRET /
 #       FEISHU_FOLDER_TOKEN 仓库Secrets,无需额外配置。
@@ -37,6 +41,7 @@ permissions:
   contents: write             # 镜像结果需提交回main
   pages: write                # 直接部署Pages(见上关键设计说明)
   id-token: write              # deploy-pages@v5 OIDC要求
+  actions: write               # 链式自续期: GITHUB_TOKEN触发workflow_dispatch
 
 concurrency:
   group: pages                # 与deploy-pages.yml共用组: 串行化镜像写入+
@@ -45,7 +50,7 @@ concurrency:
 jobs:
   mirror-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15   # 镜像+Pages部署+续链sleep(4min)需充足余量
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -114,3 +119,26 @@ jobs:
         if: steps.sync.outputs.changed == 'true'
         id: deployment
         uses: actions/deploy-pages@v5
+
+      # ---------- 链式自续期(V2.0): 用workflow_dispatch拉起下一轮 ----------
+      # 背景: 本仓库GitHub cron实测不可靠(*/5从未触发,周级cron也常丢),
+      #      而官方文档明确workflow_dispatch是GITHUB_TOKEN反递归规则的例外
+      #      → 每轮运行结束时自触发下一轮,形成5分钟周期的可靠调度链。
+      # 防分裂: 若近5分钟内存在除本次外的其他运行(说明cron/手动等并发触发源
+      #      活跃),本轮跳过续链——多余的链会自然收敛消失,不会指数增长。
+      # 断链自愈: cron(低频但偶发触发)或手动workflow_dispatch可复活链条。
+      - name: Re-arm next sync (self-perpetuating chain)
+        if: always() && steps.sync.outputs.armed != 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NOW=$(date +%s)
+          RECENT=$(gh run list --workflow=sync-web-data.yml --limit=15 --json databaseId,createdAt \
+            --jq "[.[] | select(.databaseId != ${GITHUB_RUN_ID}) | select(($NOW - (.createdAt | fromdateiso8601)) < 300)] | length")
+          if [ "$RECENT" -gt 0 ]; then
+            echo "检测到并发触发源(${RECENT}个近期运行),跳过续链防分裂"
+            exit 0
+          fi
+          sleep 240   # 节奏控制: 镜像~1min + sleep 4min ≈ 5分钟周期
+          gh workflow run sync-web-data.yml
+          echo "✅ 已续链下一轮(5分钟周期)"
