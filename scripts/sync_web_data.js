@@ -118,6 +118,13 @@ function sha256Hex(s) {
   return crypto.createHash('sha256').update(s, 'utf8').digest('hex');
 }
 
+// ---------- GitHub Actions输出(供workflow条件部署Pages) ----------
+function setOutput(name, value) {
+  const out = process.env.GITHUB_OUTPUT; // Actions运行时注入的输出文件
+  if (out && fs.existsSync(path.dirname(out))) fs.appendFileSync(out, `${name}=${value}\n`);
+  else console.log(`(本地运行,无GITHUB_OUTPUT) ${name}=${value}`);
+}
+
 // ---------- 主流程 ----------
 async function main() {
   if (!APP_ID || !APP_SECRET) {
@@ -253,7 +260,7 @@ async function main() {
   //    产生一次空提交(288次/天),污染提交历史并频繁触发Pages重部署
   const git = (cmd) => execSync(cmd, { cwd: REPO_DIR, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
   const status = git('git status --porcelain -- web-data vehicle_images');
-  if (!status) { log('无数据变化,跳过提交(不写meta.json避免空提交)'); return; }
+  if (!status) { log('无数据变化,跳过提交(不写meta.json避免空提交)'); setOutput('changed', 'false'); return; }
   fs.writeFileSync(path.join(REPO_DIR, WEB_DATA_DIR, 'meta.json'), JSON.stringify({
     syncedAt: new Date().toISOString(),
     vehicleVersion: results.vehicle ? (results.vehicle.version || '') : null,
@@ -274,10 +281,12 @@ async function main() {
     // rebase失败→中止并跳过本轮(避免push非快进报错),下次运行自动补偿
     try { git('git rebase --abort'); } catch (e2) { /* 已中止 */ }
     warn(`rebase失败(并发冲突,跳过本轮): ${e.message.split('\n')[0]}`);
+    setOutput('changed', 'false');
     return;
   }
   git('git push origin HEAD:main');
-  log('✅ 已提交并推送, GitHub Pages将自动重新部署');
+  setOutput('changed', 'true');
+  log('✅ 已提交并推送(本工作流deploy步骤将直接重新部署Pages,见sync-web-data.yml)');
 }
 
 main().catch(err => {

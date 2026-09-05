@@ -7,10 +7,17 @@
 #      网页版从同源路径读取,实现网页版与安卓版数据同步。
 #
 # 数据流: 组长安卓端上传 → 飞书云盘 → [本工作流定时镜像] → web-data/
-#        → deploy-pages.yml自动重新部署 → 网页版同源fetch(60秒轮询感知)
+#        → [本工作流直接部署Pages] → 网页版同源fetch(60秒轮询感知)
+#
+# ⚠️ 关键设计说明(V1.1): Pages重部署为什么在本工作流内直接做?
+#   GitHub防递归机制规定: 工作流用自带GITHUB_TOKEN推送不会触发其他
+#   工作流(push事件静默)。若指望deploy-pages.yml被镜像push唤醒,
+#   数据将永远到不了线上。因此镜像+部署在同一任务同一工作区内完成:
+#   同步脚本push后,后续部署步骤直接用当前工作区(含最新web-data)
+#   构建并部署Pages,零跨工作流依赖。
 #
 # 节奏: 每5分钟镜像一次(Actions调度实际可能有1~3分钟排队延迟);
-#       无数据变化时不产生任何提交,不触发重部署。
+#       无数据变化时(changed=false)跳过提交与部署,零开销。
 # 密钥: 复用Android/IOS CI已有的 FEISHU_APP_ID / FEISHU_APP_SECRET /
 #       FEISHU_FOLDER_TOKEN 仓库Secrets,无需额外配置。
 # ============================================================
@@ -22,16 +29,21 @@ on:
   workflow_dispatch:          # 支持手动触发立即同步
 
 permissions:
-  contents: write             # 镜像结果需提交回main并触发Pages重部署
+  contents: write             # 镜像结果需提交回main
+  pages: write                # 直接部署Pages(见上关键设计说明)
+  id-token: write              # deploy-pages@v5 OIDC要求
 
 concurrency:
-  group: sync-web-data
-  cancel-in-progress: false   # 不取消进行中的镜像(避免并发写入竞态)
+  group: pages                # 与deploy-pages.yml共用组: 串行化镜像写入+
+  cancel-in-progress: false   # 部署互斥(重叠时排队等待,互不取消)
 
 jobs:
-  mirror:
+  mirror-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -42,6 +54,7 @@ jobs:
 
       # 使用runner自带Node(≥18,支持全局fetch),无需setup-node
       - name: Run Feishu mirror sync
+        id: sync
         env:
           FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
           FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
@@ -54,3 +67,45 @@ jobs:
           echo "=== web-data 镜像内容 ==="
           ls -la web-data/ 2>/dev/null || echo "(web-data目录尚未创建——飞书云端暂无数据或密钥缺失)"
           cat web-data/meta.json 2>/dev/null || true
+          echo "changed=${{ steps.sync.outputs.changed }}"
+
+      # ---------- 以下为Pages直接部署(仅数据变化时执行) ----------
+      # 工作区即最新状态(同步脚本刚commit+push),无需重新checkout
+      - name: Prepare publish directory
+        if: steps.sync.outputs.changed == 'true'
+        run: |
+          mkdir -p _publish
+          cp index.html _publish/
+          cp demo.html _publish/
+          cp manifest.json _publish/
+          cp sw.js _publish/
+          cp feishu-api.js _publish/
+          cp vehicles_data.js _publish/
+          cp version.json _publish/
+          cp icon-*.png _publish/ 2>/dev/null || true
+          cp icon.svg _publish/ 2>/dev/null || true
+          cp -r css _publish/
+          cp -r js _publish/
+          cp -r vendor _publish/
+          cp -r vehicle_images _publish/
+          # web-data为镜像数据目录(此时必然存在,changed=true意味着刚写入)
+          cp -r web-data _publish/
+          echo "web-data files:"
+          ls -la _publish/web-data/
+          echo "Publish dir contents:"
+          ls -la _publish/
+
+      - name: Setup Pages
+        if: steps.sync.outputs.changed == 'true'
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        if: steps.sync.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: './_publish'
+
+      - name: Deploy to GitHub Pages
+        if: steps.sync.outputs.changed == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v5
