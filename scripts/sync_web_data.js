@@ -58,7 +58,7 @@ const ROOT_FOLDER = process.env.FEISHU_FOLDER_TOKEN || 'nodcnGA95g93RhIUSdCeTkhK
 const IMAGES_DIR_NAME = 'vehicle_images';
 const WEB_DATA_DIR = 'web-data';
 const MAX_IMAGE_DOWNLOADS = 80; // 单次运行最多镜像图片数(防超时,余量下次继续)
-const MAX_WALK_DEPTH = 5;       // 树遍历深度上限(防御异常深层嵌套)
+const MAX_WALK_DEPTH = 8;       // 树遍历深度上限(防御异常深层嵌套;V2.4: 云盘根遍历层级更深)
 const API_BASE = 'https://open.feishu.cn/open-apis';
 
 const APP_ID = process.env.FEISHU_APP_ID;
@@ -164,10 +164,13 @@ async function main() {
       if (f.type === 'folder') await walk(f.token, pathLabel + f.name + '/', depth + 1);
     }
   }
-  // 获取应用云盘根token(飞书规范端点; 空folder_token调files接口会被拒)
+  // 获取应用云盘根token(V2.4修复: 正确端点为 root_folder/meta——旧版误用
+  // root_folder_token 返回404,导致云盘根遍历从未执行;而安卓端V5.3.3及更早
+  // 的数据正存于应用云盘根下的"APP数据备份/",82组车型的vehicle_sync_data.json
+  // 就在那里,从未被镜像脚本看到——这就是"安卓82组/网页73组"的直接根因)
   let driveRootToken = '';
   try {
-    const rd = await apiGet(token, `${API_BASE}/drive/explorer/v2/root_folder_token`);
+    const rd = await apiGet(token, `${API_BASE}/drive/explorer/v2/root_folder/meta`);
     driveRootToken = String((rd && (rd.token || rd.root_folder_token)) || '');
     if (driveRootToken) log(`云盘根token: ${driveRootToken.slice(0, 6)}...`);
   } catch (e) { walkErrors.push(`获取云盘根token失败: ${String(e.message || e).slice(0, 100)}`); }
