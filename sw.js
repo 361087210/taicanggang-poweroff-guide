@@ -82,6 +82,13 @@ self.addEventListener('fetch',e=>{
     return;
   }
 
+  // 同源镜像数据(web-data/): 网络直连且不写缓存——数据同步通道必须永远最新,
+  // 若走下方缓存优先策略,60秒轮询的时间戳查询串会让CacheStorage条目无限堆积
+  if(url.origin===self.location.origin&&url.pathname.indexOf('/web-data/')>-1){
+    e.respondWith(fetch(req));
+    return;
+  }
+
   // 同源静态资源: 缓存优先
   if(url.origin===self.location.origin){
     e.respondWith(
