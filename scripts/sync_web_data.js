@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * ============================================================
- * 网页版数据镜像同步脚本 V2.1 (V10.14.3 配套)
+ * 网页版数据镜像同步脚本 V2.5 (V10.14.3 配套)
  * ============================================================
  * 背景: 飞书OpenAPI响应头不携带Access-Control-Allow-Origin,
  *      浏览器(GitHub Pages网页版)直接fetch飞书API会被CORS策略100%拦截;
@@ -13,6 +13,14 @@
  *
  * 数据流: 组长安卓端上传 → 飞书云盘 → [本脚本定时镜像] → 仓库web-data/
  *        → GitHub Pages部署 → 网页版同源fetch(60秒轮询感知更新)
+ *
+ * V2.5 变更(双根遍历,2026-09-06):
+ *   组长安卓端localStorage缓存了旧根folder token(WdXUfZPk...),组长端V5.x至今
+ *   一直在旧根写数据(82组车型/10账号都在旧根的APP数据备份/下);而云盘根/
+ *   配置根(nodcnGA...)只有内置73组+1个测试账号——仅遍历前两根永远看不到,
+ *   这是"安卓82组/网页73组"的真正根因。2026-09-06已做双根一次性合并
+ *   (merge_roots.js,两根数据已对齐82/10),本版同步改为三入口遍历:
+ *   云盘根 + 配置根 + 旧根,任一根的后续更新都能被感知,防止再次漂移。
  *
  * V2.1 变更(修复"网页版只有73组内置数据 + 组员账号无法登录"):
  *   V2.0多位置候选仍落空——取证快照显示 APP数据备份/同步数据/ 存在4个文件
@@ -55,6 +63,12 @@ const { execSync } = require('child_process');
 // ---------- 配置 ----------
 const SALT = 'tcg-web-2026'; // ⚠️ 必须与 js/09-web-sync.js 中 WEB_SYNC_SALT 完全一致
 const ROOT_FOLDER = process.env.FEISHU_FOLDER_TOKEN || 'nodcnGA95g93RhIUSdCeTkhKlQc';
+/* V2.5: 旧根目录token(组长安卓端localStorage缓存配置指向的历史树)。
+ * 组长端V5.x至今一直在旧根写数据(82组车型/10账号/图片视频都在旧根的
+ * APP数据备份/下),仅遍历应用云盘根+配置根永远看不到——这是"安卓82组/
+ * 网页73组"的根因。2026-09-06已做双根一次性合并(两根数据已对齐82/10),
+ * 镜像脚本同时遍历两根,任一根的后续更新都能被感知。 */
+const LEGACY_ROOT = process.env.FEISHU_LEGACY_ROOT || 'WdXUfZPkClI1audQxIYc90XRnWc';
 const IMAGES_DIR_NAME = 'vehicle_images';
 const WEB_DATA_DIR = 'web-data';
 const MAX_IMAGE_DOWNLOADS = 80; // 单次运行最多镜像图片数(防超时,余量下次继续)
@@ -177,6 +191,14 @@ async function main() {
   if (driveRootToken) await walk(driveRootToken, '(云盘根)/', 0);   // 应用云盘根(覆盖全部可达空间)
   if (ROOT_FOLDER && !walkedFolders.has(ROOT_FOLDER)) {
     await walk(ROOT_FOLDER, '(项目根)/', 0);                          // 配置根目录(若与云盘根不同树,补充遍历)
+  }
+  // V2.5: 旧根目录——组长安卓端缓存的历史树,双根合并后仍可能有后续写入,
+  // 三入口遍历确保任一根的更新都能被镜像感知(不可达时静默降级,不阻断主流程)
+  if (LEGACY_ROOT && !walkedFolders.has(LEGACY_ROOT)) {
+    try {
+      await walk(LEGACY_ROOT, '(旧根)/', 0);
+      log('旧根目录遍历完成');
+    } catch (e) { walkErrors.push(`(旧根)/: ${String(e.message || e).slice(0, 120)}`); }
   }
   log(`树遍历完成: ${walkedFolders.size}个文件夹 / ${nodes.length}个节点`);
 
