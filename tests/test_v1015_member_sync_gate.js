@@ -130,7 +130,7 @@ function makeSyncSandbox(role, opts) {
       remarks: '', photos: 0, photoPaths: [], videos: 0, videoPaths: [],
     }],
     USERS: [],
-    APP_VERSION: '10.14.2',
+    APP_VERSION: '10.14.3',
     FEISHU_MULTIPART_THRESHOLD: 16 * 1024 * 1024,
     CLOUD_CHECK_THROTTLE_MS: 5 * 60 * 1000,
     _cloudCheckLastTs: 0,

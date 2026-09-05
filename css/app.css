@@ -208,3 +208,15 @@ img,svg,video{max-width:100%;}
   .phone-frame{padding-left:var(--safe-left);padding-right:var(--safe-right);}
   .phone-frame .pt-12{padding-top:calc(var(--safe-top) + 6px);} /* 横屏顶栏更贴边,多给列表高度 */
 }
+
+/* ===================== V10.14.3: iOS PWA standalone模式适配 =====================
+ * 场景: 组员iPhone从主屏幕图标启动(display-mode:standalone),无Safari地址栏/工具栏,
+ *       状态栏为black-translucent透明样式,content顶到刘海下方——需额外安全区补偿。
+ * 机制: demo.html检测standalone后在<html>加pwa-standalone类,此处统一适配;
+ *       浏览器/Android APK环境无该类,零影响(纯增量) */
+html.pwa-standalone .phone-frame{padding-top:var(--safe-top);} /* 顶栏避开刘海/灵动岛 */
+html.pwa-standalone .phone-frame .pt-12{padding-top:calc(var(--safe-top) + 48px);} /* 与既有规则叠加语义一致 */
+html.pwa-standalone .toast{bottom:calc(90px + var(--safe-bottom));} /* Toast抬离底部手势条 */
+/* standalone下禁止文本选择呼出菜单干扰操作(原生APP行为对齐) */
+html.pwa-standalone .phone-frame{-webkit-user-select:none;user-select:none;}
+html.pwa-standalone input,html.pwa-standalone textarea{-webkit-user-select:text;user-select:text;} /* 输入框保留选择 */

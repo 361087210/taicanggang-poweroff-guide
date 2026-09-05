@@ -1,13 +1,14 @@
 /* ===========================================================
- * 太仓港断电指导 PWA Service Worker (V10.14.2 iOS方案A)
- * 功能: 应用壳预缓存 + 离线降级 + 静态资源缓存优先 + API网络优先
+ * 太仓港断电指导 PWA Service Worker (V10.14.3 iOS方案A深化)
+ * 功能: 应用壳预缓存 + 离线降级 + 静态资源缓存优先 + API网络优先 + 新版本即时接管
  * 策略:
  *   - 飞书API/GitHub API: 网络优先(失败降级缓存)
  *   - 同源静态资源: 缓存优先(未命中再网络请求并回填)
  *   - 导航请求: 离线时返回demo.html应用壳
+ * V10.14.3: 新增SKIP_WAITING消息处理(配合页面"立即更新"按钮即时接管) + PNG图标预缓存
  * =========================================================== */
 
-const CACHE_NAME='tcg-poweroff-v10.14.2';
+const CACHE_NAME='tcg-poweroff-v10.14.3';
 const APP_SHELL=[
   './demo.html',
   './css/app.css',
@@ -29,7 +30,12 @@ const APP_SHELL=[
   './vendor/html-docx.js',
   './vendor/html2canvas.min.js',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './icon-180.png',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-192-maskable.png',
+  './icon-512-maskable.png'
 ];
 
 // Install: 预缓存应用壳
@@ -49,6 +55,13 @@ self.addEventListener('activate',e=>{
       .then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))
       .then(()=>self.clients.claim())
   );
+});
+
+// V10.14.3: 页面"立即更新"按钮 → postMessage({action:'SKIP_WAITING'}) → 立即接管
+self.addEventListener('message',e=>{
+  if(e.data&&e.data.action==='SKIP_WAITING'){
+    self.skipWaiting();
+  }
 });
 
 // Fetch: 智能缓存策略

@@ -4,6 +4,24 @@
 
 ## [未发布]
 
+### V10.14.3 iOS PWA深化版(PNG图标关键修复+安装引导+即时更新+standalone适配)
+
+#### 🐛 关键修复:
+- **iOS主屏幕图标PNG化**: iOS Safari**不支持SVG**作为apple-touch-icon,V10.14.2的`apple-touch-icon`指向`icon.svg`导致组员「添加到主屏幕」时图标显示异常——本次新增全尺寸PNG图标全家桶(`icon-180/192/512/1024.png` + `icon-192/512-maskable.png`,与SVG视觉一致:蓝色圆角背景#2563eb+白色闪电,4倍超采样抗锯齿);`demo.html`的apple-touch-icon改指`icon-180.png`(iPhone主屏幕标准尺寸);`manifest.json`图标数组PNG优先+SVG兜底,`purpose`区分any/maskable,Android/iOS/桌面Chrome全兼容
+
+#### ✨ 新功能:
+- **iOS安装引导浮层**: 三条件同时满足才显示(iOS Safari浏览器+非standalone未安装状态+3天内未关闭过);自动弹出深色卡片「安装『太仓港断电』到主屏幕」+分享按钮图示+三步操作说明;20秒自动消失或点×关闭,关闭记忆3天不再打扰(localStorage `pwa_ios_guide_dismissed`);排除Chrome/Firefox/Edge等iOS第三方浏览器(它们没有「添加到主屏幕」的PWA能力)
+- **新版本即时更新提示**: SW监听`updatefound`→新SW进入`installed`状态且已有controller→底部弹出「发现新版本」提示条;点「立即更新」`postMessage({action:'SKIP_WAITING'})`→sw.js调用`self.skipWaiting()`立即激活新版本→300ms后`location.reload()`拉取新资源——**无需等所有标签页关闭**(传统SW更新要等所有客户端关闭,现场组员几乎从不主动关页面);sw.js新增message监听器
+- **standalone全屏模式适配**: 检测`display-mode: standalone`启动后在html添加`pwa-standalone`类;css/app.css新增规则——顶栏避开刘海/灵动岛(black-translucent状态栏下content默认顶到屏幕顶端)、Toast抬离底部手势条、禁用长按呼出文本选择菜单(对齐原生APP行为,输入框保留文本选择);浏览器/APK环境无该类,纯增量CSS零影响
+
+#### 🛡️ 健壮性:
+- **PWA脚本沙箱防御**: `_isStandalone()`对`window.navigator`/`window.matchMedia`/`document.documentElement`逐步判空+try/catch——Node测试沙箱/老WebView无这些对象时整段安全跳过(修复test_v53运行时仿真「Cannot read properties of undefined」回归,防御同时惠及非标准环境)
+
+#### 🚩 版本一致性升级 10.14.2 → 10.14.3(versionCode 101403):
+- `js/00-bootstrap.js` APP_VERSION / `config.xml` version+versionCode / `version.json` version+versionCode+downloadUrl+releaseNotes(5条) / `demo.html` / `sw.js`缓存名v10.14.3 / `tests/test_v1014`+`tests/test_v1015` 版本断言 / `ios-release.yml` workflow_dispatch 默认版本号
+- **V10.14.2功能逻辑零改动**: 车辆详情页多视频支持等仅版本号断言升级
+- **全量回归 0 FAIL**: V53运行时21 + V57逻辑34 + V1014零配置49 + V1015出口统一50 + V1010分片18 + V1011镜像6 + V1013复杂度68 + V103-V109(62/46/49/33/31/20/17)
+
 ### V10.14.2 车辆详情页多视频支持 + iOS方案A(PWA网页应用)
 
 #### ✨ 新功能:
