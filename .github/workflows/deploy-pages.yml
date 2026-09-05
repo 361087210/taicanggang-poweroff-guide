@@ -10,6 +10,7 @@ on:
       - 'js/**'
       - 'vendor/**'
       - 'vehicle_images/**'
+      - 'web-data/**'
       - 'manifest.json'
       - 'sw.js'
       - 'feishu-api.js'
@@ -55,6 +56,14 @@ jobs:
           cp -r js _publish/
           cp -r vendor _publish/
           cp -r vehicle_images _publish/
+          # web-data为镜像数据目录(首次同步前可能不存在,容错跳过)
+          if [ -d web-data ]; then
+            cp -r web-data _publish/
+            echo "web-data files:"
+            ls -la _publish/web-data/
+          else
+            echo "WARN: web-data目录不存在(首次同步前属正常,待sync-web-data工作流生成)"
+          fi
           echo "Publish dir contents:"
           ls -la _publish/
 

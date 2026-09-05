@@ -1,0 +1,56 @@
+# ============================================================
+# 飞书云端数据 → 网页版镜像同步 (V10.14.3 数据同步修复)
+# ============================================================
+# 背景: 飞书OpenAPI响应头不带Access-Control-Allow-Origin,网页版直接
+#      fetch飞书API被浏览器CORS策略100%拦截(安卓版靠cordova原生HTTP
+#      层绕过)。方案: 服务端定时镜像飞书云端数据到仓库web-data/目录,
+#      网页版从同源路径读取,实现网页版与安卓版数据同步。
+#
+# 数据流: 组长安卓端上传 → 飞书云盘 → [本工作流定时镜像] → web-data/
+#        → deploy-pages.yml自动重新部署 → 网页版同源fetch(60秒轮询感知)
+#
+# 节奏: 每5分钟镜像一次(Actions调度实际可能有1~3分钟排队延迟);
+#       无数据变化时不产生任何提交,不触发重部署。
+# 密钥: 复用Android/IOS CI已有的 FEISHU_APP_ID / FEISHU_APP_SECRET /
+#       FEISHU_FOLDER_TOKEN 仓库Secrets,无需额外配置。
+# ============================================================
+name: Sync Web Data from Feishu
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # 每5分钟(即时同步上限,GitHub调度最短间隔)
+  workflow_dispatch:          # 支持手动触发立即同步
+
+permissions:
+  contents: write             # 镜像结果需提交回main并触发Pages重部署
+
+concurrency:
+  group: sync-web-data
+  cancel-in-progress: false   # 不取消进行中的镜像(避免并发写入竞态)
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0          # pull --rebase 需要远端历史
+          persist-credentials: true
+
+      # 使用runner自带Node(≥18,支持全局fetch),无需setup-node
+      - name: Run Feishu mirror sync
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+        run: node scripts/sync_web_data.js
+
+      - name: Show mirror result
+        if: always()
+        run: |
+          echo "=== web-data 镜像内容 ==="
+          ls -la web-data/ 2>/dev/null || echo "(web-data目录尚未创建——飞书云端暂无数据或密钥缺失)"
+          cat web-data/meta.json 2>/dev/null || true
