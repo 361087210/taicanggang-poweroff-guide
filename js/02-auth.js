@@ -32,6 +32,18 @@ async function doLogin(){
       passOk = true;
     }
   }
+  if (!passOk) {
+    // V10.15.12: 本地旧哈希验证失败→拉云端最新名单重试一次——
+    // 设备A改密已推云端(pw_ts新),设备B本地还是旧哈希,输入新密码时
+    // 必须先同步云端再验证,否则新密码在旧设备上永远"密码错误"(V10.15.11修复缺口)
+    try{
+      await pullApprovedStatusFromFeishu({phone:phone},true);
+      user=USERS.find(u=>u.phone===phone);
+      if(user&&user.password&&user.password.includes('$')){
+        passOk=await verifyPassword(pass,user.password);
+      }
+    }catch(e){console.warn('云端密码重试失败:',e.message);}
+  }
   if (!passOk) { showToast('密码错误'); return; }
   // V5.3.1跨设备审批闭环修复: 待审核用户登录时先从飞书拉取最新审批结果,
   // 组长在另一台设备/另一网络已通过时,组员本机立即放行,不再被本地旧状态永久拦截
