@@ -144,16 +144,22 @@ function _install(){
             /* 新设备登录: 用登录输入的真实手机号重建本地账号(密码取云端哈希) */
             State.addUser({
               id:cu.id,name:cu.name||'',phone:String(who.phone),
-              password:cu.password||'',role:cu.role||'user',
+              password:cu.password||'',pw_ts:Number(cu.pw_ts)||0,role:cu.role||'user',
               status:cu.status||'pending',created:cu.created||''
             });
             changed=true;
           }
         }else{
-          /* 本地已有: 云端审批状态/姓名/角色传播(密码以本地为准) */
+          /* 本地已有: 云端审批状态/姓名/角色传播 */
           if(cu.status==='active'&&local.status!=='active'){local.status='active';changed=true;}
           if(cu.name&&local.name!==cu.name){local.name=cu.name;changed=true;}
           if(cu.role&&(local.role||'user')!==cu.role){local.role=cu.role;changed=true;}
+          /* V10.15.11: 密码跨设备仲裁(账号级pw_ts取新者,语义对齐安卓版05-sync.js)——
+             安卓端改密推云端后,本浏览器拉取镜像采纳新哈希,旧密码同步失效 */
+          if(cu.password&&String(cu.password).indexOf('$')>=0&&String(cu.password)!==String(local.password||'')){
+            var cuTs=Number(cu.pw_ts)||0,loTs=Number(local.pw_ts)||0;
+            if(cuTs>loTs){local.password=cu.password;local.pw_ts=cuTs;changed=true;}
+          }
         }
         if(whoH&&whoH===cu.phoneH)me=cu;
       }
@@ -220,6 +226,28 @@ function _install(){
     /* 网页注册→待审→上传飞书(CORS拦截)→组长永远看不到申请→账号卡死待审。
      * 直接引导走安卓端添加,避免"假注册成功"的体验陷阱 */
     showToast('网页版暂不支持自助注册，请联系组长在安卓端添加账号');
+  };
+
+  /* ============================================================
+   * ④b 网页版问题反馈镜像桥 - V10.15.11
+   * 根因: FeedbackBase原生实现依赖飞书直连API(网页端CORS不可达),
+   * 导致网页端反馈永远只有本地缓存、看不到云端处理状态。
+   * 方案: 覆盖FeedbackBase为镜像读取版——
+   *   - listFeedbackRecords 读 web-data/feedback_data.json 同源镜像
+   *   - 状态/AI分析/技术文档随镜像更新(安卓组长端审核后经CI镜像同步)
+   *   - 写入路径封堵并给出准确引导(纯静态托管无后端,上行物理不可达)
+   * ============================================================ */
+  window.__TCG_WEB_MIRROR__=true; /* 全局网页镜像标志,10-feedback.js用于准确提示 */
+  window.FeedbackBase={
+    isAvailable:function(){return true;}, /* 读能力(镜像)可用 */
+    listFeedbackRecords:async function(opts){
+      var data=await _fetchMirror('feedback_data.json');
+      /* 镜像未就绪时返回空数组,上层按"云端无反馈"降级 */
+      return (data&&data.items)||[];
+    },
+    addFeedbackRecord:async function(){ throw new Error('网页镜像端不支持反馈写入'); },
+    updateFeedbackStatus:async function(){ throw new Error('网页镜像端不支持状态审核'); },
+    uploadScreenshot:async function(){ throw new Error('网页镜像端不支持截图上传'); },
   };
 
   /* ============================================================

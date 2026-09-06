@@ -367,7 +367,8 @@ async function pushApprovedUsersToFeishu(){
   try{
     const token=await getFeishuToken(cfg);
     // V5.7: 含哈希密码(salt$hash不可逆,云端无明文),支撑组员新设备登录闭环
-    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>({id:u.id,name:u.name,phone:u.phone,password:u.password||'',role:u.role,status:u.status,created:u.created}))};
+    // V10.15.11: users行含pw_ts(账号级最近改密时间,ms)——拉取端据此仲裁密码新旧
+    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>({id:u.id,name:u.name,phone:u.phone,password:u.password||'',pw_ts:u.pw_ts||0,role:u.role,status:u.status,created:u.created}))};
     await uploadJsonToDataFeishu(token,'approved_users.json',JSON.stringify(payload),cfg.approvedSub);
     // 迁移清理: 删除旧位置(数据区根)同名文件,防止读到陈旧审批结果
     try{
@@ -420,6 +421,14 @@ async function pullApprovedStatusFromFeishu(userParam,fullMerge){
           State.addUser(cu); // A3状态守卫
         }
       }else{
+        // V10.15.11: 密码跨设备仲裁(账号级pw_ts取新者)——
+        // 设备A改密已推云端(pw_ts新)→设备B拉取采纳新哈希,旧密码立即失效;
+        // 本机刚改密未推成功(本机pw_ts新)→本机优先,不被云端旧哈希回滚。
+        // 兼容: 旧云端行无pw_ts(=0)且本地无pw_ts(=0)→不采纳,保持V5.7"密码以本地为准"语义
+        if(cu.password&&String(cu.password).indexOf('$')>=0&&String(cu.password)!==String(local.password||'')){
+          const cuTs=Number(cu.pw_ts)||0,loTs=Number(local.pw_ts)||0;
+          if(cuTs>loTs){local.password=cu.password;local.pw_ts=cuTs;}
+        }
         // 本地已有: 云端状态更新时同步(仅状态与审批信息,密码以本地为准避免覆盖)
         if(local.status!==cu.status&&cu.status==='active'){
           local.status='active';

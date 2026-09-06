@@ -290,13 +290,22 @@ function deleteMember(id){
 }
 
 async function resetMemberPass(id){
+  // V10.15.11: 函数层组长守卫(防绕过UI调用)+禁重置组长账号(与deleteMember保护一致)
+  if(!isLeader()){showToast('仅组长可重置组员密码');return;}
   const u=USERS.find(x=>x.id===id);
+  if(u&&u.role==='admin'){showToast('不可重置组长账号密码');return;}
   if(u){
-    // V5.4: 重置密码时哈希化存储
+    // V5.4: 重置密码时哈希化存储; V10.15.11: 记录pw_ts供组员端拉取仲裁(新ts→采纳重置值)
     const salt = genSalt();
     u.password = await hashPassword('123456', salt);
+    u.pw_ts = Date.now();
     saveUsers(USERS);
-    showToast(`已重置${u.name}的密码为123456`);pushApprovedUsersToFeishu();
+    showToast(`已重置${u.name}的密码为123456`);
+    // V10.15.11: 推送前fullMerge拉云端最新——防旧表覆盖其他成员新改的密码
+    try{ await pullApprovedStatusFromFeishu(state.currentUser, true); }catch(e){}
+    const u2=USERS.find(x=>x.phone===u.phone);
+    if(u2&&u2.password!==u.password){u2.password=u.password;u2.pw_ts=u.pw_ts;saveUsers(USERS);}
+    pushApprovedUsersToFeishu();
   }
 }
 
@@ -319,11 +328,36 @@ async function changePassword(){
   if (!oldOk) { showToast('原密码错误'); return; }
   const salt = genSalt();
   const hashedNew = await hashPassword(n, salt);
+  // V10.15.11: 账号级改密时间戳——跨设备拉取端据此仲裁密码新旧(见05-sync.js合并逻辑)
+  const pwTs = Date.now();
   state.currentUser.password = hashedNew;
-  const u=USERS.find(x=>x.id===state.currentUser.id);
-  if(u){u.password=hashedNew;saveUsers(USERS);}
+  state.currentUser.pw_ts = pwTs;
+  let u=USERS.find(x=>x.id===state.currentUser.id);
+  if(u){u.password=hashedNew;u.pw_ts=pwTs;saveUsers(USERS);}
+  // V10.15.11: 推送前先fullMerge拉云端最新名单——防止组员本地滞后的旧名单
+  // (缺新审批组员)整表覆盖云端,导致新组员在存活守卫中被误踢(数据覆盖竞态修复)
+  try{ await pullApprovedStatusFromFeishu(state.currentUser, true); }catch(e){}
+  // fullMerge可能以云端档重建本账号对象,重新写入新密码保证推送值正确
+  u=USERS.find(x=>x.phone===state.currentUser.phone);
+  if(u&&u.password!==hashedNew){u.password=hashedNew;u.pw_ts=pwTs;saveUsers(USERS);}
   localStorage.setItem('tcg_session',JSON.stringify({uid:state.currentUser.id,phone:state.currentUser.phone,ts:Date.now()}));
-  showToast('密码修改成功');
+  // V10.15.11: 密码修改必须推送云端——修复"换设备登录时新密码失效"根因:
+  // 原逻辑只写本地localStorage,云端approved_users.json仍是旧密码哈希,
+  // 新设备fullMerge拉取旧哈希重建账号,导致新密码登录失败、旧密码反而有效
+  try{
+    const pushed=await pushApprovedUsersToFeishu();
+    if(pushed===true){
+      showToast('密码修改成功，已同步云端(全设备生效)');
+    }else if(window.cordova){
+      showToast('密码修改成功(本机)，云端同步失败，联网后请重新修改或联系组长重置');
+    }else{
+      // 网页镜像端: pushApprovedUsersToFeishu已被封堵(其内部已toast引导),
+      // 此处说明仅本浏览器生效,全局密码需通过安卓端修改
+      showToast('密码修改成功(仅本浏览器生效)，全局修改请通过安卓APP操作');
+    }
+  }catch(e){
+    showToast(window.cordova?'密码修改成功(本机)，云端同步失败':'密码修改成功(仅本浏览器生效)');
+  }
   showScreen('screen-my');
 }
 

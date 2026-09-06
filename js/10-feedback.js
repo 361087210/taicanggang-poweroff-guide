@@ -279,14 +279,13 @@ window.submitFeedback = async function() {
 
     // 尝试上传到多维表格
     if (window.FeedbackBase && window.FeedbackBase.isAvailable()) {
-      try {
-        // 构建Bitable字段对象
+      try {        // 构建Bitable字段对象
         const fields = {
           '反馈ID': id,
           '问题板块': category,
           '问题描述': description,
           '提交人': user ? user.name : '匿名',
-          '角色': user ? (user.role === 'leader' ? '组长' : '组员') : '用户',
+          '角色': user ? (user.role === 'admin' ? '组长' : '组员') : '用户',
           '平台': (window.cordova && window.cordova.platformId) ? 'Android' : '网页',
           'APP版本': 'V' + (window.APP_VERSION || 'unknown'),
           '设备信息': deviceInfo,
@@ -297,18 +296,25 @@ window.submitFeedback = async function() {
         if (screenshotTokens.length > 0) {
           fields['问题描述'] = description + '\n\n[截图' + screenshotTokens.length + '张,已上传云盘]';
         }
-        await window.FeedbackBase.addFeedbackRecord(fields);
+        await window.FeedbackBase.addFeedbackRecord(fields).then(function(rec){
+          // V10.15.11: 保存云端record_id,供组长后续审核状态
+          updateFeedbackLocal(id, { synced: true, screenshotTokens, recordId: (rec && rec.record_id) || '' });
+        });
         feedback.synced = true;
-        updateFeedbackLocal(id, { synced: true, screenshotTokens });
         showToast('反馈提交成功，飞书端AI分析中...');
         resetFeedbackForm();
       } catch (e) {
         console.warn('写入飞书失败,本地缓存待同步:', e);
-        showToast('已保存，网络恢复后自动同步');
+        // V10.15.11: 网页镜像端无上行通道,给出准确引导(而非"网络恢复后自动同步"的误导)
+        showToast(window.__TCG_WEB_MIRROR__
+          ? '已保存在本浏览器；网页版暂无法上报云端，请通过安卓APP提交以便组长审核'
+          : '已保存，网络恢复后自动同步');
         resetFeedbackForm();
       }
     } else {
-      showToast('已保存，网络恢复后自动同步');
+      showToast(window.__TCG_WEB_MIRROR__
+        ? '已保存在本浏览器；网页版暂无法上报云端，请通过安卓APP提交以便组长审核'
+        : '已保存，网络恢复后自动同步');
       resetFeedbackForm();
     }
   } catch (e) {
@@ -371,6 +377,8 @@ function updateFeedbackLocal(id, updates) {
 async function syncPendingFeedback() {
   const pending = _feedbackList.filter(f => !f.synced);
   if (!pending.length) return;
+  // V10.15.11: 网页镜像端无上行通道,跳过重试(每次进页面无效请求)
+  if (window.__TCG_WEB_MIRROR__) return;
   if (!window.FeedbackBase || !window.FeedbackBase.isAvailable()) return;
 
   for (const fb of pending) {
@@ -380,7 +388,7 @@ async function syncPendingFeedback() {
         '问题板块': fb.category,
         '问题描述': fb.description,
         '提交人': fb.reporterName || '匿名',
-        '角色': fb.reporterRole === 'leader' ? '组长' : (fb.reporterRole === 'user' ? '组员' : '用户'),
+        '角色': fb.reporterRole === 'admin' ? '组长' : (fb.reporterRole === 'user' ? '组员' : '用户'),
         '平台': fb.platform || '',
         'APP版本': fb.appVersion || '',
         '设备信息': fb.deviceInfo || '',
@@ -390,8 +398,9 @@ async function syncPendingFeedback() {
       if (fb.screenshotTokens && fb.screenshotTokens.length > 0) {
         fields['问题描述'] = fb.description + '\n\n[截图' + fb.screenshotTokens.length + '张,已上传云盘]';
       }
-      await window.FeedbackBase.addFeedbackRecord(fields);
-      updateFeedbackLocal(fb.id, { synced: true });
+      const rec = await window.FeedbackBase.addFeedbackRecord(fields);
+      // V10.15.11: 补存record_id,组长拉取后可直接审核该记录
+      updateFeedbackLocal(fb.id, { synced: true, recordId: (rec && rec.record_id) || '' });
     } catch (e) {
       console.warn('同步反馈失败:', fb.id, e);
     }
@@ -410,7 +419,7 @@ async function loadAndRenderFeedbackList() {
       const items = await window.FeedbackBase.listFeedbackRecords({ pageSize: 50 });
       // 合并云端状态到本地(按反馈ID匹配)
       const user = state && state.currentUser;
-      const isLeader = user && user.role === 'leader';
+      const isLeader = user && user.role === 'admin';
       const cloudItems = items || [];
       cloudItems.forEach(item => {
         const f = item.fields;
@@ -421,10 +430,13 @@ async function loadAndRenderFeedbackList() {
           local.status = f['状态'] || local.status;
           local.analysisSummary = f['AI分析摘要'] || local.analysisSummary;
           local.techDocUrl = f['技术文档链接'] || local.techDocUrl;
+          // V10.15.11: 记录云端record_id,支撑组长审核状态更新
+          if (item.record_id) local.recordId = item.record_id;
         } else if (isLeader) {
           // 组长能看到所有反馈
           _feedbackList.push({
             id: fbId,
+            recordId: item.record_id || '',
             category: f['问题板块'] || '',
             description: f['问题描述'] || '',
             reporterName: f['提交人'] || '',
@@ -438,6 +450,27 @@ async function loadAndRenderFeedbackList() {
             createdAt: f['创建时间'] ? new Date(f['创建时间']).toISOString() : '',
             synced: true,
             _fromCloud: true,
+          });
+        } else if (user && user.name && f['提交人'] === user.name) {
+          // V10.15.11: 组员跨设备同步——云端按提交人姓名拉回自己的反馈,
+          // 修复"换设备/重装后我的反馈列表为空"(组内重名概率极低,姓名匹配可接受)
+          _feedbackList.push({
+            id: fbId,
+            recordId: item.record_id || '',
+            category: f['问题板块'] || '',
+            description: f['问题描述'] || '',
+            reporterName: f['提交人'] || '',
+            reporterRole: f['角色'] || '',
+            platform: f['平台'] || '',
+            appVersion: f['APP版本'] || '',
+            deviceInfo: f['设备信息'] || '',
+            status: f['状态'] || '待处理',
+            analysisSummary: f['AI分析摘要'] || '',
+            techDocUrl: f['技术文档链接'] || '',
+            createdAt: f['创建时间'] ? new Date(f['创建时间']).toISOString() : '',
+            synced: true,
+            _fromCloud: true,
+            _isMine: true,
           });
         }
       });
@@ -454,7 +487,7 @@ function renderFeedbackList() {
   if (!container) return;
 
   const user = state && state.currentUser;
-  const isLeader = user && user.role === 'leader';
+  const isLeader = user && user.role === 'admin';
 
   let list = _feedbackList;
   // 非组长只看自己的
@@ -535,8 +568,50 @@ window.showFeedbackDetail = function(id) {
     <div class="flex justify-between"><span>提交时间</span><span class="text-gray-700">${formatTime(fb.createdAt)}</span></div>
   </div>`;
 
+  // V10.15.11: 组长状态审核——对云端已同步的反馈可标记 已解决/待处理
+  // (网页镜像端无上行通道,审核按钮隐藏并提示走安卓端)
+  // V10.15.11: 组长角色为admin(isLeader()==='admin'),此前误用'leader'致按钮永不渲染
+  const user4btn = state && state.currentUser;
+  if (user4btn && user4btn.role === 'admin' && fb.recordId && window.FeedbackBase && window.FeedbackBase.isAvailable()) {
+    if (window.__TCG_WEB_MIRROR__) {
+      html += `<div class="mt-4 pt-3 border-t border-gray-100">
+        <div class="text-xs text-gray-400 leading-relaxed">状态审核请通过安卓APP操作(网页版为只读镜像)</div>
+      </div>`;
+    } else {
+      const canResolve = fb.status !== '已解决';
+      const canReopen = fb.status === '已解决';
+      html += `<div class="mt-4 pt-3 border-t border-gray-100">
+        <div class="text-xs font-bold text-gray-600 mb-2">组长审核</div>
+        <div class="flex gap-2">
+          ${canResolve ? `<button onclick="setFeedbackStatus('${fb.id}','已解决')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-green-600 text-white active:scale-[0.98] transition-transform">✓ 标记已解决</button>` : ''}
+          ${canReopen ? `<button onclick="setFeedbackStatus('${fb.id}','待处理')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-amber-500 text-white active:scale-[0.98] transition-transform">↩ 重新打开(待处理)</button>` : ''}
+        </div>
+      </div>`;
+    }
+  }
+
   document.getElementById('fb-detail-content').innerHTML = html;
   openModal('modal-fb-detail');
+};
+
+/** V10.15.11: 组长更新反馈状态(本地+云端Bitable)
+ *  需求: 反馈过并分析过的问题提交到组长端,由组长确定反馈的问题状态-已解决/待处理 */
+window.setFeedbackStatus = async function(id, status) {
+  // 函数层角色守卫: 组长角色为admin,防止绕过UI直接调用(网页镜像端无上行也会被FeedbackBase封堵)
+  const me = state && state.currentUser;
+  if (!me || me.role !== 'admin') { showToast('仅组长可审核反馈状态'); return; }
+  const fb = _feedbackList.find(f => f.id === id);
+  if (!fb || !fb.recordId) { showToast('该反馈未同步云端,无法审核'); return; }
+  try {
+    await window.FeedbackBase.updateFeedbackStatus(fb.recordId, status);
+    updateFeedbackLocal(id, { status });
+    showToast('已标记为「' + status + '」');
+    closeModal('modal-fb-detail');
+    renderFeedbackList();
+  } catch (e) {
+    console.warn('状态更新失败:', e);
+    showToast('状态更新失败,请检查网络后重试');
+  }
 };
 
 function escapeHtml(s) {

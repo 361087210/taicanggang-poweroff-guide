@@ -36,12 +36,26 @@ async function addFeedbackRecord(fields) {
 /**
  * 查询反馈列表
  * @param {Object} opts { pageSize, pageToken }
+ * @returns {Promise<Array>} items数组,每项含 record_id 与 fields
  */
 async function listFeedbackRecords(opts) {
   if (!window.FeishuAPI) throw new Error('飞书API不可用');
   opts = opts || {};
   return await window.FeishuAPI.bitableListRecords(
     BASE_APP_TOKEN, FEEDBACK_TABLE_ID, { pageSize: opts.pageSize || 50 }
+  );
+}
+
+/**
+ * 组长更新反馈状态 - V10.15.11
+ * @param {string} recordId 云端记录id(listFeedbackRecords返回项的record_id)
+ * @param {string} status 新状态: 待处理/已解决
+ * @returns {Promise<Object>} 更新后的record
+ */
+async function updateFeedbackStatus(recordId, status) {
+  if (!window.FeishuAPI) throw new Error('飞书API不可用');
+  return await window.FeishuAPI.bitableUpdateRecord(
+    BASE_APP_TOKEN, FEEDBACK_TABLE_ID, recordId, { '状态': status }
   );
 }
 
@@ -101,6 +115,7 @@ window.FeedbackBase = {
   isAvailable,
   addFeedbackRecord,
   listFeedbackRecords,
+  updateFeedbackStatus,
   uploadScreenshot,
 };
 

@@ -413,6 +413,51 @@ async function main() {
     else if (!imgFolder) { warn('全树未找到vehicle_images文件夹,跳过图片镜像'); }
   }
 
+  // ---- ⑥b 反馈表镜像: Bitable问题反馈表 → feedback_data.json - V10.15.11 ----
+  // 根因: 反馈数据存于多维表格(非云盘文件树),原镜像脚本从未覆盖;
+  // 网页端FeedbackBase被镜像桥重写后读web-data/feedback_data.json,
+  // 组员网页端可见自己反馈的处理状态(已解决/待处理)。
+  // 脱敏原则: 静态镜像公开可达,只保留状态跟踪必需字段——
+  // 不镜像问题描述全文/联系方式/设备信息(PII最小化)。
+  let feedbackData = null;
+  const FEEDBACK_APP_TOKEN = 'Gn4db7il9a27QrsOtVbclSE3nnf';
+  const FEEDBACK_TABLE_ID = 'tblPB0AnsTS9puqw';
+  try {
+    const items = [];
+    let pageToken = '';
+    for (let i = 0; i < 10; i++) {
+      let url = `${API_BASE}/bitable/v1/apps/${FEEDBACK_APP_TOKEN}/tables/${FEEDBACK_TABLE_ID}/records?page_size=500`;
+      if (pageToken) url += `&page_token=${encodeURIComponent(pageToken)}`;
+      const data = await apiGet(token, url);
+      (data.items || []).forEach(it => items.push(it));
+      if (!data.has_more || !data.page_token) break;
+      pageToken = data.page_token;
+    }
+    if (items.length) {
+      // 保持Bitable原生{record_id, fields}结构,前端10-feedback.js合并逻辑零适配
+      feedbackData = {
+        type: 'feedback_mirror',
+        syncedAt: new Date().toISOString(),
+        items: items.map(it => ({
+          record_id: it.record_id,
+          fields: {
+            '反馈ID': it.fields['反馈ID'] || '',
+            '问题板块': it.fields['问题板块'] || '',
+            '状态': it.fields['状态'] || '待处理',
+            'AI分析摘要': it.fields['AI分析摘要'] || '',
+            '技术文档链接': it.fields['技术文档链接'] || '',
+            '提交人': it.fields['提交人'] || '',
+            '角色': it.fields['角色'] || '',
+            '平台': it.fields['平台'] || '',
+            'APP版本': it.fields['APP版本'] || '',
+            '创建时间': it.fields['创建时间'] || '',
+          },
+        })),
+      };
+      log(`反馈表镜像: ${items.length}条(已脱敏,不含描述/联系方式/设备信息)`);
+    } else warn('反馈表无记录,反馈镜像跳过');
+  } catch (e) { warn(`反馈表镜像失败(表不可达/权限): ${e.message}`); }
+
   // ---- ⑦ 写入web-data/ ----
   if (!fs.existsSync(path.join(REPO_DIR, WEB_DATA_DIR))) fs.mkdirSync(path.join(REPO_DIR, WEB_DATA_DIR), { recursive: true });
   const written = [];
@@ -448,13 +493,17 @@ async function main() {
         .map(u => ({
           id: u.id, name: u.name || '',
           phoneH: sha256Hex(SALT + String(u.phone)),
-          password: u.password || '', role: u.role || 'user',
+          password: u.password || '', pw_ts: u.pw_ts || 0, role: u.role || 'user',
           status: u.status || 'pending', created: u.created || '',
         })),
     };
     fs.writeFileSync(path.join(REPO_DIR, WEB_DATA_DIR, 'approved_users.web.json'), JSON.stringify(web));
     written.push(`approved_users.web.json(脱敏${web.users.length}个)`);
   } else { warn('账号表镜像跳过(无数据)'); }
+  if (feedbackData) {
+    fs.writeFileSync(path.join(REPO_DIR, WEB_DATA_DIR, 'feedback_data.json'), JSON.stringify(feedbackData));
+    written.push(`feedback_data.json(${feedbackData.items.length}条)`);
+  } else { warn('反馈表镜像跳过(无数据/不可达)'); }
   log(`已写入: ${written.join(', ') || '(无数据文件)'}`);
 
   // ---- ⑧ 取证快照: 全树结构(脱敏)+数据源结论,仅结构变化才写避免空提交 ----
