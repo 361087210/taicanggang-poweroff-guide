@@ -783,7 +783,7 @@ async function generateDocxOOXML(vehicles,photoMap){
  */
 function _buildExportHtml(vehicles,photoMap,opts){
   opts=opts||{};
-  const includeImages=opts.includeImages!==false; // 默认含图,Word批量导出传false
+  const includeImages=opts.includeImages===true; // V10.15.8 默认不含图(批量Word/PDF均无图),单车分支始终含图
   const isSingle=vehicles.length===1;
   if(isSingle){
     const v=vehicles[0];
@@ -1146,9 +1146,9 @@ async function exportData(format){
       await shareFile(blob,`vehicle_poweroff_export_${n}_${Date.now()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }else if(format==='pdf'){
       if(!window.jspdf){showToast('PDF组件未打包,请更新至新版安装包');return;}
-      showToast('正在生成含照片PDF...');
-      const photoMap=await preparePhotoMapSafe(selectedVehicles);
-      const blob=await generatePDF(selectedVehicles,photoMap); // V10.6.0: 异步canvas中文渲染
+      showToast('正在生成PDF...');
+      // V10.15.8: 批量导出PDF不含图片,跳过照片预取
+      const blob=await generatePDF(selectedVehicles,{});
       await shareFile(blob,`vehicle_poweroff_export_${n}_${Date.now()}.pdf`,'application/pdf');
     }else if(format==='word'){
       showToast('正在生成Word...');
