@@ -956,9 +956,18 @@ async function shareVehicleDetail(){
   const shareData={title:v.display+' 断电指导',text:shareText};
   if(navigator.share){
     try{await navigator.share(shareData);}catch(e){if(e.name!=='AbortError')showToast('分享取消');}
-  }else if(navigator.clipboard){
+  }else if(navigator.clipboard&&navigator.clipboard.writeText){
     try{await navigator.clipboard.writeText(shareText);showToast('已复制断电信息到剪贴板');}catch(e){showToast('分享功能不可用');}
   }else{
+    // V10.15.10 execCommand降级: 旧浏览器/非HTTPS环境剪贴板API不可用时的保底
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=shareText;ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();
+      const ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      if(ok){showToast('已复制断电信息到剪贴板');return;}
+    }catch(e){console.warn('[分享] execCommand复制失败:',e.message);}
     showToast('当前环境不支持分享');
   }
 }
@@ -1082,9 +1091,51 @@ async function shareFile(blob,filename,mimeType,title){
     }
   }
 
-  // 全链路失败——明确报错,不准静默降级为纯文本分享
-  console.error('[分享] 系统分享不可用: 原生插件与Web Share API均未调起',filename);
-  showToast('分享失败：系统分享面板不可用，请检查系统或升级应用');
+  // V10.15.10 网页版下载降级链: 系统分享不可用时,降级为浏览器下载
+  // 降级顺序: <a download> → window.open(blob) → msSaveBlob(旧Edge) → 提示用户
+  console.warn('[分享] 系统分享面板不可用,降级为浏览器下载:',filename);
+  try{
+    const blobUrl=URL.createObjectURL(blob);
+    // 方式1: <a download> 原生下载(Chrome/Safari/Firefox桌面与移动版均支持)
+    if('download' in document.createElement('a')){
+      const a=document.createElement('a');
+      a.href=blobUrl;
+      a.download=filename;
+      a.style.display='none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      console.log('[分享] 降级: <a download> 已触发下载');
+      showToast('文件已开始下载，可在浏览器下载列表中查看');
+      setTimeout(()=>URL.revokeObjectURL(blobUrl),5000);
+      return true;
+    }
+    // 方式2: window.open 新窗口打开(部分WebView不支持download属性时的备选)
+    try{
+      window.open(blobUrl,'_blank');
+      console.log('[分享] 降级: window.open 已打开新窗口');
+      showToast('文件已在新窗口打开，请另存为');
+      return true;
+    }catch(e){
+      console.warn('[分享] window.open 降级失败:',e.message);
+    }
+  }catch(e){
+    console.error('[分享] 下载降级失败:',e.message);
+  }
+  // 方式3: navigator.msSaveBlob(旧版Edge/IE)
+  if(navigator.msSaveBlob){
+    try{
+      navigator.msSaveBlob(blob,filename);
+      console.log('[分享] 降级: msSaveBlob 已触发下载');
+      showToast('文件已开始下载');
+      return true;
+    }catch(e){
+      console.warn('[分享] msSaveBlob 失败:',e.message);
+    }
+  }
+  // 全链路失败
+  console.error('[分享] 所有下载方式均不可用',filename);
+  showToast('下载失败：当前浏览器不支持文件保存，请更换浏览器');
   return false;
 }
 
