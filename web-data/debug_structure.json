@@ -3593,7 +3593,7 @@
  "sources": {
   "vehicle": "安卓主档:(旧根)/APP数据备份/同步数据/vehicle_sync_data.json",
   "notice": "sync:(旧根)/APP数据备份/同步数据/data_update_notice.json",
-  "users": "approved:(云盘根)/APP数据备份/审批结果/approved_users.json"
+  "users": "merged:(云盘根)/APP数据备份/审批结果/approved_users.json(1个) + (旧根)/APP数据备份/审批结果/approved_users.json(10个) + backup:(旧根)/APP数据备份/备份文件/vehicle_backup_2026-09-05.json(10个)"
  },
  "vehicleCandidates": [
   {
@@ -3646,5 +3646,5 @@
   }
  ],
  "vehicleCount": 82,
- "accountCount": 1
+ "accountCount": 10
 }
