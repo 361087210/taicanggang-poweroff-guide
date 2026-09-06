@@ -122,16 +122,84 @@ let USERS=loadUsers();
 // ===================== PASSWORD HASHING (V5.4 安全加固) =====================
 // 使用 SHA-256 + 随机盐值哈希密码，不再明文存储
 // 哈希结果格式: "salt$hash" (salt 为 16 位随机字符串，hash 为 64 位十六进制)
+// V10.15.9: crypto.subtle在非HTTPS/旧WebView下可能不可用,增加纯JS SHA-256兜底,
+//           保证网页端登录密码校验与手机号哈希匹配在任何环境都能执行。
+function _sha256PureJs(data){
+  // 纯JS SHA-256实现(geraintluff/sha256,已验证与Node.js crypto一致),
+  // 仅在crypto.subtle不可用时兜底。输入data为Uint8Array/字节数组。
+  function rightRotate(value, amount){return (value>>>amount)|(value<<(32-amount));}
+  var maxWord=Math.pow(2,32),i,j;
+  var words=[];
+  // 字节数组→二进制字符串(输入短,无栈溢出风险)
+  var ascii='';
+  for(i=0;i<data.length;i++)ascii+=String.fromCharCode(data[i]);
+  var asciiBitLength=ascii.length*8;
+  var hash=_sha256PureJs._h||(_sha256PureJs._h=[]);
+  var k=_sha256PureJs._k||(_sha256PureJs._k=[]);
+  var primeCounter=k.length;
+  var isComposite={};
+  for(var candidate=2;primeCounter<64;candidate++){
+    if(!isComposite[candidate]){
+      for(i=0;i<313;i+=candidate)isComposite[i]=candidate;
+      hash[primeCounter]=(Math.pow(candidate,.5)*maxWord)|0;
+      k[primeCounter++]=(Math.pow(candidate,1/3)*maxWord)|0;
+    }
+  }
+  ascii+='\x80';
+  while(ascii.length%64-56)ascii+='\x00';
+  for(i=0;i<ascii.length;i++){
+    j=ascii.charCodeAt(i);
+    words[i>>2]|=j<<((3-i)%4)*8;
+  }
+  words[words.length]=((asciiBitLength/maxWord)|0);
+  words[words.length]=(asciiBitLength);
+  for(j=0;j<words.length;){
+    var w=words.slice(j,j+=16);
+    var oldHash=hash;
+    hash=hash.slice(0,8);
+    for(i=0;i<64;i++){
+      var w15=w[i-15],w2=w[i-2];
+      var a=hash[0],e=hash[4];
+      var temp1=hash[7]
+        +(rightRotate(e,6)^rightRotate(e,11)^rightRotate(e,25))
+        +((e&hash[5])^((~e)&hash[6]))
+        +k[i]
+        +(w[i]=(i<16)?w[i]:(w[i-16]+(rightRotate(w15,7)^rightRotate(w15,18)^(w15>>>3))+w[i-7]+(rightRotate(w2,17)^rightRotate(w2,19)^(w2>>>10)))|0);
+      var temp2=(rightRotate(a,2)^rightRotate(a,13)^rightRotate(a,22))
+        +((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+      hash=[(temp1+temp2)|0].concat(hash);
+      hash[4]=(hash[4]+temp1)|0;
+    }
+    for(i=0;i<8;i++)hash[i]=(hash[i]+oldHash[i])|0;
+  }
+  var result='';
+  for(i=0;i<8;i++){
+    for(j=3;j+1;j--){
+      var b=(hash[i]>>(j*8))&255;
+      result+=((b<16)?0:'')+b.toString(16);
+    }
+  }
+  return result;
+}
+async function _digestSha256Hex(data){
+  var c=typeof crypto!=='undefined'?crypto:null;
+  if(c&&c.subtle&&typeof c.subtle.digest==='function'){
+    try{
+      var buf=await c.subtle.digest('SHA-256',data);
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }catch(e){/* 兜底走纯JS */}
+  }
+  return _sha256PureJs(data);
+}
 async function hashPassword(password, salt) {
   const data = new TextEncoder().encode(salt + password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashHex = await _digestSha256Hex(data);
   return salt + '$' + hashHex;
 }
 
 function genSalt() {
   const arr = new Uint8Array(8);
-  crypto.getRandomValues(arr);
+  try{crypto.getRandomValues(arr);}catch(e){for(let i=0;i<8;i++)arr[i]=Math.floor(Math.random()*256);}
   return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
@@ -1201,7 +1269,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.15.8';
+const APP_VERSION='10.15.9';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
