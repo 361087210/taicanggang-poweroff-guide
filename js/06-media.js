@@ -35,6 +35,7 @@ function openPhotoViewer(index){
     img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#1a1a2e"/><text x="200" y="150" text-anchor="middle" fill="#666" font-size="20" font-family="sans-serif">${v?v.display:''} - ${labels[index]||'照片'}</text><rect x="50" y="50" width="300" height="200" fill="none" stroke="#444" stroke-width="2" rx="10"/><circle cx="120" cy="120" r="15" fill="#333"/><path d="M50 250 L150 150 L250 200 L350 100 L350 250 Z" fill="#222"/></svg>`);
   }
   img.style.transform='scale(1)';
+  _bindPhotoPinch();
   document.getElementById('photo-viewer').classList.add('show');
 }
 
@@ -46,6 +47,45 @@ function cycleZoom(){
 }
 
 function resetZoom(){state.photoZoom=1;document.getElementById('photo-viewer-img').style.transform='scale(1)';}
+
+// ===================== PINCH ZOOM (V10.15.3) =====================
+// 反馈2-3: 此前照片只能单击循环缩放(1x→2x→3x),无法双指捏合自由缩放。
+// 现为图片查看器绑定双指触摸手势,可在1x~4x范围内连续缩放;单击仍走 cycleZoom。
+let _pinchBound=false;
+let _pinch={active:false,startDist:0,startScale:1};
+function _pinchDist(t){
+  const dx=t[0].clientX-t[1].clientX;
+  const dy=t[0].clientY-t[1].clientY;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+function _applyPhotoScale(s){
+  document.getElementById('photo-viewer-img').style.transform=`scale(${s})`;
+}
+function _bindPhotoPinch(){
+  if(_pinchBound)return;
+  _pinchBound=true;
+  const img=document.getElementById('photo-viewer-img');
+  img.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      _pinch.active=true;
+      _pinch.startDist=_pinchDist(e.touches);
+      _pinch.startScale=state.photoZoom>0?state.photoZoom:1;
+      e.preventDefault();
+    }
+  },{passive:false});
+  img.addEventListener('touchmove',e=>{
+    if(_pinch.active&&e.touches.length===2){
+      _pinch.startDist=_pinch.startDist||1;
+      const s=Math.min(4,Math.max(1,_pinch.startScale*(_pinchDist(e.touches)/_pinch.startDist)));
+      _applyPhotoScale(s);
+      state.photoZoom=s;
+      e.preventDefault();
+    }
+  },{passive:false});
+  img.addEventListener('touchend',e=>{
+    if(e.touches.length<2)_pinch.active=false;
+  },{passive:false});
+}
 
 // ===================== VIDEO PLAYER =====================
 /**

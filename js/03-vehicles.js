@@ -33,8 +33,9 @@ function setBrandFilter(bid){state.brandFilter=bid;renderBrandTags();renderVehic
 
 function setViewMode(mode){
   state.viewMode=mode;
-  document.getElementById('btn-tree').className='text-xs font-medium flex items-center gap-1 '+(mode==='tree'?'text-blue-600':'text-gray-400');
-  document.getElementById('btn-flat').className='text-xs font-medium flex items-center gap-1 '+(mode==='flat'?'text-blue-600':'text-gray-400');
+  const btnBase='text-sm font-medium flex items-center gap-1 px-3 py-2 rounded-full ';
+  document.getElementById('btn-tree').className=btnBase+(mode==='tree'?'text-blue-600 bg-blue-50':'text-gray-500');
+  document.getElementById('btn-flat').className=btnBase+(mode==='flat'?'text-blue-600 bg-blue-50':'text-gray-500');
   renderVehicleList();
 }
 
@@ -218,6 +219,12 @@ function toggleBrand(bid){
 }
 
 // ===================== VEHICLE DETAIL =====================
+// V10.15.3: 照片部位标示不再按数组下标硬编码猜测(第0张=前脸/第1张=车尾...),
+// 改为优先读取车辆数据中的 photoLabels 配置;未配置时显示通用「照片N」,避免"胡乱标记"。
+function _photoLabel(v,i){
+  if(v&&v.photoLabels&&v.photoLabels[i])return v.photoLabels[i];
+  return `照片 ${i+1}`;
+}
 function _renderVehicleDetail(id){
   const v=VEHICLES.find(x=>x.id===id);
   if(!v)return;
@@ -226,7 +233,7 @@ function _renderVehicleDetail(id){
   if(!state.recentVehicles.includes(id)){state.recentVehicles.unshift(id);state.recentVehicles=state.recentVehicles.slice(0,5);}
   document.getElementById('detail-index').textContent=`${state.currentVehicleIndex+1}/${VEHICLES.length}`;
   const ptClass='pt-'+v.powerType;
-  const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}" onerror="imgLoadError(this)"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${i===0?'前脸':i===1?'车尾':i===2?'钥匙':'断电位'}</span></div>`).join('');
+  const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}" onerror="imgLoadError(this)"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join('');
   // V10.14.2: 多视频支持——详情页视频区域从单视频改为多视频列表展示
   const videoPaths=v.videoPaths||[];
   const videoHtml=videoPaths.length?`
@@ -235,8 +242,9 @@ function _renderVehicleDetail(id){
         const fn=vp.split('/').pop().replace(/\.[^.]+$/,'');
         const label=i===0?'断电教学视频':`补充视频${i}`;
         return `<div onclick="openVideoPlayer(${i})" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative overflow-hidden">
-          <svg viewBox="0 0 24 24" fill="white" class="w-10 h-10"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-          <span class="absolute bottom-2 left-2 text-xs text-white">${esc(label)}</span>
+          <video src="${esc(vp)}" preload="metadata" muted playsinline controlslist="nodownload" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'"></video>
+          <svg viewBox="0 0 24 24" fill="white" class="w-10 h-10 absolute drop-shadow"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          <span class="absolute bottom-2 left-2 text-xs text-white drop-shadow">${esc(label)}</span>
           ${videoPaths.length>1?`<span class="absolute top-2 right-2 text-xs text-white bg-black/50 px-1.5 rounded">${i+1}/${videoPaths.length}</span>`:''}
         </div>`;
       }).join('')}
