@@ -742,16 +742,9 @@ async function generateDocxOOXML(vehicles,photoMap){
       body.push(_docxPara('断电步骤',{bold:true,sizePt:12,color:'1E40AF',spaceBefore:'120'}));
       (v.steps||[]).forEach((s,i)=>body.push(_docxPara((i+1)+'. '+s,{sizePt:11})));
       if(v.remarks)body.push(_docxPara('备注: '+v.remarks,{sizePt:11,color:'D97706',spaceBefore:'120'}));
+      // V10.15.7: 批量导出Word不含图片,仅显示照片数量(避免文档体积过大+分享超限)
       if((v.photoPaths||[]).length){
-        body.push(_docxPara('车辆照片',{bold:true,sizePt:12,color:'1E40AF',spaceBefore:'120'}));
-        for(const p of v.photoPaths){
-          const dataUrl=photoMap&&photoMap[p];
-          if(dataUrl){
-            const img=await embedPhoto(dataUrl);
-            if(img){body.push(_docxImage(img.rid,img.dw,img.dh,img.id));continue;}
-          }
-          body.push(_docxPara('[照片未能内嵌: '+String(p).split('/').pop()+']',{sizePt:9,color:'999999'}));
-        }
+        body.push(_docxPara('车辆照片: '+(v.photoPaths||[]).length+'张',{sizePt:11,color:'6B7280',spaceBefore:'120'}));
       }
     }
     body.push(_docxPara('太仓港车辆断电指导APP · 生成于 '+new Date().toLocaleString('zh-CN'),{sizePt:9,color:'999999',spaceBefore:'360'}));
@@ -788,7 +781,9 @@ async function generateDocxOOXML(vehicles,photoMap){
  * @param {Object} [photoMap] - photoPath→dataURL映射
  * @returns {string} 完整HTML文档字符串
  */
-function _buildExportHtml(vehicles,photoMap){
+function _buildExportHtml(vehicles,photoMap,opts){
+  opts=opts||{};
+  const includeImages=opts.includeImages!==false; // 默认含图,Word批量导出传false
   const isSingle=vehicles.length===1;
   if(isSingle){
     const v=vehicles[0];
@@ -823,14 +818,18 @@ function _buildExportHtml(vehicles,photoMap){
     </body></html>`;
   }
   const rows=vehicles.map(v=>`<tr><td>${v.id}</td><td>${v.brand}</td><td>${v.series}</td><td>${v.config}</td><td>${v.display}</td><td>${v.powerType}</td><td>${v.position}</td><td>${(v.steps||[]).length}</td><td>${(v.photoPaths||[]).length}</td><td>${(v.videoPaths||[]).length}</td></tr>`).join('');
-  // V10.15.5 反馈1: 批量导出HTML/降级链补齐「总表无图 + 每车含图分表」,与详情页导出一致
+  // V10.15.7 反馈: 批量导出Word不含图片(includeImages=false时仅显示照片数量),PDF保持含图
   const detailHtml=vehicles.map(v=>{
-    const photoHtml=(v.photoPaths||[]).map(p=>{
+    const photoCount=(v.photoPaths||[]).length;
+    const photoHtml=includeImages?(v.photoPaths||[]).map(p=>{
       const dataUrl=photoMap&&photoMap[p];
       if(dataUrl)return `<img src="${dataUrl}" style="max-width:440px;max-height:330px;margin:5px 0;display:block;"/>`;
       return `<p style="color:#999;font-size:9pt;">[照片未能内嵌: ${String(p).split('/').pop()}]</p>`;
-    }).join('');
+    }).join(''):'';
     const videoHtml=(v.videoPaths||[]).map(vp=>`<p>视频: ${vp}</p>`).join('');
+    const photoBlock=includeImages
+      ?(photoHtml?`<h2 style="color:#1e40af;font-size:12pt;">车辆照片</h2>${photoHtml}`:'')
+      :(photoCount?`<h2 style="color:#1e40af;font-size:12pt;">车辆照片</h2><p style="color:#6B7280;font-size:11pt;">共 ${photoCount} 张</p>`:'');
     return `<h1 style="color:#1e40af;font-size:14pt;margin-top:18px;">${v.display} 车辆详情</h1>
     <table><tr><td>品牌</td><td>${v.brand}</td><td>车系</td><td>${v.series}</td></tr>
     <tr><td>配置</td><td>${v.config}</td><td>动力类型</td><td>${v.powerType}</td></tr>
@@ -839,7 +838,7 @@ function _buildExportHtml(vehicles,photoMap){
     <h2 style="color:#1e40af;font-size:12pt;">断电步骤</h2>${(v.steps||[]).map((s,i)=>`<p class="step">${i+1}. ${s}</p>`).join('')}
     ${(v.keyFrame&&v.keyFrame.length)?`<h2 style="color:#1e40af;font-size:12pt;">钥匙处理方式</h2><p><strong>框架:</strong> ${v.keyFrame.join('; ')}</p><p><strong>集装箱:</strong> ${(v.keyContainer||[]).join('; ')}</p>${v.keyPhotoRemark?`<p><strong>车钥匙备注:</strong> ${v.keyPhotoRemark}</p>`:''}`:''}
     ${v.remarks?`<h2 style="color:#1e40af;font-size:12pt;">备注</h2><p class="note">${v.remarks}</p>`:''}
-    ${photoHtml?`<h2 style="color:#1e40af;font-size:12pt;">车辆照片</h2>${photoHtml}`:''}
+    ${photoBlock}
     ${videoHtml?`<h2 style="color:#1e40af;font-size:12pt;">视频资源</h2>${videoHtml}`:''}`;
   }).join('');
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -914,7 +913,8 @@ async function generateWord(vehicles,photoMap){
     console.warn('[导出]OOXML生成失败,降级htmlDocx:',e.message||e);
   }
   // 二级保底: htmlDocx MHTML(桌面Word可开,手机端兼容差,仅作过渡)
-  const html=_buildExportHtml(vehicles,photoMap);
+  // V10.15.7: 批量导出Word不含图片,降级链同样传includeImages=false
+  const html=_buildExportHtml(vehicles,photoMap,{includeImages:false});
   if(window._htmlDocxReady&&typeof htmlDocx!=='undefined'&&htmlDocx.asBlob){
     try{
       return htmlDocx.asBlob(html);
@@ -1151,9 +1151,9 @@ async function exportData(format){
       const blob=await generatePDF(selectedVehicles,photoMap); // V10.6.0: 异步canvas中文渲染
       await shareFile(blob,`vehicle_poweroff_export_${n}_${Date.now()}.pdf`,'application/pdf');
     }else if(format==='word'){
-      showToast('正在生成含照片Word...');
-      const photoMap=await preparePhotoMapSafe(selectedVehicles);
-      const blob=await generateWord(selectedVehicles,photoMap); // V10.6.0: 异步真OOXML生成
+      showToast('正在生成Word...');
+      // V10.15.7: 批量导出Word不含图片,跳过照片预取,直接生成文档
+      const blob=await generateWord(selectedVehicles,{});
       const mimeType=blob.type||'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       const ext=mimeType.includes('msword')?'doc':'docx';
       await shareFile(blob,`车辆断电指南_批量_${n}_${Date.now()}.${ext}`,mimeType);
