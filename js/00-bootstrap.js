@@ -207,6 +207,7 @@ const DEFAULT_FEISHU_CONFIG={
   pendingSub:'注册申请',       // 组员注册申请 pending_reg_*.json
   approvedSub:'审批结果',      // 组长审批结果 approved_users.json
   backupSub:'备份文件',        // 手动全量备份 vehicle_backup_*.json
+  prefSub:'偏好设置',          // V10.15.6 账号级字段选项云同步 field_options.json
   interval:30
 };
 
@@ -264,6 +265,7 @@ function getFeishuCfg(){
     pendingSub:pick('pendingSub',DEFAULT_FEISHU_CONFIG.pendingSub),
     approvedSub:pick('approvedSub',DEFAULT_FEISHU_CONFIG.approvedSub),
     backupSub:pick('backupSub',DEFAULT_FEISHU_CONFIG.backupSub),
+    prefSub:pick('prefSub',DEFAULT_FEISHU_CONFIG.prefSub),
     interval:pick('interval',DEFAULT_FEISHU_CONFIG.interval)
   };
 }
@@ -1199,7 +1201,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.15.5';
+const APP_VERSION='10.15.6';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[

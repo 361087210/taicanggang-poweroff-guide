@@ -50,6 +50,9 @@ async function doLogin(){
   showToast('登录成功');
   updateMyInfo();
   ensureNotifyPermission();
+  // V10.15.6 账号级字段选项云同步: 登录成功即静默拉取云端选项覆盖本地(跨设备共享),
+  // 无数据/网络失败静默保持本地, 组长端改过的选项组员与新设备登录后即可用。
+  if(typeof syncFieldOptionsFromCloud==='function'){syncFieldOptionsFromCloud();}
   if(user.role==='admin'){
     pullPendingFromFeishu().then(()=>{renderMemberList();});
     // V5.3.1: 启动60秒静默轮询,跨网络/跨设备实时接收新注册申请

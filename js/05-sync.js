@@ -836,6 +836,79 @@ async function downloadJsonFromDataFeishu(token,docName,subName){
   }
 }
 
+/* ===================== V10.15.6 账号级字段选项云同步 =====================
+ * 遗留风险#3(V10.15.5): 字段选项(断电位置/钥匙处理方式/断电步骤)用户增删改
+ * 仅持久化到 localStorage['tcg_field_options'], 换机/重装后不共享。
+ * 方案: 走飞书「偏好设置」子目录 field_options.json, 组长端增删改后自动上传,
+ *       组长/组员登录或拉取数据时下载覆盖本地——账号级共享, 跨设备闭环。
+ * 权限: 仅组长(admin)上传; 全员可下载(只读,组员端本就不展示编辑入口)。
+ * 文件: {type:'field_options', appVersion, updatedBy, updatedAt,
+ *        options:{position[],keyframe[],keycontainer[],step[]}} (快照式全量)。 */
+const FIELD_OPTION_CLOUD_FILE='field_options.json';
+
+/**
+ * 上传字段选项到飞书「偏好设置」子目录(V10.15.6)
+ * 仅组长且已登录、字段选项已初始化时上传; 失败静默(数据保留本地,下次改动重试)。
+ * @returns {Promise<boolean>} 是否成功
+ */
+async function uploadFieldOptionsToFeishu(){
+  const cfg=getFeishuCfg();
+  if(!feishuCfgReady(cfg))return false;
+  // 仅组长上传; state未初始化(未登录)视为不可上传
+  if(typeof state==='undefined'||!state.currentUser||state.currentUser.role!=='admin')return false;
+  if(typeof FIELD_OPTIONS==='undefined'||!FIELD_OPTIONS)return false; // 尚未初始化
+  try{
+    const token=await getFeishuToken(cfg,2);
+    const payload={
+      type:'field_options',
+      appVersion:'v'+APP_VERSION,
+      updatedBy:(state.currentUser&&state.currentUser.name)||'组长',
+      updatedAt:new Date().toISOString(),
+      options:JSON.parse(JSON.stringify(FIELD_OPTIONS))
+    };
+    await uploadJsonToDataFeishu(token,FIELD_OPTION_CLOUD_FILE,JSON.stringify(payload,null,2),cfg.prefSub);
+    console.log('[字段选项云同步] 已上传:',cfg.prefSub+'/'+FIELD_OPTION_CLOUD_FILE);
+    return true;
+  }catch(err){
+    console.warn('[字段选项云同步] 上传失败(保留本地):',err&&err.message);
+    return false;
+  }
+}
+
+/**
+ * 下载字段选项(飞书「偏好设置」子目录, V10.15.6)
+ * 未找到/格式非法返回 null; 网络失败返回 null(不抛异常, 静默降级)。
+ * @returns {Promise<Object|null>} options:{position[],keyframe[],keycontainer[],step[]} 或 null
+ */
+async function downloadFieldOptionsFromFeishu(){
+  const cfg=getFeishuCfg();
+  if(!feishuCfgReady(cfg))return null;
+  try{
+    const token=await getFeishuToken(cfg,2);
+    const data=await downloadJsonFromDataFeishu(token,FIELD_OPTION_CLOUD_FILE,cfg.prefSub);
+    if(!data||data.type!=='field_options'||!data.options||typeof data.options!=='object')return null;
+    return data.options;
+  }catch(err){
+    console.debug('[字段选项云同步] 云端无数据/拉取失败:',err&&err.message);
+    return null;
+  }
+}
+
+/**
+ * 从云端拉取字段选项并应用到本地(V10.15.6)
+ * 登录/会话恢复/同步拉取共用: 成功则覆盖本地自定义层(账号级共享), 无数据则静默保持现状。
+ * @returns {Promise<boolean>} 是否成功应用
+ */
+async function syncFieldOptionsFromCloud(){
+  const opts=await downloadFieldOptionsFromFeishu();
+  if(opts&&typeof applyCloudFieldOptions==='function'){
+    applyCloudFieldOptions(opts);
+    console.log('[字段选项云同步] 已应用云端字段选项');
+    return true;
+  }
+  return false;
+}
+
 /**
  * 上传JSON到飞书(项目根目录,兼容旧调用) - 增强版: 支持重试和旧文件清理
  * @param {Object} cfg - 飞书配置
@@ -1342,6 +1415,9 @@ async function doSyncDownload(){
       showToast('飞书云端暂无同步数据，请等待组长上传');
       addSyncLog('从飞书拉取失败 · 云端无数据','red');
     }
+    // V10.15.6 账号级字段选项云同步: 车辆镜像完成后顺带拉取云端选项, 保证
+    // 组长增删改的断电位置/钥匙/步骤选项跨设备一致; 无数据/网络失败静默保持本地。
+    if(typeof syncFieldOptionsFromCloud==='function'){syncFieldOptionsFromCloud();}
   }catch(err){
     showToast('从飞书获取数据失败: '+err.message);
     addSyncLog('从飞书拉取失败 · '+err.message,'red');

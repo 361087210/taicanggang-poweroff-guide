@@ -397,7 +397,29 @@ function getFieldOptions(){
   }catch(e){/*忽略*/}
   return FIELD_OPTIONS;
 }
-function persistFieldOptions(){try{localStorage.setItem('tcg_field_options',JSON.stringify(FIELD_OPTIONS));}catch(e){}}
+// V10.15.6 账号级字段选项云同步: 本地持久化仍是基础, 组长增删改后自动上传云端共享。
+function _saveFieldOptionsLocal(){try{localStorage.setItem('tcg_field_options',JSON.stringify(FIELD_OPTIONS));}catch(e){}}
+function persistFieldOptions(){
+  _saveFieldOptionsLocal();
+  // V10.15.6 组长增删改后自动上传云端(账号级共享, 失败静默保留本地, 下次改动重试)
+  if(FIELD_OPTIONS&&typeof uploadFieldOptionsToFeishu==='function'){uploadFieldOptionsToFeishu();}
+}
+// V10.15.6 应用云端字段选项(登录/拉取数据时调用): 默认种子+数据库内容为基底, 云端为权威自定义层
+function applyCloudFieldOptions(options){
+  if(!options||typeof options!=='object')return;
+  const o=JSON.parse(JSON.stringify(FIELD_OPTION_DEFAULTS));
+  (VEHICLES||[]).forEach(v=>{
+    if(v&&typeof v.position==='string'&&v.position.trim())o.position.push(v.position.trim());
+    (v.keyFrame||[]).forEach(s=>{if(s&&String(s).trim())o.keyframe.push(String(s).trim());});
+    (v.keyContainer||[]).forEach(s=>{if(s&&String(s).trim())o.keycontainer.push(String(s).trim());});
+    (v.steps||[]).forEach(s=>{if(s&&String(s).trim())o.step.push(String(s).trim());});
+  });
+  Object.keys(o).forEach(k=>o[k]=[...new Set(o[k])]);
+  // 云端为权威自定义层覆盖(账号级共享, 跨设备一致)
+  Object.keys(options).forEach(k=>{if(options[k]&&Array.isArray(options[k]))o[k]=options[k].slice();});
+  FIELD_OPTIONS=o;
+  _saveFieldOptionsLocal();
+}
 function addToFieldOptions(cat,val){val=(val||'').trim();if(!val)return false;const o=getFieldOptions();if(o[cat].includes(val))return false;o[cat].push(val);persistFieldOptions();return true;}
 function removeFromFieldOptions(cat,val){val=String(val||'').trim();const o=getFieldOptions();const i=o[cat].indexOf(val);if(i<0)return false;o[cat].splice(i,1);persistFieldOptions();return true;}
 
