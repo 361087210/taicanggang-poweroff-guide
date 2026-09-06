@@ -1,8 +1,15 @@
 {
-  "version": "10.15.3",
-  "versionCode": 101503,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.15.3/tcg_poweroff_v10.15.3.apk",
+  "version": "10.15.4",
+  "versionCode": 101504,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.15.4/tcg_poweroff_v10.15.4.apk",
   "releaseNotes": [
+    "V10.15.4 问题反馈修复版。一句话总结: 依据飞书反馈库落地三项业务修复——批量导出Word在总表后追加每车含图分表(与详情页导出一致,修复批量无照片问题),问题反馈板块选项由8项细化为15项(覆盖车型/搜索/照片/详情/步骤/钥匙/单车导出等细分场景),车辆照片压缩由800px/70%提升为1280px/80%(修复照片压缩过糊问题)。",
+    "批量导出Word含图片: js/04-export.js 在 generateDocxOOXML() 批量分支总表后追加每车详情分表(车辆信息+断电步骤+备注+照片内嵌),修复反馈『批量导出Word不含图片』",
+    "问题板块选项细化: js/10-feedback.js 将 CATEGORIES 由8项扩充为15项,细分车辆查询-车型列表/搜索筛选/照片视频/车辆详情、断电操作-步骤展示/钥匙处理/单辆车导出、数据同步-更新下载/版本升级、账号登录注册、组员管理模块、缓存与导出、系统设置-界面按钮/提交反馈、其他问题,后端 process_feedback.js 无板块硬编码依赖",
+    "照片压缩质量提升: js/03-vehicles.js 将 compressImage(file,800,0.7) 调整为 compressImage(file,1280,0.8),与发版文档承诺一致,修复反馈『照片压缩太严重』",
+    "版本三源对齐: config.xml(version/versionCode)、version.json/release/version.json、js/00-bootstrap.js(APP_VERSION)同步至 V10.15.4",
+    "继承 V10.15.3(反馈自动分析管道+飞书群通知闭环)与 V10.15.2(数据后端+安全加固)全部能力",
+    "全量回归 test:all 0 FAIL(含 test:v110-bitable / test:v110-audit / test:version)",
     "V10.15.3 反馈自动分析管道启用真实DeepSeek分析+飞书群通知闭环版。一句话总结: 反馈自动分析管道由内置规则兜底升级为真实 DeepSeek LLM 分析(配置 DEEPSEEK_API_KEY 后走 deepseek-chat 生成 AI 摘要,失败自动回退内置结构化分析),修复飞书群通知推送参数缺失问题(notify() 补充 receive_id_type=chat_id,解决 field validation failed),打通提交→AI分析→飞书群通知→迭代的完整闭环。端到端验证通过。",
     "真实 AI 分析: process_feedback.js 新增 deepseekAnalysis(),配置 Secrets 后按『问题归类→根因→解决方案』生成摘要,无 Key 或失败回退 ruleBasedAnalysis() 兜底",
     "飞书群通知修复: notify() 调用 /im/v1/messages 补充 receive_id_type=chat_id 参数,修复 field validation failed,分析完成后推送『问题反馈处理完成』到反馈群(智能体集群)",

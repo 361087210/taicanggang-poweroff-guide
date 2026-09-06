@@ -4,6 +4,17 @@
 
 ## [未发布]
 
+### V10.15.4 问题反馈修复版
+
+#### 🔴 核心修复(依据飞书反馈库落地):
+- **批量导出 Word 含图片**: `js/04-export.js` 的 `generateDocxOOXML()` 批量分支在总表后追加每车详情分表(车辆信息+断电步骤+备注+照片内嵌),与详情页导出一致,修复反馈『批量导出Word不含图片』
+- **问题反馈板块选项细化**: `js/10-feedback.js` 将 `CATEGORIES` 由 8 项扩充为 15 项,覆盖车型/搜索/照片/详情/步骤/钥匙/单车导出等细分场景
+- **车辆照片压缩质量提升**: `js/03-vehicles.js` 将 `compressImage(file,800,0.7)` 调整为 `compressImage(file,1280,0.8)`,修复反馈『照片压缩太严重』
+
+#### 🚩 版本一致性升级 10.15.3 → 10.15.4(versionCode 101504):
+- `js/00-bootstrap.js` APP_VERSION / `config.xml` version+versionCode / `version.json` version+versionCode+downloadUrl+releaseNotes(新增V10.15.4置顶) / `demo.html` sync-local-ver / `sw.js` 缓存名 v10.15.4 / `js/11-about.js` VERSION_HISTORY 新增 V10.15.4 / `ios-release.yml` workflow_dispatch 默认版本号 / `scripts/sync_release_both_roots.py` + `scripts/migrate_drive_to_bitable.js` 内部版本号 / `tests/test_v110_audit.js` 版本断言
+- **全量回归 0 FAIL**: `npm run test:all` 含 `test:version`(三处一致性) + `test:v110-bitable` + `test:v110-audit`,版本门禁持续生效
+
 ### V10.15.3 真实AI分析 + 飞书群通知闭环
 
 #### ✨ 新功能:

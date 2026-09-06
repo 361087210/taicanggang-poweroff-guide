@@ -469,7 +469,7 @@ function handlePhotoSelect(input,source){
   if(files.length>remaining){showToast(`仅添加前${remaining}张，最多9张`);}
   toProcess.forEach(file=>{
     if(!file.type.startsWith('image/'))return;
-    compressImage(file,800,0.7).then(dataUrl=>{
+    compressImage(file,1280,0.8).then(dataUrl=>{
       editPhotos.push({name:file.name,data:dataUrl});
       renderPhotoPreview();
     });

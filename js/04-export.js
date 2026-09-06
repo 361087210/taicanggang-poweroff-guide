@@ -729,6 +729,30 @@ async function generateDocxOOXML(vehicles,photoMap){
       ['ID','品牌','车系','配置','显示名称','动力','断电位置','步骤','照片','视频'],
       ...vehicles.map(v=>[String(v.id),v.brand,v.series,v.config,v.display,v.powerType,v.position,String((v.steps||[]).length),String(v.photos||0),String(v.videos||0)])
     ]));
+    // V10.15.4 反馈7: 批量导出在总表后追加每车含图分表,与详情页导出一致
+    for(const v of vehicles){
+      body.push(_docxPara(v.display+' 车辆详情',{bold:true,sizePt:13,color:'1E40AF',spaceBefore:'300'}));
+      body.push(_docxTable([
+        ['品牌',v.brand,'车系',v.series],
+        ['配置',v.config,'动力类型',v.powerType],
+        ['断电位置',v.position,'',''],
+        ...(v.size?[['车辆尺寸',v.size,'','']]:[])
+      ]));
+      body.push(_docxPara('断电步骤',{bold:true,sizePt:12,color:'1E40AF',spaceBefore:'120'}));
+      (v.steps||[]).forEach((s,i)=>body.push(_docxPara((i+1)+'. '+s,{sizePt:11})));
+      if(v.remarks)body.push(_docxPara('备注: '+v.remarks,{sizePt:11,color:'D97706',spaceBefore:'120'}));
+      if((v.photoPaths||[]).length){
+        body.push(_docxPara('车辆照片',{bold:true,sizePt:12,color:'1E40AF',spaceBefore:'120'}));
+        for(const p of v.photoPaths){
+          const dataUrl=photoMap&&photoMap[p];
+          if(dataUrl){
+            const img=await embedPhoto(dataUrl);
+            if(img){body.push(_docxImage(img.rid,img.dw,img.dh,img.id));continue;}
+          }
+          body.push(_docxPara('[照片未能内嵌: '+String(p).split('/').pop()+']',{sizePt:9,color:'999999'}));
+        }
+      }
+    }
     body.push(_docxPara('太仓港车辆断电指导APP · 生成于 '+new Date().toLocaleString('zh-CN'),{sizePt:9,color:'999999',spaceBefore:'360'}));
   }
 
