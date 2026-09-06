@@ -1,9 +1,13 @@
 {
-  "version": "10.15.6",
-  "versionCode": 101506,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.15.6/tcg_poweroff_v10.15.6.apk",
+  "version": "10.15.7",
+  "versionCode": 101507,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.15.7/tcg_poweroff_v10.15.7.apk",
   "releaseNotes": [
-    "V10.15.6 账号级字段选项云同步版。一句话总结: 承接 V10.15.5 遗留风险#3(字段选项仅本地持久化,换机/重装不共享),接入飞书账号级云同步——组长增删改断电位置/钥匙处理方式/断电步骤后自动上传至飞书「偏好设置」子目录 field_options.json,组长/组员登录或拉取数据时静默下载覆盖本地,跨设备账号级共享,彻底解决本地持久化不互通问题。",
+    "V10.15.7 缓存与导出修复版。一句话总结: 依据飞书反馈库『缓存与导出』板块反馈,批量导出分享的Word不再内嵌车辆照片(仅显示照片数量),避免文档体积过大导致微信/钉钉分享超限,单车详情页Word导出仍保留照片内嵌。",
+    "批量导出Word不含图片: js/04-export.js generateDocxOOXML() 批量分支每车详情分表由内嵌照片改为仅显示照片数量;_buildExportHtml() 新增 includeImages 选项,Word 降级链传 false(无图),PDF 保持默认 true(含图);exportData() Word 分支跳过 preparePhotoMapSafe 照片预取,导出速度更快",
+    "版本三源对齐: config.xml(version/versionCode)、version.json/release/version.json、js/00-bootstrap.js(APP_VERSION)同步至 V10.15.7",
+    "继承 V10.15.6(账号级字段选项云同步)全部能力",
+    "全量回归 test:all 0 FAIL(含 test:v110-bitable / test:v110-audit / test:version)",
     "字段选项云同步: js/05-sync.js 新增 uploadFieldOptionsToFeishu/downloadFieldOptionsFromFeishu/syncFieldOptionsFromCloud;js/03-vehicles.js persistFieldOptions 组长改动后自动上传,applyCloudFieldOptions 云端覆盖(默认种子+数据库内容为基底);js/02-auth.js 登录/会话恢复 + js/08-main.js 同步下载三处自动拉取",
     "偏好设置子目录: js/00-bootstrap.js 新增 prefSub:'偏好设置',version.json/release/version.json dataSubFolders 由4项扩容为5项",
     "权限模型: 仅组长(admin)可上传,全员可下载(只读);本地 localStorage 仍为基础兜底,云端为权威自定义层",

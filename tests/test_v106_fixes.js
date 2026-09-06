@@ -58,7 +58,7 @@ check('A6 问题1: 中文PDF画布链路存在(DOM→html2canvas→A4图像分�
 check('A7 问题1: generatePDF主链路=画布中文渲染(失败回退文本链路)',
   /async function generatePDF\(vehicles,photoMap\)\{[\s\S]{0,120}return await generatePDFCanvas\(vehicles,photoMap\);/.test(html)
   && /generatePDFLegacy\(vehicles,photoMap\)/.test(html));
-check('A8 问题1: 导出HTML模板抽取复用(Word降级链与PDF同源同构)', /function _buildExportHtml\(vehicles,photoMap\)/.test(html));
+check('A8 问题1: 导出HTML模板抽取复用(Word降级链与PDF同源同构)', /function _buildExportHtml\(vehicles,photoMap(?:,opts)?\)/.test(html));
 
 // ---- 问题2: 跨网络申请完全隐形 ----
 console.log('-- 问题2: 跨网络申请隐形通过 --');
