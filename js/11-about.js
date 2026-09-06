@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.15.8',
+    date: '2026-09-06',
+    highlight: '批量导出PDF不含图片',
+    features: [
+      '_buildExportHtml() includeImages 默认值改为 false,批量导出PDF不再内嵌车辆照片,仅显示照片数量',
+      'exportData() PDF 分支跳过照片预取,导出速度更快',
+      '单车详情页Word/PDF导出仍保留照片内嵌,不影响单车导出体验',
+      '版本三源对齐：config.xml / version.json / js/00-bootstrap.js 同步至 V10.15.8',
+      '继承 V10.15.7 批量导出Word不含图片版全部能力',
+    ]
+  },
+  {
     version: 'V10.15.7',
     date: '2026-09-06',
     highlight: '批量导出Word不含图片',
