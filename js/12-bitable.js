@@ -41,7 +41,7 @@ async function listFeedbackRecords(opts) {
   if (!window.FeishuAPI) throw new Error('飞书API不可用');
   opts = opts || {};
   return await window.FeishuAPI.bitableListRecords(
-    BASE_APP_TOKEN, FEEDBACK_TABLE_ID, { page_size: opts.pageSize || 50 }
+    BASE_APP_TOKEN, FEEDBACK_TABLE_ID, { pageSize: opts.pageSize || 50 }
   );
 }
 
@@ -57,7 +57,7 @@ async function getScreenshotFolderToken() {
   // 在其下创建/获取问题反馈截图目录
   // 先尝试查找
   const list = await window.FeishuAPI.driveListFiles(dataFolder);
-  let folder = (list.files || []).find(f => f.name === SCREENSHOT_FOLDER && f.type === 'folder');
+  let folder = list.find(f => f.name === SCREENSHOT_FOLDER && f.type === 'folder');
   if (!folder) {
     // 创建目录(用drive v1 folders API)
     const token = await window.FeishuAPI.getTenantToken();

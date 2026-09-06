@@ -24,10 +24,15 @@
     "test:v1013": "node tests/test_v1013_a3.js",
     "test:v1014": "node tests/test_v1014_zero_config_member.js",
     "test:v1015": "node tests/test_v1015_member_sync_gate.js",
-    "test:all": "npm run test:logic && npm run test:runtime && npm run test:cross && npm run test:v103 && npm run test:v104 && npm run test:v105 && npm run test:v106 && npm run test:v107 && npm run test:v108 && npm run test:v109 && npm run test:v1010 && npm run test:v1011 && npm run test:v1013 && npm run test:v1014 && npm run test:v1015",
+    "test:v110-bitable": "node tests/test_v110_bitable_data_access.js",
+    "test:v110-audit": "node tests/test_v110_audit.js",
+    "test:version": "node scripts/check_version_consistency.js",
+    "test:all": "npm run test:version && npm run test:logic && npm run test:runtime && npm run test:cross && npm run test:v103 && npm run test:v104 && npm run test:v105 && npm run test:v106 && npm run test:v107 && npm run test:v108 && npm run test:v109 && npm run test:v1010 && npm run test:v1011 && npm run test:v1013 && npm run test:v1014 && npm run test:v1015 && npm run test:v110-bitable && npm run test:v110-audit",
     "sync:push": "node scripts/sync_feishu_local.js --push",
     "sync:pull": "node scripts/sync_feishu_local.js --pull",
     "sync:feishu": "node scripts/sync_feishu_local.js --sync",
-    "sync:status": "node scripts/sync_feishu_local.js --status"
+    "sync:status": "node scripts/sync_feishu_local.js --status",
+    "migrate:bitable:dry": "node scripts/migrate_drive_to_bitable.js --dry-run",
+    "migrate:bitable": "node scripts/migrate_drive_to_bitable.js --force"
   }
 }

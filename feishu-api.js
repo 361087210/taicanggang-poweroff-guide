@@ -25,6 +25,13 @@ const FeishuAPI = (function() {
     requestTimeout: 30000,
     maxRetries: 2,
     retryDelay: 1000,
+    // V11.0: Bitable 双表默认表名 (收敛硬编码字符串, 供 dataAccess/迁移脚本/测试共用)
+    bitableTables: {
+      VEHICLES: 'tbl Vehicles',
+      USERS: 'tbl Users',
+    },
+    // V11.0: JSON 双写窗口(天); 超过窗口的旧写入只写 Bitable, 不再双写 JSON 控制 Drive 体积
+    jsonMirrorDays: 30,
   };
 
   // ---------- 内部状态 ----------
@@ -676,7 +683,7 @@ const FeishuAPI = (function() {
     if (!c.bitableAppToken) {
       throw new Error('未配置 Bitable AppToken，请在设置中填写');
     }
-    const tableId = options?.tableId || 'tbl Vehicles';
+    const tableId = options?.tableId || DEFAULTS.bitableTables.VEHICLES;
     const userName = options?.userName || '';
     const batchSize = options?.batchSize || 100;
 
@@ -729,7 +736,7 @@ const FeishuAPI = (function() {
     if (!c.bitableAppToken) {
       throw new Error('未配置 Bitable AppToken');
     }
-    const tableId = options?.tableId || 'tbl Vehicles';
+    const tableId = options?.tableId || DEFAULTS.bitableTables.VEHICLES;
     const localVehicles = options?.localVehicles || (typeof VEHICLES !== 'undefined' ? VEHICLES : []);
     const onConflict = options?.onConflict || 'cloud'; // 'cloud' | 'local' | 'newer'
 
@@ -807,7 +814,7 @@ const FeishuAPI = (function() {
   async function syncUsersToBitable(users, options) {
     const c = getConfig();
     if (!c.bitableAppToken) throw new Error('未配置 Bitable AppToken');
-    const tableId = options?.tableId || 'tbl Users';
+    const tableId = options?.tableId || DEFAULTS.bitableTables.USERS;
     const cloudRecords = await bitableListRecords(c.bitableAppToken, tableId, { pageSize: 500 });
     const idMap = new Map();
     for (const r of cloudRecords) { if (r.fields?.id) idMap.set(r.fields.id, r.record_id); }
@@ -836,7 +843,7 @@ const FeishuAPI = (function() {
   async function syncUsersFromBitable(options) {
     const c = getConfig();
     if (!c.bitableAppToken) throw new Error('未配置 Bitable AppToken');
-    const tableId = options?.tableId || 'tbl Users';
+    const tableId = options?.tableId || DEFAULTS.bitableTables.USERS;
     const localUsers = options?.localUsers || (typeof USERS !== 'undefined' ? USERS : []);
     const cloudRecords = await bitableListRecords(c.bitableAppToken, tableId, { pageSize: 500 });
     const cloudUsers = cloudRecords.map(bitableToUser);
@@ -940,6 +947,76 @@ const FeishuAPI = (function() {
   }
 
   // ==========================================================
+  // V11.0: 数据访问分层 - Bitable 优先 + JSON 兜底 + 30 天双写窗口
+  // 封装在既有同步原语之上(不改既有函数签名, 向后兼容)
+  // ==========================================================
+  const BITABLE_TABLE_NAMES = DEFAULTS.bitableTables;
+
+  /** 读取本地/云端 JSON 兜底源(vehicles_data.js / web JSON) */
+  function _readLocalJSON(type) {
+    try {
+      if (type === 'users') {
+        const raw = localStorage.getItem('approved_users');
+        if (raw) return JSON.parse(raw);
+      }
+      const veh = (typeof VEHICLES !== 'undefined' ? VEHICLES : (typeof window !== 'undefined' && window.VEHICLES ? window.VEHICLES : []));
+      return Array.isArray(veh) ? veh : [];
+    } catch (e) { return []; }
+  }
+
+  /** 读: 优先 Bitable(增量对齐), 失败/空 → JSON 兜底, 弱网不阻塞 */
+  async function dataReadAll(type, options) {
+    const c = getConfig();
+    if (!c.bitableAppToken) return _readLocalJSON(type);
+    try {
+      const syncFn = type === 'users' ? syncUsersFromBitable : syncVehiclesFromBitable;
+      const result = await Promise.race([
+        syncFn({ onConflict: 'newer', localVehicles: (typeof VEHICLES !== 'undefined' ? VEHICLES : []), localUsers: (typeof USERS !== 'undefined' ? USERS : []) }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('Bitable 超时(' + (options?.bitableTimeoutMs || 8000) + 'ms)')), options?.bitableTimeoutMs || 8000)),
+      ]);
+      if (result && (result.added + result.updated) > 0) {
+        return type === 'users' ? (typeof USERS !== 'undefined' ? USERS : []) : (typeof VEHICLES !== 'undefined' ? VEHICLES : []);
+      }
+      throw new Error('Bitable 无有效数据');
+    } catch (e) {
+      // 弱网/未配置 Bitable → JSON 兜底
+      return _readLocalJSON(type);
+    }
+  }
+
+  /** 写: Bitable 优先(串行+QPS门控) + JSON 双写(窗口内), 失败入本地重试队列 */
+  async function dataWrite(type, payload, options) {
+    const c = getConfig();
+    const bitableOk = await (type === 'users'
+      ? syncUsersToBitable([payload], { userName: options?.userName || '' })
+      : syncVehiclesToBitable([payload], { userName: options?.userName || '' })
+    ).then(() => true).catch((e) => { log('warn', '[dataAccess] Bitable 写入失败, 走 JSON/重试', type, e.message); return false; });
+    // JSON 双写窗口: 30 天内的写入双写 JSON, 更早的记录只写 Bitable
+    const windowMs = (DEFAULTS.jsonMirrorDays === Infinity ? Infinity : (DEFAULTS.jsonMirrorDays || 30) * 86400000);
+    const isRecent = !payload.updatedAt || (Date.now() - Number(payload.updatedAt) <= windowMs);
+    if (isRecent && bitableOk !== undefined) {
+      try {
+        const key = type === 'users' ? 'approved_users' : 'vehicles_data_js_mirror';
+        const arr = JSON.parse(localStorage.getItem(key) || (type === 'users' ? '[]' : '[]'));
+        const idx = arr.findIndex((x) => x && x.id === payload.id);
+        if (idx >= 0) arr[idx] = payload; else arr.push(payload);
+        localStorage.setItem(key, JSON.stringify(arr));
+      } catch (e) { /* 双写失败不阻断 */ }
+    }
+    if (!bitableOk) {
+      // 本地重试队列(下一轮 05-sync 自动补写 Bitable)
+      try {
+        const q = JSON.parse(localStorage.getItem('bitable_retry_queue') || '[]');
+        q.push({ type, payload, ts: Date.now() });
+        localStorage.setItem('bitable_retry_queue', JSON.stringify(q.slice(-100)));
+      } catch (e) { /* 队列上限 100, 忽略 */ }
+    }
+    return bitableOk;
+  }
+
+  const DATA_ACCESS = { readAll: dataReadAll, write: dataWrite, TABLE_NAMES: BITABLE_TABLE_NAMES };
+
+  // ==========================================================
   // 导出公共 API
   // ==========================================================
   return {
@@ -963,6 +1040,8 @@ const FeishuAPI = (function() {
     syncUsersToBitable, syncUsersFromBitable,
     backupAllData, restoreFromBackup,
     startAutoSync, stopAutoSync,
+    // V11.0: 数据访问分层 + 表名常量
+    BITABLE_TABLE_NAMES, DATA_ACCESS,
     // 工具
     log, vehicleToBitable, bitableToVehicle,
   };

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-V10.14.4 发版产物双根同步
+V10.15.2 发版产物双根同步
 在 sync_release_to_feishu.py 的基础上,同时上传到旧根目录
 (组长安卓端一直在旧根看发版产物,新根也同步方便后续统一)
 """
@@ -15,7 +15,7 @@ from sync_release_to_feishu import (
     QPS_INTERVAL, qps_gate
 )
 
-APP_VERSION = "10.14.4"
+APP_VERSION = "10.15.2"
 OLD_ROOT = "WdXUfZPkClI1audQxIYc90XRnWc"
 NEW_ROOT = "nodcnGA95g93RhIUSdCeTkhKlQc"
 

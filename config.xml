@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.taicanggang.poweroff" version="10.14.4" android-versionCode="101404" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+<widget id="com.taicanggang.poweroff" version="10.15.2" android-versionCode="101502" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>太仓港断电指导</name>
     <description>太仓港商品车断电操作标准化指导平台</description>
     <author email="dev@taicanggang.com" href="https://github.com/361087210/taicanggang-poweroff-guide">Taicanggang Dev Team</author>
@@ -124,4 +124,6 @@
     <plugin name="cordova-plugin-local-notification" spec="1.2.3" />
     <plugin name="cordova-plugin-file-opener2" spec="4.0.0" />
     <hook type="after_prepare" src="scripts/patch_projectbuilder.js" />
+    <!-- V11.3 R8 混淆加固(after_prepare: 需在 prepare 生成 build.gradle 后执行) -->
+    <hook type="after_prepare" src="scripts/proguard_harden.js" />
 </widget>

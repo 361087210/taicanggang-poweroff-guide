@@ -31,6 +31,25 @@ function readEnv(name){
   return (typeof v === 'string') ? v.trim() : '';
 }
 
+/* V11.3 构建期秘钥字符串加密【过渡加固】
+ * 反方审查: JS 端加解密必然把 key 也放客户端, 对"专业逆向"不构成绝对防护,
+ *           它只是把"apktool 解包 → grep 明文 appSecret"的 0 成本提取,
+ *           抬升到"需要定位算法+key 再逆向"的级别, 属纵深防御而非根治。
+ * 根治方案 = 秘钥下沉服务端(Phase1 Supabase/Bitable 后端替换) + V11.4 M2 ProGuard/R8+商用加固。
+ * 算法: 异或(字符码 XOR 循环 key) → base64。key 必须与 js/00-bootstrap.js 内
+ *       _decryptBuildSecret 完全一致, 否则运行期解密失败导致飞书功能全挂。
+ * 注意: 注入的是 XOR key 常量本身参与的密文, 反编译 demo.html 只能看到密文+算法,
+ *       无法直接 grep 到明文 Secret(明文根本不落盘)。 */
+const SECRET_XOR_KEY = 'TCG_V11_XOR_2026';
+function xnorEnc(secret, key){
+  if (!secret) return '';
+  let out = '';
+  for (let i = 0; i < secret.length; i++) {
+    out += String.fromCharCode(secret.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return Buffer.from(out, 'binary').toString('base64');
+}
+
 /** 已存在的注入块删除,返回清理后的HTML */
 function stripInjected(html){
   const re = new RegExp(
@@ -44,11 +63,13 @@ function stripInjected(html){
 
 function buildInjectScriptBlock(appId, appSecret, folderToken){
   // 不写入源码到磁盘:直接把注入块放到 </head> 之前
+  // V11.3: appSecret 不再明文落盘, 改为 xnorEnc 密文(Demo仅注入密文, 明文字符串从未写入demo.html)
+  const appSecretEnc = xnorEnc(appSecret, SECRET_XOR_KEY);
   const inner =
     "  <script>\n" +
     "    window.__BUILD_SECRETS__ = {\n" +
     "      appId: '" + escJsStr(appId) + "',\n" +
-    "      appSecret: '" + escJsStr(appSecret) + "',\n" +
+    "      appSecretEnc: '" + escJsStr(appSecretEnc) + "',\n" +
     "      folderToken: '" + escJsStr(folderToken) + "'\n" +
     "    };\n" +
     "    Object.defineProperty(window, '__BUILD_SECRETS_CONSUMED__', { configurable: false, writable: false, value: false });\n" +

@@ -556,7 +556,7 @@ function formatTime(iso) {
 
 /* V10.15.0: 页面初始化(defer加载,DOM已就绪) */
 if (document.getElementById('screen-feedback')) {
-  initFeedbackPage();
+  window.initFeedbackPage();
 }
 
 })();
