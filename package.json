@@ -20,7 +20,7 @@
     "test:v1010-solutions": "node tests/test_v1010_solutions_comparison.js",
     "test:v1010-sync": "node tests/test_v1010_sync_e2e.js",
     "test:v1010": "npm run test:v1010-solutions && npm run test:v1010-sync",
-    "test:v1011": "node tests/test_v1011_mirror_sync.js",
+    "test:v1011": "node tests/test_v1011_mirror_sync.js && node tests/test_v1011_feedback_sync.js",
     "test:v1013": "node tests/test_v1013_a3.js",
     "test:v1014": "node tests/test_v1014_zero_config_member.js",
     "test:v1015": "node tests/test_v1015_member_sync_gate.js",
