@@ -71,6 +71,18 @@ jobs:
           FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
         run: node scripts/sync_web_data.js
 
+      # 问题反馈自动分析管道(V10.15.2): 轮询「待处理」反馈 → 置「分析中」
+      # → 生成AI分析摘要(配置DEEPSEEK_API_KEY则用真实LLM,否则内置兜底)
+      # → 置「已解决」并回写摘要+技术文档链接 → 推送飞书通知。
+      # 复用镜像任务已有的飞书凭据; 通知群chat_id与DeepSeek Key为可选Secrets。
+      - name: Process pending feedback (AI analysis)
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_FEEDBACK_CHAT_ID: ${{ secrets.FEISHU_FEEDBACK_CHAT_ID }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: node scripts/process_feedback.js || echo "⚠️ 反馈分析步骤失败(不影响镜像/部署)"
+
       - name: Show mirror result
         if: always()
         run: |
