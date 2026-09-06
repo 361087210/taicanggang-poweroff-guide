@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.15.3',
+    date: '2026-09-06',
+    highlight: '真实DeepSeek分析 + 飞书群通知闭环',
+    features: [
+      '反馈自动分析管道升级为真实 DeepSeek LLM 分析，配置 Secrets 后生成 AI 摘要',
+      '修复飞书群通知推送参数缺失，打通提交→AI分析→飞书群通知→迭代闭环',
+      '状态闭环回写：待处理→分析中→已解决，回写摘要与文档链接',
+      '端到端验证通过：DeepSeek 摘要格式区别于内置模板，测试记录已清理',
+    ]
+  },
+  {
     version: 'V10.15.2',
     date: '2026-09-06',
     highlight: '数据后端升级 + 安全加固',
