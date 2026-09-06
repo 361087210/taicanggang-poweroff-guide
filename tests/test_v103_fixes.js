@@ -42,10 +42,10 @@ check(`A1 APP_VERSION 与version.json一致(当前${vjson.version})`, new RegExp
 check('A1b config.xml 与version.json版本一致', vCfg === vjson.version, `config=${vCfg} json=${vjson.version}`);
 check('A2 version.json 已同步(由CI关卡校验)', true);
 
-// 问题1: 分享仅系统级
+// 问题1: 分享仅系统级(V10.15.10需求变更: 网页版系统分享不可用时允许降级浏览器下载)
 const shareFnMatch = html.match(/async function shareFile\(blob,filename,mimeType,title\)\{[\s\S]*?\n\}/);
 const shareFnSrc = shareFnMatch ? shareFnMatch[0] : '';
-check('A3 问题1: shareFile 内无浏览器下载兜底(createObjectURL+a.download)', shareFnSrc && !shareFnSrc.includes('createObjectURL') && !shareFnSrc.includes('a.download'));
+check('A3 问题1: shareFile 含浏览器下载降级兜底(createObjectURL+a.download)', shareFnSrc && shareFnSrc.includes('createObjectURL') && shareFnSrc.includes('a.download'));
 check('A4 问题1: shareFile 全失败时明确报错(系统分享面板不可用)', shareFnSrc.includes('系统分享面板不可用'));
 check('A5 问题1: 保留 Web Share API 一级链路(navigator.share)', shareFnSrc.includes('navigator.share'));
 check('A6 问题1: 保留 socialsharing 二级链路(原生分享面板)', shareFnSrc.includes('socialsharing.shareWithOptions'));
@@ -137,7 +137,8 @@ setTimeout(async () => {
     check('B1-2 分享payload含File且带文件名', sharePayload && sharePayload.files && sharePayload.files.length === 1 && sharePayload.files[0].name === 'test_export.json');
     check('B1-3 分享成功返回true', r1 === true);
 
-    // 全链路失败场景: 移除navigator.share+无cordova → 必须返回false且不触发下载
+    // 系统分享不可用场景(V10.15.10需求变更): 移除navigator.share+无cordova →
+    // 降级浏览器下载: 返回true且触发a.download链路
     delete window.navigator.share;
     delete window.navigator.canShare;
     let downloadTriggered = false;
@@ -145,8 +146,8 @@ setTimeout(async () => {
     window.URL.createObjectURL = () => { downloadTriggered = true; return 'blob:fake'; };
     window.URL.revokeObjectURL = () => {};
     const r2 = await window.shareFile(blob, 'test2.json', 'application/json');
-    check('B1-4 全链路失败返回false(不假报成功)', r2 === false);
-    check('B1-5 全链路失败绝不触发浏览器下载', !downloadTriggered);
+    check('B1-4 系统分享不可用时降级下载返回true', r2 === true);
+    check('B1-5 降级链触发浏览器下载(a.download)', downloadTriggered === true);
     window.URL.createObjectURL = origCreateObjectURL;
 
     // 用户取消(AbortError)仍算面板调起成功

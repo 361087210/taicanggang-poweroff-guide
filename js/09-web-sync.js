@@ -64,16 +64,19 @@ async function _sha256Hex(s){
 }
 
 /** 拉取同源镜像JSON(时间戳防缓存+no-store双保险,配合SW网络优先策略)
- *  V10.15.9 弱网优化: AbortController 10s超时,避免弱网下fetch挂起阻塞UI;
- *  超时抛错由调用方catch静默降级,不影响本地已有数据展示。 */
+ *  V10.15.9 弱网优化: 10s超时,避免弱网下fetch挂起阻塞UI;
+ *  超时抛错由调用方catch静默降级,不影响本地已有数据展示。
+ *  V10.15.10: 改用05-sync.js的fetchSignalSafe垫片——signal跨realm环境
+ *  (旧WebView polyfill)下去signal重试,不再整链断供;垫片未加载时兜底裸fetch。 */
 async function _fetchMirror(name){
-  var controller=new AbortController();
-  var timer=setTimeout(function(){controller.abort();},10000);
-  try{
-    var resp=await fetch(MIRROR_BASE+name+'?t='+Date.now(),{cache:'no-store',signal:controller.signal});
+  if(typeof fetchSignalSafe==='function'){
+    var resp=await fetchSignalSafe(MIRROR_BASE+name+'?t='+Date.now(),{cache:'no-store'},10000);
     if(!resp.ok)throw new Error('HTTP '+resp.status);
     return resp.json();
-  }finally{clearTimeout(timer);}
+  }
+  var resp=await fetch(MIRROR_BASE+name+'?t='+Date.now(),{cache:'no-store'});
+  if(!resp.ok)throw new Error('HTTP '+resp.status);
+  return resp.json();
 }
 
 /* ============================================================

@@ -8,6 +8,19 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.15.10',
+    date: '2026-09-06',
+    highlight: '网页版分享降级链',
+    features: [
+      '文件导出降级链:系统分享面板不可用时自动降级浏览器下载(a.download→window.open→msSaveBlob)',
+      '文本分享execCommand保底:剪贴板API不可用的旧浏览器/非HTTPS环境仍可复制断电信息',
+      'Web Share API优先逻辑不变,降级仅在系统分享彻底不可用时触发',
+      '浏览器E2E实测:PDF/Excel/Word三格式全部成功触发下载',
+      '版本三源对齐：config.xml / version.json / js/00-bootstrap.js 同步至 V10.15.10',
+      '继承 V10.15.9 批量导出全格式去图+网页端账号同步修复版全部能力',
+    ]
+  },
+  {
     version: 'V10.15.9',
     date: '2026-09-06',
     highlight: '批量导出全格式去图+网页账号登录修复',
