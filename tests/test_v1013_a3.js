@@ -210,7 +210,7 @@ section('E组: pullPendingFromFeishu 编排链路(双位置收集+自愈重试)'
 // =============================================================
 function buildPullSandbox(opts) {
   const sb = makeSandbox();
-  injectBlocks(sb.ctx, ['State', 'fetchPendingFromCloud', 'applyApprovalRules', 'writePendingsToStorage', 'refreshMemberUI', 'pullPendingFromFeishu']);
+  injectBlocks(sb.ctx, ['State', 'fetchSignalSafe', 'fetchPendingFromCloud', 'applyApprovalRules', 'writePendingsToStorage', 'refreshMemberUI', 'pullPendingFromFeishu']);
   const bodies = {
     t1: JSON.stringify({ type: 'pending_registration', source: 'react-web', user: { phone: '13800000001', name: '跨网络' } }),
     t2: JSON.stringify({ type: 'pending_registration', source: 'tcg-cordova', user: { phone: '13800000002', name: '本端' } }),

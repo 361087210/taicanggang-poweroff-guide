@@ -90,6 +90,41 @@ function watchRegistrationActivation(user){
  * 不变量: pullPendingFromFeishu(silent) 签名/返回值(新拉取数量) 100%兼容。 */
 
 /**
+ * fetch超时signal兼容垫片 - V10.15.10
+ * 根因: 部分环境(测试沙箱jsdom/旧WebView polyfill)中AbortController与fetch
+ * 来自不同realm,signal传入fetch即抛
+ * "RequestInit: Expected signal to be an instance of AbortSignal"——
+ * V10.9.0引入的AbortController超时在此类环境反而导致下载链路全断。
+ * 策略: ①无AbortController环境直接裸fetch(仅失去超时保护);
+ *       ②带signal首试,signal兼容性TypeError时去signal重试一次
+ *        (仅匹配AbortSignal字样,真网络TypeError照常抛出,GET幂等安全)。
+ * @param {string} url 请求地址
+ * @param {object} [opts] fetch选项(不得自带signal)
+ * @param {number} [timeoutMs] 超时毫秒,默认60s
+ * @returns {Promise<Response>} fetch响应
+ */
+async function fetchSignalSafe(url,opts,timeoutMs){
+  opts=opts||{};
+  if(typeof AbortController!=='function')return fetch(url,opts);
+  const ctrl=new AbortController();
+  const tid=setTimeout(function(){ctrl.abort();},timeoutMs||60000);
+  try{
+    const res=await fetch(url,Object.assign({},opts,{signal:ctrl.signal}));
+    clearTimeout(tid);return res;
+  }catch(e){
+    clearTimeout(tid);
+    if(e&&e.name==='AbortError')throw e; // 超时照常抛,由调用方语义处理
+    // 注意: 不能用 instanceof TypeError——跨realm错误对象(jsdom/undici混跑)
+    // 的原型链不同,instanceof恒false; e.name为字符串属性,跨realm可靠
+    if(e&&e.name==='TypeError'&&/AbortSignal/i.test(String(e.message||''))){
+      console.warn('[fetch] signal跨realm不兼容,去signal重试:',url.slice(0,80));
+      return fetch(url,opts); // 降级: 失去超时保护但保住功能
+    }
+    throw e;
+  }
+}
+
+/**
  * ① 网络IO: 收集全部注册申请文件并下载解析(无业务规则/无渲染)
  * 读取位置: ①"APP数据备份/注册申请"(V5.7新位置) ②"APP数据备份"根(V5.3-V5.6旧位置)
  * 兼容性: 组员手机上仍运行旧版APP时,申请文件上传在旧位置,新版组长APP同样能收到
@@ -127,12 +162,9 @@ async function fetchPendingFromCloud(cfg,opts){
           window.cordova.plugin.http.sendRequest(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{method:'GET',headers:{Authorization:'Bearer '+token},timeout:60},res=>resolve(res.data),err=>reject(new Error(String(err.error||'下载失败'))));
         });
       }else{
-        const _c=new AbortController(),_t=setTimeout(()=>_c.abort(),60000);
-        try{
-          const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{headers:{Authorization:'Bearer '+token},signal:_c.signal});
-          clearTimeout(_t);
-          dlText=await r.text();
-        }catch(e){clearTimeout(_t);throw e;}
+        // 原生fetch下载文本(V10.9.0超时60s防弱网挂起;V10.15.10改用signal兼容垫片)
+        const r=await fetchSignalSafe(`https://open.feishu.cn/open-apis/drive/v1/files/${file.token}/download`,{headers:{Authorization:'Bearer '+token}},60000);
+        dlText=await r.text();
       }
       const pendingData=JSON.parse(dlText);
       if(pendingData.type==='pending_registration'&&pendingData.user)payloads.push(pendingData);
@@ -777,16 +809,13 @@ async function downloadJsonFromFolder(token,folderToken,docName){
     });
   }
   // V10.9.0: fetch路径增加AbortController超时——浏览器fetch默认无超时,弱网下可能永久挂起
-  const _ctrl=new AbortController();
-  const _tid=setTimeout(()=>_ctrl.abort(),120000);
+  // V10.15.10: 改用fetchSignalSafe垫片(signal跨realm兼容,超时语义不变)
   try{
-    const dlRes=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token},signal:_ctrl.signal});
-    clearTimeout(_tid);
+    const dlRes=await fetchSignalSafe(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}},120000);
     if(!dlRes.ok)throw new Error('下载HTTP '+dlRes.status);
     const dlText=await dlRes.text();
     return robustParse(dlText);
   }catch(e){
-    clearTimeout(_tid);
     if(e.name==='AbortError')throw new Error('数据下载超时(120s),请检查网络后重试');
     throw e;
   }

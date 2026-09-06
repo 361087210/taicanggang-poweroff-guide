@@ -200,7 +200,7 @@ const DEMO_BLOCKS = [
   'feishuListFiles', 'getDataFolderToken', 'getDataSubFolderToken', 'invalidateDataFolderCache',
   'APP_VERSION',
   '_b64ToU8',
-  'getFeishuToken', 'uploadJsonToFolder', 'downloadJsonFromFolder',
+  'getFeishuToken', 'uploadJsonToFolder', 'fetchSignalSafe', 'downloadJsonFromFolder',
   'uploadJsonToDataFeishu', 'downloadJsonFromDataFeishu', 'downloadSyncDataMigrated',
   '_strHashDjb2', '_normalizePhotoForUpload',
   'State', // V10.13 A3状态守卫: doSyncDownload/_syncUploadPipeline经State API写VEHICLES/USERS
