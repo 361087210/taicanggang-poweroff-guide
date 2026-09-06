@@ -1,8 +1,8 @@
 {
  "rootFolderToken": "nodcnGA95g93RhIUSdCeTkhKlQc",
  "walkSummary": {
-  "folders": 35,
-  "nodes": 684,
+  "folders": 36,
+  "nodes": 685,
   "files": 650,
   "errors": []
  },
@@ -230,7 +230,12 @@
   {
    "p": "(旧根)/APP数据备份",
    "t": "folder",
-   "m": 1788673666
+   "m": 1788691646
+  },
+  {
+   "p": "(旧根)/APP数据备份/偏好设置",
+   "t": "folder",
+   "m": 1788691646
   },
   {
    "p": "(旧根)/APP数据备份/问题反馈截图",
