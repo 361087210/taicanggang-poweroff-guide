@@ -706,6 +706,7 @@ async function generateDocxOOXML(vehicles,photoMap){
     body.push(_docxPara('钥匙处理方式',{bold:true,sizePt:14,color:'1E40AF',spaceBefore:'240'}));
     body.push(_docxPara('框架: '+(v.keyFrame||[]).join('; '),{sizePt:11}));
     body.push(_docxPara('集装箱: '+(v.keyContainer||[]).join('; '),{sizePt:11}));
+    if(v.keyPhotoRemark)body.push(_docxPara('车钥匙备注: '+v.keyPhotoRemark,{sizePt:11,color:'6B7280'}));
     if(v.remarks)body.push(_docxPara('备注: '+v.remarks,{sizePt:11,color:'D97706',spaceBefore:'120'}));
     if((v.photoPaths||[]).length){
       body.push(_docxPara('车辆照片',{bold:true,sizePt:14,color:'1E40AF',spaceBefore:'240'}));
@@ -814,22 +815,44 @@ function _buildExportHtml(vehicles,photoMap){
     <h2>钥匙处理方式</h2>
     <p><strong>框架:</strong> ${(v.keyFrame||[]).join('; ')}</p>
     <p><strong>集装箱:</strong> ${(v.keyContainer||[]).join('; ')}</p>
+    ${v.keyPhotoRemark?`<p><strong>车钥匙备注:</strong> ${v.keyPhotoRemark}</p>`:''}
     ${v.remarks?`<h2>备注</h2><p class="note">${v.remarks}</p>`:''}
     ${photoHtml?`<h2>车辆照片</h2>${photoHtml}`:''}
     ${videoHtml?`<h2>视频资源</h2>${videoHtml}`:''}
     <p style="margin-top:20px;color:#999;font-size:9pt;">太仓港车辆断电指导APP · 生成于 ${new Date().toLocaleString('zh-CN')}</p>
     </body></html>`;
   }
-  const rows=vehicles.map(v=>`<tr><td>${v.id}</td><td>${v.brand}</td><td>${v.series}</td><td>${v.config}</td><td>${v.display}</td><td>${v.powerType}</td><td>${v.position}</td><td>${(v.steps||[]).length}</td><td>${v.photos||0}</td><td>${v.videos||0}</td></tr>`).join('');
+  const rows=vehicles.map(v=>`<tr><td>${v.id}</td><td>${v.brand}</td><td>${v.series}</td><td>${v.config}</td><td>${v.display}</td><td>${v.powerType}</td><td>${v.position}</td><td>${(v.steps||[]).length}</td><td>${(v.photoPaths||[]).length}</td><td>${(v.videoPaths||[]).length}</td></tr>`).join('');
+  // V10.15.5 反馈1: 批量导出HTML/降级链补齐「总表无图 + 每车含图分表」,与详情页导出一致
+  const detailHtml=vehicles.map(v=>{
+    const photoHtml=(v.photoPaths||[]).map(p=>{
+      const dataUrl=photoMap&&photoMap[p];
+      if(dataUrl)return `<img src="${dataUrl}" style="max-width:440px;max-height:330px;margin:5px 0;display:block;"/>`;
+      return `<p style="color:#999;font-size:9pt;">[照片未能内嵌: ${String(p).split('/').pop()}]</p>`;
+    }).join('');
+    const videoHtml=(v.videoPaths||[]).map(vp=>`<p>视频: ${vp}</p>`).join('');
+    return `<h1 style="color:#1e40af;font-size:14pt;margin-top:18px;">${v.display} 车辆详情</h1>
+    <table><tr><td>品牌</td><td>${v.brand}</td><td>车系</td><td>${v.series}</td></tr>
+    <tr><td>配置</td><td>${v.config}</td><td>动力类型</td><td>${v.powerType}</td></tr>
+    <tr><td>断电位置</td><td colspan="3">${v.position}</td></tr>
+    ${v.size?`<tr><td>车辆尺寸</td><td colspan="3">${v.size}</td></tr>`:''}</table>
+    <h2 style="color:#1e40af;font-size:12pt;">断电步骤</h2>${(v.steps||[]).map((s,i)=>`<p class="step">${i+1}. ${s}</p>`).join('')}
+    ${(v.keyFrame&&v.keyFrame.length)?`<h2 style="color:#1e40af;font-size:12pt;">钥匙处理方式</h2><p><strong>框架:</strong> ${v.keyFrame.join('; ')}</p><p><strong>集装箱:</strong> ${(v.keyContainer||[]).join('; ')}</p>${v.keyPhotoRemark?`<p><strong>车钥匙备注:</strong> ${v.keyPhotoRemark}</p>`:''}`:''}
+    ${v.remarks?`<h2 style="color:#1e40af;font-size:12pt;">备注</h2><p class="note">${v.remarks}</p>`:''}
+    ${photoHtml?`<h2 style="color:#1e40af;font-size:12pt;">车辆照片</h2>${photoHtml}`:''}
+    ${videoHtml?`<h2 style="color:#1e40af;font-size:12pt;">视频资源</h2>${videoHtml}`:''}`;
+  }).join('');
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
   body{font-family:'微软雅黑','Noto Sans CJK SC',sans-serif;font-size:12pt;margin:24px;color:#111;}
   h1{color:#1e40af;font-size:18pt;}
   table{border-collapse:collapse;width:100%;}td,th{border:1px solid #ccc;padding:6px;font-size:10pt;}
   th{background:#1e40af;color:white;}
+  .step{margin:5px 0;}.note{color:#d97706;}
   </style></head><body>
   <h1>太仓港车辆断电指导 - 批量导出 (${vehicles.length}条)</h1>
   <table><thead><tr><th>ID</th><th>品牌</th><th>车系</th><th>配置</th><th>显示名称</th><th>动力</th><th>断电位置</th><th>步骤数</th><th>照片</th><th>视频</th></tr></thead>
   <tbody>${rows}</tbody></table>
+  ${detailHtml}
   <p style="margin-top:20px;color:#999;font-size:9pt;">太仓港车辆断电指导APP · 生成于 ${new Date().toLocaleString('zh-CN')}</p>
   </body></html>`;
 }
