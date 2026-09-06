@@ -4,6 +4,18 @@
 
 ## [未发布]
 
+### V10.15.3 真实AI分析 + 飞书群通知闭环
+
+#### ✨ 新功能:
+- **真实 DeepSeek LLM 分析**: `scripts/process_feedback.js` 新增 `deepseekAnalysis()`,配置 `DEEPSEEK_API_KEY` Secrets 后按『问题归类→根因→解决方案』生成摘要;无 Key / 调用失败自动回退 `ruleBasedAnalysis()` 兜底
+- **飞书群通知闭环修复**: `notify()` 调用 `/im/v1/messages` 补齐 `receive_id_type=chat_id` 查询参数,修复 `field validation failed`,分析完成后推送『问题反馈处理完成』到反馈群(智能体集群)
+- **状态闭环回写**: 待处理→分析中→已解决 三段流转,回写 AI 分析摘要 + 技术文档链接,安卓端与网页端镜像同步可见
+
+#### 🚩 版本一致性升级 10.15.2 → 10.15.3(versionCode 101503):
+- `js/00-bootstrap.js` APP_VERSION / `config.xml` version+versionCode / `version.json` version+versionCode+downloadUrl+releaseNotes(新增V10.15.3置顶) / `demo.html` sync-local-ver / `sw.js` 缓存名 v10.15.3 / `js/11-about.js` VERSION_HISTORY 新增 V10.15.3 / `ios-release.yml` workflow_dispatch 默认版本号 / `scripts/sync_release_both_roots.py` + `scripts/migrate_drive_to_bitable.js` 内部版本号 / `tests/test_v110_audit.js` 版本断言
+- **全量回归 0 FAIL**: `npm run test:all` 含 `test:version`(三处一致性) + `test:v110-bitable` + `test:v110-audit`,版本门禁持续生效
+- **端到端验证**: 注入测试反馈跑通全链路,DeepSeek 摘要格式与内置模板明显不同,群内收到完整通知消息;测试记录已清理
+
 ### V10.15.2 数据后端升级 + 安全加固
 
 #### ✨ 新功能:
