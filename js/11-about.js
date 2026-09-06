@@ -8,6 +8,19 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.15.5',
+    date: '2026-09-06',
+    highlight: '字段选项模块化 + 照片分板块上传',
+    features: [
+      '批量导出 Word 结构调整为「首张总表(不含图片) + 每车含图分表」，与车辆详情页导出一致',
+      '断电位置/钥匙处理方式/断电步骤字段选项模块化，按当前数据库内容生成可增删改选项',
+      '媒体照片分板块上传(车辆外观/车钥匙/断电位置三板块, 每板块<=5张)，压缩提升至1600px/90%',
+      '同步/导出携带 photoSections/photoLabels/keyPhotoRemark 元数据',
+      '版本三源对齐：config.xml / version.json / js/00-bootstrap.js 同步至 V10.15.5',
+      '继承 V10.15.4 问题反馈修复版全部能力',
+    ]
+  },
+  {
     version: 'V10.15.4',
     date: '2026-09-06',
     highlight: '问题反馈修复版',
