@@ -19,6 +19,8 @@ release/keystore/
 *.keystore
 *.jks
 release/*.apk
+release/*.ipa
+release/*.sha256
 platforms/android/release-signing.properties
 
 # ===== V10.13: 飞书同步临时产物 + 凭据本地文件 =====
