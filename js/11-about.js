@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.15.7',
+    date: '2026-09-06',
+    highlight: '批量导出Word不含图片',
+    features: [
+      '数据中心批量导出的Word不再内嵌车辆照片，仅显示照片数量，避免文档体积过大导致微信/钉钉分享超限',
+      '单车详情页Word导出仍保留照片内嵌，不影响单车导出体验',
+      'PDF批量导出保持含图不变',
+      '版本三源对齐：config.xml / version.json / js/00-bootstrap.js 同步至 V10.15.7',
+      '继承 V10.15.6 账号级字段选项云同步版全部能力',
+    ]
+  },
+  {
     version: 'V10.15.6',
     date: '2026-09-06',
     highlight: '账号级字段选项云同步',
