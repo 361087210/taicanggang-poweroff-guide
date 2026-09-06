@@ -266,7 +266,7 @@ window.submitFeedback = async function() {
       platform: (window.cordova && window.cordova.platformId) ? 'Android' : '网页',
       appVersion: APP_VERSION || 'unknown',
       deviceInfo,
-      status: '待处理',
+      status: '分析中',
       createdAt: new Date().toISOString(),
       synced: false,
     };
@@ -297,7 +297,7 @@ window.submitFeedback = async function() {
         await window.FeedbackBase.addFeedbackRecord(fields);
         feedback.synced = true;
         updateFeedbackLocal(id, { synced: true, screenshotTokens });
-        showToast('反馈提交成功，感谢您的反馈！');
+        showToast('反馈提交成功，飞书端AI分析中...');
         resetFeedbackForm();
       } catch (e) {
         console.warn('写入飞书失败,本地缓存待同步:', e);
