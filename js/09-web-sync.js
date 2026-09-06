@@ -52,18 +52,28 @@ var MIRROR_BASE='web-data/';
 
 /* ---------- 基础工具 ---------- */
 async function _sha256Hex(s){
+  // V10.15.9: 优先用00-bootstrap.js的_digestSha256Hex(含纯JS兜底),
+  // 保证非HTTPS/旧WebView下手机号哈希匹配仍能执行
+  var data=new TextEncoder().encode(String(s));
+  if(typeof _digestSha256Hex==='function')return _digestSha256Hex(data);
   if(!(window.crypto&&window.crypto.subtle))throw new Error('WebCrypto不可用(需HTTPS环境)');
-  var buf=await window.crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(s)));
+  var buf=await window.crypto.subtle.digest('SHA-256',data);
   var arr=new Uint8Array(buf),out='';
   for(var i=0;i<arr.length;i++)out+=('0'+arr[i].toString(16)).slice(-2);
   return out;
 }
 
-/** 拉取同源镜像JSON(时间戳防缓存+no-store双保险,配合SW网络优先策略) */
+/** 拉取同源镜像JSON(时间戳防缓存+no-store双保险,配合SW网络优先策略)
+ *  V10.15.9 弱网优化: AbortController 10s超时,避免弱网下fetch挂起阻塞UI;
+ *  超时抛错由调用方catch静默降级,不影响本地已有数据展示。 */
 async function _fetchMirror(name){
-  var resp=await fetch(MIRROR_BASE+name+'?t='+Date.now(),{cache:'no-store'});
-  if(!resp.ok)throw new Error('HTTP '+resp.status);
-  return resp.json();
+  var controller=new AbortController();
+  var timer=setTimeout(function(){controller.abort();},10000);
+  try{
+    var resp=await fetch(MIRROR_BASE+name+'?t='+Date.now(),{cache:'no-store',signal:controller.signal});
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    return resp.json();
+  }finally{clearTimeout(timer);}
 }
 
 /* ============================================================

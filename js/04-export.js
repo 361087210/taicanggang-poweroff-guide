@@ -1138,10 +1138,9 @@ async function exportData(format){
       const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
       await shareFile(blob,`vehicle_poweroff_export_${Date.now()}.csv`,'text/csv;charset=utf-8');
     }else if(format==='excel'){
-      showToast('正在生成含照片Excel...');
-      const rawMap=await preparePhotoMapSafe(selectedVehicles);
-      const photoMap=await shrinkPhotoMapForExcel(rawMap);
-      const buf=generateExcelBatch(selectedVehicles,photoMap);
+      showToast('正在生成Excel...');
+      // V10.15.9: 批量导出Excel不含图片,跳过照片预取(与Word/PDF一致,减小体积加快导出)
+      const buf=generateExcelBatch(selectedVehicles,{});
       const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       await shareFile(blob,`vehicle_poweroff_export_${n}_${Date.now()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }else if(format==='pdf'){

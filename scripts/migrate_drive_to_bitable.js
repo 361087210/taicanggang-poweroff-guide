@@ -107,7 +107,7 @@ class FeishuClient {
 
 // ---- 字段映射(与 feishu-api.js 的 vehicleToBitable/userToBitable 保持一致) ----
 function vehicleToBitable(v, userName) {
-  const APP_VERSION = '10.15.8';
+  const APP_VERSION = '10.15.9';
   return {
     id: v.id, brand: v.brand, series: v.series, config: v.config, display: v.display,
     powerType: v.powerType, position: v.position,

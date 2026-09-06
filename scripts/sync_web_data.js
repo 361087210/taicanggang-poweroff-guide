@@ -280,35 +280,66 @@ async function main() {
     } catch (e) { warn(`data_update_notice.json下载失败: ${e.message}`); }
   }
 
-  // ---- ⑤ 账号表: approved_users.json 全树搜索取最新;缺失/为空/备份更新且更多则回退 ----
-  let approvedData = null, approvedNode = null, usersSource = '';
+  // ---- ⑤ 账号表: 全树所有approved_users.json合并去重(不再只取mtime最新) ----
+  // V10.15.9 修复根因: 组长安卓端localStorage缓存旧根token,审批结果写入
+  // (旧根)/APP数据备份/审批结果/approved_users.json;而(云盘根)下存在一份
+  // 旧的仅含组长账号的approved_users.json且mtime更新——旧逻辑"取最新一份"
+  // 导致网页镜像永远只有1个账号,安卓注册的组员无法登录。
+  // 修复: 全树所有approved_users.json全部下载,按手机号合并去重(同一手机号
+  // 优先active态,其次取timestamp最新),再并入备份与verify快照——
+  // 任一根的审批结果都能被镜像感知,跨根写入不再丢失。
+  let approvedData = null, usersSource = '';
   const approvedHits = fileNodes.filter(n => n.name === 'approved_users.json');
-  if (approvedHits.length) {
-    approvedNode = latest(approvedHits);
+  const mergedUsers = new Map(); // phone -> user对象(含来源时间戳用于冲突仲裁)
+  const sources = [];
+  for (const node of approvedHits) {
     try {
-      approvedData = await downloadJson(token, approvedNode.token);
-      usersSource = `approved:${approvedNode.path}`;
-      log(`账号表(云端主档): ${(approvedData.users || []).length}个账号 · ${approvedNode.path}`);
-    } catch (e) { warn(`approved_users.json(${approvedNode.path})下载/解析失败: ${e.message}`); approvedData = null; }
+      const raw = await downloadJson(token, node.token);
+      const users = Array.isArray(raw.users) ? raw.users : [];
+      if (!users.length) continue;
+      const ts = new Date(raw.timestamp || node.mtime * 1000).getTime();
+      sources.push(`${node.path}(${users.length}个)`);
+      for (const u of users) {
+        if (!u || !u.phone) continue;
+        const phone = String(u.phone);
+        const existing = mergedUsers.get(phone);
+        if (!existing) {
+          mergedUsers.set(phone, { ...u, _srcTs: ts });
+        } else {
+          // 冲突仲裁: active > pending/rejected;同态取时间戳更新的
+          const eActive = existing.status === 'active';
+          const uActive = u.status === 'active';
+          if (uActive && !eActive) mergedUsers.set(phone, { ...u, _srcTs: ts });
+          else if (uActive === eActive && ts > (existing._srcTs || 0)) mergedUsers.set(phone, { ...u, _srcTs: ts });
+        }
+      }
+    } catch (e) { warn(`approved_users.json(${node.path})下载/解析失败: ${e.message}`); }
   }
-  const approvedCount = approvedData && Array.isArray(approvedData.users) ? approvedData.users.length : 0;
   const backupUsers = backupData && Array.isArray(backupData.users) ? backupData.users : null;
   if (backupUsers && backupUsers.length) {
-    if (!approvedData || approvedCount === 0) {
-      approvedData = { version: backupData.version || '', timestamp: backupData.timestamp || '', users: backupUsers };
-      usersSource = `backup:${backupNode.path}(云端账号表缺失)`;
-      warn(`⚠️ 云端账号表缺失,已从备份恢复${backupUsers.length}个账号`);
-    } else if (backupUsers.length > approvedCount) {
-      const backupTs = new Date(backupData.timestamp || backupNode.mtime * 1000).getTime();
-      const approvedTs = new Date(approvedData.timestamp || approvedNode.mtime * 1000).getTime();
-      if (backupTs > approvedTs) {
-        approvedData = { version: backupData.version || approvedData.version, timestamp: backupData.timestamp, users: backupUsers };
-        usersSource = `backup:${backupNode.path}(较新且账号更多:${backupUsers.length}>${approvedCount})`;
-        warn(`⚠️ 备份(${backupUsers.length}账号)比云端账号表(${approvedCount}账号)更新,已采用备份账号`);
+    const backupTs = new Date(backupData.timestamp || backupNode.mtime * 1000).getTime();
+    sources.push(`backup:${backupNode.path}(${backupUsers.length}个)`);
+    for (const u of backupUsers) {
+      if (!u || !u.phone) continue;
+      const phone = String(u.phone);
+      const existing = mergedUsers.get(phone);
+      if (!existing) mergedUsers.set(phone, { ...u, _srcTs: backupTs });
+      else {
+        const eActive = existing.status === 'active';
+        const uActive = u.status === 'active';
+        if (uActive && !eActive) mergedUsers.set(phone, { ...u, _srcTs: backupTs });
+        else if (uActive === eActive && backupTs > (existing._srcTs || 0)) mergedUsers.set(phone, { ...u, _srcTs: backupTs });
       }
     }
   }
-  if (!approvedData && !backupUsers) warn('全树无approved_users.json且无可用备份,账号表无法镜像');
+  if (mergedUsers.size) {
+    const users = [...mergedUsers.values()].map(({ _srcTs, ...rest }) => rest);
+    approvedData = { version: '', timestamp: '', users };
+    usersSource = `merged:${sources.join(' + ')}`;
+    log(`账号表(多源合并): ${users.length}个账号 · 来源[${sources.join(' | ')}]`);
+  } else {
+    warn('全树无approved_users.json且无可用备份,账号表无法镜像');
+  }
 
   // ---- ⑤b 诊断: _sync_verify_*.json 顶层结构(排查账号与数据真源) ----
   const verifyHits = fileNodes.filter(n => /^_sync_verify_.+\.json$/.test(n.name));
@@ -319,11 +350,28 @@ async function main() {
       const usersN = Array.isArray(raw.users) ? raw.users.length : null;
       const vehN = Array.isArray(raw.vehicles) ? raw.vehicles.length : null;
       log(`诊断[_sync_verify]: ${v.path} · 键[${keys}] · vehicles=${vehN} · users=${usersN}`);
-      // 若verify文件含更多users,并入账号候选(安卓端同步校验快照,可能比审批结果主档新)
-      if (usersN && usersN > (approvedData && approvedData.users ? approvedData.users.length : 0)) {
-        approvedData = { version: raw.version || '', timestamp: raw.timestamp || raw.updated || '', users: raw.users };
-        usersSource = `verify:${v.path}(${usersN}账号>主档)`;
-        warn(`⚠️ _sync_verify快照含${usersN}个账号(多于审批结果主档),已采用`);
+      // verify快照含users时也并入合并账号表(安卓端同步校验快照,可能含最新审批)
+      if (usersN && Array.isArray(raw.users)) {
+        const verifyTs = new Date(raw.timestamp || raw.updated || 0).getTime();
+        let added = 0;
+        for (const u of raw.users) {
+          if (!u || !u.phone) continue;
+          const phone = String(u.phone);
+          const existing = mergedUsers.get(phone);
+          if (!existing) { mergedUsers.set(phone, { ...u, _srcTs: verifyTs }); added++; }
+          else {
+            const eActive = existing.status === 'active';
+            const uActive = u.status === 'active';
+            if (uActive && !eActive) mergedUsers.set(phone, { ...u, _srcTs: verifyTs });
+            else if (uActive === eActive && verifyTs > (existing._srcTs || 0)) mergedUsers.set(phone, { ...u, _srcTs: verifyTs });
+          }
+        }
+        if (added > 0 || !approvedData) {
+          const users = [...mergedUsers.values()].map(({ _srcTs, ...rest }) => rest);
+          approvedData = { version: raw.version || '', timestamp: raw.timestamp || raw.updated || '', users };
+          usersSource = `merged(+verify):${sources.join(' | ')} + verify:${v.path}`;
+          warn(`⚠️ _sync_verify快照并入${added}个新账号,合并后共${users.length}个`);
+        }
       }
     } catch (e) { warn(`诊断[_sync_verify]${v.path}解析失败: ${e.message}`); }
   }

@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.15.9',
+    date: '2026-09-06',
+    highlight: '批量导出全格式去图+网页账号登录修复',
+    features: [
+      '批量导出Word/PDF/Excel全部不含图片(仅单车导出含图),减小体积加快导出',
+      '修复安卓端注册账号无法在网页端登录:飞书双根approved_users.json合并去重,镜像账号从1个恢复到10个',
+      '弱网优化:网页镜像fetch加10s超时,不再挂起阻塞UI',
+      '版本三源对齐：config.xml / version.json / js/00-bootstrap.js 同步至 V10.15.9',
+      '继承 V10.15.8 批量导出PDF不含图片版全部能力',
+    ]
+  },
+  {
     version: 'V10.15.8',
     date: '2026-09-06',
     highlight: '批量导出PDF不含图片',
