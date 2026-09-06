@@ -13,6 +13,21 @@
    "m": 1788526907
   },
   {
+   "p": "(云盘根)/APP数据备份/审批结果",
+   "t": "folder",
+   "m": 1788668988
+  },
+  {
+   "p": "(云盘根)/APP数据备份/审批结果/approved_users.json",
+   "t": "file",
+   "m": 1788668985
+  },
+  {
+   "p": "(云盘根)/APP数据备份/注册申请",
+   "t": "folder",
+   "m": 1788668984
+  },
+  {
    "p": "(云盘根)/APP数据备份/发版产物",
    "t": "folder",
    "m": 1788639069
@@ -136,21 +151,6 @@
    "p": "(云盘根)/APP数据备份/同步数据/_sync_verify_178****9332.json",
    "t": "file",
    "m": 1788231110
-  },
-  {
-   "p": "(云盘根)/APP数据备份/审批结果",
-   "t": "folder",
-   "m": 1788636738
-  },
-  {
-   "p": "(云盘根)/APP数据备份/审批结果/approved_users.json",
-   "t": "file",
-   "m": 1788636736
-  },
-  {
-   "p": "(云盘根)/APP数据备份/注册申请",
-   "t": "folder",
-   "m": 1788587758
   },
   {
    "p": "(云盘根)/APP数据备份/备份文件",
@@ -3353,7 +3353,7 @@
  "sources": {
   "vehicle": "安卓主档:(旧根)/APP数据备份/同步数据/vehicle_sync_data.json",
   "notice": "sync:(云盘根)/APP数据备份/同步数据/data_update_notice.json",
-  "users": "approved:(旧根)/APP数据备份/审批结果/approved_users.json"
+  "users": "approved:(云盘根)/APP数据备份/审批结果/approved_users.json"
  },
  "vehicleCandidates": [
   {
@@ -3398,7 +3398,7 @@
  "approvedHits": [
   {
    "p": "(云盘根)/APP数据备份/审批结果/approved_users.json",
-   "m": 1788636736
+   "m": 1788668985
   },
   {
    "p": "(旧根)/APP数据备份/审批结果/approved_users.json",
@@ -3406,5 +3406,5 @@
   }
  ],
  "vehicleCount": 82,
- "accountCount": 10
+ "accountCount": 1
 }
