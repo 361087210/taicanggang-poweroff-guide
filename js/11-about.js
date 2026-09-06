@@ -8,6 +8,28 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.15.2',
+    date: '2026-09-06',
+    highlight: '数据后端升级 + 安全加固',
+    features: [
+      '新增飞书多维表格(Bitable)后端数据层与 Drive→Bitable 迁移脚本',
+      '新增审计日志模块：环形缓冲 500 条，删除/清空操作留痕',
+      '构建期密钥升级为 XOR+base64 双重加密，明文 Secret 永不落盘',
+      '新增 R8/ProGuard 加固钩子，保护 Cordova JS Bridge 防反射剥离',
+    ]
+  },
+  {
+    version: 'V10.15.1',
+    date: '2026-09-06',
+    highlight: '版本对齐与发布门禁',
+    features: [
+      '三处版本号对齐：config.xml / version.json / bootstrap APP_VERSION 统一为 10.15.1',
+      '新增 scripts/check_version_consistency.js 发版门禁，纳入 npm test:all',
+      '修复 SDK 数据源解析与参数名契约，反馈提交与读取更稳定',
+      '关于页版本号、同步屏「本地版本」显示同步刷新',
+    ]
+  },
+  {
     version: 'V10.15.0',
     date: '2026-09-06',
     highlight: '问题反馈+关于页面+多机型适配测试',
@@ -292,7 +314,7 @@ window.openExternalLink = function(url) {
 
 /* V10.15.0: 页面初始化(defer加载,DOM已就绪) */
 if (document.getElementById('screen-about')) {
-  initAboutPage();
+  window.initAboutPage();
 }
 
 })();

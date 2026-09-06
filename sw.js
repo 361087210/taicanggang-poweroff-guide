@@ -8,7 +8,7 @@
  * V10.14.3: 新增SKIP_WAITING消息处理(配合页面"立即更新"按钮即时接管) + PNG图标预缓存
  * =========================================================== */
 
-const CACHE_NAME='tcg-poweroff-v10.14.4';
+const CACHE_NAME='tcg-poweroff-v10.15.2';
 const APP_SHELL=[
   './demo.html',
   './css/app.css',
@@ -21,6 +21,10 @@ const APP_SHELL=[
   './js/06-media.js',
   './js/07-cache.js',
   './js/08-main.js',
+  './js/09-web-sync.js',
+  './js/10-feedback.js',
+  './js/11-about.js',
+  './js/12-bitable.js',
   './feishu-api.js',
   './vehicles_data.js',
   './vendor/tailwind.js',

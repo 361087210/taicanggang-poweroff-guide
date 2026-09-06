@@ -1,8 +1,10 @@
 # 测试套件说明
 
-## 安全规范（V5.7.1 起强制）
+## 安全规范（V11.x 里程碑，随 10.15.2 强化）
 
 飞书 `App Secret` 一律通过环境变量 `TCG_FEISHU_APP_SECRET` 注入，**任何测试代码与文档中不得出现明文 Secret**（GitHub 推送保护会直接拦截）。
+
+> V10.15.2 起另有两道安全关卡：① `scripts/inject_build_secrets.js` 构建期将 Secret 做 **XOR+base64 加密**后写入产物（明文永不落盘）；② `validate_web_assets.js` 泄露扫描在发版前拦截含明文 Secret 的构建产物。测试环境仅需保持环境变量注入即可。
 
 ### 运行前设置环境变量
 

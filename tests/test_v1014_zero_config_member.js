@@ -472,7 +472,7 @@ section('Z5: 【修复B核心】时间戳相等但ID集合不等 → 镜像删�
 }
 
 // =============================================================
-section('版本一致性 V10.14.4 (bootstrap.js / config.xml / version.json)');
+section('版本一致性 (bootstrap.js / config.xml / version.json)');
 // =============================================================
 {
   const vj = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
@@ -481,11 +481,13 @@ section('版本一致性 V10.14.4 (bootstrap.js / config.xml / version.json)');
   const verMatch = bootstrap.match(/const APP_VERSION='([^']+)'/);
   const xmlVer = xml.match(/version="([0-9.]+)"/);
   const xmlCode = xml.match(/android-versionCode="(\d+)"/);
-  check('version.json.version === 10.14.4', vj.version === '10.14.4');
-  check('version.json.versionCode === 101404', vj.versionCode === 101404);
-  check('js/00-bootstrap.js APP_VERSION === 10.14.4', verMatch && verMatch[1] === '10.14.4');
-  check('config.xml version  === 10.14.4', xmlVer && xmlVer[1] === '10.14.4');
-  check('config.xml android-versionCode === 101404', xmlCode && xmlCode[1] === '101404');
+  // 动态校验免改测试：从 version.json 读取基准版本，发版无需改此段（参考 test_v108_fixes.js）
+  const expectCode = (() => { const p = String(vj.version || '').split('.').map(Number); return p.length === 3 && p.every(Number.isFinite) ? String(p[0] * 10000 + p[1] * 100 + p[2]) : ''; })();
+  check('version.json.version 为合法 x.y.z 格式 (' + vj.version + ')', /^[0-9]+\.[0-9]+\.[0-9]+$/.test(String(vj.version)));
+  check('version.json.versionCode === ' + vj.versionCode, String(vj.versionCode) === expectCode);
+  check('js/00-bootstrap.js APP_VERSION === ' + vj.version, verMatch && verMatch[1] === vj.version);
+  check('config.xml version === ' + vj.version, xmlVer && xmlVer[1] === vj.version);
+  check('config.xml android-versionCode === ' + vj.versionCode, xmlCode && xmlCode[1] === expectCode);
 }
 
 // =============================================================

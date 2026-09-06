@@ -178,6 +178,24 @@ async function hashUserPasswords() {
  * 安全: 不挂window/不写持久化,内存dump仍需反向本闭包(比window全局
  *       裸暴露攻击面小得多),且与原来用完即焚的"明文在内存瞬态"同级安全。 */
 let _INJECTED_SECRETS_CACHE = null;
+
+/* V11.3 运行期解密构建期注入的密文 Secret【过渡加固】
+ * 与 scripts/inject_build_secrets.js 的 xnorEnc/SECRET_XOR_KEY 完全一致。
+ * 反方审查: key 必然在客户端, 不构成绝对防护; 价值是把"解包 grep 明文"抬升到
+ *           "定位算法+key"级别, 属纵深防御, 根治见 V11.4 M2 加固 + Phase1 服务端秘钥。
+ * 算法: base64 → 字符码 XOR 循环 key。仅处理注入路径; localStorage 用户手填仍明文,
+ *       因为那是用户自己输入、本机可见, 不属攻击面。 */
+const _SECRET_XOR_KEY = 'TCG_V11_XOR_2026';
+function _decryptBuildSecret(enc){
+  if (!enc || typeof atob !== 'function') return '';
+  let bin;
+  try { bin = atob(enc); } catch(_) { return ''; }
+  let out = '';
+  for (let i = 0; i < bin.length; i++) {
+    out += String.fromCharCode(bin.charCodeAt(i) ^ _SECRET_XOR_KEY.charCodeAt(i % _SECRET_XOR_KEY.length));
+  }
+  return out;
+}
 const DEFAULT_FEISHU_CONFIG={
   // 公开字段(非机密, version.json/交付文档内已公开): 构建注入/用户保存优先,本处做兜底
   appId:'cli_aa0ce4fd91f85be8',
@@ -207,6 +225,10 @@ function getFeishuCfg(){
   if(_INJECTED_SECRETS_CACHE===null && typeof window!=='undefined' && window.__BUILD_SECRETS__){
     // 浅克隆一份,避免后续delete window引用也连带清掉闭包缓存
     _INJECTED_SECRETS_CACHE = Object.assign({}, window.__BUILD_SECRETS__);
+    // V11.3: 若注入的是密文appSecretEnc, 运行期解出明文appSecret供下游pick()使用
+    if(_INJECTED_SECRETS_CACHE && typeof _INJECTED_SECRETS_CACHE.appSecretEnc==='string' && _INJECTED_SECRETS_CACHE.appSecretEnc.length>0){
+      _INJECTED_SECRETS_CACHE.appSecret = _decryptBuildSecret(_INJECTED_SECRETS_CACHE.appSecretEnc);
+    }
     try{delete window.__BUILD_SECRETS__;}catch(_){window.__BUILD_SECRETS__=void 0;}
   }
   const injected = _INJECTED_SECRETS_CACHE; // 直接用闭包缓存(优先于窗口和存储)
@@ -1177,7 +1199,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.15.0';
+const APP_VERSION='10.15.2';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[

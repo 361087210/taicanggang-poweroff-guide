@@ -4,6 +4,33 @@
 
 ## [未发布]
 
+### V10.15.2 数据后端升级 + 安全加固
+
+#### ✨ 新功能:
+- **飞书多维表格(Bitable)后端数据层**: `feishu-api.js` 新增 `BITABLE_TABLE_NAMES` 常量与 `DATA_ACCESS` 数据访问层,车辆/用户数据双写 Drive + Bitable,`QPS` 门控与 Drive 读取回退补齐,迁移路径与字段契约和 `vehicleToBitable` / `userToBitable` 保持一致
+- **Drive→Bitable 迁移脚本**: 新增 `scripts/migrate_drive_to_bitable.js`,批量再映射云端旧数据到二维表,配合 `docs/DESIGN_V110_BITABLE.md` 设计文档
+
+#### 🛡️ 安全加固(V11.3 里程碑):
+- **构建期密钥双重加密**: `scripts/inject_build_secrets.js` 由 XOR 混淆升级为 **XOR + base64** 双重编码,写入 `window.__BUILD_SECRETS__`,明文 App Secret 不再出现在 `demo.html` 构建产物;`00-bootstrap.js` `_decryptBuildSecret()` 运行时解密态 + 取读即删 + 闭包缓存
+- **R8 / ProGuard 混淆**: 新增 `scripts/proguard_harden.js`(`after_prepare` 钩子)自动注入 `minifyEnabled true` + `shrinkResources true` + `proguard-rules.pro`(完整 Cordova JS Bridge keep 规则),防止反射剥离;幂等处理 + `TCG_PROGUARD=0` 降级开关
+- **审计与删除轨迹**: 新增 `js/16-audit.js` 提供 `window.Audit`(track/init/readLocal/clearLocal),localStorage 环形缓冲 500 条,车辆/用户增删改操作时间线可追溯,删除留痕
+
+#### 🚩 版本一致性升级 10.15.1 → 10.15.2(versionCode 101502):
+- `js/00-bootstrap.js` APP_VERSION / `config.xml` version+versionCode / `version.json` version+versionCode+downloadUrl+releaseNotes(新增V10.15.2置顶) / `demo.html` sync-local-ver / `sw.js` 缓存名 v10.15.2 / `js/11-about.js` VERSION_HISTORY 新增 V10.15.2 / `ios-release.yml` workflow_dispatch 默认版本号 / `scripts/sync_release_both_roots.py` + `scripts/migrate_drive_to_bitable.js` 内部版本号 / `tests/test_v110_audit.js` 版本断言
+- **全量回归 0 FAIL**: `npm run test:all` 含 `test:version`(三处一致性) + `test:v110-bitable` + `test:v110-audit`,版本门禁持续生效
+- **安全运营跟进(非代码)**: 飞书 IP 白名单 + 配额告警 + 月度 Secret 轮换,见 `SECURITY.md`
+
+### V10.15.1 版本一致性对齐 + 发版门禁
+
+#### 🔴 核心修复:
+- **三处版本对齐**: `config.xml` 由 `10.14.4/101404` → `10.15.1/101501`;`version.json` 同步为 `10.15.1/101501`;`js/00-bootstrap.js` 的 `APP_VERSION` → `'10.15.1'`。消除 APK 内 `cordova-plugin-app-version`(10.14.4) 与 OTA 元数据(10.15.0) 漂移导致的「请更新」横幅误报
+- **发版门禁脚本**: 新增 `scripts/check_version_consistency.js`——解析 config.xml / version.json / 00-bootstrap.js 三处版本,校验三处一致 + `versionCode` 与版本号编码一致(每段补零到 2 位),不一致即退出非 0
+- **测试接入**: `package.json` 新增 `test:version` 并置于 `test:all` 首位,版本漂移即刻中断全量回归
+
+#### 🚩 版本一致性升级 10.15.0 → 10.15.1(versionCode 101501):
+- `js/00-bootstrap.js` APP_VERSION / `config.xml` version+versionCode / `version.json` version+versionCode+downloadUrl+releaseNotes(新增V10.15.1置顶) / `docs/RELEASE_V10151.md` 新增
+- **V10.15.0 功能逻辑零改动**: 仅版本号对齐 + 新增门禁脚本
+
 ### V10.14.3 iOS PWA深化版(PNG图标关键修复+安装引导+即时更新+standalone适配)
 
 #### 🐛 关键修复:

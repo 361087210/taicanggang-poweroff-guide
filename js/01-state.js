@@ -172,6 +172,7 @@ const State={
     const v={id:maxId+1,brandId:brandObj?brandObj.id:'custom',brand:data.brand,series:data.series,config:data.config,display:data.display,powerType:data.powerType||'纯电',size:data.size,position:data.position,steps:data.steps&&data.steps.length?data.steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:data.keyFrame&&data.keyFrame.length?data.keyFrame:['钥匙数量绑扎检查完'],keyContainer:data.keyContainer&&data.keyContainer.length?data.keyContainer:['车辆进箱无需收钥匙'],remarks:data.remarks,photos:data.photoPaths.length,photoPaths:data.photoPaths,videos:data.videoPaths.length,videoPaths:data.videoPaths,pinyin:getPinyin(data.display)};
     VEHICLES.push(v);
     persistVehicles(); // V10.6.0 问题4: 车辆数据(含文字图片照片)立即持久化,重启不丢,可同步飞书
+    if(window.Audit&&window.Audit.track)window.Audit.track('vehicle.create','vehicle',v.id,{brand:v.brand,series:v.series,display:v.display});
     return v;
   },
   /**
@@ -195,6 +196,7 @@ const State={
     if(!v)return null;
     Object.assign(v,patch);
     persistVehicles(); // V10.6.0 问题4: 同上
+    if(window.Audit&&window.Audit.track)window.Audit.track('vehicle.update','vehicle',id,{detail:Object.keys(patch||{}).join(',')});
     return v;
   },
   /**
@@ -203,21 +205,21 @@ const State={
    */
   removeVehicle(id){
     const idx=VEHICLES.findIndex(v=>v.id===id);
-    if(idx>-1){VEHICLES.splice(idx,1);persistVehicles();return true;} // V10.6.0 问题4: 删除同步持久化
+    if(idx>-1){const removed=VEHICLES[idx];VEHICLES.splice(idx,1);persistVehicles();if(window.Audit&&window.Audit.track)window.Audit.track('vehicle.delete','vehicle',id,{brand:removed.brand,display:removed.display});return true;} // V10.6.0 问题4: 删除同步持久化
     return false;
   },
   /**
    * 追加用户(注册/审批合并/组员创建), 落盘由调用方 saveUsers(USERS) 统一控制
    * @returns {object} 追加的用户对象
    */
-  addUser(u){USERS.push(u);return u;},
+  addUser(u){USERS.push(u);if(window.Audit&&window.Audit.track)window.Audit.track('user.create','user',u.phone,{name:u.name,role:u.role});return u;},
   /**
    * 按手机号删除用户(云端删除传播/强制登出场景), 落盘由调用方 saveUsers(USERS) 控制
    * @returns {boolean} 是否删除成功
    */
   removeUser(phone){
     const idx=USERS.findIndex(u=>u.phone===phone);
-    if(idx>-1){USERS.splice(idx,1);return true;}
+    if(idx>-1){const removed=USERS[idx];USERS.splice(idx,1);if(window.Audit&&window.Audit.track)window.Audit.track('user.delete','user',phone,{name:removed.name,role:removed.role});return true;}
     return false;
   },
   /**
