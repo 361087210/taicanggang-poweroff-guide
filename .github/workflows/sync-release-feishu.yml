@@ -1,0 +1,54 @@
+# ============================================================
+# 发版产物同步到飞书双根 (V10.15.11)
+# ============================================================
+# 背景: 发版产物(APK/IPA/SHA256/version.json)需同步到飞书
+#      「APP数据备份/发版产物/v{版本}/」供组长端下载查看。
+#      本地/沙箱环境无 FEISHU_APP_SECRET(仅存在于仓库Secrets),
+#      故提供本手动触发工作流,在CI内用Secrets执行
+#      scripts/sync_release_both_roots.py(双根: 旧根组长端缓存+新根应用云盘根)。
+# 用法: 发版tag构建完成、GitHub Release出现签名产物后,
+#      Actions → Sync Release to Feishu → Run workflow。
+# 设计: 仓库不放二进制(gitignore红线),产物从GitHub Release
+#      按version.json的版本号现场下载到release/再上传。
+# ============================================================
+name: Sync Release to Feishu
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Download release products from GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VER=$(python3 -c "import json;print(json.load(open('version.json'))['version'])")
+          echo "同步发版产物: v${VER}"
+          gh release download "v${VER}" --repo "$GITHUB_REPOSITORY" \
+            --pattern "tcg_poweroff_v${VER}.apk" \
+            --pattern "tcg_poweroff_v${VER}.apk.sha256" \
+            --pattern "tcg_poweroff_v${VER}_ios.ipa" \
+            --dir release/ --clobber
+          ls -la release/
+
+      - name: Push products to Feishu (both roots)
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+        run: python scripts/sync_release_both_roots.py
