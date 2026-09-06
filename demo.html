@@ -412,7 +412,10 @@ window.addEventListener('load', function() {
 <div class="bs-item" id="menu-sync" onclick="showScreen('screen-sync')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5-5 5 5M12 5v12"/></svg><span class="text-sm text-gray-800">数据同步</span><span class="new-data-dot hidden" id="sync-new-dot"></span></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <!-- V10.2 问题2: 缓存管理入口——已缓存视频+已导出文档的查看与多选删除 -->
 <div class="bs-item" onclick="openCacheManager()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg><div><div class="text-sm text-gray-800">缓存管理</div><div class="text-xs text-gray-400 mt-0.5" id="cache-size-hint">视频缓存与导出文档</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<!-- V10.15.0 问题反馈入口 -->
+<div class="bs-item" onclick="showScreen('screen-feedback')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><div><div class="text-sm text-gray-800">问题反馈</div><div class="text-xs text-gray-400 mt-0.5">上报问题 · AI智能分析</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="checkUpdate()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><path d="M21 12a9 9 0 11-2.64-6.36M21 3v6h-6"/></svg><div><div class="text-sm text-gray-800">检查更新</div><div class="text-xs text-gray-400 mt-0.5" id="update-current-ver">当前版本 V4.1</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="bs-item" onclick="showScreen('screen-about')"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" class="w-5 h-5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><div><div class="text-sm text-gray-800">关于</div><div class="text-xs text-gray-400 mt-0.5">版本信息 · 技术架构 · 开发者</div></div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-gray-300"><path d="M9 6l6 6-6 6"/></svg></div>
 <div class="bs-item" onclick="doLogout()"><div class="flex items-center gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="w-5 h-5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="text-sm text-red-500">退出登录</span></div></div>
 </div>
 </div>
@@ -465,6 +468,12 @@ window.addEventListener('load', function() {
 </div>
 </div>
 </div>
+
+<!-- ===== FEEDBACK SCREEN (V10.15.0) ===== -->
+<div class="screen" id="screen-feedback"></div>
+
+<!-- ===== ABOUT SCREEN (V10.15.0) ===== -->
+<div class="screen" id="screen-about"></div>
 
 <!-- ===== BOTTOM NAV ===== -->
 <div class="bottom-nav" id="bottom-nav">
@@ -631,6 +640,9 @@ window.addEventListener('load', function() {
     <script defer src="js/07-cache.js"></script>
     <script defer src="js/08-main.js"></script>
     <script defer src="js/09-web-sync.js"></script>
+    <script defer src="js/12-bitable.js"></script>
+    <script defer src="js/10-feedback.js"></script>
+    <script defer src="js/11-about.js"></script>
 <!-- V10.14.3 iOS方案A深化: PWA Service Worker注册 + iOS安装引导 + 新版本提示 -->
 <script>
 (function(){

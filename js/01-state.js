@@ -124,7 +124,7 @@ function goBack(){
       target='screen-vehicles';
     }else if(screen==='screen-sync'){
       target='screen-data';
-    }else if(screen==='screen-members'||screen==='screen-password'){
+    }else if(screen==='screen-members'||screen==='screen-password'||screen==='screen-feedback'||screen==='screen-about'){
       target='screen-my';
     }else{
       target='screen-vehicles';

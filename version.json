@@ -1,14 +1,15 @@
 {
-  "version": "10.14.4",
-  "versionCode": 101404,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.14.4/tcg_poweroff_v10.14.4.apk",
+  "version": "10.15.0",
+  "versionCode": 101500,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.15.0/tcg_poweroff_v10.15.0.apk",
   "releaseNotes": [
-    "V10.14.4 网页版数据同步修复版。一句话总结: 彻底修复网页版与安卓端数据不同步的历史问题(安卓82组/网页73组),镜像脚本V2.5双根遍历+三入口搜索,组长在哪根写数据网页版都能5分钟内追上,组员注册审批后可直接在网页版登录",
-    "数据同步根因修复: 发现组长安卓端localStorage缓存旧根token(WdXUfZPk...),业务数据持续写旧根(82组车型/10账号),而镜像脚本只遍历云盘根(73组内置数据)——V2.5升级为三入口遍历(云盘根+配置根+旧根),任一根更新都能被感知",
-    "双根一次性合并: 按V10.14.3格式对齐两根数据(车型按id去重旧根为基,账号按phone去重取更新记录,密码哈希原样保留),两根均已同步为82车型/10账号",
-    "注册审批全链路打通: 安卓组员注册→组长审批→pushApprovedUsersToFeishu回推→镜像脚本5分钟内拉取→手机号SHA-256脱敏→网页端哈希匹配登录,密码校验与安卓共用同一套salt$hash实现",
-    "自续链可靠性升级: 修复防分裂检查误把已取消运行当成并发源导致断链的bug,改为只统计queued/in_progress状态;GitHub Actions全面升级到Node.js 24兼容版本(v7/v6/v5)",
-    "继承V10.14.3(iOS PWA深化+PNG图标+安装引导+即时更新+standalone适配)全部能力"
+    "V10.15.0 问题反馈+关于页面+多机型适配版。一句话总结: 新增飞书多维表格驱动的问题反馈闭环(按板块提交→AI分析→技术文档→组长通知),新增关于页面(9个版本历史+技术架构+开发工具+项目地址+开发者署名),完成7种主流机型屏幕适配测试,彻底消除留白/显示不全问题",
+    "问题反馈系统: 8大板块分类(车辆查询/断电操作/数据同步/账号登录/组员管理/缓存导出/系统设置/其他),支持最多3张截图压缩上传,本地缓存+云端同步双保险,离线也能提交",
+    "飞书多维表格闭环: 反馈数据实时写入飞书Bitable(15字段全维度记录),截图上传到云盘,配合飞书工作流/智能体可自动分析问题原因、生成技术文档、通知组长跟进",
+    "关于页面: 完整版本历史(9个版本,可展开查看详细功能),技术架构全景(前端/移动端/云存储/CI/CD/安全),开发工具清单,项目地址(GitHub/Pages/飞书),开发者署名(云飞呀云飞,QQ:361087210)",
+    "多机型适配测试: 覆盖iPhone SE(小屏)/iPhone 14 Pro(灵动岛)/iPhone 14 Pro Max(大屏)/小米13(Android挖孔)/三星S23 Ultra(曲面屏)/华为Mate 60 Pro(鸿蒙)/iPad mini(横屏)共7种设备,验证7大断点+safe-area+动态视口单位全面有效",
+    "安卓端顶部留白根因修复: StatusBarOverlaysWebView=false配合CSS pt-12纯标题栏高度,彻底消除多余留白(iOS仍保留刘海安全区适配,两端各得其所)",
+    "继承V10.14.4(双根数据同步+自续链+Node.js 24)全部能力"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
@@ -17,7 +18,8 @@
     "folderToken": "nodcnGA95g93RhIUSdCeTkhKlQc",
     "dataFolderName": "APP数据备份",
     "dataSubFolders": ["同步数据", "注册申请", "审批结果", "备份文件"],
-    "bitableAppToken": "",
+    "bitableAppToken": "Gn4db7il9a27QrsOtVbclSE3nnf",
+    "bitableFeedbackTableId": "tblPB0AnsTS9puqw",
     "approvalCode": "",
     "chatId": ""
   }
