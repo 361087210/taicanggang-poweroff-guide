@@ -106,6 +106,8 @@ if(restoreSession()){
   // 已有有效会话,直接进入主界面
   showScreen('screen-vehicles');
   updateMyInfo();
+  // V10.15.6 账号级字段选项云同步: 会话恢复同样静默拉取云端选项(跨设备共享)
+  if(typeof syncFieldOptionsFromCloud==='function'){syncFieldOptionsFromCloud();}
   if(state.currentUser&&state.currentUser.role==='admin'){
     pullPendingFromFeishu().then(()=>{renderMemberList();});
     // V5.3.1: 会话恢复同样启动轮询,重启APP后跨网络审批通知不中断

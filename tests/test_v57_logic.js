@@ -271,7 +271,7 @@ setTimeout(async () => {
       cfgXml.includes(`version="${versionJson.version}"`) && cfgXml.includes(`android-versionCode="${versionJson.versionCode}"`));
     check('6.4 version.json feishuConfig 与APP内置一致',
       versionJson.feishuConfig && versionJson.feishuConfig.appId === 'cli_aa0ce4fd91f85be8'
-      && Array.isArray(versionJson.feishuConfig.dataSubFolders) && versionJson.feishuConfig.dataSubFolders.length === 4);
+      && Array.isArray(versionJson.feishuConfig.dataSubFolders) && versionJson.feishuConfig.dataSubFolders.length === 5);
 
     console.log();
     console.log('='.repeat(62));
