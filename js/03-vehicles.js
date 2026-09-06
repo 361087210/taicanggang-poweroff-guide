@@ -286,6 +286,7 @@ function _renderVehicleDetail(id){
       </div>
       <div id="key-frame-content" class="space-y-2">${v.keyFrame.map((s,i)=>`<div class="flex items-start gap-2"><div class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center flex-shrink-0 mt-0.5">${i+1}</div><div class="text-sm text-gray-700">${esc(s)}</div></div>`).join('')}</div>
       <div id="key-container-content" class="space-y-2 hidden">${v.keyContainer.map((s,i)=>`<div class="flex items-start gap-2"><div class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center flex-shrink-0 mt-0.5">${i+1}</div><div class="text-sm text-gray-700">${esc(s)}</div></div>`).join('')}</div>
+      ${v.keyPhotoRemark?`<div class="mt-2 text-xs text-gray-500 bg-gray-50 rounded-lg px-2.5 py-1.5">车钥匙备注：${esc(v.keyPhotoRemark)}</div>`:''}
     </div></div>
     <!-- Photos -->
     ${(v.photos>0||(v.photoPaths&&v.photoPaths.length))?`<div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="text-sm font-bold text-gray-700 mb-3">车辆照片</div><div class="grid grid-cols-2 gap-2">${photosHtml}</div></div></div>`:''}
@@ -363,6 +364,128 @@ function switchKeyTab(tab){
 function prevVehicle(){if(state.currentVehicleIndex>0){state.currentVehicleIndex--;_renderVehicleDetail(VEHICLES[state.currentVehicleIndex].id);}}
 function nextVehicle(){if(state.currentVehicleIndex<VEHICLES.length-1){state.currentVehicleIndex++;_renderVehicleDetail(VEHICLES[state.currentVehicleIndex].id);}}
 
+// ===================== 字段选项模块化 (V10.15.5 反馈2) =====================
+// 断电位置 / 钥匙处理方式 / 断电步骤 依据数据库内容+默认种子生成选项,
+// 单选/多选点选, 并支持增删改(持久化到 localStorage), 便于编辑车型详情。
+const FIELD_OPTION_DEFAULTS={
+  position:['前机盖','后备箱','主驾驶底部','副驾驶底部','后排腿托','无需断电'],
+  keyframe:[],
+  keycontainer:[],
+  step:[]
+};
+const FIELD_OPTION_LABELS={position:'断电位置',keyframe:'钥匙-框架处理方式',keycontainer:'钥匙-集装箱处理方式',step:'断电步骤'};
+let FIELD_OPTIONS=null;
+let _editFieldSel={position:'',keyframe:[],keycontainer:[]};
+function getFieldOptions(){
+  if(FIELD_OPTIONS!==null)return FIELD_OPTIONS;
+  const o=JSON.parse(JSON.stringify(FIELD_OPTION_DEFAULTS));
+  // 以当前数据库内容为种子(自动补全已录入过的值)
+  VEHICLES.forEach(v=>{
+    if(v&&typeof v.position==='string'&&v.position.trim())o.position.push(v.position.trim());
+    (v.keyFrame||[]).forEach(s=>{if(s&&String(s).trim())o.keyframe.push(String(s).trim());});
+    (v.keyContainer||[]).forEach(s=>{if(s&&String(s).trim())o.keycontainer.push(String(s).trim());});
+    (v.steps||[]).forEach(s=>{if(s&&String(s).trim())o.step.push(String(s).trim());});
+  });
+  Object.keys(o).forEach(k=>o[k]=[...new Set(o[k])]);
+  FIELD_OPTIONS=o;
+  // 叠加用户增删改过的持久化选项
+  try{
+    const saved=JSON.parse(localStorage.getItem('tcg_field_options')||'null');
+    if(saved&&typeof saved==='object'){
+      Object.keys(saved).forEach(k=>{if(saved[k]&&Array.isArray(saved[k]))FIELD_OPTIONS[k]=saved[k];});
+    }
+  }catch(e){/*忽略*/}
+  return FIELD_OPTIONS;
+}
+function persistFieldOptions(){try{localStorage.setItem('tcg_field_options',JSON.stringify(FIELD_OPTIONS));}catch(e){}}
+function addToFieldOptions(cat,val){val=(val||'').trim();if(!val)return false;const o=getFieldOptions();if(o[cat].includes(val))return false;o[cat].push(val);persistFieldOptions();return true;}
+function removeFromFieldOptions(cat,val){val=String(val||'').trim();const o=getFieldOptions();const i=o[cat].indexOf(val);if(i<0)return false;o[cat].splice(i,1);persistFieldOptions();return true;}
+
+// 编辑表单: 初始化分模块字段状态并同步视图
+function initEditFieldSel(v){
+  _editFieldSel={position:(v&&v.position)?String(v.position):'',keyframe:[...(v&&v.keyFrame?v.keyFrame:[])],keycontainer:[...(v&&v.keyContainer?v.keyContainer:[])]};
+  const bp=document.getElementById('edit-position');
+  if(bp)bp.textContent=_editFieldSel.position||'请选择断电位置';
+  renderFieldTags('keyframe');
+  renderFieldTags('keycontainer');
+}
+function renderFieldTags(cat){
+  const map={keyframe:'edit-keyframe-tags',keycontainer:'edit-keycontainer-tags'};
+  const el=document.getElementById(map[cat]);if(!el)return;
+  const arr=_editFieldSel[cat]||[];
+  el.innerHTML=arr.length?arr.map((s,i)=>`<span class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs">${esc(s)}<button onclick="_removeFieldTag('${cat}',${i})" class="text-red-400">&times;</button></span>`).join(''):'<span class="text-xs text-gray-400">暂无，点击下方添加</span>';
+}
+function _removeFieldTag(cat,i){
+  const arr=_editFieldSel[cat]||[];arr.splice(i,1);_editFieldSel[cat]=arr;renderFieldTags(cat);
+}
+// 打开选项选择器(position单选=即点即选; 其余多选=可复选)
+let _fieldPickerCtx=null;
+function openFieldPicker(cat){
+  _fieldPickerCtx=cat;
+  const o=getFieldOptions()[cat]||[];
+  const title=FIELD_OPTION_LABELS[cat]||'选项';
+  const multi=(cat!=='position');
+  const cur=multi?(_editFieldSel[cat]||[]):(_editFieldSel.position?[_editFieldSel.position]:[]);
+  document.getElementById('selector-content').innerHTML=`
+    <div class="sticky top-0 bg-white px-5 py-3 border-b border-gray-100 flex items-center justify-between rounded-t-2xl">
+      <h3 class="font-bold text-gray-900">选择${title}</h3><button onclick="closeModal('modal-selector')" class="text-gray-400 text-xl">&times;</button>
+    </div>
+    <div>${o.map((opt,i)=>`<div class="bs-item flex items-center justify-between" onclick="pickFieldOption(${i})"><span class="text-sm">${esc(opt)}</span>${cur.includes(opt)?'<span class="text-blue-500 text-sm">✓</span>':''}</div>`).join('')}</div>
+    <div class="p-3"><button onclick="openFieldOptionManage('${cat}')" class="w-full mb-2 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium">＋ 新增选项</button>
+    <button onclick="closeModal('modal-selector')" class="w-full py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">取消</button></div>
+  `;
+  openModal('modal-selector');
+}
+function pickFieldOption(idx){
+  const cat=_fieldPickerCtx;if(!cat)return;
+  const opt=getFieldOptions()[cat][idx];if(opt==null)return;
+  if(cat==='position'){_editFieldSel.position=opt;const bp=document.getElementById('edit-position');if(bp)bp.textContent=opt;closeModal('modal-selector');return;}
+  if(cat==='step'){addStepWith(opt);closeModal('modal-selector');return;}
+  const arr=_editFieldSel[cat]||[];const i=arr.indexOf(opt);
+  if(i>=0)arr.splice(i,1);else arr.push(opt);
+  _editFieldSel[cat]=arr;renderFieldTags(cat);openFieldPicker(cat); // 重绘勾选状态
+}
+function addStepWith(opt){
+  const c=document.getElementById('steps-container');if(!c)return;
+  const d=document.createElement('div');
+  d.className='flex gap-2';
+  d.innerHTML=`<input type="text" class="flex-1 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(opt)}"><button onclick="this.parentElement.remove()" class="px-2 text-red-400">✕</button>`;
+  c.appendChild(d);
+}
+// 管理选项: 增删改(新增/删除, 修改=删旧增新)
+let _manageCat=null;
+function openFieldOptionManage(cat){
+  _manageCat=cat;
+  const o=getFieldOptions()[cat]||[];
+  const title=FIELD_OPTION_LABELS[cat]||'选项';
+  document.getElementById('selector-content').innerHTML=`
+    <div class="sticky top-0 bg-white px-5 py-3 border-b border-gray-100 flex items-center justify-between rounded-t-2xl">
+      <h3 class="font-bold text-gray-900">管理${title}选项</h3><button onclick="closeModal('modal-selector')" class="text-gray-400 text-xl">&times;</button>
+    </div>
+    <div class="max-h-[50vh] overflow-y-auto">
+      ${o.map((opt,i)=>`<div class="bs-item flex items-center justify-between"><span class="text-sm">${esc(opt)}</span><button onclick="_delOption(${i})" class="text-red-400 text-sm ml-4 flex-shrink-0">删除</button></div>`).join('')}
+    </div>
+    <div class="p-3 space-y-2">
+      <div class="flex gap-2"><input id="manage-option-input" type="text" placeholder="新增${title}选项" class="flex-1 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-sm outline-none"><button onclick="_addOption()" class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm flex-shrink-0">添加</button></div>
+      <button onclick="closeModal('modal-selector')" class="w-full py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium">完成</button>
+    </div>
+  `;
+  openModal('modal-selector');
+}
+function _addOption(){
+  const cat=_manageCat;if(!cat)return;
+  const input=document.getElementById('manage-option-input');
+  const val=(input&&input.value?input.value:'').trim();
+  if(!val){showToast('请输入选项内容');return;}
+  if(addToFieldOptions(cat,val)){showToast('已添加');openFieldOptionManage(cat);}else{showToast('该选项已存在');}
+}
+function _delOption(idx){
+  const cat=_manageCat;if(!cat)return;
+  const o=getFieldOptions()[cat];const val=o[idx];
+  if(val==null)return;
+  if(removeFromFieldOptions(cat,val)){showToast('已删除');openFieldOptionManage(cat);}
+}
+
 // ===================== EDIT VEHICLE =====================
 function openEditVehicle(id){
   if(!canEdit()){showToast('组员账号无编辑权限');return;}
@@ -385,9 +508,19 @@ function openEditVehicle(id){
       <div class="bg-white rounded-2xl p-4 shadow-sm">
         <div class="text-sm font-bold text-gray-700 mb-3">断电信息</div>
         <div class="space-y-3">
-          <div><label class="text-xs text-gray-500 mb-1 block">断电位置 <span class="text-red-500">*</span></label><input id="edit-position" type="text" placeholder="例如：后备箱左侧小电瓶负极" value="${v?esc(v.position):''}" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500"></div>
-          <div><label class="text-xs text-gray-500 mb-1 block">钥匙-框架处理方式</label><textarea id="edit-keyframe" class="key-textarea" placeholder="框架处理方式（例如：钥匙放在驾驶室手套箱内）">${v?esc(v.keyFrame.join('\n')):''}</textarea></div>
-          <div><label class="text-xs text-gray-500 mb-1 block">钥匙-集装箱处理方式</label><textarea id="edit-keycontainer" class="key-textarea" placeholder="集装箱处理方式（例如：集装箱钥匙由理货员保管）">${v?esc(v.keyContainer.join('\n')):''}</textarea></div>
+          <div class="flex items-center justify-between"><label class="text-sm text-gray-600">断电位置 <span class="text-red-500">*</span></label><div class="flex items-center gap-2"><button onclick="openFieldPicker('position')" id="edit-position" class="text-sm text-gray-800 px-3 py-1.5 bg-gray-50 rounded-lg min-w-[120px] text-right">请选择断电位置</button><button onclick="openFieldOptionManage('position')" class="text-xs text-blue-500">管理</button></div></div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">钥匙-框架处理方式</label>
+            <div id="edit-keyframe-tags" class="flex flex-wrap gap-1.5 mb-2"></div>
+            <button onclick="openFieldPicker('keyframe')" class="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400">＋ 选择框架处理方式</button>
+            <div class="mt-1 text-right"><button onclick="openFieldOptionManage('keyframe')" class="text-xs text-blue-500">管理选项</button></div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">钥匙-集装箱处理方式</label>
+            <div id="edit-keycontainer-tags" class="flex flex-wrap gap-1.5 mb-2"></div>
+            <button onclick="openFieldPicker('keycontainer')" class="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400">＋ 选择集装箱处理方式</button>
+            <div class="mt-1 text-right"><button onclick="openFieldOptionManage('keycontainer')" class="text-xs text-blue-500">管理选项</button></div>
+          </div>
         </div>
       </div>
       <div class="bg-white rounded-2xl p-4 shadow-sm">
@@ -395,27 +528,65 @@ function openEditVehicle(id){
         <div id="steps-container" class="space-y-2">
           ${v?v.steps.map((s,i)=>`<div class="flex gap-2"><input type="text" class="flex-1 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-sm outline-none" value="${esc(s)}"><button onclick="this.parentElement.remove()" class="px-2 text-red-400">✕</button></div>`).join(''):''}
         </div>
-        <button onclick="addStep()" class="w-full py-2 mt-2 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400">+ 添加步骤</button>
+        <div class="flex gap-2 mt-2">
+          <button onclick="addStep()" class="flex-1 py-2 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400">+ 添加步骤</button>
+          <button onclick="openFieldPicker('step')" class="flex-1 py-2 border-2 border-dashed border-blue-200 rounded-lg text-sm text-blue-500">从选项添加</button>
+        </div>
+        <div class="mt-1 text-right"><button onclick="openFieldOptionManage('step')" class="text-xs text-blue-500">管理步骤选项</button></div>
       </div>
       <div class="bg-white rounded-2xl p-4 shadow-sm">
         <div class="text-sm font-bold text-gray-700 mb-3">媒体资源</div>
-        <div class="space-y-3">
+        <div class="space-y-4">
           <div>
-            <label class="text-xs text-gray-500 mb-1 block">车辆照片（最多9张）</label>
+            <label class="text-xs text-gray-500 mb-1 block">车辆外观（车头/车尾/侧面/尾标，最多5张）</label>
             <div class="flex gap-2 flex-wrap">
               <label class="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 拍照
-                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(this,'camera')">
+                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(this,'camera','exterior')">
               </label>
               <label class="px-3 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                 相册选图
-                <input type="file" accept="image/*" multiple class="hidden" onchange="handlePhotoSelect(this,'gallery')">
+                <input type="file" accept="image/*" multiple class="hidden" onchange="handlePhotoSelect(this,'gallery','exterior')">
               </label>
             </div>
-            <div class="text-xs text-gray-400 mt-1">支持拍照、相册单选/批量选图，自动压缩保清晰</div>
-            <div id="photo-preview" class="grid grid-cols-3 gap-2 mt-2"></div>
+            <div class="text-xs text-gray-400 mt-1">点击照片可标记部位（车头/车尾/侧面/尾标），高清压缩不损分辨率</div>
+            <div id="photo-preview-exterior" class="grid grid-cols-3 gap-2 mt-2"></div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">车钥匙照片（最多5张）</label>
+            <div class="flex gap-2 flex-wrap">
+              <label class="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                拍照
+                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(this,'camera','key')">
+              </label>
+              <label class="px-3 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                相册选图
+                <input type="file" accept="image/*" multiple class="hidden" onchange="handlePhotoSelect(this,'gallery','key')">
+              </label>
+            </div>
+            <input id="edit-key-photo-remark" type="text" placeholder="备注：例如 1把遥控钥匙 + 1把机械钥匙" value="${v?(v.keyPhotoRemark||''):''}" class="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-sm outline-none mt-2">
+            <div id="photo-preview-key" class="grid grid-cols-3 gap-2 mt-2"></div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">断电位置照片（最多5张）</label>
+            <div class="flex gap-2 flex-wrap">
+              <label class="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                拍照
+                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(this,'camera','position')">
+              </label>
+              <label class="px-3 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                相册选图
+                <input type="file" accept="image/*" multiple class="hidden" onchange="handlePhotoSelect(this,'gallery','position')">
+              </label>
+            </div>
+            <div class="text-xs text-gray-400 mt-1">展示断电操作实际位置，便于现场对照</div>
+            <div id="photo-preview-position" class="grid grid-cols-3 gap-2 mt-2"></div>
           </div>
           <div>
             <label class="text-xs text-gray-500 mb-1 block">视频资源</label>
@@ -445,6 +616,8 @@ function openEditVehicle(id){
   showScreen('screen-edit');
   document.getElementById('bottom-nav').style.display='none';
   document.getElementById('fab-add').style.display='none';
+  // V10.15.5 反馈2-1: 断电位置/钥匙处理方式字段选项模块化,初始化选择器状态并同步视图
+  initEditFieldSel(v);
   loadEditMedia(v);
 }
 
@@ -457,21 +630,31 @@ function addStep(){
 }
 
 // ===================== PHOTO/VIDEO HANDLING =====================
+// V10.15.5 反馈2-2: 照片分板块上传(车辆外观/车钥匙/断电位置), 每块≤5张,高清压缩不损分辨率。
+// 保持 photoPaths 为扁平数组向后兼容(列表/详情/导出/同步均依赖), 新增 photoSections/photoLabels 元数据。
+const PHOTO_SECTIONS=[
+  {key:'exterior',label:'车辆外观',limit:5,slots:['车头','车尾','侧面','尾标']},
+  {key:'key',label:'车钥匙',limit:5},
+  {key:'position',label:'断电位置',limit:5}
+];
 let editPhotos=[];
 let editVideos=[];
 
-function handlePhotoSelect(input,source){
+function handlePhotoSelect(input,source,section){
   const files=Array.from(input.files);
   if(!files.length)return;
-  const remaining=9-editPhotos.length;
-  if(remaining<=0){showToast('最多添加9张照片');input.value='';return;}
+  const sec=PHOTO_SECTIONS.find(s=>s.key===section)||PHOTO_SECTIONS[0];
+  const cur=editPhotos.filter(p=>p.section===sec.key).length;
+  const remaining=sec.limit-cur;
+  if(remaining<=0){showToast(`${sec.label}最多添加${sec.limit}张`);input.value='';return;}
   const toProcess=files.slice(0,remaining);
-  if(files.length>remaining){showToast(`仅添加前${remaining}张，最多9张`);}
+  if(files.length>remaining){showToast(`${sec.label}仅添加前${remaining}张，最多${sec.limit}张`);}
   toProcess.forEach(file=>{
     if(!file.type.startsWith('image/'))return;
-    compressImage(file,1280,0.8).then(dataUrl=>{
-      editPhotos.push({name:file.name,data:dataUrl});
-      renderPhotoPreview();
+    // V10.15.5 反馈2-2: 提高压缩尺寸/质量(1280/0.8→1600/0.9),避免分辨率损耗过重
+    compressImage(file,1600,0.9).then(dataUrl=>{
+      editPhotos.push({name:file.name,data:dataUrl,section:sec.key,label:''});
+      renderPhotoPreview(sec.key);
     });
   });
   input.value='';
@@ -499,20 +682,43 @@ function compressImage(file,maxSize,quality){
   });
 }
 
-function renderPhotoPreview(){
-  const c=document.getElementById('photo-preview');
+// 部位标签循环(仅外观板块): 车头→车尾→侧面→尾标
+function cyclePhotoLabel(gi){
+  const p=editPhotos[gi];if(!p)return;
+  const sec=PHOTO_SECTIONS.find(s=>s.key===p.section);
+  const slots=sec&&sec.slots;
+  if(!slots||!slots.length)return;
+  const cur=p.label||'';
+  const idx=slots.indexOf(cur);
+  p.label=slots[(idx+1)%slots.length];
+  renderPhotoPreview(p.section);
+}
+// 非外观板块的默认标签(供详情页 photoLabels 展示)
+function _defaultPhotoLabel(section){
+  if(section==='key')return '车钥匙';
+  if(section==='position')return '断电位置';
+  return '';
+}
+function renderPhotoPreview(section){
+  const sec=PHOTO_SECTIONS.find(s=>s.key===section);
+  const c=document.getElementById('photo-preview-'+section);
   if(!c)return;
-  c.innerHTML=editPhotos.map((p,i)=>`
-    <div class="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+  const slots=sec&&sec.slots;
+  const items=editPhotos.map((p,i)=>({p,i})).filter(x=>x.p.section===section);
+  c.innerHTML=items.length?items.map(({p,i})=>{
+    const slotHtml=(slots&&slots.length)?`<button onclick="cyclePhotoLabel(${i})" class="absolute bottom-1 left-1 text-[10px] px-1.5 rounded bg-black/60 text-white">${esc(p.label||'标记部位')}</button>`:'';
+    return `<div class="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
       <img src="${p.data}" class="w-full h-full object-cover" onclick="viewPhoto(${i})">
       <button onclick="removePhoto(${i})" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white text-xs flex items-center justify-center">&times;</button>
-    </div>
-  `).join('');
+      ${slotHtml}
+    </div>`;
+  }).join(''):'<div class="col-span-3 text-center text-xs text-gray-400 py-4">暂无照片</div>';
 }
 
 function removePhoto(idx){
+  const section=editPhotos[idx]&&editPhotos[idx].section;
   editPhotos.splice(idx,1);
-  renderPhotoPreview();
+  renderPhotoPreview(section);
 }
 
 function viewPhoto(idx){
@@ -559,19 +765,25 @@ function removeVideo(idx){
 function loadEditMedia(v){
   editPhotos=[];
   editVideos=[];
+  // V10.15.5 反馈2-2: 按 photoSections/photoLabels 元数据恢复各板块照片,保持扁平 photoPaths 兼容
   if(v&&v.photoPaths){
-    editPhotos=v.photoPaths.map(p=>({name:'existing',data:p}));
+    const sections=v.photoSections||[];
+    const labels=v.photoLabels||[];
+    editPhotos=v.photoPaths.map((p,i)=>({name:'existing',data:p,section:sections[i]||'exterior',label:labels[i]||''}));
   }
   if(v&&v.videoPaths){
     editVideos=v.videoPaths.map(p=>({name:'existing',data:p,size:0}));
   }
-  renderPhotoPreview();
+  PHOTO_SECTIONS.forEach(s=>renderPhotoPreview(s.key));
   renderVideoPreview();
+  const remarkEl=document.getElementById('edit-key-photo-remark');
+  if(remarkEl&&v&&v.keyPhotoRemark){remarkEl.value=v.keyPhotoRemark;}
 }
 
 function saveVehicle(){
   const display=document.getElementById('edit-display').value.trim();
-  const position=document.getElementById('edit-position').value.trim();
+  // V10.15.5 反馈2-1: 断电位置/钥匙处理方式改为模块化选项,从_editFieldSel读取而非自由文本
+  const position=(_editFieldSel&&_editFieldSel.position)?_editFieldSel.position:'';
   if(!display||!position){showToast('请填写显示名称和断电位置');return;}
   const size=document.getElementById('edit-size').value.trim();
   if(size&&!/^\d+\*\d+\*\d+$/.test(size)){showToast('尺寸格式错误，请使用数字*数字*数字格式');return;}
@@ -579,11 +791,15 @@ function saveVehicle(){
   const series=document.getElementById('sel-series').textContent.trim();
   const config=document.getElementById('sel-config').textContent.trim();
   const powerType=document.getElementById('sel-power').textContent.trim();
-  const keyFrame=document.getElementById('edit-keyframe').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const keyContainer=document.getElementById('edit-keycontainer').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const keyFrame=_editFieldSel&&_editFieldSel.keyframe?[..._editFieldSel.keyframe]:[];
+  const keyContainer=_editFieldSel&&_editFieldSel.keycontainer?[..._editFieldSel.keycontainer]:[];
   const steps=Array.from(document.querySelectorAll('#steps-container input')).map(i=>i.value.trim()).filter(Boolean);
   const remarks=document.getElementById('edit-remarks').value.trim();
   const photoPaths=editPhotos.map(p=>p.data);
+  // V10.15.5 反馈2-2: 板块化照片——photoPaths 保持扁平数组向后兼容,新增 photoSections/photoLabels 元数据
+  const photoSections=editPhotos.map(p=>p.section);
+  const photoLabels=editPhotos.map(p=>p.label||_defaultPhotoLabel(p.section));
+  const keyPhotoRemark=document.getElementById('edit-key-photo-remark').value.trim();
   const videoPaths=editVideos.map(v=>v.data);
   if(state.isEditing&&state.editingVehicle){
     const v=state.editingVehicle;
@@ -593,13 +809,14 @@ function saveVehicle(){
       display,size,position,brand,series,config,powerType,keyFrame,keyContainer,
       steps,remarks,pinyin:getPinyin(display),
       photos:photoPaths.length,photoPaths,videos:videoPaths.length,videoPaths,
-      // V10.9.2 问题1: 编辑时也更新brandId——之前只改brand名称不改分组ID,
+      photoSections,photoLabels,keyPhotoRemark,
+      // V10.9.2 问题1: 编辑时也更新brandId——之前只改品牌名称不改分组ID,
       // 导致分级列表分组错乱,改了品牌还在旧组里
       brandId:brandObj?brandObj.id:'custom'
     });
   }else{
     // A3状态守卫: 新增走State API(id自增+兜底+拼音+入列+持久化)
-    State.addVehicle({brand,series,config,display,powerType,size,position,steps,keyFrame,keyContainer,remarks,photoPaths,videoPaths});
+    State.addVehicle({brand,series,config,display,powerType,size,position,steps,keyFrame,keyContainer,remarks,photoPaths,videoPaths,photoSections,photoLabels,keyPhotoRemark});
   }
   editPhotos=[];editVideos=[];
   /* V10.7.0 问题2: 保存即调度自动同步——8秒防抖窗口合并连续保存,

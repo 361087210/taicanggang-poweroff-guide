@@ -1104,7 +1104,7 @@ async function _syncUploadPipeline(){
     uploadedBy:state.currentUser?state.currentUser.name:'unknown',
     vehicleCount:VEHICLES.length,
     // V10.6.0: 补齐size/brandId字段——旧版漏传导致同步后车辆尺寸/品牌索引丢失
-    vehicles:VEHICLES.map(v=>({id:v.id,brandId:v.brandId,brand:v.brand,series:v.series,config:v.config,display:v.display,size:v.size||'',powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
+    vehicles:VEHICLES.map(v=>({id:v.id,brandId:v.brandId,brand:v.brand,series:v.series,config:v.config,display:v.display,size:v.size||'',powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,photoSections:v.photoSections,photoLabels:v.photoLabels,keyPhotoRemark:v.keyPhotoRemark,videos:v.videos,videoPaths:v.videoPaths}))
   };
   /* V10.10.0 守卫: JSON体积预检——媒体分离后JSON应<1MB;若仍>16MB说明
    * 有base64媒体分离失败滞留,直接诊断性失败,避免把巨大JSON推上云端
@@ -1493,7 +1493,7 @@ async function exportSyncConfig(){
     timestamp:new Date().toISOString(),
     feishuConfig:{appId:cfg.appId,folder:cfg.folder,interval:saved.interval||cfg.interval},
     vehicleCount:VEHICLES.length,
-    vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,videos:v.videos,videoPaths:v.videoPaths}))
+    vehicles:VEHICLES.map(v=>({id:v.id,brand:v.brand,series:v.series,config:v.config,display:v.display,powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,photoSections:v.photoSections,photoLabels:v.photoLabels,keyPhotoRemark:v.keyPhotoRemark,videos:v.videos,videoPaths:v.videoPaths}))
   };
   const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'});
   // 对齐APK: 固定文件名 cloud_sync_config.json(两端互认),不传分享标题(回退文件名)
@@ -1578,6 +1578,7 @@ async function handleImportBackup(inputEl){
         v.powerType=sv.powerType;v.position=sv.position;v.steps=sv.steps;
         v.keyFrame=sv.keyFrame;v.keyContainer=sv.keyContainer;v.remarks=sv.remarks;
         v.photoPaths=sv.photoPaths||[];v.photos=sv.photos||0;
+        v.photoSections=sv.photoSections;v.photoLabels=sv.photoLabels;v.keyPhotoRemark=sv.keyPhotoRemark;
         v.videoPaths=sv.videoPaths||[];v.videos=sv.videos||0;
         if(sv.size!==undefined)v.size=sv.size;
         if(sv.brandId!==undefined)v.brandId=sv.brandId;
@@ -1590,6 +1591,7 @@ async function handleImportBackup(inputEl){
           config:sv.config,powerType:sv.powerType,position:sv.position,
           steps:sv.steps,keyFrame:sv.keyFrame,keyContainer:sv.keyContainer,
           remarks:sv.remarks,photoPaths:sv.photoPaths||[],photos:sv.photos||0,
+          photoSections:sv.photoSections,photoLabels:sv.photoLabels,keyPhotoRemark:sv.keyPhotoRemark,
           videoPaths:sv.videoPaths||[],videos:sv.videos||0
         };
         if(sv.size!==undefined)nv.size=sv.size;
