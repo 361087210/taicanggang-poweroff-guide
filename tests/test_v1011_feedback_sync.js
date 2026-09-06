@@ -208,6 +208,42 @@ setTimeout(async () => {
     const pushedObj = G('JSON.parse(__pushedBody)');
     check('B3b-4 推送users行含pw_ts字段', pushedObj && pushedObj.users && pushedObj.users.every(u => typeof u.pw_ts !== 'undefined'));
 
+    /* ---------- B5. 旧设备新密码登录(V10.15.12登录重试) ---------- */
+    console.log('\n-- B5. 旧设备新密码登录闭环(本地旧哈希+云端新哈希) --');
+    // 生成真实哈希形态(salt$hash)
+    const hashOldL = await G('(async()=>{return await hashPassword("oldpass999","saltOld");})()');
+    const hashNewL = await G('(async()=>{return await hashPassword("newpass888","saltNew");})()');
+    // mock doLogin 副作用依赖
+    G(`showToast = (m) => { __hooks.toastMsg = m; };`);
+    G(`showScreen = () => {}; navReset = () => {}; renderBrandTags = () => {};`);
+    G(`updateMyInfo = () => {}; ensureNotifyPermission = () => {}; updateMembersBadge = () => {};`);
+    G(`startMemberGuardPolling = () => {}; checkCloudDataUpdate = () => {};`);
+    G(`syncFieldOptionsFromCloud = () => {};`);
+    window.document.getElementById('login-phone').value = '13955556666';
+    window.document.getElementById('login-pass').value = 'newpass888';
+    // 场景1: 本地旧哈希(无pw_ts) + 云端新哈希(pw_ts新) → 输新密码登录成功
+    G(`USERS.length = 0; USERS.push({ id: 'u55', name: '组员己', phone: '13955556666', password: ${JSON.stringify(hashOldL)}, role: 'user', status: 'active' });`);
+    G(`__cloudTable = { type: 'approved_users', timestamp: new Date().toISOString(), users: [ { id: 'u55', name: '组员己', phone: '13955556666', password: ${JSON.stringify(hashNewL)}, pw_ts: 9999999999999, role: 'user', status: 'active' } ] };`);
+    await window.eval('doLogin()');
+    await new Promise(r => setTimeout(r, 300));
+    check('B5-1 旧设备输新密码登录成功(拉云端重试)', hooks.toastMsg.includes('登录成功'));
+    const uL1 = G('USERS.find(x=>x.phone==="13955556666")');
+    check('B5-2 登录后本地哈希已更新为云端新值', uL1 && uL1.password === hashNewL);
+    // 场景2: 云端也未更新(旧哈希无pw_ts) → 输新密码仍报密码错误(不误放行)
+    hooks.toastMsg = '';
+    G(`USERS.length = 0; USERS.push({ id: 'u55', name: '组员己', phone: '13955556666', password: ${JSON.stringify(hashOldL)}, role: 'user', status: 'active' });`);
+    G(`__cloudTable = { type: 'approved_users', timestamp: new Date().toISOString(), users: [ { id: 'u55', name: '组员己', phone: '13955556666', password: ${JSON.stringify(hashOldL)}, role: 'user', status: 'active' } ] };`);
+    await window.eval('doLogin()');
+    await new Promise(r => setTimeout(r, 300));
+    check('B5-3 云端未更新时新密码仍报密码错误(安全不误放行)', hooks.toastMsg.includes('密码错误'));
+    // 场景3: 新设备(本地无账号) + 云端新哈希 → 登录成功
+    hooks.toastMsg = '';
+    G(`USERS.length = 0;`);
+    G(`__cloudTable = { type: 'approved_users', timestamp: new Date().toISOString(), users: [ { id: 'u55', name: '组员己', phone: '13955556666', password: ${JSON.stringify(hashNewL)}, pw_ts: 9999999999999, role: 'user', status: 'active' } ] };`);
+    await window.eval('doLogin()');
+    await new Promise(r => setTimeout(r, 300));
+    check('B5-4 新设备无本地账号拉云端后新密码登录成功', hooks.toastMsg.includes('登录成功'));
+
     /* ---------- B4. 网页镜像桥结构 ---------- */
     console.log('\n-- B4. 网页镜像桥 --');
     // jsdom无fetch→探测式激活不触发(原生FeedbackBase保留),此处静态验证覆盖结构
