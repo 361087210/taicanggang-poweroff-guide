@@ -145,7 +145,8 @@ function ruleBasedAnalysis(category, description, platform, version) {
 async function notify(token, feedbackId, category, status, summary) {
   if (!CHAT_ID) return;
   const text = `[问题反馈处理完成]\n反馈ID: ${feedbackId}\n板块: ${category}\n状态: ${status}\n分析摘要: ${summary}`;
-  await feishuRequest(token, '/im/v1/messages', {
+  // 必须带 receive_id_type=chat_id,否则飞书报 field validation failed
+  await feishuRequest(token, '/im/v1/messages?receive_id_type=chat_id', {
     method: 'POST',
     body: JSON.stringify({ receive_id: CHAT_ID, msg_type: 'text', content: JSON.stringify({ text }) }),
   });
