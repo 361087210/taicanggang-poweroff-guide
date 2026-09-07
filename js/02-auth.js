@@ -124,11 +124,12 @@ async function doRegister(){
   // V5.4: 密码哈希化存储
   const salt = genSalt();
   const hashedPass = await hashPassword(pass, salt);
-  const isLeader=phone===LEADER_PHONE;
-  const newUser={id:Date.now(),name,phone,password:hashedPass,role:isLeader?'admin':'user',status:isLeader?'active':'pending',created:new Date().toLocaleDateString()};
+  // V10.16.1 安全加固: 首个注册用户自动为 admin(组长先注册), 其余为待审组员
+  const isFirstUser = USERS.length === 0;
+  const newUser={id:Date.now(),name,phone,password:hashedPass,role:isFirstUser?'admin':'user',status:isFirstUser?'active':'pending',created:new Date().toLocaleDateString()};
   State.addUser(newUser); // A3状态守卫: 入列走State API(落盘仍由下一行saveUsers控制)
   saveUsers(USERS);
-  if(isLeader){showToast('组长账号注册成功');}else{
+  if(isFirstUser){showToast('首个账号注册成功，已自动设为组长');}else{
     /* V10.7.0问题1已回退: 恢复人工审批文案
      * V10.7.0曾改为"自动通过后即可登录",现回退至V10.6.0策略:
      * 组员注册后进入待审状态,需组长在组员管理页面手动通过。 */
@@ -142,15 +143,17 @@ async function doRegister(){
 }
 
 async function doForgotPassword(){
+  const name=document.getElementById('forgot-name').value.trim();
   const phone=document.getElementById('forgot-phone').value.trim();
   const pass=document.getElementById('forgot-pass').value.trim();
   const pass2=document.getElementById('forgot-pass2').value.trim();
-  if(!phone||!pass){showToast('请填写完整信息');return;}
+  // V10.16.1 安全加固: 密码重置需姓名+手机号双重校验, 防止仅凭手机号即可任意改密
+  if(!name||!phone||!pass){showToast('请填写完整信息');return;}
   if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
   if(pass.length<6){showToast('密码至少6位');return;}
   if(pass!==pass2){showToast('两次密码不一致');return;}
-  const user=USERS.find(u=>u.phone===phone);
-  if(!user){showToast('该手机号未注册');return;}
+  const user=USERS.find(u=>u.phone===phone&&u.name===name);
+  if(!user){showToast('姓名与手机号不匹配，请联系组长');return;}
   // V5.4: 新密码哈希化存储
   const salt = genSalt();
   user.password = await hashPassword(pass, salt);

@@ -15,7 +15,7 @@ from sync_release_to_feishu import (
     QPS_INTERVAL, qps_gate
 )
 
-APP_VERSION = "10.16.0"
+APP_VERSION = "10.16.1"
 OLD_ROOT = "WdXUfZPkClI1audQxIYc90XRnWc"
 NEW_ROOT = "nodcnGA95g93RhIUSdCeTkhKlQc"
 

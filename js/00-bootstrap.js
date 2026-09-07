@@ -34,11 +34,12 @@ const BRANDS=[
 const VEHICLES=window.VEHICLES||[];
 
 // ===================== USER SYSTEM =====================
-const LEADER_PHONE='17602554481';
+// V10.16.1 安全加固: 移除硬编码组长手机号与默认弱密码。
+// 首个注册用户自动成为 admin(门店组长先注册场景), 后续注册均为待审组员。
 function loadUsers(){
   let users=JSON.parse(localStorage.getItem('tcg_users')||'null');
   if(!users){
-    users=[{id:1,name:'组长',phone:LEADER_PHONE,password:'123456',role:'admin',status:'active',created:'2026/08-20'}];
+    users=[];
     localStorage.setItem('tcg_users',JSON.stringify(users));
   }
   return users;
@@ -1196,7 +1197,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.16.0';
+const APP_VERSION='10.16.1';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[

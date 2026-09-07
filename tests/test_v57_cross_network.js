@@ -62,19 +62,21 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   console.log('真机模拟: 两台手机 + 真实飞书云端');
   console.log('='.repeat(62));
 
-  // ---------- 手机B: 组长先登录(激活轮询前提) ----------
+  // ---------- 手机B: 组长先注册(首用户自动admin) ----------
+  // V10.16.1 安全加固: 不再出厂自带admin, 首个注册用户自动成为组长
   const leader = makePhone('组长手机B');
   await sleep(600);
   check('0.1 组长手机页面加载完成', typeof leader.w.eval('goBack') === 'function');
-
-  // 组长侧先拉取一次(建立文件夹缓存)
-  try { await leader.w.eval(`(async()=>{ try{ await pullPendingFromFeishu(false);}catch(e){} return 'done' })()`); } catch(_){}
-  // 组长账号: APP出厂自带admin(LEADER_PHONE), 校验其存在即可(无需注入)
-  // 注: jsdom原生localStorage优先, 必须经页面自身读取
+  leader.w.eval("document.getElementById('reg-name').value='组长'");
+  leader.w.eval("document.getElementById('reg-phone').value='17602554481'");
+  leader.w.eval("document.getElementById('reg-pass').value='Admin@123'");
+  leader.w.eval("document.getElementById('reg-pass2').value='Admin@123'");
+  await leader.w.eval('doRegister()');
+  await sleep(300);
   const leaderUsersRaw = leader.w.eval("localStorage.getItem('tcg_users')") || '[]';
   const leaderUsers = JSON.parse(leaderUsersRaw);
   const leaderAcct = leaderUsers.find(u=>u.role==='admin'&&u.status==='active');
-  check('0.2 组长账号就绪(出厂admin/active)', !!leaderAcct, leaderAcct ? leaderAcct.phone : 'missing');
+  check('0.2 组长账号注册成功(首用户自动admin/active)', !!leaderAcct, leaderAcct ? leaderAcct.phone : 'missing');
 
   // ---------- 手机A: 组员注册(跨网络场景) ----------
   console.log();

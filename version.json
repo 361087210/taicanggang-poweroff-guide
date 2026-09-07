@@ -1,16 +1,12 @@
 {
-  "version": "10.16.0",
-  "versionCode": 101600,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.16.0/tcg_poweroff_v10.16.0.apk",
+  "version": "10.16.1",
+  "versionCode": 101601,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.16.1/tcg_poweroff_v10.16.1.apk",
   "releaseNotes": [
-    "V10.16.0 AI自主进化·阶段1(感知-行动闭环首落地)。一句话总结: 车型列表自学习排序(查看频次埋点+高频前置),照片查看器手势引擎重构(双指缩放+放大拖拽+高清回退),视频后台预取秒开,历史版本文档清理。",
-    "排序自学习: js/03-vehicles.js 每次查看车型详情记录频次(vehicle_view_counts本地持久化,上限200条),列表按频次降序重排——现场高频车型自动前置;复制数组排序不污染VEHICLES原始序,无记录时与旧版完全兼容",
-    "最近查看持久化: tcg_recent_vehicles重启保留,自学习痕迹不丢",
-    "照片手势引擎: js/06-media.js 双指捏合缩放(1x~4x锚点跟随)+放大后单指拖拽平移+单击图片在点击位置1x↔2.5x切换+越界钳制+缩放倍数徽标;修复「无法放大查看指定位置」",
-    "照片智能高清回退: 本地图分辨率<700px(历史照片源仅433×606)时后台探测飞书云端同名原图,仅更高清才热替换——组长后传高清照片即时生效,根治照片模糊通路",
-    "视频后台预取: 详情页打开即静默预取首个教学视频到磁盘缓存(GitHub Release直链),点开播放器命中本地缓存秒开,阅读步骤与视频加载并行",
-    "版本文档清理: docs/删除39个过期RELEASE/DEVLOG/根因/测试报告(git历史永久可查),保留最新一对+核心架构文档+参考资料",
-    "继承 V10.15.15(数据池统一+仓库文件整理)全部能力",
+    "V10.16.1 安全加固版(认证与权限修复)。一句话总结: 移除硬编码组长手机号与默认弱密码(首注册用户自动为admin),密码重置新增姓名+手机号双重校验,防止账号接管。",
+    "安全加固1: js/00-bootstrap.js 移除 LEADER_PHONE 硬编码与默认账号'123456', 首个注册用户自动成为 admin(门店组长先注册场景), 后续注册均为待审组员",
+    "安全加固2: js/02-auth.js doForgotPassword 新增姓名+手机号双重校验, 仅凭手机号无法重置密码, 降低账号接管风险",
+    "继承 V10.16.0(AI自主进化·阶段1)全部能力",
     "全量回归 test:all 0 FAIL"
   ],
   "forceUpdate": false,
