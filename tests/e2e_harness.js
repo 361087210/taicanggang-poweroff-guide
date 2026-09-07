@@ -305,7 +305,7 @@ function createFeishuApiSandbox(opts) {
  * @returns {string} 内联 js/*.js 后的 html
  */
 function inlineDeferScripts(html) {
-  const re = /[ \t]*<script[^>]+defer[^>]+src="(js\/[^"]+\.js)"[^>]*><\/script>[ \t]*(?:\r?\n|$)/g;
+  const re = /[ \t]*<script[^>]+defer[^>]+src="((?:js\/)?[^"]+\.js)"[^>]*><\/script>[ \t]*(?:\r?\n|$)/g;
   const matches = [...html.matchAll(re)];
   if (matches.length === 0) return html;
   const inlined = [];

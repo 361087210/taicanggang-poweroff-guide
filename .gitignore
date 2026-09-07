@@ -23,6 +23,10 @@ release/*.ipa
 release/*.sha256
 platforms/android/release-signing.properties
 
-# ===== V10.13: 飞书同步临时产物 + 凭据本地文件 =====
+# =====# V10.13: 飞书同步临时产物 + 凭据本地文件
 .env.feishu
 vehicles_data.js.bak
+
+# V10.15.15: 自动生成/构建产物不入库
+web-data/debug_structure.json
+.trae-html-share-packages/
