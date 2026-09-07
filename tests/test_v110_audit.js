@@ -148,7 +148,7 @@ section('A: 本地留痕 (A1-A3)');
   check('A1 本地写入 audit_log', Array.isArray(log) && log.length === 1);
   check('A1 entry 取当前用户手机号', entry.actor === '13800000000');
   check('A1 entry 角色为 leader', entry.role === 'leader');
-  check('A1 entry 含 appVersion', entry.appVersion === '10.16.1');
+  check('A1 entry 含 appVersion', entry.appVersion === '10.16.2');
   check('A1 entry 含 entityType/entityId', entry.entityType === 'vehicle' && entry.entityId === '42');
   check('A1 entry 详情被保留', entry.detail && entry.detail.brand === '上汽');
 }
