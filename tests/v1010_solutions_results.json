@@ -1,5 +1,5 @@
 {
-  "runAt": "2026-09-07T00:57:52.124Z",
+  "runAt": "2026-09-07T01:20:08.095Z",
   "scenario": "2台随机名称新车型+3照片+2视频(1MB+21MB),21MB为旧版必败触发点",
   "pass": 9,
   "fail": 0,
@@ -8,47 +8,47 @@
     {
       "name": "S1 V10.5.0基线: base64内嵌JSON整包上传(旧版行为复现)",
       "status": "PASS",
-      "ms": 458
+      "ms": 489
     },
     {
       "name": "S2 媒体分离+upload_all直传: 大视频仍必败",
       "status": "PASS",
-      "ms": 2656
+      "ms": 2610
     },
     {
       "name": "S3 客户端压缩至20MB内+upload_all: 可行但有损",
       "status": "PASS",
-      "ms": 295
+      "ms": 331
     },
     {
       "name": "S4 自建中转服务器分片聚合: 可行但需额外基建",
       "status": "PASS",
-      "ms": 317
+      "ms": 247
     },
     {
       "name": "S5 Bitable附件通道: 大视频仍受限",
       "status": "PASS",
-      "ms": 227
+      "ms": 211
     },
     {
       "name": "S6 OSS对象存储直传+飞书通知: 可行但引入第二套系统",
       "status": "PASS",
-      "ms": 247
+      "ms": 239
     },
     {
       "name": "S7 手动导出/导入离线兜底: 永远可行但非自动",
       "status": "PASS",
-      "ms": 348
+      "ms": 359
     },
     {
       "name": "S2+S3 组合: 分离直传+压缩兜底补位",
       "status": "PASS",
-      "ms": 294
+      "ms": 266
     },
     {
       "name": "S* 最优解: 官方分片上传全链路(引用主E2E C1/C2闭环)",
       "status": "PASS",
-      "ms": 2064
+      "ms": 2063
     }
   ],
   "matrix": [
