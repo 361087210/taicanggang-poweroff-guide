@@ -208,6 +208,32 @@ setTimeout(async () => {
     const pushedObj = G('JSON.parse(__pushedBody)');
     check('B3b-4 推送users行含pw_ts字段', pushedObj && pushedObj.users && pushedObj.users.every(u => typeof u.pw_ts !== 'undefined'));
 
+    /* ---------- B6. 整表覆盖竞态修复(V10.15.13) ---------- */
+    console.log('\n-- B6. 组长审批不覆盖组员新改的密码(整表覆盖竞态) --');
+    // 场景: 组员A改密(本机新哈希+pw_ts大)→推云端;组长在旧设备B审批组员C,
+    // 设备B的USERS是旧的(A的旧哈希)。push前fullMerge应拉取A的新哈希(pw_ts大)采纳,
+    // 推送payload里A必须是新哈希——否则A换设备登录失败。
+    G(`USERS.length = 0;`);
+    // 设备B本地: A旧哈希, C pending
+    G(`USERS.push({ id:'uA', name:'组员A', phone:'13900000001', password:'saltOld$hashAold', pw_ts:1000, role:'user', status:'active' });`);
+    G(`USERS.push({ id:'uC', name:'组员C', phone:'13900000003', password:'saltC$hashC', role:'user', status:'pending' });`);
+    // 云端: A新哈希(pw_ts大), C pending
+    G(`__cloudTable = { type:'approved_users', timestamp:new Date().toISOString(), users:[
+      { id:'uA', name:'组员A', phone:'13900000001', password:'saltNew$hashAnew', pw_ts:9999999999999, role:'user', status:'active' },
+      { id:'uC', name:'组员C', phone:'13900000003', password:'saltC$hashC', role:'user', status:'pending' }
+    ] };`);
+    // 组长审批C: status→active
+    G(`(USERS.find(x=>x.phone==='13900000003')).status='active';`);
+    // 推送(fullMerge内部拉云端)
+    G(`uploadJsonToDataFeishu = async (token, name, body) => { __pushedBody = body; return true; };`);
+    await window.eval('pushApprovedUsersToFeishu()');
+    const pushObj = G('JSON.parse(__pushedBody)');
+    const aInPush = pushObj.users.find(u => u.phone === '13900000001');
+    check('B6-1 推送payload中组员A为云端新哈希(未被本机旧哈希覆盖)', aInPush && aInPush.password === 'saltNew$hashAnew');
+    const cInPush = pushObj.users.find(u => u.phone === '13900000003');
+    check('B6-2 推送payload中组员C状态为active(本机审批保留)', cInPush && cInPush.status === 'active');
+    check('B6-3 推送payload同时含A和C(未丢失)', aInPush && cInPush);
+
     /* ---------- B5. 旧设备新密码登录(V10.15.12登录重试) ---------- */
     console.log('\n-- B5. 旧设备新密码登录闭环(本地旧哈希+云端新哈希) --');
     // 生成真实哈希形态(salt$hash)

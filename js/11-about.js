@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.15.13',
+    date: '2026-09-07',
+    highlight: '紧急修复: 密码跨设备同步整表覆盖竞态+网页端改密假成功',
+    features: [
+      '根因1: pushApprovedUsersToFeishu整表覆盖竞态——组长在旧设备审批/删除组员时,本机USERS表缺其他组员新改的密码,覆盖云端把别人新密码冲回旧值',
+      '根因2: 网页端改密假成功——网页版只读镜像CORS不可达飞书API,push被封堵,改密只改本浏览器不推云端',
+      '修复1: pushApprovedUsersToFeishu内部强制fullMerge,按pw_ts仲裁保留本机新密码+补充云端用户',
+      '修复2: 网页端禁止改密,引导至安卓APP操作',
+      '继承V10.15.12登录失败拉云端重试',
+    ]
+  },
+  {
     version: 'V10.15.12',
     date: '2026-09-06',
     highlight: '紧急修复: 旧设备新密码登录报密码错误',

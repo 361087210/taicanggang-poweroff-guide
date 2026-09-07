@@ -222,6 +222,13 @@ function _install(){
   window.pushApprovedUsersToFeishu=async function(){
     showToast('网页端管理操作不会同步云端，请在安卓端操作');
   };
+  /* V10.15.13: 网页端禁止改密——网页版为只读镜像,CORS无法直连飞书API,
+   * pushApprovedUsersToFeishu被封堵,改密只改本浏览器localStorage、不推云端,
+   * 用户误以为改密成功,换安卓设备登录时云端仍是旧哈希→新密码永远错误。
+   * 直接拦截并引导至安卓端操作,避免"假成功"陷阱。 */
+  window.changePassword=async function(){
+    showToast('网页版不支持修改密码，请在安卓APP「我的→账号安全」中修改');
+  };
   window.doRegister=async function(){
     /* 网页注册→待审→上传飞书(CORS拦截)→组长永远看不到申请→账号卡死待审。
      * 直接引导走安卓端添加,避免"假注册成功"的体验陷阱 */
