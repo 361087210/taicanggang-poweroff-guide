@@ -246,6 +246,15 @@ function _decryptBuildSecret(enc){
   }
   return out;
 }
+// V10.16.3 安全加固: localStorage 存储的 appSecret 同样 XOR+base64 加密, 不直接 grep 到明文
+function _encryptSecret(plain){
+  if (!plain || typeof btoa !== 'function') return plain;
+  let xor = '';
+  for (let i = 0; i < plain.length; i++) {
+    xor += String.fromCharCode(plain.charCodeAt(i) ^ _SECRET_XOR_KEY.charCodeAt(i % _SECRET_XOR_KEY.length));
+  }
+  try { return btoa(xor); } catch(_) { return plain; }
+}
 const DEFAULT_FEISHU_CONFIG={
   // 公开字段(非机密, version.json/交付文档内已公开): 构建注入/用户保存优先,本处做兜底
   appId:'cli_aa0ce4fd91f85be8',
@@ -295,6 +304,12 @@ function getFeishuCfg(){
    *       保证登录前的首次加载流程不被误拦截。 */
   const memberRole = !!(typeof state !== 'undefined' && state && state.currentUser && state.currentUser.role && state.currentUser.role !== 'admin');
   const writtenBy = saved && typeof saved._writer === 'string' ? saved._writer : null;
+  // V10.16.3: appSecret 优先从 appSecretEnc 解密, 旧明文 appSecret 向后兼容
+  const skipSavedForSecret = memberRole && writtenBy !== 'admin';
+  let savedSecret = '';
+  if (!skipSavedForSecret && saved.appSecretEnc && typeof _decryptBuildSecret === 'function') {
+    savedSecret = _decryptBuildSecret(saved.appSecretEnc) || '';
+  }
   const pick=(k,d)=>{
     const s=saved[k];
     // 成员端: 只信任admin显式写入(writtenBy='admin')或注入缓存,忽略所有其他历史值
@@ -308,7 +323,7 @@ function getFeishuCfg(){
   };
   return {
     appId:pick('appId',DEFAULT_FEISHU_CONFIG.appId),
-    appSecret:pick('appSecret',DEFAULT_FEISHU_CONFIG.appSecret),
+    appSecret: savedSecret || pick('appSecret',DEFAULT_FEISHU_CONFIG.appSecret),
     folder:pick('folder',DEFAULT_FEISHU_CONFIG.folder),
     dataFolder:pick('dataFolder',DEFAULT_FEISHU_CONFIG.dataFolder),
     syncSub:pick('syncSub',DEFAULT_FEISHU_CONFIG.syncSub),
@@ -1251,7 +1266,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.16.2';
+const APP_VERSION='10.16.3';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
@@ -1308,15 +1323,13 @@ function mediaDirectUrl(fileName){
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 // ===================== XSS 绊线 (V10.13 A3-4) =====================
-/* 开发模式 innerHTML 注入绊线(P1-1 运行时守卫): 仅在非Cordova环境(浏览器预览/测试)
- * 生效, 生产APK零开销零行为差异。拦截明确风险的写入片段:
+/* V10.16.3 安全加固: 绊线在生产环境(Cordova)也启用, 仅console.warn不阻断功能,
+ * 作为XSS纵深防御的运行时检测层。拦截明确风险的写入片段:
  *   - <script 标签注入
  *   - javascript: 伪协议
- * 注: onclick=/onerror= 为本应用117处内联事件的合法形态(如thumbImgError),
- * 无法与文件名注入区分, 不纳入绊线——该风险面已由V10.12 q3的用户字段全esc()覆盖,
- * 新增innerHTML路径需在评审时人工确认esc()。严格模式(window.__XSS_GUARD_STRICT__=true,
- * 供测试与安全审计用)直接抛错阻断写入, 默认仅console.warn留痕。 */
-if(typeof window!=='undefined'&&!window.cordova&&!window.__innerHTMLGuardInstalled__){
+ * 注: onclick=/onerror= 为本应用内联事件的合法形态, 不纳入绊线。
+ * 严格模式(window.__XSS_GUARD_STRICT__=true, 供测试与安全审计用)直接抛错阻断写入。 */
+if(typeof window!=='undefined'&&!window.__innerHTMLGuardInstalled__){
   window.__innerHTMLGuardInstalled__=true;
   try{
     const _desc=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
