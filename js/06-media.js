@@ -23,6 +23,11 @@ function openPhotoViewer(index){
   document.getElementById('photo-viewer-label').textContent=labels[index]||`照片 ${index+1}`;
   if(v&&v.photoPaths&&v.photoPaths[index]){
     img.src=v.photoPaths[index];
+    // V10.16: 本地图加载成功后,分辨率不足时后台探测飞书云端高清版热替换
+    img.onload=()=>{
+      const fn=(v.photoPaths[index]||'').split('/').pop();
+      _tryHdUpgrade(img,fn);
+    };
     // 运行时加载失败兜底: 先试飞书云端回退,再显示带车名的占位图而非破图图标
     img.onerror=()=>{
       img.onerror=null;
@@ -34,57 +39,185 @@ function openPhotoViewer(index){
   }else{
     img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#1a1a2e"/><text x="200" y="150" text-anchor="middle" fill="#666" font-size="20" font-family="sans-serif">${v?v.display:''} - ${labels[index]||'照片'}</text><rect x="50" y="50" width="300" height="200" fill="none" stroke="#444" stroke-width="2" rx="10"/><circle cx="120" cy="120" r="15" fill="#333"/><path d="M50 250 L150 150 L250 200 L350 100 L350 250 Z" fill="#222"/></svg>`);
   }
-  img.style.transform='scale(1)';
-  _bindPhotoPinch();
+  _pvReset();
+  _pvBindGestures();
   document.getElementById('photo-viewer').classList.add('show');
 }
 
 function closePhotoViewer(){document.getElementById('photo-viewer').classList.remove('show');}
 
+/* ===================== V10.16 照片手势引擎 =====================
+ * 用户痛点: 照片无法放大查看指定位置(继电器/保险丝铭牌小字看不清)。
+ * 引擎: 双指捏合缩放(1x~4x锚点跟随)+放大后单指拖拽平移+单击在
+ * 点击位置1x↔2.5x切换;变换经 translate(tx,ty)scale(s) 应用,origin居中;
+ * 平移越界钳制防拖丢;拖拽产生的click被抑制防误触缩放。
+ */
+const _pv={scale:1,tx:0,ty:0}; // 查看器当前变换状态
+const _g={suppressClick:false,tapX:0,tapY:0,dragging:false,startX:0,startY:0,startTx:0,startTy:0,pinchDist0:0,pinchScale0:1};
+let _pvBound=false;
+
+function _pvApply(){
+  const img=document.getElementById('photo-viewer-img');
+  if(!img)return;
+  img.style.transform=`translate(${_pv.tx}px,${_pv.ty}px) scale(${_pv.scale})`;
+  state.photoZoom=_pv.scale; // 与既有state字段保持同步(A3拆分兼容)
+  const badge=document.getElementById('photo-zoom-badge');
+  if(badge){
+    badge.style.display=_pv.scale>1?'':'none';
+    badge.textContent=Math.round(_pv.scale*100)+'%';
+  }
+}
+function _pvReset(){
+  _pv.scale=1;_pv.tx=0;_pv.ty=0;
+  _pvApply();
+}
+function _pvClampPan(){
+  const img=document.getElementById('photo-viewer-img');
+  const w=((img&&img.offsetWidth)||innerWidth)*_pv.scale;
+  const h=((img&&img.offsetHeight)||innerHeight)*_pv.scale;
+  const maxX=Math.max(0,(w-innerWidth)/2);
+  const maxY=Math.max(0,(h-innerHeight)/2);
+  _pv.tx=Math.min(maxX,Math.max(-maxX,_pv.tx));
+  _pv.ty=Math.min(maxY,Math.max(-maxY,_pv.ty));
+}
+/** 锚点缩放: 保持屏幕点(ax,ay)处的图像内容视觉不动 */
+function _pvZoomTo(s,ax,ay){
+  s=Math.min(4,Math.max(1,s));
+  const img=document.getElementById('photo-viewer-img');
+  const cx=((img&&img.offsetWidth)||innerWidth)/2;
+  const cy=((img&&img.offsetHeight)||innerHeight)/2;
+  const k=s/_pv.scale;
+  _pv.tx=(ax-cx)-(ax-cx-_pv.tx)*k;
+  _pv.ty=(ay-cy)-(ay-cy-_pv.ty)*k;
+  _pv.scale=s;
+  _pvClampPan();
+  _pvApply();
+}
+/** 点空白背景关闭(图片/按钮点击不冒泡关闭,各走其道) */
+function photoViewerBgClick(e){
+  if(e&&e.target&&e.target.id==='photo-viewer')closePhotoViewer();
+}
+/** 单击图片: 拖拽后的click被抑制;否则在点击位置1x↔2.5x切换 */
 function cycleZoom(){
-  state.photoZoom=state.photoZoom===1?2:state.photoZoom===2?3:1;
-  document.getElementById('photo-viewer-img').style.transform=`scale(${state.photoZoom})`;
+  if(_g.suppressClick){_g.suppressClick=false;return;}
+  const img=document.getElementById('photo-viewer-img');
+  const ax=_g.tapX||((img&&img.offsetWidth)||innerWidth)/2;
+  const ay=_g.tapY||((img&&img.offsetHeight)||innerHeight)/2;
+  if(_pv.scale>1)_pvReset();
+  else _pvZoomTo(2.5,ax,ay);
+}
+function resetZoom(){_pvReset();}
+
+function _pvBindGestures(){
+  if(_pvBound)return;
+  const img=document.getElementById('photo-viewer-img');
+  if(!img)return;
+  _pvBound=true;
+  // 双指捏合缩放(锚点=捏合中点)
+  img.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      _g.pinchDist0=_pinchDist(e.touches)||1;
+      _g.pinchScale0=_pv.scale;
+      _g.dragging=false;
+      e.preventDefault();
+    }else if(e.touches.length===1){
+      _g.tapX=e.touches[0].clientX;_g.tapY=e.touches[0].clientY; // 记录单击位置
+      _g.dragging=_pv.scale>1; // 仅放大后允许拖拽平移
+      _g.startX=e.touches[0].clientX;_g.startY=e.touches[0].clientY;
+      _g.startTx=_pv.tx;_g.startTy=_pv.ty;
+    }
+  },{passive:false});
+  img.addEventListener('touchmove',e=>{
+    if(e.touches.length===2&&_g.pinchDist0){
+      const s=Math.min(4,Math.max(1,_g.pinchScale0*(_pinchDist(e.touches)/_g.pinchDist0)));
+      const ax=(e.touches[0].clientX+e.touches[1].clientX)/2;
+      const ay=(e.touches[0].clientY+e.touches[1].clientY)/2;
+      _pvZoomTo(s,ax,ay);
+      e.preventDefault();
+    }else if(e.touches.length===1&&_g.dragging){
+      const dx=e.touches[0].clientX-_g.startX;
+      const dy=e.touches[0].clientY-_g.startY;
+      if(Math.abs(dx)>3||Math.abs(dy)>3)_g.suppressClick=true;
+      _pv.tx=_g.startTx+dx;_pv.ty=_g.startTy+dy;
+      _pvClampPan();_pvApply();
+      e.preventDefault();
+    }
+  },{passive:false});
+  img.addEventListener('touchend',e=>{
+    if(e.touches.length<2)_g.pinchDist0=0;
+  },{passive:false});
+  // 网页版鼠标: 记录点击位置(供cycleZoom锚点)
+  img.addEventListener('pointerdown',e=>{
+    if(e.pointerType!=='touch'){_g.tapX=e.clientX;_g.tapY=e.clientY;}
+  },{passive:true});
 }
 
-function resetZoom(){state.photoZoom=1;document.getElementById('photo-viewer-img').style.transform='scale(1)';}
-
-// ===================== PINCH ZOOM (V10.15.3) =====================
-// 反馈2-3: 此前照片只能单击循环缩放(1x→2x→3x),无法双指捏合自由缩放。
-// 现为图片查看器绑定双指触摸手势,可在1x~4x范围内连续缩放;单击仍走 cycleZoom。
-let _pinchBound=false;
-let _pinch={active:false,startDist:0,startScale:1};
 function _pinchDist(t){
   const dx=t[0].clientX-t[1].clientX;
   const dy=t[0].clientY-t[1].clientY;
   return Math.sqrt(dx*dx+dy*dy);
 }
-function _applyPhotoScale(s){
-  document.getElementById('photo-viewer-img').style.transform=`scale(${s})`;
+
+/**
+ * V10.16 智能高清升级: 本地图分辨率偏低时后台探测飞书云端同名原图。
+ * 仅当云端版本natural尺寸更大才热替换(组长后传高清照片即时生效),
+ * 否则静默维持现状;探测全程不阻塞、不打扰用户。
+ * @param {HTMLImageElement} img - 已成功加载本地图的查看器img
+ * @param {string} fileName - 照片文件名
+ */
+function _tryHdUpgrade(img,fileName){
+  if(!fileName||!img.naturalWidth)return;
+  if(img.naturalWidth>=700&&img.naturalHeight>=700)return; // 源已足够清晰
+  _fetchFeishuImageBlobUrl(fileName).then(blobUrl=>{
+    if(!blobUrl)return;
+    const probe=new Image();
+    probe.onload=()=>{
+      if(probe.naturalWidth>img.naturalWidth||probe.naturalHeight>img.naturalHeight){
+        img.src=blobUrl; // 命中更高清的云端原图,热替换(缓存LRU已登记)
+        console.log('[照片]已升级云端高清版:',fileName,probe.naturalWidth+'x'+probe.naturalHeight);
+      }
+    };
+    probe.src=blobUrl;
+  }).catch(()=>{}); // 探测失败静默(本地版可用即可)
 }
-function _bindPhotoPinch(){
-  if(_pinchBound)return;
-  _pinchBound=true;
-  const img=document.getElementById('photo-viewer-img');
-  img.addEventListener('touchstart',e=>{
-    if(e.touches.length===2){
-      _pinch.active=true;
-      _pinch.startDist=_pinchDist(e.touches);
-      _pinch.startScale=state.photoZoom>0?state.photoZoom:1;
-      e.preventDefault();
-    }
-  },{passive:false});
-  img.addEventListener('touchmove',e=>{
-    if(_pinch.active&&e.touches.length===2){
-      _pinch.startDist=_pinch.startDist||1;
-      const s=Math.min(4,Math.max(1,_pinch.startScale*(_pinchDist(e.touches)/_pinch.startDist)));
-      _applyPhotoScale(s);
-      state.photoZoom=s;
-      e.preventDefault();
-    }
-  },{passive:false});
-  img.addEventListener('touchend',e=>{
-    if(e.touches.length<2)_pinch.active=false;
-  },{passive:false});
+
+/**
+ * V10.16: 仅取飞书云端图片的blob URL(不直接改img.src)。
+ * 供智能高清升级探测复用;LRU缓存与下载链路与imgFromFeishuCloud一致。
+ */
+async function _fetchFeishuImageBlobUrl(fileName){
+  const cfg=getFeishuCfg();
+  if(!feishuCfgReady(cfg)||!fileName)return null;
+  if(_feishuImgCache[fileName])return _feishuImgCache[fileName];
+  const token=await getFeishuToken(cfg);
+  const dataFolder=await getDataFolderToken(token);
+  if(!dataFolder)return null;
+  const dataFiles=await feishuListFiles(token,dataFolder);
+  if(!dataFiles)return null;
+  const imgFolder=dataFiles.find(f=>f.type==='folder'&&f.name==='vehicle_images');
+  if(!imgFolder)return null;
+  const imgFiles=await feishuListFiles(token,imgFolder.token);
+  if(!imgFiles)return null;
+  const target=imgFiles.find(f=>f.type==='file'&&f.name===fileName);
+  if(!target)return null;
+  let blob;
+  if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
+    blob=await new Promise((resolve,reject)=>{
+      window.cordova.plugin.http.sendRequest(
+        `https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,
+        {method:'GET',headers:{Authorization:'Bearer '+token},responseType:'blob',timeout:60},
+        res=>resolve(asBlob(res.data,'image/jpeg')),err=>reject(new Error(String(err.error||'图片下载失败')))); // ArrayBuffer→Blob归一
+    });
+  }else{
+    const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
+    blob=await r.blob();
+  }
+  if(!blob||blob.size<100)throw new Error('云端图片内容异常');
+  const url=URL.createObjectURL(blob);
+  const keys=Object.keys(_feishuImgCache);
+  if(keys.length>=40){URL.revokeObjectURL(_feishuImgCache[keys[0]]);delete _feishuImgCache[keys[0]];}
+  _feishuImgCache[fileName]=url;
+  return url;
 }
 
 // ===================== VIDEO PLAYER =====================
@@ -112,6 +245,31 @@ function _bindPhotoPinch(){
  */
 let _videoSession=0;
 let _currentVideoIndex=0; // V10.14.2: 当前播放视频索引(多视频支持)
+
+/* ===================== 视频后台预取 (V10.16) =====================
+ * 用户痛点: 首次点开视频需等待网络拉流(港口现场网络受限时可达8秒+)。
+ * 方案: 详情页一打开即后台预取首个教学视频到磁盘缓存——用户阅读断电
+ * 步骤的同时视频静默落盘,点开播放器时命中源⓪本地缓存秒开。
+ * 边界: 仅预取有GitHub Release直链映射的视频(Range流式+免鉴权,预取
+ * 成本低);未映射的新视频走飞书全量下载链路,不后台拉(成本高易失败)。
+ */
+let _prefetchedVideos=new Set(); // 本次会话已调度预取的文件名(防重复调度)
+function prefetchVehicleVideo(){
+  try{
+    const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
+    if(!v||!v.videoPaths||!v.videoPaths.length)return;
+    const fileName=v.videoPaths[0].split('/').pop();
+    if(!fileName||_prefetchedVideos.has(fileName))return;
+    _prefetchedVideos.add(fileName);
+    const directUrl=mediaDirectUrl(fileName);
+    if(!directUrl)return;
+    cacheFileUrl(CACHE_DIR_VIDEOS,fileName).then(cached=>{
+      if(cached)return; // 已有磁盘缓存,无需预取
+      console.log('[视频]详情页后台预取:',fileName);
+      cacheUrlToDisk(directUrl,fileName); // 静默落盘,失败不影响任何流程
+    }).catch(()=>{});
+  }catch(e){/* 预取异常静默*/}
+}
 
 async function openVideoPlayer(videoIndex){
   videoIndex=videoIndex||0;
@@ -348,38 +506,10 @@ function _imgPlaceholder(){
  * @returns {Promise<boolean>} 是否命中云端
  */
 async function imgFromFeishuCloud(img,fileName){
-  const cfg=getFeishuCfg();
-  if(!feishuCfgReady(cfg)||!fileName)return false; // V5.3.4: Secret缺失跳过(诊断根因1)
   try{
-    if(_feishuImgCache[fileName]){img.onerror=null;img.src=_feishuImgCache[fileName];return true;}
-    const token=await getFeishuToken(cfg);
-    const dataFolder=await getDataFolderToken(token);
-    if(!dataFolder)return false;
-    const dataFiles=await feishuListFiles(token,dataFolder);
-    if(!dataFiles)return false;
-    const imgFolder=dataFiles.find(f=>f.type==='folder'&&f.name==='vehicle_images');
-    if(!imgFolder)return false;
-    const imgFiles=await feishuListFiles(token,imgFolder.token);
-    if(!imgFiles)return false;
-    const target=imgFiles.find(f=>f.type==='file'&&f.name===fileName);
-    if(!target)return false;
-    let blob;
-    if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
-      blob=await new Promise((resolve,reject)=>{
-        window.cordova.plugin.http.sendRequest(
-          `https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,
-          {method:'GET',headers:{Authorization:'Bearer '+token},responseType:'blob',timeout:60},
-          res=>resolve(asBlob(res.data,'image/jpeg')),err=>reject(new Error(String(err.error||'图片下载失败')))); // V5.3.4: ArrayBuffer→Blob归一(根因4)
-      });
-    }else{
-      const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
-      blob=await r.blob();
-    }
-    if(!blob||blob.size<100)throw new Error('云端图片内容异常');
-    const url=URL.createObjectURL(blob);
-    const keys=Object.keys(_feishuImgCache);
-    if(keys.length>=40){URL.revokeObjectURL(_feishuImgCache[keys[0]]);delete _feishuImgCache[keys[0]];}
-    _feishuImgCache[fileName]=url;
+    // V10.16: 下载/LRU缓存链路抽至_fetchFeishuImageBlobUrl(与智能高清升级共用)
+    const url=await _fetchFeishuImageBlobUrl(fileName);
+    if(!url)return false;
     img.onerror=null;
     img.src=url;
     console.log('[照片]飞书云端源命中:',fileName);

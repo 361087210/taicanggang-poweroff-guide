@@ -330,7 +330,7 @@ window.addEventListener('load', function() {
 <div class="bg-white rounded-2xl p-4 shadow-sm">
 <div class="flex items-center justify-between mb-3">
 <div><div class="text-xs text-gray-400">同步状态</div><div class="text-base font-bold text-gray-400 flex items-center gap-2 mt-1" id="sync-status-text"><span class="w-2 h-2 rounded-full bg-gray-300"></span>未同步</div></div>
-<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.15.15</div></div>
+<div class="text-right"><div class="text-xs text-gray-400">本地版本</div><div class="text-base font-bold text-gray-900 mt-1" id="sync-local-ver">v10.16.0</div></div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div class="bg-gray-50 rounded-xl p-2.5"><div class="text-xs text-gray-400">网络</div><div class="text-xs font-medium text-green-600 mt-0.5 flex items-center gap-1"><svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M5 12.55a11 11 0 0114 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>WiFi已连接</div></div>
@@ -491,14 +491,16 @@ window.addEventListener('load', function() {
 </div>
 
 <!-- ===== PHOTO VIEWER ===== -->
-<div class="photo-viewer" id="photo-viewer">
+<!-- V10.16: 手势引擎升级——双指缩放+放大后拖拽平移+单击缩放;点空白背景关闭 -->
+<div class="photo-viewer" id="photo-viewer" onclick="photoViewerBgClick(event)">
 <div class="absolute top-14 right-4 z-10 flex gap-2">
 <button onclick="resetZoom()" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur text-white flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M3 2v6h6M21 22v-6h-6M3 22a16 16 0 0118-18M21 2a16 16 0 00-18 18"/></svg></button>
 </div>
 <button onclick="closePhotoViewer()" class="absolute top-14 left-4 z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur text-white flex items-center justify-center">&times;</button>
 <div id="photo-viewer-label" class="absolute top-14 left-1/2 -translate-x-1/2 z-10 text-white text-sm bg-black/40 px-3 py-1 rounded-full"></div>
 <img id="photo-viewer-img" src="" alt="" onclick="cycleZoom()">
-<div class="text-white/60 text-xs mt-2 absolute bottom-8 left-0 right-0 text-center">双指捏合缩放 · 单击关闭 · 点击图片切换缩放</div>
+<div id="photo-zoom-badge" class="absolute bottom-14 right-4 z-10 text-white text-xs bg-black/50 px-2 py-1 rounded-full" style="display:none">100%</div>
+<div class="text-white/60 text-xs mt-2 absolute bottom-8 left-0 right-0 text-center">双指缩放 · 放大后拖动查看 · 单击图片放大/还原 · 点空白处关闭</div>
 </div>
 
 <!-- ===== VIDEO PLAYER ===== -->

@@ -44,6 +44,34 @@ function getFilteredVehicles(){
   return filterVehicles(state.searchQuery,state.brandFilter);
 }
 
+/* ===================== 排序自学习 (V10.16) =====================
+ * 用户痛点: 现场高频车型与列表序位无关,每次都要搜索/翻找。
+ * 方案: 查看车型详情即记频次(vehicle_view_counts本地持久化),
+ * 列表按频次降序重排——高频车型自动前置,越用越顺手。
+ * 数据不出设备,无隐私顾虑;上限200条防localStorage无界膨胀。
+ */
+const VEHICLE_VIEW_KEY='vehicle_view_counts';
+function _loadViewCounts(){
+  try{
+    const c=JSON.parse(localStorage.getItem(VEHICLE_VIEW_KEY)||'{}');
+    return c&&typeof c==='object'?c:{};
+  }catch(e){return{};}
+}
+function recordVehicleView(id){
+  try{
+    const c=_loadViewCounts();
+    const cur=c[id]||{n:0,ts:0};
+    cur.n+=1;cur.ts=Date.now();
+    c[id]=cur;
+    const ids=Object.keys(c);
+    if(ids.length>200){ // 超限时裁掉频次最低的记录,防localStorage无界膨胀
+      ids.sort((a,b)=>((c[b].n||0)-(c[a].n||0))||((c[b].ts||0)-(c[a].ts||0)));
+      ids.slice(200).forEach(k=>delete c[k]);
+    }
+    localStorage.setItem(VEHICLE_VIEW_KEY,JSON.stringify(c));
+  }catch(e){/* 存储异常不影响查看主流程 */}
+}
+
 /**
  * 纯数据过滤(无state/DOM依赖,可独立单测) — A3渲染/业务分离(V10.13)
  * @param {string} keyword 搜索词(空=不过滤; 命中display/pinyin/series/brand/position)
@@ -61,6 +89,19 @@ function filterVehicles(keyword,brandId){
   if(keyword){
     const q=keyword.toLowerCase();
     list=list.filter(v=>v.display.toLowerCase().includes(q)||v.pinyin.toLowerCase().includes(q)||v.series.toLowerCase().includes(q)||v.brand.toLowerCase().includes(q)||v.position.toLowerCase().includes(q));
+  }
+  // V10.16 排序自学习: 存在查看频次记录时按频次降序重排(高频车型前置)。
+  // 复制数组排序,不改VEHICLES原始序;频次为0的车型保持原相对顺序(id序兜底)。
+  // 注: 频次读取内联(保持本函数自包含纯函数性质,可脱离模块独立单测)。
+  let counts={};
+  try{
+    const c=JSON.parse(localStorage.getItem('vehicle_view_counts')||'{}');
+    if(c&&typeof c==='object')counts=c;
+  }catch(e){counts={};}
+  const tracked=Object.keys(counts).filter(k=>counts[k]&&counts[k].n>0);
+  if(tracked.length>0){
+    const cm={};tracked.forEach(k=>cm[k]=counts[k].n);
+    list=[].concat(list).sort((a,b)=>((cm[b.id]||0)-(cm[a.id]||0))||(a.id-b.id));
   }
   return list;
 }
@@ -231,6 +272,7 @@ function _renderVehicleDetail(id){
   state.currentVehicleId=id;
   state.currentVehicleIndex=VEHICLES.indexOf(v);
   if(!state.recentVehicles.includes(id)){state.recentVehicles.unshift(id);state.recentVehicles=state.recentVehicles.slice(0,5);}
+  try{localStorage.setItem('tcg_recent_vehicles',JSON.stringify(state.recentVehicles));}catch(e){/* 持久化异常忽略 */} // V10.16: 最近查看重启保留
   document.getElementById('detail-index').textContent=`${state.currentVehicleIndex+1}/${VEHICLES.length}`;
   const ptClass='pt-'+v.powerType;
   const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}" onerror="imgLoadError(this)"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join('');
@@ -310,6 +352,8 @@ function _renderVehicleDetail(id){
 }
 
 function openVehicleDetail(id){
+  recordVehicleView(id); // V10.16: 排序自学习埋点(高频车型自动前置)
+  prefetchVehicleVideo(); // V10.16: 详情页打开即后台预取首个教学视频(阅读步骤与视频加载并行)
   _renderVehicleDetail(id);
   showScreen('screen-detail');
   document.getElementById('bottom-nav').style.display='none';
