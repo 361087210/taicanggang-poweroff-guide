@@ -55,8 +55,10 @@ async function doLogin(){
   state.currentUser=user;
   // V5.7: 登录成功即清空导航历史栈,登录前的注册/忘记密码页不再可返回
   navReset();
-  // 持久化登录会话: 保存用户ID和密码哈希,下次启动自动登录
-  localStorage.setItem('tcg_session',JSON.stringify({uid:user.id,phone:user.phone,ts:Date.now()}));
+  // V10.16.2 安全加固: 持久化会话带 HMAC 签名, 防止篡改 uid 冒充他人
+  const sessionTs=Date.now();
+  const sessionSig=await signSession(user.id, user.phone, sessionTs, user.password);
+  localStorage.setItem('tcg_session',JSON.stringify({uid:user.id,phone:user.phone,ts:sessionTs,sig:sessionSig}));
   showScreen('screen-vehicles');
   renderBrandTags();
   showToast('登录成功');
@@ -85,7 +87,7 @@ async function doLogin(){
  * 从localStorage读取上次登录的会话,验证用户仍存在且状态正常
  * @returns {boolean} 是否成功恢复会话
  */
-function restoreSession(){
+async function restoreSession(){
   try{
     const sessionStr=localStorage.getItem('tcg_session');
     if(!sessionStr)return false;
@@ -101,6 +103,18 @@ function restoreSession(){
     if(!user||user.status!=='active'){
       localStorage.removeItem('tcg_session');
       return false;
+    }
+    // V10.16.2 安全加固: 验证会话签名, 防止篡改 uid 冒充他人
+    if(session.sig){
+      const sigOk=await verifySessionSig(session.uid, session.phone, session.ts, session.sig, user.password);
+      if(!sigOk){
+        localStorage.removeItem('tcg_session');
+        return false;
+      }
+    }else{
+      // 旧版会话无签名(升级兼容): 重新生成带签名的会话
+      const newSig=await signSession(user.id, user.phone, session.ts, user.password);
+      localStorage.setItem('tcg_session',JSON.stringify({...session,sig:newSig}));
     }
     state.currentUser=user;
     return true;

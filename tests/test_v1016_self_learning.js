@@ -176,11 +176,11 @@ section('C组: 照片手势引擎(锚点缩放/钳制/拖拽抑制/背景关闭)
 }
 
 // =============================================================
-section('D组: 版本一致性(三源对齐 V10.16.1)');
+section('D组: 版本一致性(三源对齐 V10.16.2)');
 // =============================================================
-check('D1 version.json = 10.16.1', versionJson.version === '10.16.1');
-check('D2 config.xml version = 10.16.1', /version="10\.16\.1"/.test(configXml));
-check('D3 APP_VERSION = 10.16.1', /APP_VERSION='10\.16\.1'/.test(src));
+check('D1 version.json = 10.16.2', versionJson.version === '10.16.2');
+check('D2 config.xml version = 10.16.2', /version="10\.16\.2"/.test(configXml));
+check('D3 APP_VERSION = 10.16.2', /APP_VERSION='10\.16\.2'/.test(src));
 
 // =============================================================
 section('结果');

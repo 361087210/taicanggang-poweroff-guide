@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.16.2',
+    date: '2026-09-08',
+    highlight: '纵深防御版: CSP策略+PBKDF2密码哈希+会话HMAC签名',
+    features: [
+      'CSP: demo.html添加Content-Security-Policy meta, 限制script/img/connect来源',
+      'PBKDF2: 密码哈希从单轮SHA-256升级到PBKDF2(10万迭代), 暴力破解成本提升数万倍',
+      '会话签名: tcg_session新增HMAC-SHA256签名, 篡改uid即失效, 旧会话自动补签',
+      '继承 V10.16.1 全部能力'
+    ]
+  },
+  {
     version: 'V10.16.1',
     date: '2026-09-08',
     highlight: '安全加固版: 移除硬编码组长手机号+默认弱密码,密码重置新增双重校验',

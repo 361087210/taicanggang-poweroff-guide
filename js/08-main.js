@@ -102,7 +102,7 @@ hashUserPasswords().then(()=>{});
 await loadPersistedVehicles();
 // 启动时检查是否有已保存的登录会话,实现免重复登录
 migrateLegacyMedia();
-if(restoreSession()){
+if(await restoreSession()){
   // 已有有效会话,直接进入主界面
   showScreen('screen-vehicles');
   updateMyInfo();

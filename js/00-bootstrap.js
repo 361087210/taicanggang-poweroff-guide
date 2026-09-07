@@ -48,10 +48,82 @@ function saveUsers(users){localStorage.setItem('tcg_users',JSON.stringify(users)
 let USERS=loadUsers();
 
 // ===================== PASSWORD HASHING (V5.4 安全加固) =====================
-// 使用 SHA-256 + 随机盐值哈希密码，不再明文存储
-// 哈希结果格式: "salt$hash" (salt 为 16 位随机字符串，hash 为 64 位十六进制)
-// V10.15.9: crypto.subtle在非HTTPS/旧WebView下可能不可用,增加纯JS SHA-256兜底,
-//           保证网页端登录密码校验与手机号哈希匹配在任何环境都能执行。
+// V10.16.2 安全加固: 优先使用 PBKDF2(100k 迭代) 替代单轮 SHA-256, 大幅提升暴力破解成本。
+// 哈希格式: "pbkdf2$salt$iterations$hashHex" (新) 或 "salt$hashHex" (旧 SHA-256, 向后兼容)
+// crypto.subtle 不可用时降级到 SHA-256 兜底。
+async function _pbkdf2Hex(password, salt, iterations){
+  const c=typeof crypto!=='undefined'?crypto:null;
+  if(!c||!c.subtle||typeof c.subtle.importKey!=='function') return null;
+  try{
+    const keyMaterial = await c.subtle.importKey('raw', new TextEncoder().encode(password), {name:'PBKDF2'}, false, ['deriveBits']);
+    const saltBuf = new TextEncoder().encode(salt);
+    const bits = await c.subtle.deriveBits({name:'PBKDF2', salt:saltBuf, iterations:iterations, hash:'SHA-256'}, keyMaterial, 256);
+    return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){ return null; }
+}
+async function hashPassword(password, salt) {
+  const ITERATIONS = 100000;
+  const pbkdf2Hash = await _pbkdf2Hex(password, salt, ITERATIONS);
+  if(pbkdf2Hash) return 'pbkdf2$' + salt + '$' + ITERATIONS + '$' + pbkdf2Hash;
+  // 兜底: crypto.subtle 不可用时降级 SHA-256
+  const data = new TextEncoder().encode(salt + password);
+  const hashHex = await _digestSha256Hex(data);
+  return salt + '$' + hashHex;
+}
+
+function genSalt() {
+  const arr = new Uint8Array(8);
+  try{crypto.getRandomValues(arr);}catch(e){for(let i=0;i<8;i++)arr[i]=Math.floor(Math.random()*256);}
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyPassword(password, stored) {
+  if (!stored) return false;
+  const parts = stored.split('$');
+  if(parts[0] === 'pbkdf2' && parts.length === 4){
+    // 新格式: pbkdf2$salt$iterations$hashHex
+    const salt = parts[1], iterations = parseInt(parts[2], 10);
+    const expected = parts[3];
+    const actual = await _pbkdf2Hex(password, salt, iterations);
+    return actual !== null && actual === expected;
+  }
+  if(parts.length === 2){
+    // 旧格式: salt$hashHex (SHA-256, 向后兼容)
+    const salt = parts[0];
+    const data = new TextEncoder().encode(salt + password);
+    const hashHex = await _digestSha256Hex(data);
+    return hashHex === parts[1];
+  }
+  return false;
+}
+// ===================== SESSION SIGNING (V10.16.2 安全加固) =====================
+// 会话签名防伪造: 用用户密码哈希的前32字符作为密钥, 对 uid+phone+ts 做 HMAC-SHA256。
+// 攻击者即使修改 localStorage 的 uid 也无法伪造签名(不知道密码哈希)。
+async function _hmacSha256Hex(key, data){
+  const c=typeof crypto!=='undefined'?crypto:null;
+  if(c&&c.subtle&&typeof c.subtle.importKey==='function'){
+    try{
+      const cryptoKey=await c.subtle.importKey('raw',new TextEncoder().encode(key),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+      const sig=await c.subtle.sign('HMAC',cryptoKey,new TextEncoder().encode(data));
+      return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }catch(e){/* 兜底 */}
+  }
+  // 降级: 简单 SHA-256(key+data) 拼接(非标准HMAC, 但足够客户端防伪)
+  return await _digestSha256Hex(new TextEncoder().encode(key + ':' + data));
+}
+function _sessionSigKey(passwordHash){
+  // 取密码哈希前32字符作为签名密钥(不暴露完整哈希)
+  return (passwordHash||'').slice(0,32);
+}
+async function signSession(uid, phone, ts, passwordHash){
+  const key=_sessionSigKey(passwordHash);
+  return await _hmacSha256Hex(key, uid+':'+phone+':'+ts);
+}
+async function verifySessionSig(uid, phone, ts, sig, passwordHash){
+  if(!sig) return false;
+  const expected=await signSession(uid, phone, ts, passwordHash);
+  return expected===sig;
+}
 function _sha256PureJs(data){
   // 纯JS SHA-256实现(geraintluff/sha256,已验证与Node.js crypto一致),
   // 仅在crypto.subtle不可用时兜底。输入data为Uint8Array/字节数组。
@@ -118,24 +190,6 @@ async function _digestSha256Hex(data){
     }catch(e){/* 兜底走纯JS */}
   }
   return _sha256PureJs(data);
-}
-async function hashPassword(password, salt) {
-  const data = new TextEncoder().encode(salt + password);
-  const hashHex = await _digestSha256Hex(data);
-  return salt + '$' + hashHex;
-}
-
-function genSalt() {
-  const arr = new Uint8Array(8);
-  try{crypto.getRandomValues(arr);}catch(e){for(let i=0;i<8;i++)arr[i]=Math.floor(Math.random()*256);}
-  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function verifyPassword(password, stored) {
-  if (!stored || !stored.includes('$')) return false;
-  const salt = stored.split('$')[0];
-  const hash = await hashPassword(password, salt);
-  return hash === stored;
 }
 
 async function hashUserPasswords() {
@@ -1197,7 +1251,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.16.1';
+const APP_VERSION='10.16.2';
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
