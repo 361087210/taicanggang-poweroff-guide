@@ -30,8 +30,10 @@ zipalign -v 4 ...       # 对齐
 
 ### 3.1 凭证配置（已内置）
 - **App ID**: `cli_aa0ce4fd91f85be8`
-- **App Secret**: `s35nEpUBk8KtxN3Kwl2AEgUNnwXQHABb`
-- **云文档文件夹 Token**: `WdXUfZPkClI1audQxIYc90XRnWc`
+- **App Secret**: `<通过 GitHub Secrets 注入，勿明文写入仓库>`
+- **云文档文件夹 Token**: `<通过 GitHub Secrets 注入，勿明文写入仓库>`
+
+> ⚠️ 安全提示：App Secret 和 Folder Token 属于敏感凭证，通过 CI 构建期注入（`scripts/inject_build_secrets.js`），不应在源码或文档中明文出现。如需本地调试，在 APP 设置页手动填写。
 
 ### 3.2 用户自定义配置（可选）
 在 APP 设置页可覆盖：
