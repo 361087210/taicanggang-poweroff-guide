@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.15.14',
+    date: '2026-09-07',
+    highlight: '紧急修复: 改密后换设备登录仍报密码错误(pw_ts仲裁边界+镜像丢密码)',
+    features: [
+      '根因1: 05-sync.js/09-web-sync.js密码仲裁 cuTs>loTs——旧版本改密不写pw_ts(=0),云端与本地均为0时严格大于永不成立,新密码永不被采纳',
+      '根因2: sync_web_data.js多源合并approved_users.json只按文件时间戳取整个对象,新根文件时间戳新但密码旧会冲掉旧根改密后的新哈希',
+      '修复1: 密码仲裁改为 cuTs>=loTs,相等时以云端权威源为准,新设备/旧设备均能拿到新密码',
+      '修复2: sync_web_data.js新增mergeUser,密码字段单独按pw_ts仲裁(>=),备份与verify快照统一走mergeUser',
+      '全量回归0 FAIL',
+    ]
+  },
+  {
     version: 'V10.15.13',
     date: '2026-09-07',
     highlight: '紧急修复: 密码跨设备同步整表覆盖竞态+网页端改密假成功',
