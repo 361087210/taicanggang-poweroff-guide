@@ -364,6 +364,12 @@ function autoApproveLegacyPendingUsers(){
 async function pushApprovedUsersToFeishu(){
   const cfg=getFeishuCfg();
   if(!feishuCfgReady(cfg))return false;
+  // V10.15.13: 推送前强制fullMerge拉云端最新——根治整表覆盖竞态:
+  // 组长在旧设备审批/删除组员时,本机USERS表可能缺其他组员刚改的新密码,
+  // 整表覆盖云端会把别人的新密码冲回旧值,导致改密者换设备登录失败。
+  // fullMerge按pw_ts仲裁保留本机新密码+新审批状态,并补充云端新增的其他用户。
+  // (本机已改的密码因pw_ts最新不会被云端旧哈希覆盖;本机已改的active状态不会被云端pending回滚)
+  try{ await pullApprovedStatusFromFeishu(null, true); }catch(e){console.warn('[Push] fullMerge拉取失败,使用本地表推送:',e.message);}
   try{
     const token=await getFeishuToken(cfg);
     // V5.7: 含哈希密码(salt$hash不可逆,云端无明文),支撑组员新设备登录闭环

@@ -1,8 +1,12 @@
 {
-  "version": "10.15.12",
-  "versionCode": 101512,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.15.12/tcg_poweroff_v10.15.12.apk",
+  "version": "10.15.13",
+  "versionCode": 101513,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.15.13/tcg_poweroff_v10.15.13.apk",
   "releaseNotes": [
+    "V10.15.13 紧急修复: 账号密码跨设备同步仍失败——根因是整表覆盖竞态+网页端改密假成功。①pushApprovedUsersToFeishu内部强制fullMerge:组长在旧设备审批/删除组员时,本机USERS表缺其他组员新改的密码,整表覆盖云端会把别人新密码冲回旧值→改密者换设备登录失败。②网页端禁止改密:网页版只读镜像CORS不可达飞书API,push被封堵,改密只改本浏览器不推云端,用户误以为成功→换安卓端登录必失败。③继承V10.15.12登录失败拉云端重试。新增3项整表覆盖竞态测试(B6),专项43项+全量回归全绿。",
+    "js/05-sync.js pushApprovedUsersToFeishu: 推送前强制pullApprovedStatusFromFeishu(null,true) fullMerge——按pw_ts仲裁保留本机新密码+新审批状态,补充云端新增用户,根治整表覆盖竞态",
+    "js/09-web-sync.js: 覆盖changePassword直接拦截,引导用户在安卓APP修改密码(网页端只读镜像不支持上行写入)",
+    "覆盖场景: 组员A改密→推云端→组长在旧设备审批组员C→fullMerge拉取A新哈希采纳→推送payload含A新哈希+C新状态,不再冲掉A的密码",
     "V10.15.12 紧急修复: 旧设备用新密码登录报\"密码错误\"。根因: doLogin仅\"本地无账号\"时才拉云端,本地旧密码哈希验证失败后直接报错返回,云端最新密码(改密已推送)永远没机会参与验证——V10.15.11的pw_ts仲裁修复了\"已登录设备的数据同步\",但漏了\"旧设备首次用新密码登录\"这一入口。修复: 本地验证失败时先拉云端最新名单(pw_ts仲裁生效)重试一次再判定。新增4项登录闭环测试(旧设备新密码/云端未更新不误放行/新设备),专项40项+全量回归全绿。",
     "js/02-auth.js doLogin: 密码本地验证失败→pullApprovedStatusFromFeishu({phone},true)拉云端→pw_ts仲裁采纳云端新哈希→重试验证;云端拉取失败静默降级(保持原密码错误提示,不误放行)",
     "覆盖场景: ①旧设备本地旧哈希+云端新哈希→新密码登录成功且本地同步更新 ②云端未更新(推送失败/离线)→新密码仍报错(安全),旧密码仍可登录 ③新设备无本地账号→拉云端建号登录 ④网页端共用doLogin同样受益",
