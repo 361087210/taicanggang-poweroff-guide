@@ -6,6 +6,11 @@
  * 不变量: 函数名/签名100%保留,顶层function声明挂window供onclick裸调用
  * =========================================================== */
 let state={screen:'screen-login',currentUser:null,viewMode:'tree',currentVehicleId:null,currentVehicleIndex:0,searchQuery:'',brandFilter:'all',selectedVehicles:new Set(),editingVehicle:null,isEditing:false,outdoorMode:false,expandedBrands:new Set(['saic']),recentVehicles:[],photoZoom:1,detailExporting:null,batchExporting:null,backupExporting:false,pendingDetailOpen:null};
+// V10.16: 最近查看持久化恢复(tcg_recent_vehicles)——重启后自学习痕迹不丢
+try{
+  const _rv=JSON.parse(localStorage.getItem('tcg_recent_vehicles')||'[]');
+  if(Array.isArray(_rv)&&_rv.length)state.recentVehicles=_rv.slice(0,5);
+}catch(e){/* 损坏数据忽略,回退空列表 */}
 let confirmCallback=null;
 let confirmCancelCallback=null;
 let navHistory=[];
