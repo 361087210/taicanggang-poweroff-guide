@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.16.3',
+    date: '2026-09-08',
+    highlight: '安全加固续篇: 凭据加密存储+XSS绊线生产生效+SW同源校验',
+    features: [
+      '凭据加密: feishu_config中appSecret以appSecretEnc(XOR+base64)存储, 不再明文落盘; 旧明文自动兼容',
+      'XSS绊线: innerHTML注入绊线扩展到生产环境, console.warn留痕不阻断功能',
+      'SW校验: sw.js message事件校验e.source来源, 仅同源页面可触发skipWaiting',
+      '继承 V10.16.2 全部能力'
+    ]
+  },
+  {
     version: 'V10.16.2',
     date: '2026-09-08',
     highlight: '纵深防御版: CSP策略+PBKDF2密码哈希+会话HMAC签名',

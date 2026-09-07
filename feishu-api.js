@@ -45,9 +45,16 @@ const FeishuAPI = (function() {
   function getConfig() {
     if (_cfg) return _cfg;
     const saved = JSON.parse(localStorage.getItem('feishu_config') || '{}');
+    // V10.16.3: appSecret 以 appSecretEnc(XOR+base64) 存储, 旧明文 appSecret 向后兼容
+    let appSecret = '';
+    if (saved.appSecretEnc && typeof _decryptBuildSecret === 'function') {
+      appSecret = _decryptBuildSecret(saved.appSecretEnc) || saved.appSecret || '';
+    } else {
+      appSecret = saved.appSecret || DEFAULTS.appSecret;
+    }
     _cfg = {
       appId: saved.appId || DEFAULTS.appId,
-      appSecret: saved.appSecret || DEFAULTS.appSecret,
+      appSecret: appSecret,
       folderToken: saved.folder || DEFAULTS.folderToken,
       dataFolderName: saved.dataFolder || DEFAULTS.dataFolderName,
       bitableAppToken: saved.bitableAppToken || DEFAULTS.bitableAppToken,
@@ -60,9 +67,11 @@ const FeishuAPI = (function() {
   function setConfig(updates) {
     const current = getConfig();
     Object.assign(current, updates);
+    // V10.16.3: appSecret 加密存储, 不写明文
+    const encSecret = (typeof _encryptSecret === 'function') ? _encryptSecret(current.appSecret) : current.appSecret;
     localStorage.setItem('feishu_config', JSON.stringify({
       appId: current.appId,
-      appSecret: current.appSecret,
+      appSecretEnc: encSecret,
       folder: current.folderToken,
       dataFolder: current.dataFolderName,
       bitableAppToken: current.bitableAppToken,

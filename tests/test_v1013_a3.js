@@ -306,11 +306,14 @@ function guardSandbox(cordova) {
   sb.run('window.__XSS_GUARD_STRICT__=true');
   const r4 = setHtml('<script>x<\/script>');
   check('F5 严格模式: 风险写入抛错阻断', typeof r4 === 'string' && r4.startsWith('THROWN:') && r4.includes('strict mode'));
-  // F6 cordova环境不安装(生产零开销)
+  // F6 V10.16.3: cordova生产环境也安装绊线(仅warn不阻断, 作为运行时XSS检测层)
   const sb2 = guardSandbox({});
   sb2.run('Object.defineProperty(Element.prototype,"innerHTML",{set:function(v){this._h=v;},get:function(){return this._h;},configurable:true})');
   sb2.run(guard);
-  check('F6 cordova环境绊线不安装', sb2.run('!window.__innerHTMLGuardInstalled__'));
+  check('F6 cordova环境绊线也安装(纵深防御)', sb2.run('!!window.__innerHTMLGuardInstalled__'));
+  sb2.run('window.__XSS_GUARD_STRICT__=false');
+  const r6 = sb2.run('(function(){const el=new Element();try{el.innerHTML="<script>x<\\/script>";}catch(e){return "THROWN:"+e.message;}return el._h||"EMPTY";})()');
+  check('F6 cordova环境绊线仅warn不阻断', typeof r6 === 'string' && r6.includes('script'));
 }
 
 // =============================================================

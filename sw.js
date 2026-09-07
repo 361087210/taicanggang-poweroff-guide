@@ -8,7 +8,7 @@
  * V10.14.3: 新增SKIP_WAITING消息处理(配合页面"立即更新"按钮即时接管) + PNG图标预缓存
  * =========================================================== */
 
-const CACHE_NAME='tcg-poweroff-v10.16.2';
+const CACHE_NAME='tcg-poweroff-v10.16.3';
 const APP_SHELL=[
   './demo.html',
   './css/app.css',
@@ -62,7 +62,13 @@ self.addEventListener('activate',e=>{
 });
 
 // V10.14.3: 页面"立即更新"按钮 → postMessage({action:'SKIP_WAITING'}) → 立即接管
+// V10.16.3 安全加固: 校验消息来源, 仅允许同源页面触发 skipWaiting
 self.addEventListener('message',e=>{
+  // Service Worker 的 e.origin 为空, 改用 e.source 判断来源客户端
+  if(!e.source) return;
+  const srcUrl = (e.source.url || '');
+  const swUrl = self.location.href;
+  if(srcUrl && new URL(srcUrl).origin !== new URL(swUrl).origin) return;
   if(e.data&&e.data.action==='SKIP_WAITING'){
     self.skipWaiting();
   }

@@ -719,7 +719,9 @@ function saveFeishuConfig(){
   const interval=parseInt(document.getElementById('feishu-interval').value)||30;
   if(!appId||!appSecret){showToast('请填写飞书 App ID 和 App Secret');return;}
   // V10.14.0 修复C: 写入_writer='admin'标记,getFeishuCfg在成员端识别此配置是可信的
-  const cfg={appId,appSecret,folder,interval,updatedAt:new Date().toISOString(),_writer:'admin'};
+  // V10.16.3: appSecret 加密存储为 appSecretEnc, 不写明文
+  const encSecret = (typeof _encryptSecret === 'function') ? _encryptSecret(appSecret) : appSecret;
+  const cfg={appId,appSecretEnc:encSecret,folder,interval,updatedAt:new Date().toISOString(),_writer:'admin'};
   localStorage.setItem('feishu_config',JSON.stringify(cfg));
   const st=document.getElementById('feishu-status');
   if(st)st.textContent='飞书账号已配置 ✓';

@@ -1,13 +1,13 @@
 {
-  "version": "10.16.2",
-  "versionCode": 101602,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.16.2/tcg_poweroff_v10.16.2.apk",
+  "version": "10.16.3",
+  "versionCode": 101603,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.16.3/tcg_poweroff_v10.16.3.apk",
   "releaseNotes": [
-    "V10.16.2 纵深防御版(CSP+PBKDF2+会话签名)。一句话总结: 添加Content-Security-Policy限制XSS攻击面,密码哈希从单轮SHA-256升级到PBKDF2(10万迭代)提升暴力破解成本,登录会话添加HMAC签名防止篡改uid冒充他人。",
-    "安全加固1(CSP): demo.html 添加 Content-Security-Policy meta, 限制 script/img/connect/media 来源, XSS 无纵深防御缺口已封堵",
-    "安全加固2(PBKDF2): hashPassword 优先使用 PBKDF2(100000次迭代)替代单轮SHA-256, 暴力破解成本提升数万倍; 旧SHA-256哈希向后兼容自动验证",
-    "安全加固3(会话签名): tcg_session 新增 sig 字段, HMAC-SHA256(uid+phone+ts, 密码哈希前32位), 篡改uid后签名验证失败, 旧会话自动迁移补签",
-    "继承 V10.16.1(认证与权限修复)全部能力",
+    "V10.16.3 安全加固续篇(凭据加密+XSS绊线+SW校验)。一句话总结: localStorage中存储的飞书appSecret改为XOR+base64加密存放避免明文泄露,XSS绊线从仅开发环境扩展到生产环境提供运行时检测,Service Worker的postMessage添加同源校验防止跨源触发skipWaiting。",
+    "安全加固1(凭据加密): feishu_config 中 appSecret 以 appSecretEnc(XOR+base64) 存储, 不再明文落盘; 旧明文 appSecret 字段自动向后兼容读取",
+    "安全加固2(XSS绊线): innerHTML 注入绊线移除 !window.cordova 限制, 生产环境也启用 console.warn 留痕(不阻断功能), 作为XSS纵深防御的运行时检测层",
+    "安全加固3(SW校验): sw.js message 事件校验 e.source 来源, 仅同源页面可触发 skipWaiting, 防止跨源页面强制更新SW",
+    "继承 V10.16.2(纵深防御)全部能力",
     "全量回归 test:all 0 FAIL"
   ],
   "forceUpdate": false,
