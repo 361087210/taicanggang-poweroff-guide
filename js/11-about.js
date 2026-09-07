@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.15.15',
+    date: '2026-09-07',
+    highlight: '数据池统一+仓库文件整理: 统一车型数据源+删除冗余文件',
+    features: [
+      '统一车型数据池: demo.html加载vehicles_data.js为唯一内置数据源,00-bootstrap.js内联73条改为引用window.VEHICLES,消除38KB重复',
+      '内置数据与用户新增车型统一在同一VEHICLES数组,IndexedDB持久化+飞书云端同步',
+      '仓库文件清理: 删除release/3个旧文档(与docs/重复),删除web-data/debug_structure.json(自动生成),删除.trae-html-share-packages/构建产物',
+      '继承V10.15.14全部修复(pw_ts仲裁>=+mergeUser)',
+    ]
+  },
+  {
     version: 'V10.15.14',
     date: '2026-09-07',
     highlight: '紧急修复: 改密后换设备登录仍报密码错误(pw_ts仲裁边界+镜像丢密码)',

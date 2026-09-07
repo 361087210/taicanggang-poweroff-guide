@@ -1,8 +1,9 @@
 {
-  "version": "10.15.14",
-  "versionCode": 101514,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.15.14/tcg_poweroff_v10.15.14.apk",
+  "version": "10.15.15",
+  "versionCode": 101515,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.15.15/tcg_poweroff_v10.15.15.apk",
   "releaseNotes": [
+    "V10.15.15 数据池统一+仓库文件整理: ①统一车型数据池——demo.html加载vehicles_data.js作为唯一内置数据源,00-bootstrap.js内联73条车型数据改为引用window.VEHICLES,消除38KB重复数据;内置数据与用户新增数据统一在同一VEHICLES数组,IndexedDB持久化+飞书云端同步。②仓库文件清理——删除release/目录3个旧版文档(与docs/重复),删除web-data/debug_structure.json(自动生成取证文件),删除.trae-html-share-packages/构建产物,更新.gitignore。③继承V10.15.14全部修复。",
     "V10.15.14 紧急修复: 改密后换设备登录仍报\"密码错误\"——根因是pw_ts仲裁边界条件+镜像脚本多源合并丢密码。①05-sync.js/09-web-sync.js密码仲裁 cuTs>loTs 改为 cuTs>=loTs:旧版本改密不写pw_ts(=0),云端与本地pw_ts均为0时严格大于永不成立,新密码永不被采纳→换设备必失败;改为>=后相等时以云端权威源为准,新设备/旧设备均能拿到新密码。②scripts/sync_web_data.js多源合并approved_users.json时,密码字段单独按pw_ts仲裁(>=),不再因某份文件时间戳新但密码旧而冲掉改密后的新哈希。全量回归0 FAIL。",
     "js/05-sync.js pullApprovedStatusFromFeishu: 密码仲裁 if(cuTs>loTs) → if(cuTs>=loTs),修复pw_ts均为0(旧版本改密/未设置)时新密码永不采纳的边界bug",
     "js/09-web-sync.js pullApprovedStatusFromFeishu(网页镜像版): 同步将 > 改为 >=,语义对齐安卓端",
