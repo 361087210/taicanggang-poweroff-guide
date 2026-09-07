@@ -430,10 +430,15 @@ async function pullApprovedStatusFromFeishu(userParam,fullMerge){
         // V10.15.11: 密码跨设备仲裁(账号级pw_ts取新者)——
         // 设备A改密已推云端(pw_ts新)→设备B拉取采纳新哈希,旧密码立即失效;
         // 本机刚改密未推成功(本机pw_ts新)→本机优先,不被云端旧哈希回滚。
-        // 兼容: 旧云端行无pw_ts(=0)且本地无pw_ts(=0)→不采纳,保持V5.7"密码以本地为准"语义
+        // V10.15.14: 严格大于改为大于等于——旧版本改密不写pw_ts(=0),
+        // 云端pw_ts=0、本地pw_ts=0时 cuTs>loTs 为false,新密码永不被采纳,
+        // 换设备登录必报"密码错误"。改为>=后,相等时以云端权威源为准(改密
+        // 推送即上云,云端恒为最新真源),旧设备/新设备均能拿到新密码。
+        // 安全性: 本机刚改密时本地pw_ts=Date.now()>云端旧pw_ts(0),
+        // cuTs>=loTs为false,本地新密码不被回滚,推送的还是新密码。
         if(cu.password&&String(cu.password).indexOf('$')>=0&&String(cu.password)!==String(local.password||'')){
           const cuTs=Number(cu.pw_ts)||0,loTs=Number(local.pw_ts)||0;
-          if(cuTs>loTs){local.password=cu.password;local.pw_ts=cuTs;}
+          if(cuTs>=loTs){local.password=cu.password;local.pw_ts=cuTs;}
         }
         // 本地已有: 云端状态更新时同步(仅状态与审批信息,密码以本地为准避免覆盖)
         if(local.status!==cu.status&&cu.status==='active'){

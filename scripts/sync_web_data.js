@@ -292,6 +292,40 @@ async function main() {
   const approvedHits = fileNodes.filter(n => n.name === 'approved_users.json');
   const mergedUsers = new Map(); // phone -> user对象(含来源时间戳用于冲突仲裁)
   const sources = [];
+  /* V10.15.14: 密码字段单独按pw_ts仲裁——多根approved_users.json合并时,
+   * 旧逻辑按文件时间戳取整个对象,导致"新根文件时间戳新但密码旧、旧根文件
+   * 时间戳旧但密码新(pw_ts更新)"时新密码被旧文件覆盖。修复: 同手机号冲突
+   * 时,status/name等仍按文件时间戳仲裁,但password+pw_ts单独取pw_ts更新者
+   * (>=,对齐05-sync.js仲裁语义),确保改密后的新哈希不会因文件陈旧被冲掉。 */
+  function mergeUser(u, ts) {
+    if (!u || !u.phone) return;
+    const phone = String(u.phone);
+    const existing = mergedUsers.get(phone);
+    if (!existing) {
+      mergedUsers.set(phone, { ...u, _srcTs: ts });
+      return;
+    }
+    // 状态仲裁: active优先;同态取文件时间戳更新者(非密码字段)
+    const eActive = existing.status === 'active';
+    const uActive = u.status === 'active';
+    let next = existing;
+    if (uActive && !eActive) next = { ...u, _srcTs: ts };
+    else if (uActive === eActive && ts > (existing._srcTs || 0)) next = { ...u, _srcTs: ts };
+    else next = { ...existing }; // 保持现有对象(但密码可能需要单独仲裁)
+    // 密码字段独立仲裁: 取pw_ts更新者(>=,云端权威源优先)
+    const ePwTs = Number(existing.pw_ts) || 0;
+    const uPwTs = Number(u.pw_ts) || 0;
+    const eHasPw = existing.password && String(existing.password).indexOf('$') >= 0;
+    const uHasPw = u.password && String(u.password).indexOf('$') >= 0;
+    if (uHasPw && (!eHasPw || uPwTs >= ePwTs)) {
+      next.password = u.password;
+      next.pw_ts = uPwTs;
+    } else if (eHasPw) {
+      next.password = existing.password;
+      next.pw_ts = ePwTs;
+    }
+    mergedUsers.set(phone, next);
+  }
   for (const node of approvedHits) {
     try {
       const raw = await downloadJson(token, node.token);
@@ -299,38 +333,14 @@ async function main() {
       if (!users.length) continue;
       const ts = new Date(raw.timestamp || node.mtime * 1000).getTime();
       sources.push(`${node.path}(${users.length}个)`);
-      for (const u of users) {
-        if (!u || !u.phone) continue;
-        const phone = String(u.phone);
-        const existing = mergedUsers.get(phone);
-        if (!existing) {
-          mergedUsers.set(phone, { ...u, _srcTs: ts });
-        } else {
-          // 冲突仲裁: active > pending/rejected;同态取时间戳更新的
-          const eActive = existing.status === 'active';
-          const uActive = u.status === 'active';
-          if (uActive && !eActive) mergedUsers.set(phone, { ...u, _srcTs: ts });
-          else if (uActive === eActive && ts > (existing._srcTs || 0)) mergedUsers.set(phone, { ...u, _srcTs: ts });
-        }
-      }
+      for (const u of users) mergeUser(u, ts);
     } catch (e) { warn(`approved_users.json(${node.path})下载/解析失败: ${e.message}`); }
   }
   const backupUsers = backupData && Array.isArray(backupData.users) ? backupData.users : null;
   if (backupUsers && backupUsers.length) {
     const backupTs = new Date(backupData.timestamp || backupNode.mtime * 1000).getTime();
     sources.push(`backup:${backupNode.path}(${backupUsers.length}个)`);
-    for (const u of backupUsers) {
-      if (!u || !u.phone) continue;
-      const phone = String(u.phone);
-      const existing = mergedUsers.get(phone);
-      if (!existing) mergedUsers.set(phone, { ...u, _srcTs: backupTs });
-      else {
-        const eActive = existing.status === 'active';
-        const uActive = u.status === 'active';
-        if (uActive && !eActive) mergedUsers.set(phone, { ...u, _srcTs: backupTs });
-        else if (uActive === eActive && backupTs > (existing._srcTs || 0)) mergedUsers.set(phone, { ...u, _srcTs: backupTs });
-      }
-    }
+    for (const u of backupUsers) mergeUser(u, backupTs);
   }
   if (mergedUsers.size) {
     const users = [...mergedUsers.values()].map(({ _srcTs, ...rest }) => rest);
@@ -353,19 +363,9 @@ async function main() {
       // verify快照含users时也并入合并账号表(安卓端同步校验快照,可能含最新审批)
       if (usersN && Array.isArray(raw.users)) {
         const verifyTs = new Date(raw.timestamp || raw.updated || 0).getTime();
-        let added = 0;
-        for (const u of raw.users) {
-          if (!u || !u.phone) continue;
-          const phone = String(u.phone);
-          const existing = mergedUsers.get(phone);
-          if (!existing) { mergedUsers.set(phone, { ...u, _srcTs: verifyTs }); added++; }
-          else {
-            const eActive = existing.status === 'active';
-            const uActive = u.status === 'active';
-            if (uActive && !eActive) mergedUsers.set(phone, { ...u, _srcTs: verifyTs });
-            else if (uActive === eActive && verifyTs > (existing._srcTs || 0)) mergedUsers.set(phone, { ...u, _srcTs: verifyTs });
-          }
-        }
+        const before = mergedUsers.size;
+        for (const u of raw.users) mergeUser(u, verifyTs);
+        const added = mergedUsers.size - before;
         if (added > 0 || !approvedData) {
           const users = [...mergedUsers.values()].map(({ _srcTs, ...rest }) => rest);
           approvedData = { version: raw.version || '', timestamp: raw.timestamp || raw.updated || '', users };

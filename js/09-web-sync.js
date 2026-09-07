@@ -155,10 +155,11 @@ function _install(){
           if(cu.name&&local.name!==cu.name){local.name=cu.name;changed=true;}
           if(cu.role&&(local.role||'user')!==cu.role){local.role=cu.role;changed=true;}
           /* V10.15.11: 密码跨设备仲裁(账号级pw_ts取新者,语义对齐安卓版05-sync.js)——
-             安卓端改密推云端后,本浏览器拉取镜像采纳新哈希,旧密码同步失效 */
+             安卓端改密推云端后,本浏览器拉取镜像采纳新哈希,旧密码同步失效。
+             V10.15.14: >改>=,修复旧版本改密(pw_ts=0)换设备登录新密码永不采纳的bug */
           if(cu.password&&String(cu.password).indexOf('$')>=0&&String(cu.password)!==String(local.password||'')){
             var cuTs=Number(cu.pw_ts)||0,loTs=Number(local.pw_ts)||0;
-            if(cuTs>loTs){local.password=cu.password;local.pw_ts=cuTs;changed=true;}
+            if(cuTs>=loTs){local.password=cu.password;local.pw_ts=cuTs;changed=true;}
           }
         }
         if(whoH&&whoH===cu.phoneH)me=cu;
