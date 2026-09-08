@@ -1271,7 +1271,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.16.6';
+const APP_VERSION='10.16.7';
 // V10.16.4 安全加固: 空闲超时(30分钟无操作自动登出)
 const IDLE_TIMEOUT=30*60*1000;
 let _lastActivity=Date.now();

@@ -22,6 +22,18 @@ let _draftScreenshots = []; // [{blob, dataUrl, name}]
 let _feedbackList = [];
 let _currentFilter = 'all';
 
+/* V10.16.7 反馈修复: Bitable 单选字段在不同API版本/客户端可能返回数组
+ * (如 状态:["待处理"]),统一展平为字符串,两端(安卓直连/网页镜像)通吃 */
+function _flat(v){ return Array.isArray(v) ? v.join('') : v; }
+/* V10.16.7 状态流转对齐: AI分析后→待处理,组长确认处理好后→已处理。
+ * 历史云端值'已解决'归一为'已处理',本地旧值'分析中'归一为'待处理' */
+function _normStatus(s){
+  s = _flat(s);
+  if (s === '已解决') return '已处理';
+  if (s === '分析中') return '待处理';
+  return s || '待处理';
+}
+
 /** 初始化反馈页面 */
 window.initFeedbackPage = function() {
   renderFeedbackForm();
@@ -94,8 +106,7 @@ function renderFeedbackForm() {
         <div class="flex gap-2 overflow-x-auto pb-1 scroll-y">
           <button class="fb-filter-btn px-3 py-1.5 rounded-full text-xs bg-blue-500 text-white whitespace-nowrap" data-filter="all" onclick="filterFeedback('all')">全部</button>
           <button class="fb-filter-btn px-3 py-1.5 rounded-full text-xs bg-gray-100 text-gray-600 whitespace-nowrap" data-filter="待处理" onclick="filterFeedback('待处理')">待处理</button>
-          <button class="fb-filter-btn px-3 py-1.5 rounded-full text-xs bg-gray-100 text-gray-600 whitespace-nowrap" data-filter="分析中" onclick="filterFeedback('分析中')">分析中</button>
-          <button class="fb-filter-btn px-3 py-1.5 rounded-full text-xs bg-gray-100 text-gray-600 whitespace-nowrap" data-filter="已解决" onclick="filterFeedback('已解决')">已解决</button>
+          <button class="fb-filter-btn px-3 py-1.5 rounded-full text-xs bg-gray-100 text-gray-600 whitespace-nowrap" data-filter="已处理" onclick="filterFeedback('已处理')">已处理</button>
         </div>
         <div id="fb-list-container" class="space-y-3">
           <div class="text-center text-gray-400 text-sm py-8">暂无反馈记录</div>
@@ -269,7 +280,7 @@ window.submitFeedback = async function() {
       platform: (window.cordova && window.cordova.platformId) ? 'Android' : '网页',
       appVersion: APP_VERSION || 'unknown',
       deviceInfo,
-      status: '分析中',
+      status: '待处理',
       createdAt: new Date().toISOString(),
       synced: false,
     };
@@ -308,13 +319,15 @@ window.submitFeedback = async function() {
         // V10.15.11: 网页镜像端无上行通道,给出准确引导(而非"网络恢复后自动同步"的误导)
         showToast(window.__TCG_WEB_MIRROR__
           ? '已保存在本浏览器；网页版暂无法上报云端，请通过安卓APP提交以便组长审核'
-          : '已保存，网络恢复后自动同步');
+          : '云端提交失败，反馈已存本机待同步，请检查网络或稍后重进本页自动重试');
         resetFeedbackForm();
       }
     } else {
+      // V10.16.7 反馈修复: 未配置飞书凭据时给出准确提示——原"网络恢复后自动同步"
+      // 是误导(实为配置缺失非网络问题),组员误以为已提交,组长端永远看不到
       showToast(window.__TCG_WEB_MIRROR__
         ? '已保存在本浏览器；网页版暂无法上报云端，请通过安卓APP提交以便组长审核'
-        : '已保存，网络恢复后自动同步');
+        : '未连接飞书云端，反馈已存本机；请更新至官方安装包或联系组长配置后再提交');
       resetFeedbackForm();
     }
   } catch (e) {
@@ -419,17 +432,22 @@ async function loadAndRenderFeedbackList() {
       const items = await window.FeedbackBase.listFeedbackRecords({ pageSize: 50 });
       // 合并云端状态到本地(按反馈ID匹配)
       const user = state && state.currentUser;
-      const isLeader = user && user.role === 'admin';
+      // V10.16.7: 组长判定双保险(state.currentUser.role + 全局isLeader()),
+      // 防时序异常下组长被误判为组员导致云端反馈被静默丢弃
+      const leaderByState = !!(user && user.role === 'admin');
+      const leaderByFn = (typeof window.isLeader === 'function') ? !!window.isLeader() : false;
+      const isLeader = leaderByState || leaderByFn;
       const cloudItems = items || [];
       cloudItems.forEach(item => {
         const f = item.fields;
-        const fbId = f['反馈ID'];
+        const fbId = _flat(f['反馈ID']);
         if (!fbId) return;
+        const reporterName = _flat(f['提交人']);
         const local = _feedbackList.find(x => x.id === fbId);
         if (local) {
-          local.status = f['状态'] || local.status;
-          local.analysisSummary = f['AI分析摘要'] || local.analysisSummary;
-          local.techDocUrl = f['技术文档链接'] || local.techDocUrl;
+          local.status = _normStatus(f['状态'] || local.status);
+          local.analysisSummary = _flat(f['AI分析摘要']) || local.analysisSummary;
+          local.techDocUrl = _flat(f['技术文档链接']) || local.techDocUrl;
           // V10.15.11: 记录云端record_id,支撑组长审核状态更新
           if (item.record_id) local.recordId = item.record_id;
         } else if (isLeader) {
@@ -437,36 +455,36 @@ async function loadAndRenderFeedbackList() {
           _feedbackList.push({
             id: fbId,
             recordId: item.record_id || '',
-            category: f['问题板块'] || '',
-            description: f['问题描述'] || '',
-            reporterName: f['提交人'] || '',
-            reporterRole: f['角色'] || '',
-            platform: f['平台'] || '',
-            appVersion: f['APP版本'] || '',
-            deviceInfo: f['设备信息'] || '',
-            status: f['状态'] || '待处理',
-            analysisSummary: f['AI分析摘要'] || '',
-            techDocUrl: f['技术文档链接'] || '',
+            category: _flat(f['问题板块']) || '',
+            description: _flat(f['问题描述']) || '',
+            reporterName: reporterName,
+            reporterRole: _flat(f['角色']) || '',
+            platform: _flat(f['平台']) || '',
+            appVersion: _flat(f['APP版本']) || '',
+            deviceInfo: _flat(f['设备信息']) || '',
+            status: _normStatus(f['状态']),
+            analysisSummary: _flat(f['AI分析摘要']) || '',
+            techDocUrl: _flat(f['技术文档链接']) || '',
             createdAt: f['创建时间'] ? new Date(f['创建时间']).toISOString() : '',
             synced: true,
             _fromCloud: true,
           });
-        } else if (user && user.name && f['提交人'] === user.name) {
+        } else if (user && user.name && reporterName === user.name) {
           // V10.15.11: 组员跨设备同步——云端按提交人姓名拉回自己的反馈,
           // 修复"换设备/重装后我的反馈列表为空"(组内重名概率极低,姓名匹配可接受)
           _feedbackList.push({
             id: fbId,
             recordId: item.record_id || '',
-            category: f['问题板块'] || '',
-            description: f['问题描述'] || '',
-            reporterName: f['提交人'] || '',
-            reporterRole: f['角色'] || '',
-            platform: f['平台'] || '',
-            appVersion: f['APP版本'] || '',
-            deviceInfo: f['设备信息'] || '',
-            status: f['状态'] || '待处理',
-            analysisSummary: f['AI分析摘要'] || '',
-            techDocUrl: f['技术文档链接'] || '',
+            category: _flat(f['问题板块']) || '',
+            description: _flat(f['问题描述']) || '',
+            reporterName: reporterName,
+            reporterRole: _flat(f['角色']) || '',
+            platform: _flat(f['平台']) || '',
+            appVersion: _flat(f['APP版本']) || '',
+            deviceInfo: _flat(f['设备信息']) || '',
+            status: _normStatus(f['状态']),
+            analysisSummary: _flat(f['AI分析摘要']) || '',
+            techDocUrl: _flat(f['技术文档链接']) || '',
             createdAt: f['创建时间'] ? new Date(f['创建时间']).toISOString() : '',
             synced: true,
             _fromCloud: true,
@@ -506,11 +524,12 @@ function renderFeedbackList() {
   }
 
   container.innerHTML = list.map(f => {
-    const statusColor = f.status === '已解决' ? 'status-done' : f.status === '分析中' ? 'status-pending' : 'bg-gray-100 text-gray-500';
+    const st = _normStatus(f.status);
+    const statusColor = st === '已处理' ? 'status-done' : 'bg-amber-50 text-amber-600';
     return `<div class="bg-white rounded-xl p-3 shadow-sm cursor-pointer active:bg-gray-50" onclick="showFeedbackDetail('${f.id}')">
       <div class="flex items-center justify-between mb-2">
         <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">${f.category || '未分类'}</span>
-        <span class="text-xs px-2 py-0.5 rounded-full ${statusColor}">${f.status || '待处理'}</span>
+        <span class="text-xs px-2 py-0.5 rounded-full ${statusColor}">${st}</span>
       </div>
       <div class="text-sm text-gray-800 line-clamp-2 mb-2">${escapeHtml(f.description || '')}</div>
       <div class="flex items-center justify-between text-xs text-gray-400">
@@ -536,12 +555,13 @@ window.filterFeedback = function(status) {
 window.showFeedbackDetail = function(id) {
   const fb = _feedbackList.find(f => f.id === id);
   if (!fb) return;
-  const statusColor = fb.status === '已解决' ? 'status-done' : fb.status === '分析中' ? 'status-pending' : 'bg-gray-100 text-gray-500';
+  const st = _normStatus(fb.status);
+  const statusColor = st === '已处理' ? 'status-done' : 'bg-amber-50 text-amber-600';
 
   let html = `
     <div class="flex items-center gap-2 mb-3">
       <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">${fb.category || '未分类'}</span>
-      <span class="text-xs px-2 py-0.5 rounded-full ${statusColor}">${fb.status || '待处理'}</span>
+      <span class="text-xs px-2 py-0.5 rounded-full ${statusColor}">${st}</span>
     </div>
     <div class="text-sm text-gray-800 leading-relaxed mb-4">${escapeHtml(fb.description || '')}</div>
   `;
@@ -578,12 +598,13 @@ window.showFeedbackDetail = function(id) {
         <div class="text-xs text-gray-400 leading-relaxed">状态审核请通过安卓APP操作(网页版为只读镜像)</div>
       </div>`;
     } else {
-      const canResolve = fb.status !== '已解决';
-      const canReopen = fb.status === '已解决';
+      // V10.16.7 状态流转: AI分析后→待处理,组长确认处理好后→已处理
+      const canResolve = st !== '已处理';
+      const canReopen = st === '已处理';
       html += `<div class="mt-4 pt-3 border-t border-gray-100">
         <div class="text-xs font-bold text-gray-600 mb-2">组长审核</div>
         <div class="flex gap-2">
-          ${canResolve ? `<button onclick="setFeedbackStatus('${fb.id}','已解决')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-green-600 text-white active:scale-[0.98] transition-transform">✓ 标记已解决</button>` : ''}
+          ${canResolve ? `<button onclick="setFeedbackStatus('${fb.id}','已处理')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-green-600 text-white active:scale-[0.98] transition-transform">✓ 标记已处理</button>` : ''}
           ${canReopen ? `<button onclick="setFeedbackStatus('${fb.id}','待处理')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-amber-500 text-white active:scale-[0.98] transition-transform">↩ 重新打开(待处理)</button>` : ''}
         </div>
       </div>`;

@@ -26,6 +26,8 @@ const src = {
   cache: fs.readFileSync(path.join(REPO, 'js/07-cache.js'), 'utf8'),
   websync: fs.readFileSync(path.join(REPO, 'js/09-web-sync.js'), 'utf8'),
   mirror: fs.readFileSync(path.join(REPO, 'scripts/sync_web_data.js'), 'utf8'),
+  media: fs.readFileSync(path.join(REPO, 'js/06-media.js'), 'utf8'),
+  api: fs.readFileSync(path.join(REPO, 'feishu-api.js'), 'utf8'),
 };
 
 const PASSED = [], FAILED = [];
@@ -39,20 +41,30 @@ function check(name, cond, detail='') {
  * ============================================================ */
 console.log('\n--- A. 静态源码检查 ---');
 check('A1 12-bitable.js 暴露 updateFeedbackStatus(bitableUpdateRecord)', src.bitable.includes('updateFeedbackStatus') && src.bitable.includes('bitableUpdateRecord'));
-check('A2 10-feedback.js 组长审核按钮(标记已解决/待处理)', src.feedback.includes('标记已解决') && src.feedback.includes('待处理'));
-check('A3 10-feedback.js 非组长按提交人拉回自己反馈', src.feedback.includes("f['提交人'] === user.name"));
+check('A2 10-feedback.js 组长审核按钮(标记已处理/待处理)', src.feedback.includes('标记已处理') && src.feedback.includes('待处理'));
+check('A3 10-feedback.js 非组长按提交人拉回自己反馈(V10.16.7经_flat展平匹配)', src.feedback.includes("_flat(f['提交人'])") && src.feedback.includes("reporterName === user.name"));
 check('A4 07-cache.js changePassword 推送云端(pushApprovedUsersToFeishu)', src.cache.includes('await pushApprovedUsersToFeishu()'));
 check('A5 07-cache.js 推送前fullMerge拉取(覆盖竞态保护)', src.cache.includes('pullApprovedStatusFromFeishu(state.currentUser, true)'));
 check('A6 09-web-sync.js FeedbackBase镜像桥(读feedback_data.json)', src.websync.includes("_fetchMirror('feedback_data.json')"));
 check('A7 sync_web_data.js 反馈表镜像(FEEDBACK_APP_TOKEN分页拉取)', src.mirror.includes('FEEDBACK_APP_TOKEN') && src.mirror.includes('feedback_data.json'));
 check('A8 网页镜像全局标志(__TCG_WEB_MIRROR__)', src.websync.includes('__TCG_WEB_MIRROR__') && src.feedback.includes('__TCG_WEB_MIRROR__'));
 check('A9 网页镜像端跳过syncPendingFeedback无效重试', src.feedback.includes('if (window.__TCG_WEB_MIRROR__) return;'));
-check('A10 镜像脱敏: 不含问题描述/联系方式/设备信息字段', !src.mirror.includes("'问题描述'") && !src.mirror.includes("'联系方式'") && !src.mirror.includes("'设备信息'"));
+check('A10 镜像脱敏: 含问题描述(V10.16.7),不含联系方式/设备信息字段', src.mirror.includes("'问题描述'") && !src.mirror.includes("'联系方式'") && !src.mirror.includes("'设备信息'"));
 check('A11 提交反馈保存云端recordId(审核定位)', src.feedback.includes('recordId: (rec && rec.record_id)'));
 check('A12 resetMemberPass 密码同步链路保留(V5.4既有)', src.cache.includes("pushApprovedUsersToFeishu();") === true);
 check('A13 组长角色判断统一为admin(无leader残留,组长=admin/isLeader)', !src.feedback.includes("=== 'leader'") && !src.feedback.includes("==='leader'"));
 check('A14 setFeedbackStatus 函数层组长守卫', src.feedback.includes("仅组长可审核反馈状态"));
 check('A15 resetMemberPass 函数层组长守卫+禁重置组长', src.cache.includes('仅组长可重置组员密码') && src.cache.includes('不可重置组长账号密码'));
+
+/* ---------- V10.16.7 反馈修复静态检查 ---------- */
+check('A16 状态流转对齐: 提交初始状态为待处理(AI分析后)', src.feedback.includes("status: '待处理'"));
+check('A17 状态归一化: 已解决→已处理/分析中→待处理(历史数据兼容)', src.feedback.includes("if (s === '已解决') return '已处理';") && src.feedback.includes("if (s === '分析中') return '待处理';"));
+check('A18 Bitable字段展平防御(数组状态值通吃)', src.feedback.includes('function _flat(v){ return Array.isArray(v) ? v.join(\'\') : v; }'));
+check('A19 feishu-api.js 配置回落getFeishuCfg(反馈/同步凭据统一)', src.api.includes('typeof getFeishuCfg === \'function\''));
+check('A20 bitableListRecords分页拉全量(page_token循环)', src.api.includes("params.set('page_token', pageToken)") && src.api.includes('has_more'));
+check('A21 06-media.js 组长端组员管理页拉云端全量用户(防抖)', src.media.includes('function pullApprovedForMembersView') && src.media.includes('pullApprovedStatusFromFeishu(null,true)'));
+check('A22 09-web-sync.js 网页端组员列表镜像合并(云端组员追加)', src.websync.includes('function _appendCloudOnlyMembers') && src.websync.includes("approved_users.web.json"));
+check('A23 组长判定双保险(state+isLeader函数)', src.feedback.includes('leaderByState') && src.feedback.includes('leaderByFn'));
 
 /* ============================================================
  * B. 运行时行为(jsdom)
@@ -85,30 +97,30 @@ setTimeout(async () => {
       listFeedbackRecords: async () => [],
       addFeedbackRecord: async () => ({}),
     };
-    await window.setFeedbackStatus(fbId, '已解决');
-    check('B1-1 调用云端updateFeedbackStatus(record_id, 已解决)', updateCalled && updateCalled.rid === 'rec_abc123' && updateCalled.status === '已解决');
+    await window.setFeedbackStatus(fbId, '已处理');
+    check('B1-1 调用云端updateFeedbackStatus(record_id, 已处理)', updateCalled && updateCalled.rid === 'rec_abc123' && updateCalled.status === '已处理');
     const after1 = JSON.parse(window.localStorage.getItem('tcg_feedback_list')).find(f => f.id === fbId);
-    check('B1-2 本地状态同步更新为已解决', after1 && after1.status === '已解决');
+    check('B1-2 本地状态同步更新为已处理', after1 && after1.status === '已处理');
 
     // 云端更新失败场景: 状态不被本地篡改
     window.FeedbackBase.updateFeedbackStatus = async () => { throw new Error('network'); };
     await window.setFeedbackStatus(fbId, '待处理');
     const after2 = JSON.parse(window.localStorage.getItem('tcg_feedback_list')).find(f => f.id === fbId);
-    check('B1-3 云端失败时本地状态不变(防假成功)', after2 && after2.status === '已解决');
+    check('B1-3 云端失败时本地状态不变(防假成功)', after2 && after2.status === '已处理');
 
     // 无recordId的本地反馈不可审核
     window.localStorage.setItem('tcg_feedback_list', JSON.stringify([{ id: 'fb_local_only', status: '待处理', synced: false }]));
     G('initFeedbackPage()');
     await new Promise(r => setTimeout(r, 150));
     let noRecErr = false;
-    try { await window.setFeedbackStatus('fb_local_only', '已解决'); } catch(e) { noRecErr = true; }
+    try { await window.setFeedbackStatus('fb_local_only', '已处理'); } catch(e) { noRecErr = true; }
     check('B1-4 无recordId反馈拒绝审核(不产生云端调用)', noRecErr === false);
 
     // 组员绕过UI直接调用setFeedbackStatus被函数层守卫拦截
     G(`state.currentUser = { id: 'user9', name: '组员戊', phone: '13700000000', role: 'user', status: 'active', password: 'x$y' };`);
     let updateCalledAsMember = null;
     window.FeedbackBase.updateFeedbackStatus = async (rid, st) => { updateCalledAsMember = { rid, st }; return {}; };
-    await window.setFeedbackStatus(fbId, '已解决');
+    await window.setFeedbackStatus(fbId, '已处理');
     check('B1-5 组员调用setFeedbackStatus被守卫拦截(零云端调用)', updateCalledAsMember === null);
     // 恢复组长态
     G(`state.currentUser = { id: 'leader1', name: '组长甲', phone: '13800000000', role: 'admin', status: 'active', password: 'x$y' };`);
@@ -118,9 +130,11 @@ setTimeout(async () => {
     G(`state.currentUser = { id: 'user1', name: '组员乙', phone: '13911112222', role: 'user', status: 'active', password: 'x$y' };`);
     window.localStorage.setItem('tcg_feedback_list', JSON.stringify([]));
     // 模拟云端: 一条他人反馈 + 一条组员乙自己的反馈(新设备本地无记录)
+    // 注1: 云端历史状态值'已解决'应被V10.16.7归一化为'已处理'
+    // 注2: '提交人'用数组形态模拟Bitable单选字段,验证V10.16.7 _flat展平防御
     const cloudItems = [
       { record_id: 'rec_other', fields: { '反馈ID': 'fb_other', '问题板块': '其他问题', '状态': '待处理', '提交人': '组员丙', '平台': 'Android' } },
-      { record_id: 'rec_mine', fields: { '反馈ID': 'fb_mine_9', '问题板块': '车辆查询-搜索筛选', '状态': '已解决', '提交人': '组员乙', 'AI分析摘要': '已定位根因', '技术文档链接': 'https://doc.example/x', '平台': 'Android' } },
+      { record_id: 'rec_mine', fields: { '反馈ID': 'fb_mine_9', '问题板块': '车辆查询-搜索筛选', '状态': '已解决', '提交人': ['组员乙'], 'AI分析摘要': '已定位根因', '技术文档链接': 'https://doc.example/x', '平台': 'Android' } },
     ];
     window.FeedbackBase.listFeedbackRecords = async () => cloudItems;
     window.FeedbackBase.updateFeedbackStatus = async () => ({});
@@ -129,7 +143,7 @@ setTimeout(async () => {
     await new Promise(r => setTimeout(r, 300));
     const stored = JSON.parse(window.localStorage.getItem('tcg_feedback_list'));
     check('B2-1 云端拉回自己的反馈(fb_mine_9)', stored.some(f => f.id === 'fb_mine_9' && f._isMine));
-    check('B2-2 自己反馈含云端状态/AI摘要/文档链接', (() => { const m = stored.find(f => f.id === 'fb_mine_9'); return m && m.status === '已解决' && m.analysisSummary === '已定位根因' && m.techDocUrl === 'https://doc.example/x'; })());
+    check('B2-2 云端历史值已解决归一为已处理+AI摘要/文档链接保留', (() => { const m = stored.find(f => f.id === 'fb_mine_9'); return m && m.status === '已处理' && m.analysisSummary === '已定位根因' && m.techDocUrl === 'https://doc.example/x'; })());
     check('B2-3 他人反馈不进入组员本地列表(fb_other排除)', !stored.some(f => f.id === 'fb_other'));
 
     // 组长(admin)跨设备: 切换到组长后,云端他人反馈也应进入组长本地列表

@@ -824,9 +824,29 @@ function confirmCancelAction(){
 }
 
 // ===================== MEMBERS =====================
+// V10.16.7 反馈修复: 组长端进入组员管理页时拉取云端全量用户表——
+// 根因: pullApprovedStatusFromFeishu(fullMerge)仅在登录/改密/重置密码时触发,
+// 组长换设备/重装后若登录时那次拉取失败(弱网/超时),本地USERS永远缺失
+// 往期审批通过的组员(60秒轮询只拉pending申请不拉approved用户表),
+// 表现为"往期申请注册成功的组员账号,组长端无法查看管理"。
+// 此处组长视角下异步全量拉取(60秒防抖),拉回后重渲染列表。
+let _memberCloudPullTs=0;
+function pullApprovedForMembersView(){
+  if(!(state.currentUser&&state.currentUser.role==='admin'))return;
+  if(window.__TCG_WEB_MIRROR__)return; // 网页镜像端由09-web-sync.js的renderMemberList覆盖处理
+  const now=Date.now();
+  if(now-_memberCloudPullTs<60000)return; // 防抖: 60秒内不重复拉
+  _memberCloudPullTs=now;
+  if(typeof pullApprovedStatusFromFeishu!=='function')return;
+  pullApprovedStatusFromFeishu(null,true).then(function(merged){
+    if(merged)renderMemberList(); // 云端有新组员合并入库后立即重渲染
+  }).catch(function(){});
+}
+
 function renderMemberList(){
   const c=document.getElementById('member-list');
   if(!c)return;
+  pullApprovedForMembersView(); // V10.16.7: 组长端补拉云端全量用户表(防抖+异步)
   // V10.16.6 反馈修复: 网页端注册的组员(跨端自动通过,带hidden/crossPlatform标记)
   // 原V10.6.0逻辑将其从组长列表全部过滤,导致"注册过却查看不到无法管理"。
   // 现恢复显示并可管理(重置密码/删除),带"跨端"角标标识来源;
