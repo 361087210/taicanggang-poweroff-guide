@@ -74,9 +74,14 @@ check('A11 问题2: 即消费即删云端申请文件(防反复消费/目录堆�
   consumeSrc.includes('deletePendingFileFromFeishu(u.phone)'));
 check('A12 问题2: 跨端处理完全隐形——仅console留痕,无Toast/通知/日志UI',
   /跨网络申请已默认通过\(不显示\)/.test(html) && !/leaderNotify\([^)]*跨网络/.test(html));
-check('A13 问题2: 组员列表+待审列表双过滤隐形用户',
+// V10.16.6 反馈修复: 跨端组员由"组长列表隐形"改为"列表可见可管理(带跨端角标)"——
+// 原双过滤(组员列表+待审列表)致网页端注册组员"查看不到无法管理"。
+// 现组员列表active过滤不再排除hidden/crossPlatform;待审列表保留过滤(防御性,
+// 跨端申请自动通过永不进pending态);审批静默策略(A12)与即消费即删(A11)不变。
+check('A13 问题2: 待审列表过滤隐形用户,组员列表可见可管理(V10.16.6反馈修复)',
   /!u\.hidden&&!u\.crossPlatform/.test(html)
-  && html.match(/!u\.hidden&&!u\.crossPlatform/g).length >= 2);
+  && /USERS\.filter\(u=>u\.role==='user'&&u\.status==='active'\)/.test(html)
+  && /crossBadge/.test(html));
 
 // ---- 问题3: 本地备份直存 ----
 console.log('-- 问题3: 本地备份不调分享控件 --');

@@ -827,14 +827,16 @@ function confirmCancelAction(){
 function renderMemberList(){
   const c=document.getElementById('member-list');
   if(!c)return;
-  // V10.6.0 问题2: 跨网络组员(hidden或crossPlatform标记)在组长端全部隐形——
-  // 不进组员列表/不计入展示,仅保留在USERS数据层随approved_users.json同步,
-  // 兼容V10.4/10.5已落地的跨端记录(旧记录无hidden字段,以crossPlatform一并过滤)
-  const activeUsers=USERS.filter(u=>u.role==='user'&&u.status==='active'&&!u.hidden&&!u.crossPlatform);
+  // V10.16.6 反馈修复: 网页端注册的组员(跨端自动通过,带hidden/crossPlatform标记)
+  // 原V10.6.0逻辑将其从组长列表全部过滤,导致"注册过却查看不到无法管理"。
+  // 现恢复显示并可管理(重置密码/删除),带"跨端"角标标识来源;
+  // 审批静默策略不变(仍自动通过、不进待审队列)。
+  const activeUsers=USERS.filter(u=>u.role==='user'&&u.status==='active');
   c.innerHTML=activeUsers.map(u=>{
+    const crossBadge=u.crossPlatform?'<span class="px-1.5 py-0.5 text-xs bg-purple-100 text-purple-600 rounded ml-1">跨端</span>':'';
     return `
     <div class="flex items-center justify-between py-2 px-2 bg-gray-50 rounded-lg">
-      <div class="min-w-0"><div class="text-sm text-gray-800 truncate">${esc(u.name)}</div><div class="text-xs text-gray-400">${esc(u.phone)} · ${esc(u.created)}</div></div>
+      <div class="min-w-0"><div class="text-sm text-gray-800 truncate">${esc(u.name)}${crossBadge}</div><div class="text-xs text-gray-400">${esc(u.phone)} · ${esc(u.created)}</div></div>
       <div class="flex gap-2 flex-shrink-0">
         <button onclick="resetMemberPass(${u.id})" class="text-xs text-blue-400">重置密码</button>
         <button onclick="deleteMember(${u.id})" class="text-xs text-red-400">删除</button>
