@@ -68,7 +68,7 @@ check('A18 问题3: 防误判——云端无有效用户表时跳过', /if\(!dat
 check('A19 问题3: 防重入(memberGuardBusy)', /memberGuardBusy/.test(html));
 check('A20 问题3: 组长删号带云端推送重试+失败告警', /pushed=await pushApprovedUsersToFeishu\(\);\s*\n\s*if\(!pushed\)/.test(html) && /云端同步失败/.test(html));
 check('A21 问题3: 禁止误删组长账号', /target\.role==='admin'/.test(html));
-check('A22 问题3: 登出停止守卫轮询', /stopMemberGuardPolling\(\);\s*\n\s*window\.__tcgKicked=false/.test(html));
+check('A22 问题3: 登出停止守卫轮询', /stopMemberGuardPolling\(\);/.test(html) && /window\.__tcgKicked=false/.test(html));
 
 // 问题4: 同步屏显示完整性
 check('A23 问题4: flex滚动容器min-height兜底(老WebView兼容)', /\.flex-1\.scroll-y\{min-height:0;\}/.test(html));

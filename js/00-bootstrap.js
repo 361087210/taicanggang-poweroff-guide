@@ -1266,7 +1266,33 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.16.3';
+const APP_VERSION='10.16.4';
+// V10.16.4 安全加固: 空闲超时(30分钟无操作自动登出)
+const IDLE_TIMEOUT=30*60*1000;
+let _lastActivity=Date.now();
+let _idleCheckTimer=null;
+function _onUserActivity(){_lastActivity=Date.now();}
+function _startIdleWatch(){
+  if(_idleCheckTimer)clearInterval(_idleCheckTimer);
+  _lastActivity=Date.now();
+  _idleCheckTimer=setInterval(()=>{
+    if(typeof state!=='undefined'&&state&&state.currentUser){
+      if(Date.now()-_lastActivity>IDLE_TIMEOUT){
+        clearInterval(_idleCheckTimer);
+        _idleCheckTimer=null;
+        if(typeof doLogout==='function'){
+          showToast('长时间未操作,已自动登出');
+          doLogout();
+        }
+      }
+    }
+  },60*1000); // 每分钟检查
+}
+if(typeof window!=='undefined'){
+  ['touchstart','click','keydown','scroll'].forEach(ev=>{
+    window.addEventListener(ev,_onUserActivity,{passive:true});
+  });
+}
 const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
 const GITHUB_BRANCH='main';
 const UPDATE_SOURCES=[
