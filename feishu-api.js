@@ -52,6 +52,29 @@ const FeishuAPI = (function() {
     } else {
       appSecret = saved.appSecret || DEFAULTS.appSecret;
     }
+    // V10.16.7 反馈修复: localStorage 未保存有效凭据时,回落到全局getFeishuCfg()
+    // (00-bootstrap.js 统一出口: 构建期注入秘钥优先)——根因: 反馈链路(本模块)
+    // 与同步链路(05-sync.js)配置体系分裂,官方安装包零配置设备上审批/车辆同步
+    // 正常(走注入秘钥),但反馈提交/拉取静默降级为本地缓存,表现为
+    // "组员提交的反馈组长看不到"。此处对齐后两端共用同一凭据来源。
+    if (!(saved.appId && saved.appId.length > 5 && appSecret && appSecret.length > 5)
+        && typeof getFeishuCfg === 'function') {
+      try {
+        const unified = getFeishuCfg();
+        if (unified && unified.appId && unified.appSecret) {
+          _cfg = {
+            appId: unified.appId,
+            appSecret: unified.appSecret,
+            folderToken: unified.folder || DEFAULTS.folderToken,
+            dataFolderName: unified.dataFolder || DEFAULTS.dataFolderName,
+            bitableAppToken: saved.bitableAppToken || DEFAULTS.bitableAppToken,
+            approvalCode: saved.approvalCode || DEFAULTS.approvalCode,
+            chatId: saved.chatId || DEFAULTS.chatId,
+          };
+          return _cfg;
+        }
+      } catch (e) { /* 保持原行为 */ }
+    }
     _cfg = {
       appId: saved.appId || DEFAULTS.appId,
       appSecret: appSecret,
@@ -450,15 +473,26 @@ const FeishuAPI = (function() {
   /** 列出表格记录 */
   async function bitableListRecords(appToken, tableId, options) {
     const token = await getTenantToken();
-    const params = new URLSearchParams();
-    params.set('page_size', String(options?.pageSize || 500));
-    if (options?.filter) params.set('filter', JSON.stringify(options.filter));
-    if (options?.sort) params.set('sort', JSON.stringify(options.sort));
-    const data = await request(
-      `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/records?${params}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return data.items || [];
+    const pageSize = options?.pageSize || 500;
+    // V10.16.7 反馈修复: page_token 分页循环拉全量——原实现只取第一页,
+    // 反馈记录超过单页上限后组长端永远看不到更早的记录
+    const allItems = [];
+    let pageToken = '';
+    for (let i = 0; i < 20; i++) { // 上限20页(单页500,共1万条防御性封顶)
+      const params = new URLSearchParams();
+      params.set('page_size', String(pageSize));
+      if (pageToken) params.set('page_token', pageToken);
+      if (options?.filter) params.set('filter', JSON.stringify(options.filter));
+      if (options?.sort) params.set('sort', JSON.stringify(options.sort));
+      const data = await request(
+        `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/records?${params}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      (data.items || []).forEach(it => allItems.push(it));
+      if (!data.has_more || !data.page_token) break;
+      pageToken = data.page_token;
+    }
+    return allItems;
   }
 
   /** 创建单条记录 */

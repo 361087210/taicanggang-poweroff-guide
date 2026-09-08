@@ -47,9 +47,9 @@ async function listFeedbackRecords(opts) {
 }
 
 /**
- * 组长更新反馈状态 - V10.15.11
+ * 组长更新反馈状态 - V10.15.11 / V10.16.7 状态流转对齐
  * @param {string} recordId 云端记录id(listFeedbackRecords返回项的record_id)
- * @param {string} status 新状态: 待处理/已解决
+ * @param {string} status 新状态: 待处理(AI分析后)/已处理(组长确认处理好)
  * @returns {Promise<Object>} 更新后的record
  */
 async function updateFeedbackStatus(recordId, status) {

@@ -259,6 +259,54 @@ function _install(){
   };
 
   /* ============================================================
+   * ④c 网页端组员管理镜像桥 - V10.16.7 反馈修复
+   * 根因: 网页版pullApprovedStatusFromFeishu只重建登录者自己(镜像手机号
+   * 为sha256哈希不可逆),组长浏览器本地USERS缺失往期审批通过的组员,
+   * 组员管理页列表为空,表现为"往期申请注册成功的组员账号无法查看"。
+   * 方案: 包装renderMemberList——原逻辑(本地USERS)渲染后,组长视角下
+   * 异步拉镜像账号表,把"云端有而本地无"的active组员以只读卡片追加
+   * (手机号已脱敏,管理操作引导至安卓端),不动原渲染与操作逻辑。
+   * ============================================================ */
+  var _origRenderMemberList=window.renderMemberList;
+  if(typeof _origRenderMemberList==='function'){
+    window.renderMemberList=function(){
+      _origRenderMemberList.apply(this,arguments);
+      if(state.currentUser&&state.currentUser.role==='admin'){
+        _appendCloudOnlyMembers().catch(function(){});
+      }
+    };
+  }
+  async function _appendCloudOnlyMembers(){
+    var c=document.getElementById('member-list');
+    if(!c)return;
+    var web=await _fetchMirror('approved_users.web.json');
+    if(!web||!Array.isArray(web.users)||!web.users.length)return;
+    /* 预计算本地全部手机号哈希(去重索引) */
+    var localH={};
+    for(var i=0;i<USERS.length;i++){
+      var u=USERS[i];
+      if(u&&u.phone&&localH[u.phone]===undefined){
+        localH[u.phone]=await _sha256Hex(WEB_SYNC_SALT+String(u.phone));
+      }
+    }
+    var hasLocal={};
+    for(var k in localH)hasLocal[localH[k]]=true;
+    /* 云端有而本地无的active组员(排除组长自己) */
+    var cloudOnly=web.users.filter(function(cu){
+      return cu&&cu.phoneH&&cu.status==='active'&&cu.role!=='admin'&&!hasLocal[cu.phoneH];
+    });
+    if(!cloudOnly.length)return;
+    var extra=cloudOnly.map(function(cu){
+      return '<div class="flex items-center justify-between py-2 px-2 bg-purple-50 rounded-lg">'
+        +'<div class="min-w-0"><div class="text-sm text-gray-800 truncate">'+esc(String(cu.name||'组员'))+'<span class="px-1.5 py-0.5 text-xs bg-purple-100 text-purple-600 rounded ml-1">云端</span></div>'
+        +'<div class="text-xs text-gray-400">手机号已脱敏 · '+esc(String(cu.created||''))+'</div></div>'
+        +'<div class="text-xs text-gray-400 flex-shrink-0">请在安卓端管理</div>'
+        +'</div>';
+    }).join('');
+    c.innerHTML+=extra;
+  }
+
+  /* ============================================================
    * ⑤ 即时同步引擎: 60秒轮询镜像通知→自动镜像对齐
    * 合并语义与安卓doSyncDownload完全一致(V10.11.0镜像同步):
    *   云端为唯一真源,正向差集覆盖+反向差集删除,ID集合不一致时
