@@ -76,7 +76,9 @@ check('A19 问题5.2: 跨端申请判定逻辑(isCrossPlatform)', /const isCross
 check('A20 问题5.2: 跨端申请自动激活(status=active,V10.6.0附加hidden隐形标记)', /u\.crossPlatform=true;\s*\n\s*u\.hidden=true;\s*\n\s*u\.status='active';/.test(html));
 check('A21 问题5.2: 跨端静默计数(crossSilentCount)', /crossSilentCount\+\+/.test(html) && /let crossSilentCount=0;/.test(html));
 check('A22 问题5.2: 跨端完全隐形——不弹通知仅console留痕(V10.6.0)', /跨网络申请已默认通过\(不显示\)/.test(html));
-check('A23 问题5.2: 组员列表排除跨端/隐形用户(V10.6.0替代徽标方案)', /!u\.hidden&&!u\.crossPlatform/.test(html));
+// V10.16.6反馈修复: 组员列表恢复显示跨端组员(带跨端角标,可管理);
+// 此过滤仅保留于待审列表(防御性,跨端申请永不进pending态)
+check('A23 问题5.2: 待审列表排除跨端/隐形用户(组员列表V10.16.6恢复可见)', /!u\.hidden&&!u\.crossPlatform/.test(html));
 // V10.8.0回退: 本端申请恢复pending态人工审批(回退至V10.6.0策略)
 // 跨网络申请保留自动通过+隐形处理;本端申请不再自动通过,等待组长手动审批;
 // 组长显式拒绝过的账号保留拒绝状态,不自动复活。
