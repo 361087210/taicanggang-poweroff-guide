@@ -1,13 +1,13 @@
 {
-  "version": "10.16.3",
-  "versionCode": 101603,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.16.3/tcg_poweroff_v10.16.3.apk",
+  "version": "10.16.4",
+  "versionCode": 101604,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.16.4/tcg_poweroff_v10.16.4.apk",
   "releaseNotes": [
-    "V10.16.3 安全加固续篇(凭据加密+XSS绊线+SW校验)。一句话总结: localStorage中存储的飞书appSecret改为XOR+base64加密存放避免明文泄露,XSS绊线从仅开发环境扩展到生产环境提供运行时检测,Service Worker的postMessage添加同源校验防止跨源触发skipWaiting。",
-    "安全加固1(凭据加密): feishu_config 中 appSecret 以 appSecretEnc(XOR+base64) 存储, 不再明文落盘; 旧明文 appSecret 字段自动向后兼容读取",
-    "安全加固2(XSS绊线): innerHTML 注入绊线移除 !window.cordova 限制, 生产环境也启用 console.warn 留痕(不阻断功能), 作为XSS纵深防御的运行时检测层",
-    "安全加固3(SW校验): sw.js message 事件校验 e.source 来源, 仅同源页面可触发 skipWaiting, 防止跨源页面强制更新SW",
-    "继承 V10.16.2(纵深防御)全部能力",
+    "V10.16.4 认证强化版(登录限流+空闲超时+密码强度)。一句话总结: 登录失败5次锁定5分钟防止暴力破解,30分钟无操作自动登出防止会话劫持,注册和重置密码须含数字+字母组合提升密码强度。",
+    "安全加固1(登录限流): doLogin新增失败计数器,连续5次密码错误后锁定5分钟,期间拒绝所有登录尝试,登录成功自动清零",
+    "安全加固2(空闲超时): 30分钟无用户操作(touchstart/click/keydown/scroll)自动调用doLogout登出,防止遗忘设备会话被劫持",
+    "安全加固3(密码强度): doRegister和doForgotPassword新增密码强度校验,须同时包含数字和字母,杜绝纯数字弱密码",
+    "继承 V10.16.3(凭据加密+XSS绊线+SW校验)全部能力",
     "全量回归 test:all 0 FAIL"
   ],
   "forceUpdate": false,
