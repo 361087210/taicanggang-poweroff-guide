@@ -10,6 +10,14 @@ async function doLogin(){
   const pass=document.getElementById('login-pass').value.trim();
   if(!phone||!pass){showToast('请输入手机号和密码');return;}
   if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
+  // V10.16.4 安全加固: 登录失败限流, 5次失败后锁定5分钟
+  const lockKey='tcg_login_lock';
+  const lock=JSON.parse(localStorage.getItem(lockKey)||'{"fails":0,"until":0}');
+  if(lock.until>Date.now()){
+    const mins=Math.ceil((lock.until-Date.now())/60000);
+    showToast(`登录已锁定,请${mins}分钟后重试`);
+    return;
+  }
   let user=USERS.find(u=>u.phone===phone);
   // V5.7: 本地无此账号时,自动从飞书云端拉取用户表(组长审批过的组员在新设备/
   // 换手机登录场景,本地还没有该账号),拉取后重新查找——跨设备登录闭环
@@ -44,7 +52,20 @@ async function doLogin(){
       }
     }catch(e){console.warn('云端密码重试失败:',e.message);}
   }
-  if (!passOk) { showToast('密码错误'); return; }
+  if (!passOk) {
+    // V10.16.4 安全加固: 记录失败次数, 5次后锁定5分钟
+    lock.fails=(lock.fails||0)+1;
+    if(lock.fails>=5){
+      lock.until=Date.now()+5*60*1000;
+      lock.fails=0;
+      localStorage.setItem(lockKey,JSON.stringify(lock));
+      showToast('密码错误次数过多,已锁定5分钟');
+    }else{
+      localStorage.setItem(lockKey,JSON.stringify(lock));
+      showToast(`密码错误,还剩${5-lock.fails}次机会`);
+    }
+    return;
+  }
   // V5.3.1跨设备审批闭环修复: 待审核用户登录时先从飞书拉取最新审批结果,
   // 组长在另一台设备/另一网络已通过时,组员本机立即放行,不再被本地旧状态永久拦截
   if(user.status==='pending'){
@@ -53,6 +74,8 @@ async function doLogin(){
   }
   if(user.status==='rejected'){showToast('您的注册申请未通过审核');return;}
   state.currentUser=user;
+  // V10.16.4: 登录成功, 清除失败计数
+  localStorage.removeItem(lockKey);
   // V5.7: 登录成功即清空导航历史栈,登录前的注册/忘记密码页不再可返回
   navReset();
   // V10.16.2 安全加固: 持久化会话带 HMAC 签名, 防止篡改 uid 冒充他人
@@ -64,6 +87,8 @@ async function doLogin(){
   showToast('登录成功');
   updateMyInfo();
   ensureNotifyPermission();
+  // V10.16.4: 登录成功后启动空闲超时监控
+  if(typeof _startIdleWatch==='function')_startIdleWatch();
   // V10.15.6 账号级字段选项云同步: 登录成功即静默拉取云端选项覆盖本地(跨设备共享),
   // 无数据/网络失败静默保持本地, 组长端改过的选项组员与新设备登录后即可用。
   if(typeof syncFieldOptionsFromCloud==='function'){syncFieldOptionsFromCloud();}
@@ -117,6 +142,8 @@ async function restoreSession(){
       localStorage.setItem('tcg_session',JSON.stringify({...session,sig:newSig}));
     }
     state.currentUser=user;
+    // V10.16.4: 会话恢复后启动空闲超时监控
+    if(typeof _startIdleWatch==='function')_startIdleWatch();
     return true;
   }catch(e){
     console.error('恢复会话失败:',e);
@@ -133,6 +160,8 @@ async function doRegister(){
   if(!name||!phone||!pass){showToast('请填写完整信息');return;}
   if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
   if(pass.length<6){showToast('密码至少6位');return;}
+  // V10.16.4 安全加固: 密码须含数字+字母
+  if(!/(?=.*\d)(?=.*[a-zA-Z])/.test(pass)){showToast('密码须包含数字和字母');return;}
   if(pass!==pass2){showToast('两次密码不一致');return;}
   if(USERS.find(u=>u.phone===phone)){showToast('该手机号已注册');return;}
   // V5.4: 密码哈希化存储
@@ -165,6 +194,8 @@ async function doForgotPassword(){
   if(!name||!phone||!pass){showToast('请填写完整信息');return;}
   if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
   if(pass.length<6){showToast('密码至少6位');return;}
+  // V10.16.4 安全加固: 密码须含数字+字母
+  if(!/(?=.*\d)(?=.*[a-zA-Z])/.test(pass)){showToast('密码须包含数字和字母');return;}
   if(pass!==pass2){showToast('两次密码不一致');return;}
   const user=USERS.find(u=>u.phone===phone&&u.name===name);
   if(!user){showToast('姓名与手机号不匹配，请联系组长');return;}
@@ -186,6 +217,8 @@ function doLogout(){
   stopPendingPolling();
   // V10.3 问题3/5.1: 同步停止组员账号守卫轮询
   stopMemberGuardPolling();
+  // V10.16.4: 停止空闲超时监控
+  if(typeof _idleCheckTimer!=='undefined'&&_idleCheckTimer){clearInterval(_idleCheckTimer);_idleCheckTimer=null;}
   window.__tcgKicked=false; // 重置踢出标记,允许后续正常登录流程
   localStorage.removeItem('tcg_session');
   state.currentUser=null;
