@@ -1,13 +1,13 @@
 {
-  "version": "10.16.4",
-  "versionCode": 101604,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.16.4/tcg_poweroff_v10.16.4.apk",
+  "version": "10.16.5",
+  "versionCode": 101605,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.16.5/tcg_poweroff_v10.16.5.apk",
   "releaseNotes": [
-    "V10.16.4 认证强化版(登录限流+空闲超时+密码强度)。一句话总结: 登录失败5次锁定5分钟防止暴力破解,30分钟无操作自动登出防止会话劫持,注册和重置密码须含数字+字母组合提升密码强度。",
-    "安全加固1(登录限流): doLogin新增失败计数器,连续5次密码错误后锁定5分钟,期间拒绝所有登录尝试,登录成功自动清零",
-    "安全加固2(空闲超时): 30分钟无用户操作(touchstart/click/keydown/scroll)自动调用doLogout登出,防止遗忘设备会话被劫持",
-    "安全加固3(密码强度): doRegister和doForgotPassword新增密码强度校验,须同时包含数字和字母,杜绝纯数字弱密码",
-    "继承 V10.16.3(凭据加密+XSS绊线+SW校验)全部能力",
+    "V10.16.5 信息保护版(错误信息脱敏+注册限流+生产日志静默)。一句话总结: 登录不区分账号不存在和密码错误防止手机号枚举,注册同一设备1小时限3次防批量注册,生产环境静默console.log防止调试信息泄露。",
+    "安全加固1(信息脱敏): 登录失败统一提示账号或密码错误,不暴露账号是否存在,防止攻击者枚举有效手机号",
+    "安全加固2(注册限流): 同一设备1小时内最多注册3次,超出提示稍后再试,防止批量注册攻击",
+    "安全加固3(日志静默): 生产环境(Cordova)静默console.log,保留console.warn/error,防止调试信息在正式版泄露",
+    "继承 V10.16.4(登录限流+空闲超时+密码强度)全部能力",
     "全量回归 test:all 0 FAIL"
   ],
   "forceUpdate": false,

@@ -25,7 +25,19 @@ async function doLogin(){
     showToast('正在从云端核对账号...');
     await pullApprovedStatusFromFeishu({phone:phone},true);
     user=USERS.find(u=>u.phone===phone);
-    if(!user){showToast('账号不存在，请先注册');return;}
+    // V10.16.5 安全加固: 不暴露账号是否存在, 统一返回"账号或密码错误"
+    if(!user){
+      lock.fails=(lock.fails||0)+1;
+      if(lock.fails>=5){
+        lock.until=Date.now()+5*60*1000;lock.fails=0;
+        localStorage.setItem(lockKey,JSON.stringify(lock));
+        showToast('账号或密码错误次数过多,已锁定5分钟');
+      }else{
+        localStorage.setItem(lockKey,JSON.stringify(lock));
+        showToast(`账号或密码错误,还剩${5-lock.fails}次机会`);
+      }
+      return;
+    }
   }
   // V5.4: 密码哈希验证，兼容明文旧密码（首次登录时自动迁移）
   let passOk = false;
@@ -54,15 +66,16 @@ async function doLogin(){
   }
   if (!passOk) {
     // V10.16.4 安全加固: 记录失败次数, 5次后锁定5分钟
+    // V10.16.5: 统一错误提示, 不泄露是"密码错误"还是"账号不存在"
     lock.fails=(lock.fails||0)+1;
     if(lock.fails>=5){
       lock.until=Date.now()+5*60*1000;
       lock.fails=0;
       localStorage.setItem(lockKey,JSON.stringify(lock));
-      showToast('密码错误次数过多,已锁定5分钟');
+      showToast('账号或密码错误次数过多,已锁定5分钟');
     }else{
       localStorage.setItem(lockKey,JSON.stringify(lock));
-      showToast(`密码错误,还剩${5-lock.fails}次机会`);
+      showToast(`账号或密码错误,还剩${5-lock.fails}次机会`);
     }
     return;
   }
@@ -159,6 +172,12 @@ async function doRegister(){
   const pass2=document.getElementById('reg-pass2').value.trim();
   if(!name||!phone||!pass){showToast('请填写完整信息');return;}
   if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
+  // V10.16.5 安全加固: 注册限流, 同一设备1小时内最多注册3次
+  const regKey='tcg_reg_lock';
+  const regLock=JSON.parse(localStorage.getItem(regKey)||'[]');
+  const now=Date.now();
+  const recent=regLock.filter(t=>now-t<60*60*1000);
+  if(recent.length>=3){showToast('注册过于频繁,请1小时后再试');return;}
   if(pass.length<6){showToast('密码至少6位');return;}
   // V10.16.4 安全加固: 密码须含数字+字母
   if(!/(?=.*\d)(?=.*[a-zA-Z])/.test(pass)){showToast('密码须包含数字和字母');return;}
@@ -172,6 +191,9 @@ async function doRegister(){
   const newUser={id:Date.now(),name,phone,password:hashedPass,role:isFirstUser?'admin':'user',status:isFirstUser?'active':'pending',created:new Date().toLocaleDateString()};
   State.addUser(newUser); // A3状态守卫: 入列走State API(落盘仍由下一行saveUsers控制)
   saveUsers(USERS);
+  // V10.16.5: 记录注册时间戳用于限流
+  regLock.push(Date.now());
+  localStorage.setItem(regKey,JSON.stringify(regLock));
   if(isFirstUser){showToast('首个账号注册成功，已自动设为组长');}else{
     /* V10.7.0问题1已回退: 恢复人工审批文案
      * V10.7.0曾改为"自动通过后即可登录",现回退至V10.6.0策略:
