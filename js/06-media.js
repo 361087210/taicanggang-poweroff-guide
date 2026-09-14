@@ -285,8 +285,15 @@ async function openVideoPlayer(videoIndex){
   // V10.14.2: 更新播放器内视频导航信息
   _updateVideoNav(v.videoPaths.length,videoIndex);
   const video=document.getElementById('video-element');
+  // V10.18.0(反馈问题3): 播放器设置封面poster,避免未播放前黑屏/无封面(车型名可辨识)
+  // V10.19.0: 封面生成收敛到 videoCoverDataUri(与详情页卡片共用同一真源,防漂移)
+  const playLabel=(videoIndex===0?'断电教学视频':`补充视频${videoIndex}`);
+  video.poster=videoCoverDataUri(v.display,playLabel);
   const cdnBase=`https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@${GITHUB_BRANCH}`;
   const fileName=v.videoPaths[videoIndex].split('/').pop();
+  // V10.19.0: 该车型对应的官方资产原名(组长上传改名后由 videoBaseNames 留档),
+  // 供云端源不可用时的官方片别名回退使用
+  const canonicalName=(v.videoBaseNames&&v.videoBaseNames[videoIndex])||'';
 
   // 清除旧的事件监听器与错误提示
   video.onerror=null;
@@ -319,19 +326,19 @@ async function openVideoPlayer(videoIndex){
 
   // V10.2 问题1修复: 网络源链抽为独立函数,供磁盘缓存未命中/缓存损坏两条路径复用
   const playFromNetwork=()=>{
-    // 源①: 本地APK内路径
-    tryPlaySource(video,v.videoPaths[videoIndex],()=>{
-      if(session!==_videoSession)return; // 用户已退出,终止源链
-      // 源②: GitHub Release直链(V5.3.5, 免鉴权+Range流式秒开)
-      const directUrl=mediaDirectUrl(fileName);
-      if(directUrl){
-        // V10.2: 流式播放成功后异步抓取落盘,下次秒开
-        tryPlaySource(video,directUrl,()=>tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[videoIndex],session),session,()=>{cacheUrlToDisk(directUrl,fileName);});
-      }else{
-        // 未映射的视频(组长新上传)直接走飞书云端
-        tryFeishuVideoSource(video,fileName,cdnBase,v.videoPaths[videoIndex],session);
-      }
-    },session);
+    // V10.19.0(反馈问题3·网页端完全不可播): 纯网页环境跳过源①。
+    // 根因: 源①是相对路径 vehicle_videos/*.mp4,该目录从未随仓库分发(网页端
+    // 与jsDelivr分支树内均不存在),在网页端必然404且要白白等一个播放源,
+    // 首帧体验极差。App(Cordova)内该路径可能命中打包资源,故予以保留。
+    if(!_isWebStaticEnv()){
+      // 源①: 本地APK内路径
+      tryPlaySource(video,v.videoPaths[videoIndex],()=>{
+        if(session!==_videoSession)return; // 用户已退出,终止源链
+        _playReleaseOrCloud(video,fileName,cdnBase,v.videoPaths[videoIndex],session,canonicalName);
+      },session);
+      return;
+    }
+    _playReleaseOrCloud(video,fileName,cdnBase,v.videoPaths[videoIndex],session,canonicalName);
   };
 
   // 源⓪: V10.2 问题1修复——本地磁盘持久缓存命中,file://直读秒开
@@ -405,29 +412,98 @@ function switchVideo(direction){
 }
 
 /**
- * 飞书云端视频源 + CDN回退链(V5.3.5从openVideoPlayer拆出)
+ * V10.19.0: 判定"只能依赖免鉴权静态直链"的运行环境(纯网页/无密钥)
+ * App(Cordova)有原生HTTP层可直连飞书API;纯浏览器既无appSecret(CI不注入、
+ * 且注入即泄露)又被CORS拦截,任何需要鉴权的源都必然失败 —— 此类环境应
+ * 直接走GitHub Release静态直链(免鉴权+支持Range+无CORS),而不是逐个
+ * 试错到"视频加载失败"空态。
+ * 安全红线: 本函数只做环境判定,不引入也不依赖任何密钥。
+ * @returns {boolean} true=纯网页静态环境(不可用飞书媒体源)
+ */
+function _isWebStaticEnv(){
+  try{
+    if(typeof window!=='undefined'&&window.cordova&&window.cordova.platformId)return false; // Cordova App
+    if(typeof feishuCfgReady==='function'&&typeof getFeishuCfg==='function'){
+      if(feishuCfgReady(getFeishuCfg()))return false; // 浏览器但已配置密钥,可直连云
+    }
+  }catch(e){/* 配置读取异常按静态环境处理,走最稳的静态源 */}
+  return true;
+}
+
+/**
+ * V10.19.0: 源②(Release精确直链)→ 未命中则进入飞书/CDN回退链
+ * 从openVideoPlayer拆出,供"磁盘缓存损坏回退"与"网页端跳过源①"两条路径复用。
+ * @param {HTMLVideoElement} video - 播放器元素
+ * @param {string} fileName - 视频文件名
+ * @param {string} cdnBase - jsDelivr CDN基址
+ * @param {string} videoPath - 车型数据中的相对视频路径
+ * @param {number} [session] - 播放会话号
+ * @param {string} [canonicalName] - V10.19.0官方资产原名(上传改名后的留档)
+ */
+function _playReleaseOrCloud(video,fileName,cdnBase,videoPath,session,canonicalName){
+  // 源②: GitHub Release直链(V5.3.5, 免鉴权+Range流式秒开)
+  const directUrl=(typeof mediaDirectUrl==='function')?mediaDirectUrl(fileName):null;
+  if(directUrl){
+    // V10.2: 流式播放成功后异步抓取落盘,下次秒开
+    tryPlaySource(video,directUrl,()=>tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session,canonicalName),session,()=>{cacheUrlToDisk(directUrl,fileName);});
+  }else{
+    // 未映射的视频(组长新上传)直接走飞书云端
+    tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session,canonicalName);
+  }
+}
+
+/**
+ * 飞书云端视频源 + 官方片别名回退 + CDN回退链(V5.3.5从openVideoPlayer拆出)
  * 为什么拆分: 五源链嵌套过深违反单一职责,拆出后openVideoPlayer保持可读。
  * @param {HTMLVideoElement} video - 播放器元素
  * @param {string} fileName - 视频文件名
  * @param {string} cdnBase - jsDelivr CDN基址
  * @param {string} videoPath - 车型数据中的相对视频路径
  * @param {number} [session] - V5.9.0播放会话号(缺省视为当前会话,兼容旧调用点)
+ * @param {string} [canonicalName] - V10.19.0: 官方资产原名(组长上传改名后的留档)
  */
-function tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session){
+function tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session,canonicalName){
   if(session!==undefined&&session!==_videoSession)return; // 会话已失效(用户已退出),终止
   // 源③: 飞书云端(组长上传的真实视频)
   playFromFeishuCloud(video,fileName,session).then(ok=>{
     if(session!==undefined&&session!==_videoSession)return; // 下载期间用户已退出,丢弃结果
     if(ok)return;
-    // 源④: GitHub jsDelivr CDN(视频曾同步到仓库时可用)
-    // V10.2: CDN流式播放成功后异步抓取落盘,下次秒开
-    const cdnUrl=cdnBase+'/'+videoPath;
-    tryPlaySource(video,cdnUrl,()=>{
-      if(session!==undefined&&session!==_videoSession)return;
-      // 源⑤: 全部失败 → 诚实提示 + 组长上传入口
-      showVideoMissing(fileName,video);
-    },session,()=>{cacheUrlToDisk(cdnUrl,fileName);});
+    /* 源④: V10.19.0 官方Release资产别名回退(反馈问题3根治)
+     * 根因: 组长上传/同步回写会把 videoPaths 改名为 "<车型display>_v<N>.mp4",
+     *   与 MEDIA_DIRECT_ASSETS 的下划线扁平化键 100% 失配 → 源②被跳过 →
+     *   网页端(无密钥)只能一路失败到"视频加载失败"空态。
+     * 位置: 刻意放在飞书之后 —— 精确改名的新上传视频仍优先由飞书云端播出
+     *   (组长新片不被旧官方片覆盖);仅当云端不可用(网页端/云目录丢失/弱网)
+     *   才回退官方片,保证"至少有得看"。 */
+    const aliasUrl=(typeof mediaDirectUrlAlias==='function')?mediaDirectUrlAlias(fileName,canonicalName):null;
+    if(aliasUrl){
+      tryPlaySource(video,aliasUrl,()=>{
+        if(session!==undefined&&session!==_videoSession)return;
+        _tryCdnSource(video,fileName,cdnBase,videoPath,session);
+      },session,()=>{cacheUrlToDisk(aliasUrl,fileName);});
+      return;
+    }
+    _tryCdnSource(video,fileName,cdnBase,videoPath,session);
   });
+}
+
+/**
+ * 源⑤: GitHub jsDelivr CDN(仅当视频文件确实在仓库分支树内时可用)
+ * 注: Release资产不在main分支文件树中,故该源对官方片必然404,仅作兼容保留。
+ * @param {HTMLVideoElement} video - 播放器元素
+ * @param {string} fileName - 视频文件名
+ * @param {string} cdnBase - jsDelivr CDN基址
+ * @param {string} videoPath - 车型数据中的相对视频路径
+ * @param {number} [session] - 播放会话号
+ */
+function _tryCdnSource(video,fileName,cdnBase,videoPath,session){
+  // V10.2: CDN流式播放成功后异步抓取落盘,下次秒开
+  const cdnUrl=cdnBase+'/'+videoPath;
+  tryPlaySource(video,cdnUrl,()=>{
+    if(session!==undefined&&session!==_videoSession)return;
+    // 源⑥: 全部失败 → 诚实提示 + 组长上传入口
+    showVideoMissing(fileName,video);
+  },session,()=>{cacheUrlToDisk(cdnUrl,fileName);});
 }
 
 /**
@@ -662,7 +738,13 @@ function clearVideoError(){
 function pickVideoFile(){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
   if(!v||!v.videoPaths||!v.videoPaths.length)return;
-  const fileName=_sanitizeFeishuFileName(v.videoPaths[_currentVideoIndex].split('/').pop());
+  // V10.18.0(反馈问题4): 上传文件名按车型名称命名,与照片/视频自动分离上传
+  // 规则一致(<display>_v{序号}.mp4),便于人工在飞书云端辨识与管理。
+  // V10.19.0: 索引越界保护——从未打开播放器(或切换过车型)时 _currentVideoIndex
+  // 可能指向不存在的位置,导致文件名序号与回写位置错配。
+  const idx=(_currentVideoIndex>=0&&_currentVideoIndex<v.videoPaths.length)?_currentVideoIndex:0;
+  const baseName=_sanitizeFeishuFileName(v.display||('vehicle_'+v.id));
+  const fileName=`${baseName}_v${idx+1}.mp4`;
   const input=document.createElement('input');
   input.type='file';
   input.accept='video/mp4,video/quicktime,video/webm';
@@ -696,7 +778,19 @@ function pickVideoFile(){
       showToast('视频上传成功,全组设备已可播放');
       addSyncLog(`视频上传成功 · ${fileName} · ${(file.size/1048576).toFixed(1)}MB`,'green');
       clearVideoError();
-      openVideoPlayer(_currentVideoIndex);
+      // V10.19.0: 改名会破坏官方Release资产表的精确命中(键为下划线扁平化名),
+      // 故在此留档原名到 videoBaseNames[index],供云端源不可用时回退官方片
+      // (纯新增字段,旧版本客户端忽略,不影响既有数据兼容)。
+      const prevName=(v.videoPaths[idx]||'').split('/').pop();
+      if(prevName&&prevName!==fileName){
+        if(!v.videoBaseNames)v.videoBaseNames={};
+        v.videoBaseNames[idx]=prevName;
+      }
+      // V10.18.0(反馈问题4): 回写按车型命名的云端路径并持久化,确保本机与组员端一致
+      v.videoPaths[idx]='vehicle_videos/'+fileName;
+      if(typeof persistVehicles==='function')persistVehicles();
+      if(typeof renderVehicleDetail==='function')renderVehicleDetail(v.id);
+      openVideoPlayer(idx);
     }catch(err){
       console.error('Video upload failed:',err);
       showToast('视频上传失败: '+(err.message||err));

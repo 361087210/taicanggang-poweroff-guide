@@ -1,13 +1,16 @@
 {
-  "version": "10.17.1",
-  "versionCode": 101701,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.17.1/tcg_poweroff_v10.17.1.apk",
+  "version": "10.19.0",
+  "versionCode": 101900,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.19.0/tcg_poweroff_v10.19.0.apk",
   "releaseNotes": [
-    "V10.17.1 视频真实恢复补丁版。一句话总结: 23个缺失视频用本地同名素材补齐为真实Release资产,彻底消除张冠李戴映射隐患。",
-    "修复(视频张冠李戴): 撤销V10.17.0中23个视频错误复用他人车型资产的映射(断电教学视频看错车型有现场安全隐患),改用本地E盘vehicle_videos目录下同名真实素材上传,46个车型引用全部对应各自真实教学视频",
-    "修复(视频封面): 详情页封面首帧层改走Release直链,有真实资产的车型显示真实视频首帧,不再整页SVG兜底",
-    "继承 V10.17.0(拒绝通知闭环/网页注册/命名规则)全部能力",
-    "全量回归 21 套件 0 FAIL(V10.17.0 专项 51 项)"
+    "V10.19.0 视频可播性修复版。一句话总结: 修好视频「无封面/迭代后失效/网页端不可播」三症状, 并给公开镜像加上隐私白名单。",
+    "修复(视频无封面): 封面生成收敛为单一真源 videoCoverDataUri, 播放器 poster 与详情页卡片共用, 未播放态必定可见车型名封面, 不再黑屏",
+    "修复(迭代后失效): 组长上传会把视频改名为「车型名_v序号.mp4」, 与官方资产表的下划线扁平化键 100% 失配导致 Release 直链被跳过; 现新增官方片别名回退源 + 上传时留档原名(videoBaseNames), 改名后仍可播",
+    "修复(网页端不可播): 网页端跳过仓库内根本不存在的 vehicle_videos/ 相对路径源, 直接走免鉴权 Release 固定 tag 直链(支持 Range/无 CORS); 无源可播时优雅降级为诚实空态而非报错",
+    "修复(上传命名): 照片/视频上传均按车型名称命名(便于云端人工辨识), 并补上序号越界保护; 与自动分离上传规则保持一致",
+    "安全(隐私): web-data/ 是 GitHub Pages 公开静态资源, 反馈表镜像新增分页拉取 + 字段白名单(默认拒绝), 联系方式/设备信息/提交人等个人可识别字段一律不出库",
+    "工程: 版本一致性测试期望值改为从 version.json 动态读取, 杜绝每次升版都写死导致的反复发作; sw.js 缓存名随版本升级, 解除「缓存优先」导致的旧 JS 常驻",
+    "V10.18.0 审批闭环加固: 飞书群拒绝通知chatId落地、被拒申请端即时弹窗通知、视频上传按车型名称命名、播放器封面显示; 继承V10.17.x全部能力"
   ],
   "forceUpdate": false,
   "minVersion": "5.3.0",
@@ -25,6 +28,6 @@
     "bitableAppToken": "Gn4db7il9a27QrsOtVbclSE3nnf",
     "bitableFeedbackTableId": "tblPB0AnsTS9puqw",
     "approvalCode": "",
-    "chatId": ""
+    "chatId": "oc_1b25c691971c61de0b7773e49cb42796"
   }
 }

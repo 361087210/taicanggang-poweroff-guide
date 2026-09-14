@@ -66,6 +66,58 @@ check('A21 06-media.js 组长端组员管理页拉云端全量用户(防抖)', s
 check('A22 09-web-sync.js 网页端组员列表镜像合并(云端组员追加)', src.websync.includes('function _appendCloudOnlyMembers') && src.websync.includes("approved_users.web.json"));
 check('A23 组长判定双保险(state+isLeader函数)', src.feedback.includes('leaderByState') && src.feedback.includes('leaderByFn'));
 
+/* ---------- V10.19.0 反馈镜像隐私白名单 ----------
+ * 背景: web-data/ 是发布到 GitHub Pages 的**公开静态资源**。旧实现从云盘
+ * 整包透传 feedback_data.json, 一旦有真实数据就会把联系方式/设备信息/
+ * 提交人姓名一起推上公网。现改为"分页拉取 + 输出侧字段白名单(默认拒绝)"。
+ */
+check('A24 定义反馈字段白名单常量(含问题描述)', src.mirror.includes('FEEDBACK_FIELD_ALLOWLIST') && src.mirror.includes("'问题描述'"));
+check('A25 出库前统一调用 sanitizeFeedback(本地/飞书同源, 杜绝绕过)', src.mirror.includes('const feedback = sanitizeFeedback(rawFeedback)'));
+check('A26 反馈表分页拉取(page_token 循环, 不漏后续页)', /function feishuListBitableRecords/.test(src.mirror) && src.mirror.includes('page_token'));
+check('A27 FEEDBACK_APP_TOKEN 取自 TCG_CONFIG 且不硬编码',
+  src.mirror.includes('TCG_CONFIG.BASE_APP_TOKEN') && !/const FEEDBACK_APP_TOKEN\s*=\s*['"]/.test(src.mirror));
+check('A28 敏感字段名兜底正则(白名单被误改时的双保险)', /SENSITIVE_FIELD_RE\s*=/.test(src.mirror));
+
+/* A29/A30 端到端实证: 源数据灌满 PII, 产物必须零泄露且白名单字段保留 */
+(function(){
+  const { execSync } = require('child_process');
+  const sdir = path.join(REPO, '_a29_src'), odir = path.join(REPO, '_a29_out');
+  try {
+    if (fs.existsSync(sdir)) fs.rmSync(sdir, { recursive: true });
+    if (fs.existsSync(odir)) fs.rmSync(odir, { recursive: true });
+    fs.mkdirSync(sdir, { recursive: true });
+    fs.writeFileSync(path.join(sdir, 'vehicle_sync_data.json'), JSON.stringify({
+      vehicles: [{ id: 'v1', display: '测试车', videoPaths: [] }], version: 'v10.19.0', timestamp: new Date().toISOString()
+    }));
+    fs.writeFileSync(path.join(sdir, 'approved_users.json'), JSON.stringify({ users: [] }));
+    // 故意灌入满血 PII, 模拟"整包透传"的最坏情况
+    fs.writeFileSync(path.join(sdir, 'feedback_data.json'), JSON.stringify({ items: [{
+      record_id: 'rec_1',
+      fields: {
+        '反馈ID': 'fb_001', '问题板块': '车辆查询-搜索筛选', '问题描述': '搜索车型时闪退',
+        '状态': '待处理', '创建时间': 1789000000000,
+        '提交人': '张三丰', '角色': '组员', '平台': 'Android', 'APP版本': 'V10.19.0',
+        '设备信息': 'Pixel 7 / Android 14 / IMEI 867293048172634', '联系方式': '13812345678'
+      }
+    }] }));
+    execSync('node scripts/sync_web_data.js --source-dir _a29_src --out _a29_out', { cwd: REPO, stdio: 'ignore' });
+    const blob = fs.readFileSync(path.join(odir, 'feedback_data.json'), 'utf8');
+    const leaks = ['张三丰', '13812345678', 'IMEI', 'Pixel', '867293048172634', 'Android'];
+    const leaked = leaks.filter(s => blob.indexOf(s) >= 0);
+    check('A29 端到端: 含PII源数据经镜像后零泄露', leaked.length === 0, leaked.join(','));
+    check('A30 端到端: 白名单字段确实保留(问题描述/状态/反馈ID)',
+      blob.indexOf('"问题描述"') >= 0 && blob.indexOf('"状态"') >= 0 && blob.indexOf('"反馈ID"') >= 0);
+  } catch (e) {
+    check('A29 端到端: 含PII源数据经镜像后零泄露', false, e.message);
+    check('A30 端到端: 白名单字段确实保留(问题描述/状态/反馈ID)', false, e.message);
+  } finally {
+    try {
+      if (fs.existsSync(sdir)) fs.rmSync(sdir, { recursive: true });
+      if (fs.existsSync(odir)) fs.rmSync(odir, { recursive: true });
+    } catch (e) { /* 清理失败不影响断言结果 */ }
+  }
+})();
+
 /* ============================================================
  * B. 运行时行为(jsdom)
  * ============================================================ */

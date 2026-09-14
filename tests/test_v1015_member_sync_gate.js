@@ -55,7 +55,7 @@ function section(title) {
 // 注入秘钥固定测试值(与真机构建期 inject_build_secrets.js 注入的字段形态一致)
 const INJ = {
   appId: 'cli_INJECTED_1015',
-  appSecret: 'SEC_INJECTED_1015_secret',
+  appSecret: 'SEC_INJECTED_1015_secret', // noqa:secret (jsdom注入用假值,非真实凭据)
   folderToken: 'FLDR_injected_1015',
 };
 

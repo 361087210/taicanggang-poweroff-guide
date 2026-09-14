@@ -46,13 +46,16 @@ if(document.documentElement&&document.documentElement.classList){
   document.documentElement.classList.add('web-env');
 }
 
-/* ---------- 常量(与scripts/sync_web_data.js严格一致) ---------- */
-var WEB_SYNC_SALT='tcg-web-2026';
-var MIRROR_BASE='web-data/';
+/* ---------- 常量(与scripts/sync_web_data.js严格一致) ----------
+ * V10.18.0 重构: WEB_SYNC_SALT / MIRROR_BASE 改从单一真源 window.TCG_CONFIG 读取,
+ * 仅当 TCG_CONFIG 未加载(极旧环境)时回退内置默认值, 杜绝散落硬编码漂移。 */
+var WEB_SYNC_SALT=(window.TCG_CONFIG&&window.TCG_CONFIG.WEB_SYNC_SALT)||'tcg-web-2026';
+var MIRROR_BASE=(window.TCG_CONFIG&&window.TCG_CONFIG.WEB_MIRROR_BASE)||'web-data/';
+var GITHUB_REGISTER_REPO=(window.TCG_CONFIG&&window.TCG_CONFIG.GITHUB_REGISTER_REPO)||'361087210/tcg-registration-inbox';
 /* V10.17.0: 网页端注册GitHub登记通道(反馈问题2)——
  * 登记库公开只写, token按项目既有XOR+base64模式加密存储(与appSecretEnc同款,
  * 密钥同源), 明文不出现在源码/构建产物/网络日志中;轮换时仅需更新此密文。 */
-var GITHUB_REGISTER_API='https://api.github.com/repos/361087210/tcg-registration-inbox/contents/registrations';
+var GITHUB_REGISTER_API='https://api.github.com/repos/'+GITHUB_REGISTER_REPO+'/contents/registrations';
 var GITHUB_REGISTER_TOKEN_ENC='Mys3ABRgQg8+IDUYWlpafGAmECdlZnsTFnkKGn1GZ2UbKHQzOQJ8JQ==';
 
 /* ---------- 基础工具 ---------- */
