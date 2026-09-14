@@ -83,9 +83,25 @@ async function doLogin(){
   // 组长在另一台设备/另一网络已通过时,组员本机立即放行,不再被本地旧状态永久拦截
   if(user.status==='pending'){
     const approved=await pullApprovedStatusFromFeishu(user);
-    if(!approved){showToast('您的账号正在审核中，请等待组长审核');return;}
+    if(!approved){
+      // V10.17.0: 拉取后再查一次本地状态——云端rejected已合并时给出
+      // 明确的“未通过”文案,不再误导性提示“审核中”(反馈问题1配套)
+      const after=USERS.find(u=>u.phone===phone);
+      if(after&&after.status==='rejected'){
+        showToast('您的注册申请未通过组长审核，如有疑问请联系组长');
+      }else{
+        showToast('您的账号正在审核中，请等待组长审核');
+      }
+      return;
+    }
   }
-  if(user.status==='rejected'){showToast('您的注册申请未通过审核');return;}
+  if(user.status==='rejected'){
+    // V10.17.0: 拒绝态登录先拉云端复核(组长可能改判通过),仍拒绝则明确文案
+    try{await pullApprovedStatusFromFeishu(user);}catch(e){/* 网络失败维持本地态 */}
+    const after=USERS.find(u=>u.phone===phone);
+    if(after&&after.status==='active'){user.status='active';}
+    else{showToast('您的注册申请未通过组长审核，如有疑问请联系组长');return;}
+  }
   state.currentUser=user;
   // V10.16.4: 登录成功, 清除失败计数
   localStorage.removeItem(lockKey);

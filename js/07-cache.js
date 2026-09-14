@@ -245,6 +245,13 @@ function rejectMember(id){
       pushApprovedUsersToFeishu().catch(err=>{
         console.error('[审核] 推送拒绝结果失败:',err);
       });
+      // V10.17.0: 拒绝结果飞书实时通知——旧版仅回推云端用户表,组员端
+      // 不合并rejected状态,被拒后永远停在“审核中”(反馈问题1根因)。
+      // 现在拒绝动作即时推送飞书群消息,同步链路将rejected状态带给组员端,
+      // 组员端拉取后弹“未通过审核”通知并停止无效轮询(三端闭环)。
+      if(typeof notifyRegistrationResult==='function'){
+        notifyRegistrationResult(USERS[idx].phone,'rejected',USERS[idx].name).catch(function(){/* 尽力通知,失败不影响审批主流程 */});
+      }
       // V5.7: 拒绝同样清理云端申请文件
       deletePendingFileFromFeishu(USERS[idx].phone).catch(err=>{
         console.warn('[审核] 删除云端申请文件失败:',err.message);

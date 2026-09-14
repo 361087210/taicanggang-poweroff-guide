@@ -637,9 +637,11 @@ function showVideoMissing(fileName,video){
   const div=document.createElement('div');
   div.className='video-error';
   div.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;text-align:center;font-size:14px;max-width:90%;z-index:5;';
-  div.innerHTML='<div style="font-size:40px;margin-bottom:10px;">📹</div>教学视频待补充'+
-    '<div style="font-size:12px;color:#999;margin-top:6px;">现场请按图文步骤操作</div>'+
-    (isAdmin?`<button onclick="pickVideoFile()" style="margin-top:12px;padding:8px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:13px;">上传本车视频</button>`:'');
+  // V10.17.0: 区分“待补充”与“源失效”两种空态(反馈问题3),组长额外看到
+  // 重新上传入口: 云端目录丢失后旧文案“教学视频待补充”会误导组长以为从未传过
+  div.innerHTML='<div style="font-size:40px;margin-bottom:10px;">📹</div>教学视频加载失败'+
+    '<div style="font-size:12px;color:#999;margin-top:6px;">该视频云端源暂不可用，现场请按图文步骤操作</div>'+
+    (isAdmin?`<button onclick="pickVideoFile()" style="margin-top:12px;padding:8px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:13px;">重新上传本车视频</button>`:'');
   container.appendChild(div);
 }
 

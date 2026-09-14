@@ -9,7 +9,7 @@
  *      读取(零CORS问题),并维持与安卓版完全一致的合并语义。
  *
  * 激活策略(V1.1 探测式激活,关键安全约束):
- *   本模块绝不无条件覆盖feishuCfgReady等安全门函数——否则jsdom逻辑
+ *   本模块绝不无条件覆盖feishuCfgReady等安全门函数--否则jsdom逻辑
  *   测试(4.2a"默认未注入时feishuCfgReady=false安全拦截")与"镜像尚未
  *   部署"的场景都会被污染。加载时仅做异步探测: web-data/meta.json
  *   可达且含syncedAt,才安装全部覆盖(真实Pages部署形态);
@@ -17,13 +17,13 @@
  *   完全保持原生行为,不产生任何副作用。
  *
  * 覆盖范围(仅激活后生效,安卓Cordova APP永不激活):
- *   ① feishuCfgReady/getFeishuToken/downloadJsonFromDataFeishu/
- *      downloadJsonFromFolder —— 下行下载原语改读同源镜像
- *   ② pullApprovedStatusFromFeishu —— 登录云端账号核对(手机号哈希匹配)
- *   ③ checkMemberAccountAlive —— 组员账号存活守卫(哈希匹配)
- *   ④ doSyncDownload原有主流程经①自动生效(镜像对齐语义不变)
- *   ⑤ 上行链路(doSyncUpload/注册/审批推送)封堵并给出引导提示
- *   ⑥ 即时同步引擎: 60秒轮询web-data/data_update_notice.json,
+ *   1 feishuCfgReady/getFeishuToken/downloadJsonFromDataFeishu/
+ *      downloadJsonFromFolder -- 下行下载原语改读同源镜像
+ *   2 pullApprovedStatusFromFeishu -- 登录云端账号核对(手机号哈希匹配)
+ *   3 checkMemberAccountAlive -- 组员账号存活守卫(哈希匹配)
+ *   4 doSyncDownload原有主流程经1自动生效(镜像对齐语义不变)
+ *   5 上行链路(doSyncUpload/注册/审批推送)封堵并给出引导提示
+ *   6 即时同步引擎: 60秒轮询web-data/data_update_notice.json,
  *      检测到组长上传的新数据自动镜像对齐+提示
  *
  * 隐私约定: 镜像表手机号已脱敏为sha256(SALT+phone),
@@ -49,6 +49,11 @@ if(document.documentElement&&document.documentElement.classList){
 /* ---------- 常量(与scripts/sync_web_data.js严格一致) ---------- */
 var WEB_SYNC_SALT='tcg-web-2026';
 var MIRROR_BASE='web-data/';
+/* V10.17.0: 网页端注册GitHub登记通道(反馈问题2)——
+ * 登记库公开只写, token按项目既有XOR+base64模式加密存储(与appSecretEnc同款,
+ * 密钥同源), 明文不出现在源码/构建产物/网络日志中;轮换时仅需更新此密文。 */
+var GITHUB_REGISTER_API='https://api.github.com/repos/361087210/tcg-registration-inbox/contents/registrations';
+var GITHUB_REGISTER_TOKEN_ENC='Mys3ABRgQg8+IDUYWlpafGAmECdlZnsTFnkKGn1GZ2UbKHQzOQJ8JQ==';
 
 /* ---------- 基础工具 ---------- */
 async function _sha256Hex(s){
@@ -66,7 +71,7 @@ async function _sha256Hex(s){
 /** 拉取同源镜像JSON(时间戳防缓存+no-store双保险,配合SW网络优先策略)
  *  V10.15.9 弱网优化: 10s超时,避免弱网下fetch挂起阻塞UI;
  *  超时抛错由调用方catch静默降级,不影响本地已有数据展示。
- *  V10.15.10: 改用05-sync.js的fetchSignalSafe垫片——signal跨realm环境
+ *  V10.15.10: 改用05-sync.js的fetchSignalSafe垫片--signal跨realm环境
  *  (旧WebView polyfill)下去signal重试,不再整链断供;垫片未加载时兜底裸fetch。 */
 async function _fetchMirror(name){
   if(typeof fetchSignalSafe==='function'){
@@ -87,16 +92,16 @@ function _install(){
   if(_installed)return;
   _installed=true;
 
-  /* ---------- ① 下载原语覆盖: 飞书云端 → 同源web-data/镜像 ---------- */
+  /* ---------- 1 下载原语覆盖: 飞书云端 → 同源web-data/镜像 ---------- */
   window.feishuCfgReady=function(){return true;}; /* 网页镜像通道就绪(无需飞书凭据) */
   window.getFeishuToken=async function(){return 'web-mirror';}; /* 假token:真实下载已被下方重写 */
 
   window.downloadJsonFromDataFeishu=async function(token,docName,subName){
     if(docName==='vehicle_sync_data.json')return _fetchMirror('vehicle_sync_data.json');
     if(docName==='data_update_notice.json')return _fetchMirror('data_update_notice.json');
-    /* approved_users.json: 镜像表手机号已哈希无法还原,返回null——
+    /* approved_users.json: 镜像表手机号已哈希无法还原,返回null--
      * 该文件的两个调用方(pullApprovedStatusFromFeishu/checkMemberAccountAlive)
-     * 已在下方②③整体重写,不会走到这里 */
+     * 已在下方23整体重写,不会走到这里 */
     if(docName==='approved_users.json')return null;
     return null;
   };
@@ -108,7 +113,7 @@ function _install(){
   };
 
   /* ============================================================
-   * ② 登录云端账号核对(手机号sha256匹配还原)
+   * 2 登录云端账号核对(手机号sha256匹配还原)
    * 语义对齐安卓版pullApprovedStatusFromFeishu(V5.7):
    *  - 云端有而本地无(新设备登录)→以登录输入的真实手机号重建本地账号
    *  - 本地已有→云端active状态传播(密码以本地为准,避免覆盖)
@@ -154,7 +159,7 @@ function _install(){
           if(cu.status==='active'&&local.status!=='active'){local.status='active';changed=true;}
           if(cu.name&&local.name!==cu.name){local.name=cu.name;changed=true;}
           if(cu.role&&(local.role||'user')!==cu.role){local.role=cu.role;changed=true;}
-          /* V10.15.11: 密码跨设备仲裁(账号级pw_ts取新者,语义对齐安卓版05-sync.js)——
+          /* V10.15.11: 密码跨设备仲裁(账号级pw_ts取新者,语义对齐安卓版05-sync.js)--
              安卓端改密推云端后,本浏览器拉取镜像采纳新哈希,旧密码同步失效。
              V10.15.14: >改>=,修复旧版本改密(pw_ts=0)换设备登录新密码永不采纳的bug */
           if(cu.password&&String(cu.password).indexOf('$')>=0&&String(cu.password)!==String(local.password||'')){
@@ -185,7 +190,7 @@ function _install(){
   };
 
   /* ============================================================
-   * ③ 组员账号存活守卫(哈希匹配,防误踢语义与安卓版一致)
+   * 3 组员账号存活守卫(哈希匹配,防误踢语义与安卓版一致)
    * ============================================================ */
   window.checkMemberAccountAlive=async function(){
     if(!state.currentUser||state.currentUser.role!=='user')return true;
@@ -212,35 +217,101 @@ function _install(){
   };
 
   /* ============================================================
-   * ④ 上行链路封堵: 网页版为只读镜像端(写入统一走安卓组长端)
+   * 4 上行链路封堵: 网页版为只读镜像端(写入统一走安卓组长端)
    * ============================================================ */
   window.doSyncUpload=async function(){
-    showToast('网页版为只读数据镜像，请在安卓端上传');
+    showToast('网页版为只读数据镜像,请在安卓端上传');
     addSyncLog('网页镜像端不支持上传 · 数据发布请使用安卓组长端','red');
   };
   window.pullPendingFromFeishu=async function(){return false;};   /* 待审申请只在安卓端处理 */
   window.syncPendingToFeishu=async function(){};                  /* 注册上传封堵(注册本身已拦截) */
   window.pushApprovedUsersToFeishu=async function(){
-    showToast('网页端管理操作不会同步云端，请在安卓端操作');
+    showToast('网页端管理操作不会同步云端,请在安卓端操作');
   };
-  /* V10.15.13: 网页端禁止改密——网页版为只读镜像,CORS无法直连飞书API,
+  /* V10.15.13: 网页端禁止改密--网页版为只读镜像,CORS无法直连飞书API,
    * pushApprovedUsersToFeishu被封堵,改密只改本浏览器localStorage、不推云端,
    * 用户误以为改密成功,换安卓设备登录时云端仍是旧哈希→新密码永远错误。
    * 直接拦截并引导至安卓端操作,避免"假成功"陷阱。 */
   window.changePassword=async function(){
-    showToast('网页版不支持修改密码，请在安卓APP「我的→账号安全」中修改');
+    showToast('网页版不支持修改密码,请在安卓APP「我的→账号安全」中修改');
   };
+  /* ============================================================
+   * ④d 网页端自助注册(GitHub登记通道) - V10.17.0 反馈问题2
+   * ============================================================
+   * 背景: 网页端无飞书直连能力(CORS),旧版直接拦截注册引导去安卓端;
+   *      用户要求网页端可申请注册。方案: 登记走GitHub专用库
+   *      (公开仓库+细粒度token,提交即创建pending_reg_<手机号>.json,
+   *      镜像工作流转投飞书“注册申请/”),组长端现有轮询零改动可见可审;
+   *      审批后组员经网页镜像approved_users.web.json登录。
+   * 诚实原则: 上行失败时立即删除本地pending账号并明确报错,绝不假成功。
+   * ============================================================ */
   window.doRegister=async function(){
-    /* 网页注册→待审→上传飞书(CORS拦截)→组长永远看不到申请→账号卡死待审。
-     * 直接引导走安卓端添加,避免"假注册成功"的体验陷阱 */
-    showToast('网页版暂不支持自助注册，请联系组长在安卓端添加账号');
+    var name=document.getElementById('reg-name').value.trim();
+    var phone=document.getElementById('reg-phone').value.trim();
+    var pass=document.getElementById('reg-pass').value.trim();
+    var pass2=document.getElementById('reg-pass2').value.trim();
+    if(!name||!phone||!pass){showToast('请填写完整信息');return;}
+    if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
+    if(pass.length<6){showToast('密码至少6位');return;}
+    if(!/(?=.*\d)(?=.*[a-zA-Z])/.test(pass)){showToast('密码须包含数字和字母');return;}
+    if(pass!==pass2){showToast('两次密码不一致');return;}
+    if(USERS.find(function(u){return u.phone===phone;})){showToast('该手机号已注册');return;}
+    // 与安卓端一致的注册限流(同设备1小时3次)
+    var regKey='tcg_reg_lock';
+    var regLock=JSON.parse(localStorage.getItem(regKey)||'[]');
+    var now=Date.now();
+    regLock=regLock.filter(function(t){return now-t<3600000;});
+    if(regLock.length>=3){showToast('注册过于频繁,请1小时后再试');return;}
+    var salt=genSalt();
+    var hashedPass=await hashPassword(pass,salt);
+    var newUser={id:now,name:name,phone:phone,password:hashedPass,role:'user',status:'pending',created:new Date().toLocaleDateString(),remarks:'网页端申请'};
+    showToast('正在提交注册申请...');
+    var ok=false, errMsg='网络异常，请稍后重试';
+    try{
+      // 解密登记token(与appSecretEnc同款XOR+base64;00-bootstrap已加载,_SECRET_XOR_KEY在同文件闭包顶层可用)
+      var regToken='';
+      try{ regToken=(typeof _decryptBuildSecret==='function')?_decryptBuildSecret(GITHUB_REGISTER_TOKEN_ENC):''; }catch(e){ regToken=''; }
+      if(!regToken){ errMsg='注册通道未配置，请联系组长'; }
+      else{
+        var resp=await fetch(GITHUB_REGISTER_API,{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+regToken,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+          body:JSON.stringify({
+            message:'网页端注册申请 '+phone,
+            content:btoa(unescape(encodeURIComponent(JSON.stringify({
+              type:'pending_registration', source:'tcg-web', appVersion:'v'+APP_VERSION,
+              user:{id:newUser.id,name:name,phone:phone,password:hashedPass,role:'user',status:'pending',created:newUser.created,remarks:'网页端申请'},
+              timestamp:new Date().toISOString()
+            },null,2))))
+          })
+        });
+        if(resp.status===201){ok=true;}
+        else if(resp.status===422){errMsg='该手机号已提交过申请，请等待组长审核';}
+        else if(resp.status===401||resp.status===403){errMsg='申请通道暂不可用，请联系组长';}
+        else{errMsg='提交失败('+(resp.status||'网络')+')，请稍后重试';}
+      }
+    }catch(e){
+      console.warn('[网页注册] GitHub上行失败:',e&&e.message);
+    }
+    if(ok){
+      State.addUser(newUser);
+      saveUsers(USERS);
+      regLock.push(now);
+      localStorage.setItem(regKey,JSON.stringify(regLock));
+      showToast('注册申请已提交，请等待组长审核');
+      showScreen('screen-login');
+      navReset();
+      watchRegistrationActivation(newUser);
+    }else{
+      showToast('注册提交失败: '+errMsg);
+    }
   };
 
   /* ============================================================
-   * ④b 网页版问题反馈镜像桥 - V10.15.11
+   * 4b 网页版问题反馈镜像桥 - V10.15.11
    * 根因: FeedbackBase原生实现依赖飞书直连API(网页端CORS不可达),
    * 导致网页端反馈永远只有本地缓存、看不到云端处理状态。
-   * 方案: 覆盖FeedbackBase为镜像读取版——
+   * 方案: 覆盖FeedbackBase为镜像读取版--
    *   - listFeedbackRecords 读 web-data/feedback_data.json 同源镜像
    *   - 状态/AI分析/技术文档随镜像更新(安卓组长端审核后经CI镜像同步)
    *   - 写入路径封堵并给出准确引导(纯静态托管无后端,上行物理不可达)
@@ -259,11 +330,11 @@ function _install(){
   };
 
   /* ============================================================
-   * ④c 网页端组员管理镜像桥 - V10.16.7 反馈修复
+   * 4c 网页端组员管理镜像桥 - V10.16.7 反馈修复
    * 根因: 网页版pullApprovedStatusFromFeishu只重建登录者自己(镜像手机号
    * 为sha256哈希不可逆),组长浏览器本地USERS缺失往期审批通过的组员,
    * 组员管理页列表为空,表现为"往期申请注册成功的组员账号无法查看"。
-   * 方案: 包装renderMemberList——原逻辑(本地USERS)渲染后,组长视角下
+   * 方案: 包装renderMemberList--原逻辑(本地USERS)渲染后,组长视角下
    * 异步拉镜像账号表,把"云端有而本地无"的active组员以只读卡片追加
    * (手机号已脱敏,管理操作引导至安卓端),不动原渲染与操作逻辑。
    * ============================================================ */
@@ -307,7 +378,7 @@ function _install(){
   }
 
   /* ============================================================
-   * ⑤ 即时同步引擎: 60秒轮询镜像通知→自动镜像对齐
+   * 5 即时同步引擎: 60秒轮询镜像通知→自动镜像对齐
    * 合并语义与安卓doSyncDownload完全一致(V10.11.0镜像同步):
    *   云端为唯一真源,正向差集覆盖+反向差集删除,ID集合不一致时
    *   忽略时间戳强制对齐(删除传播保证)。

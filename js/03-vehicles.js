@@ -277,14 +277,22 @@ function _renderVehicleDetail(id){
   const ptClass='pt-'+v.powerType;
   const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}" onerror="imgLoadError(this)"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join('');
   // V10.14.2: 多视频支持——详情页视频区域从单视频改为多视频列表展示
+  // V10.17.0 视频封面修复(反馈问题3): 旧版首帧无图且本地/CDN源失效时卡片全黑,
+  // 仅剩播放键+纯色背景,用户误以为“视频坏了”。现双层封面策略:
+  //  ①video preload=metadata自然首帧(源可达时浏览器自动渲染);本层
+  //    onerror时静默摘除,不影响外层占位。
+  //  ②SVG兜底封面(车辆名+播放标识): 源不可达时展示友车专属封面,
+  //    不再黑屏;点击仍触发openVideoPlayer走四源回退链(App端可达时照常播放)。
   const videoPaths=v.videoPaths||[];
   const videoHtml=videoPaths.length?`
     <div class="space-y-2">
       ${videoPaths.map((vp,i)=>{
         const fn=vp.split('/').pop().replace(/\.[^.]+$/,'');
         const label=i===0?'断电教学视频':`补充视频${i}`;
+        const fallbackSvg='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#0f172a"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><circle cx="320" cy="160" r="46" fill="rgba(255,255,255,0.12)"/><polygon points="310,142 310,178 342,160" fill="#ffffff"/><text x="320" y="248" text-anchor="middle" fill="#94a3b8" font-size="18" font-family="sans-serif">${(v.display||'').replace(/[<>&'"]/g,'')}</text><text x="320" y="276" text-anchor="middle" fill="#64748b" font-size="13" font-family="sans-serif">${esc(label)} · 点按播放</text></svg>`);
         return `<div onclick="openVideoPlayer(${i})" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative overflow-hidden">
-          <video src="${esc(vp)}" preload="metadata" muted playsinline controlslist="nodownload" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'"></video>
+          <img src="${fallbackSvg}" class="absolute inset-0 w-full h-full object-cover" alt="${esc(label)}封面" onerror="this.style.display='none'">
+          <video src="${esc(vp)}" preload="metadata" muted playsinline controlslist="nodownload" class="absolute inset-0 w-full h-full object-cover" style="opacity:0;transition:opacity .3s;" onloadeddata="this.style.opacity=1;this.previousElementSibling&&(this.previousElementSibling.style.display='none')" onerror="this.style.display='none'"></video>
           <svg viewBox="0 0 24 24" fill="white" class="w-10 h-10 absolute drop-shadow"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
           <span class="absolute bottom-2 left-2 text-xs text-white drop-shadow">${esc(label)}</span>
           ${videoPaths.length>1?`<span class="absolute top-2 right-2 text-xs text-white bg-black/50 px-1.5 rounded">${i+1}/${videoPaths.length}</span>`:''}

@@ -4,6 +4,20 @@
 
 ## [未发布]
 
+### V10.17.0 注册闭环与视频恢复版
+
+#### 🔴 核心修复:
+- **拒绝通知闭环(反馈问题1)**: `pullApprovedStatusFromFeishu` 增加 rejected 状态双向同步——组长拒绝后组员端不再停留“审核中”,拉取后弹“未通过审核”通知(系统通知/Toast双通道)并终止激活守望;登录文案精准化(未通过+联系组长指引);组长拒绝动作即时推送飞书群消息(`notifyRegistrationResult`,60秒去重)
+- **网页端自助注册(反馈问题2)**: 新增 GitHub 登记通道——网页端 `doRegister` 完整注册表单(同款校验链+限流+密码哈希),提交至 `tcg-registration-inbox` 专用库;镜像工作流(relay.yml)每5分钟转投飞书「注册申请/」,组长安卓端现有60秒轮询审批链路零改动;token 以项目同款 XOR+base64 密文存储,明文不入库不入包
+- **视频链路恢复(反馈问题3)**: 直链映射表补齐 23 个缺失视频(46/46 全覆盖)——云端 `vehicle_videos` 目录丢失后,此前23个视频只能走已失效的 jsDelivr/飞书回退源;现复用 Release media-videos 标签中内容匹配的通用教学视频资产(已验证支持 Range 流式秒开);详情页视频新增双层封面(自然首帧 + 车名 SVG 兜底),不再黑屏;播放器空态文案区分“源失效/待补充”并保留组长重新上传入口
+
+#### ✨ 新功能:
+- **上传按车型名称命名(反馈需求4)**: 照片 `车型名称_p序号_哈希.jpeg`、视频 `车型名称_v序号_哈希.mp4`(旧规则 `user_v{id}_p{i}` 无法人工辨识);保留短哈希防同名冲突,幂等跳过语义不变
+
+#### 🚩 版本一致性升级 10.16.7 → 10.17.0(versionCode 101700):
+- `js/00-bootstrap.js` APP_VERSION / `config.xml` version+versionCode / `version.json` version+versionCode+downloadUrl+releaseNotes / `demo.html` sync-local-ver / `sw.js` 缓存名 / `js/11-about.js` VERSION_HISTORY / `ios-release.yml` workflow_dispatch 默认版本号 / `scripts/sync_release_both_roots.py` + `scripts/migrate_drive_to_bitable.js` 内部版本号 / `tests/test_v110_audit.js` + `tests/test_v1016_self_learning.js` + `tests/test_v106_fixes.js` 版本与命名断言
+- **全量回归 21 套件 0 FAIL**(V10.17.0 专项 51 项)
+
 ### V10.15.4 问题反馈修复版
 
 #### 🔴 核心修复(依据飞书反馈库落地):

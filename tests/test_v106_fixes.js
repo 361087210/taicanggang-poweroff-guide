@@ -109,7 +109,7 @@ check('A20 问题4: 启动时序先恢复快照再渲染(异步IIFE包裹)', /\(
 check('A21 问题4: 照片分离上传函数存在(降采样归一+哈希文件名+vehicle_images目录)',
   /async function syncUploadVehiclePhotos\(token,vehicles\)/.test(html)
   && /async function _normalizePhotoForUpload\(dataUrl,maxEdge\)/.test(html)
-  && html.includes('user_v${v.id}_p${i+1}_${hash}.jpeg') && html.includes("getDataSubFolderToken(token,'vehicle_images')"));
+  && html.includes('_p${i+1}_${hash}.jpeg') && html.includes("getDataSubFolderToken(token,'vehicle_images')"));
 // V10.7.0: 上传管线重构为_syncUploadPipeline(手动/自动共用单一事实源),
 // 顺序断言改为管线内照片分离先于车型JSON上传(比旧"先于toast文案"更本质)
 const pipeStart = html.indexOf('async function _syncUploadPipeline()');

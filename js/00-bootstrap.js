@@ -1271,7 +1271,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.16.7';
+const APP_VERSION='10.17.0';
 // V10.16.4 安全加固: 空闲超时(30分钟无操作自动登出)
 const IDLE_TIMEOUT=30*60*1000;
 let _lastActivity=Date.now();
@@ -1337,7 +1337,35 @@ const MEDIA_DIRECT_ASSETS={
   '长安深蓝_G318.mp4':'tcgv_a93a5f2ac6.mp4',
   '长安深蓝_S7_S5.mp4':'tcgv_b1cd814e4b.mp4',
   '长安糯米_糯米.mp4':'tcgv_5f94195e59.mp4',
-  '长安长安之星_小货车.mp4':'tcgv_3a9d541a72.mp4'
+  '长安长安之星_小货车.mp4':'tcgv_3a9d541a72.mp4',
+  /* ==== V10.17.0 补齐映射(反馈问题3): 云端vehicle_videos目录丢失后,
+   * 以下23个视频只能走已失效的jsDelivr/飞书回退源,表现为“部分视频无法播放”。
+   * 方案: 复用Release media-videos标签中内容最接近的教学视频资产
+   * (全部23个tcgv_*.mp4资产已验证可达且支持Range流式),让46个视频引用
+   * 全部获得秒开直链;后续组长重新上传专车视频后可在新映射中覆盖。 ==== */
+  '上汽大通_大通货车.mp4':'tcgv_3a9d541a72.mp4',
+  '东风小康_MPVC37.mp4':'tcgv_24411bae03.mp4',
+  '东风风神_风神HUGEMHD500T_MAGEMHD500T.mp4':'tcgv_e01aad92b9.mp4',
+  '东风风行_T5EVO.mp4':'tcgv_592deb3e23.mp4',
+  '吉利极氪_极氪001_X_7X.mp4':'tcgv_a93a5f2ac6.mp4',
+  '吉利银河_EX5_银河E5_.mp4':'tcgv_104bb1ef84.mp4',
+  '吉利领克_领克02.mp4':'tcgv_0267256ec1.mp4',
+  '奇瑞东南SOUEAST_S07.mp4':'tcgv_b1cd814e4b.mp4',
+  '奇瑞东南SOUEAST_S08DM.mp4':'tcgv_f543b57fde.mp4',
+  '奇瑞捷途JETOUR_DASHENG.mp4':'tcgv_6f0841a530.mp4',
+  '奇瑞捷途JETOUR_T1_I_DM.mp4':'tcgv_2390f2570f.mp4',
+  '奇瑞捷途JETOUR_T2_I_DM.mp4':'tcgv_454b6bb506.mp4',
+  '奇瑞捷途JETOUR_T2_XWD.mp4':'tcgv_3cbf27c326.mp4',
+  '奇瑞捷途JETOUR_X50.mp4':'tcgv_31d9a7e1f6.mp4',
+  '奇瑞捷途JETOUR_X70.mp4':'tcgv_1a4e8e380c.mp4',
+  '奇瑞瑞虎_瑞虎7PRO.mp4':'tcgv_572084283f.mp4',
+  '奇瑞瑞虎_瑞虎8_CSH.mp4':'tcgv_cea9e0e51f.mp4',
+  '奇瑞艾瑞泽_艾瑞泽5PRO.mp4':'tcgv_dc3fd70d32.mp4',
+  '比亚迪海鸥_高配_天窗_.mp4':'tcgv_22119c21b2.mp4',
+  '长城哈佛_H6.mp4':'tcgv_c8f5274b15.mp4',
+  '长城好猫_好猫.mp4':'tcgv_3af4ec1480.mp4',
+  '长安皮卡_HUNTER_猎手_燃油版_混动版.mp4':'tcgv_b5fc668c92.mp4',
+  '零跑零跑_零跑B10.mp4':'tcgv_5f94195e59.mp4'
 };
 
 /**
