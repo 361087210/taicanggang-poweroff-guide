@@ -60,6 +60,12 @@ function watchRegistrationActivation(user){
       }
       return;
     }
+    // V10.17.0: 组长已拒绝→停止守望,拒绝通知由pull链路的
+    // pushRegistrationRejectionNotice统一触发,不再无效轮询
+    if(local.status==='rejected'){
+      clearInterval(_regWatchTimer);_regWatchTimer=null;
+      return;
+    }
     if(attempts>10){ // 2分钟守望窗口
       clearInterval(_regWatchTimer);_regWatchTimer=null;
       return;
@@ -72,6 +78,39 @@ function watchRegistrationActivation(user){
       }
     }catch(e){console.debug("[PendingPoll]轮询请求网络抖动跳过(下轮重试):",e&&e.message||String(e))}
   },12000);
+}
+
+/**
+ * V10.17.0: 注册申请被拒通知 - 反馈问题1闭环修复
+ * 根因: 组长拒绝后仅回推云端rejected状态,旧版组员端只合并active不合并rejected,
+ *      组员永远停在“审核中”,被拒了都不知道,还反复登录无效重试。
+ * 机制: pullApprovedStatusFromFeishu检测到云端权威表own用户为rejected且本地
+ *      尚未同步时调用本函数: ①本地通知插件可用时发系统通知(点按拉起APP);
+ *      ②不可用时降级Toast;③同步日志留痕。通知后组员登录时将收到
+ *      “未通过审核”的明确文案,不再误报“审核中”。
+ * @param {Object} user - 被拒用户(USERS内引用)
+ */
+function pushRegistrationRejectionNotice(user){
+  try{
+    const name=(user&&user.name)||'组员';
+    console.log('[审批] 注册申请已被组长拒绝:',name);
+    addSyncLog(`注册申请未通过审核(${name})`,'red');
+    const notify=window.cordova&&window.cordova.plugins&&window.cordova.plugins.notification&&window.cordova.plugins.notification.local;
+    if(notify&&typeof notify.schedule==='function'){
+      notify.schedule({
+        title:'注册审核结果',
+        text:'您的注册申请未通过组长审核，如有疑问请联系组长',
+        foreground:true,
+        smallIcon:'res://ic_popup_reminder'
+      });
+      showToast('您的注册申请未通过审核');
+    }else{
+      showToast('您的注册申请未通过审核，请联系组长');
+    }
+  }catch(e){
+    console.warn('[审批] 拒绝通知发送异常(不影响状态同步):',e&&e.message);
+    try{showToast('您的注册申请未通过审核');}catch(e2){/* 双保险 */}
+  }
 }
 
 /* ===================== 组员注册申请拉取 · A3四刀切(V10.13) =====================
@@ -441,14 +480,28 @@ async function pullApprovedStatusFromFeishu(userParam,fullMerge){
           if(cuTs>=loTs){local.password=cu.password;local.pw_ts=cuTs;}
         }
         // 本地已有: 云端状态更新时同步(仅状态与审批信息,密码以本地为准避免覆盖)
-        if(local.status!==cu.status&&cu.status==='active'){
-          local.status='active';
+        // V10.17.0: rejected状态同步补齐——旧版只合并active,组长拒绝后组员端
+        // 永远停在"审核中",申请被拒了都不知道(反馈问题1根因A)。现active与
+        // rejected双向同步,与组长端applyApprovalRules的"已拒绝不复活"语义对齐。
+        if(local.status!==cu.status&&(cu.status==='active'||cu.status==='rejected')){
+          local.status=cu.status;
         }
       }
       if(who&&cu.phone===who.phone)me=cu;
     }
     saveUsers(USERS);
     if(fullMerge)return true;
+    // V10.17.0: rejected落地检查——云端权威表里我是rejected而本地还不是,
+    // 同步状态并触发"申请未通过"精准通知(旧版此场景返回false,组员盲猜)
+    if(me&&me.status==='rejected'){
+      const local=USERS.find(u=>u.phone===me.phone);
+      if(local&&local.status!=='rejected'){
+        local.status='rejected';
+        saveUsers(USERS);
+        if(typeof pushRegistrationRejectionNotice==='function')pushRegistrationRejectionNotice(local);
+      }
+      return false;
+    }
     if(me&&me.status==='active'){
       const local=USERS.find(u=>u.phone===me.phone);
       if(local&&local.status!=='active'){
@@ -1098,7 +1151,12 @@ async function syncUploadVehiclePhotos(token,vehicles){
       const mm=/^data:image\/(png|jpe?g|webp);base64,(.*)$/.exec(norm);
       if(!mm){stat.failed++;continue;}
       const hash=_strHashDjb2(mm[2]).toString(16);
-      const fileName=`user_v${v.id}_p${i+1}_${hash}.jpeg`;
+      // V10.17.0: 按车型名称命名(用户需求4)——旧规则 user_v{id}_p{i}_{hash}.jpeg
+      // 无法人工辨识,现改为 "车型名称_p{序号}_{hash}.jpeg"(保留短哈希防同名冲突,
+      // 幂等语义不变: 同车同序同内容 → 同名文件,云端命中即跳过)。
+      // 车型名经 _sanitizeFeishuFileName 清洗(上传时再洗一次,此处预清洗保证幂等键稳定)
+      const baseName=_sanitizeFeishuFileName(v.display||('vehicle_'+v.id),60).replace(/\.[^.]+$/,'');
+      const fileName=`${baseName}_p${i+1}_${hash}.jpeg`;
       if(cloudNames.has(fileName)){
         stat.skipped++; // 云端已有同内容照片,仅替换本地路径
       }else{
@@ -1163,8 +1221,11 @@ async function syncUploadVehicleVideos(token,vehicles){
       const mime=mm[1].toLowerCase();
       const b64=mm[2];
       const hash=_strHashDjb2(b64).toString(16);
-      // 文件名: user_v{id}_v{序号}_{hash}.mp4(统一mp4扩展名,飞书按MIME识别)
-      const fileName=`user_v${v.id}_v${i+1}_${hash}.mp4`;
+      // 文件名: V10.17.0 改为按车型名称命名(用户需求4)——
+      // "车型名称_v{序号}_{hash}.mp4"(旧: user_v{id}_v{i}_{hash}.mp4);
+      // 保留短哈希防同名冲突,幂等语义不变(同车同序同内容→同名跳过重传)
+      const baseName=_sanitizeFeishuFileName(v.display||('vehicle_'+v.id),60).replace(/\.[^.]+$/,'');
+      const fileName=`${baseName}_v${i+1}_${hash}.mp4`;
       if(cloudNames.has(fileName)){
         stat.skipped++; // 云端已有同内容视频,仅替换本地路径
       }else{

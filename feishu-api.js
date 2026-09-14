@@ -1094,3 +1094,54 @@ const FeishuAPI = (function() {
 if (typeof window !== 'undefined') {
   window.FeishuAPI = FeishuAPI;
 }
+
+/** ============================================================
+ * V10.17.0: 注册审批结果飞书群通知(全局函数)
+ * 场景: 组长在组员管理页点“拒绝”后调用,实时推送飞书群消息;
+ *      通过审批仍走原有 pushApprovedUsersToFeishu 云端表链路,不发群消息。
+ * 设计:
+ *  - chatId 来源优先级: localStorage设置 > version.json注入 feishuConfig.chatId;
+ *    两者皆无时静默跳过(通知失败不影响审批主流程)
+ *  - 复用全局 httpFetch/getFeishuToken(与同步链路同凭据,零配置组也长可用)
+ *  - 60秒去重: 同一手机号同结果窗口期内不重复轰炸群消息
+ * ============================================================ */
+let _regNotifySeen={};
+async function notifyRegistrationResult(phone,result,name){
+  try{
+    if(result!=='rejected')return true; // 目前仅拒绝需要群通知
+    const now=Date.now();
+    const key=String(phone)+'|rejected';
+    if(_regNotifySeen[key]&&now-_regNotifySeen[key]<60000)return true; // 60秒去重
+    _regNotifySeen[key]=now;
+    let chatId='';
+    try{
+      const vj=JSON.parse(localStorage.getItem('tcg_version_feishu_config')||'null');
+      if(vj&&vj.chatId)chatId=vj.chatId;
+    }catch(e){/* version.json未注入时忽略 */}
+    if(!chatId){
+      try{
+        const saved=JSON.parse(localStorage.getItem('feishu_config')||'{}');
+        if(saved&&typeof saved.chatId==='string'&&saved.chatId.length>5)chatId=saved.chatId;
+      }catch(e){/* 设置页未保存chatId时忽略 */}
+    }
+    if(!chatId){console.info('[审批通知] 未配置chatId,跳过群通知(不影响审批流程)');return false;}
+    const cfg=getFeishuCfg();
+    if(!feishuCfgReady(cfg)){console.info('[审批通知] 飞书配置不完整,跳过群通知');return false;}
+    const token=await getFeishuToken(cfg);
+    const safeName=String(name||'').slice(0,20);
+    const maskedPhone=String(phone||'').replace(/^(\d{3})\d{4}(\d{4})$/,'$1****$2');
+    const content={text:`【注册审核结果】组员「${safeName}」(${maskedPhone}) 的注册申请已被组长拒绝。\n对方APP将在下次打开/登录时收到未通过通知。\n—— 太仓港断电指导平台`};
+    const res=await httpFetch('https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=chat_id',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({receive_id:chatId,msg_type:'text',content:JSON.stringify(content)})
+    });
+    const rd=res.data||{};
+    if(rd.code&&rd.code!==0){console.warn('[审批通知] 群消息发送失败:',rd.code,rd.msg);return false;}
+    console.log('[审批通知] 拒绝通知已推送飞书群');
+    return true;
+  }catch(e){
+    console.warn('[审批通知] 通知异常(不影响审批主流程):',e&&e.message);
+    return false;
+  }
+}
