@@ -7,8 +7,8 @@
 (function(){
 'use strict';
 
-const BASE_APP_TOKEN = 'Gn4db7il9a27QrsOtVbclSE3nnf';
-const FEEDBACK_TABLE_ID = 'tblPB0AnsTS9puqw';
+const BASE_APP_TOKEN = (window.TCG_CONFIG&&window.TCG_CONFIG.BASE_APP_TOKEN)||'Gn4db7il9a27QrsOtVbclSE3nnf';
+const FEEDBACK_TABLE_ID = (window.TCG_CONFIG&&window.TCG_CONFIG.FEEDBACK_TABLE_ID)||'tblPB0AnsTS9puqw';
 const SCREENSHOT_FOLDER = '问题反馈截图';
 
 let _screenshotFolderToken = null;

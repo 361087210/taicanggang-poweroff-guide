@@ -64,6 +64,9 @@ function watchRegistrationActivation(user){
     // pushRegistrationRejectionNotice统一触发,不再无效轮询
     if(local.status==='rejected'){
       clearInterval(_regWatchTimer);_regWatchTimer=null;
+      // V10.18.0: 检测被拒立即弹窗/Toast通知申请端(此前仅停轮询不通知,
+      // 用户盲等直到下次登录才看到"未通过"文案,反馈问题1闭环补强)
+      if(typeof pushRegistrationRejectionNotice==='function')pushRegistrationRejectionNotice(local);
       return;
     }
     if(attempts>10){ // 2分钟守望窗口
@@ -462,8 +465,14 @@ async function pullApprovedStatusFromFeishu(userParam,fullMerge){
       const local=USERS.find(u=>u.phone===cu.phone);
       if(!local){
         // V5.7: 云端有而本地无(新设备/其他组长审批过)→合并入库,支撑跨设备登录
-        if(cu.status==='active'||cu.status==='pending'||cu.status==='rejected'){
-          State.addUser(cu); // A3状态守卫
+        // V10.18.0 反馈问题1(往期账号不可见): 往期版本注册账号云端status可能为空/旧值
+        // (如'approved'/'normal'/'verified'), 旧逻辑只接纳active/pending/rejected,
+        // 导致这些历史组员永不入库, 组长端"无法查看处理"。现将空/未知status归一为
+        // active入库; 仅归一空/未知值, 绝不把pending/rejected误归一为active(防误显/误放行)。
+        const LEGACY_OK = !cu.status || cu.status==='approved' || cu.status==='normal' || cu.status==='verified';
+        if(cu.status==='active'||cu.status==='pending'||cu.status==='rejected'||LEGACY_OK){
+          const norm = (cu.status==='active'||cu.status==='pending'||cu.status==='rejected') ? cu.status : 'active';
+          State.addUser(Object.assign({}, cu, {status: norm})); // A3状态守卫
         }
       }else{
         // V10.15.11: 密码跨设备仲裁(账号级pw_ts取新者)——
@@ -703,6 +712,24 @@ async function doBackup(){
 
 // ===================== SYNC =====================
 function loadFeishuConfig(){
+  // V10.18.0: 启动时把本地 version.json 的 feishuConfig(含chatId)缓存到
+  // localStorage 的 tcg_version_feishu_config,供 notifyRegistrationResult 读取飞书群
+  // 通知 chatId(零配置生效)。此前该键从未被写入,导致 version.json.chatId 形同虚设,
+  // 组长拒绝注册时群通知永远静默跳过(反馈问题1根因之一)。
+  if(!window.__tcgFeishuCfgCached){
+    window.__tcgFeishuCfgCached=true;
+    try{
+      if(typeof fetch==='function'){
+        fetch('version.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{
+          if(j&&j.feishuConfig){
+            const prev=JSON.parse(localStorage.getItem('tcg_version_feishu_config')||'{}');
+            const merged=Object.assign({},prev,j.feishuConfig);
+            localStorage.setItem('tcg_version_feishu_config',JSON.stringify(merged));
+          }
+        }).catch(()=>{});
+      }
+    }catch(e){/* 离线/不可达忽略 */}
+  }
   /* V10.14.1 修复【组员端"飞书配置不完整"误报】: 配置解析改走 getFeishuCfg() 统一出口。
    * 根因: 此处直读 localStorage——组员端本地从未保存过 feishu_config,appSecret 恒取
    * DEFAULT_FEISHU_CONFIG 空串 → cfgReady 恒 false → 三色横幅误报"未注入同步凭据";

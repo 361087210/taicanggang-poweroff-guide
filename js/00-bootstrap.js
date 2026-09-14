@@ -1271,7 +1271,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.17.1';
+const APP_VERSION='10.19.0';
 // V10.16.4 安全加固: 空闲超时(30分钟无操作自动登出)
 const IDLE_TIMEOUT=30*60*1000;
 let _lastActivity=Date.now();
@@ -1298,8 +1298,8 @@ if(typeof window!=='undefined'){
     window.addEventListener(ev,_onUserActivity,{passive:true});
   });
 }
-const GITHUB_REPO='361087210/taicanggang-poweroff-guide';
-const GITHUB_BRANCH='main';
+const GITHUB_REPO=(window.TCG_CONFIG&&window.TCG_CONFIG.GITHUB_REPO)||'361087210/taicanggang-poweroff-guide';
+const GITHUB_BRANCH=(window.TCG_CONFIG&&window.TCG_CONFIG.GITHUB_BRANCH)||'main';
 const UPDATE_SOURCES=[
   `https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@${GITHUB_BRANCH}/version.json`,
   `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/version.json`
@@ -1376,6 +1376,117 @@ const MEDIA_DIRECT_ASSETS={
 function mediaDirectUrl(fileName){
   const asset=MEDIA_DIRECT_ASSETS[fileName];
   return asset?`${MEDIA_RELEASE_BASE}/${asset}`:null;
+}
+
+/**
+ * V10.19.0: 视频文件名归一化键("改名后仍可命中官方Release资产"的基础)
+ * ------------------------------------------------------------------
+ * 根因(反馈问题3·"部分迭代后无法播放"/"网页端完全不可播"):
+ *   组长上传视频后 pickVideoFile / syncUploadVehicleVideos 会把 videoPaths
+ *   回写成 "<车型display>_v<序号>.mp4"(如 "比亚迪海豚(低配)_v1.mp4"),
+ *   而官方资产表 MEDIA_DIRECT_ASSETS 的键是下划线扁平化形态
+ *   ("比亚迪海豚_低配.mp4")——括号/连字符/空格/序号后缀导致 100% 失配,
+ *   于是 Release 直链(唯一免鉴权、支持HTTP Range、无CORS的公网源)被整体
+ *   跳过:App 端只能退到飞书云端,网页端(无appSecret且被CORS拦截)直接
+ *   走到"视频加载失败"空态。
+ * 归一化规则: 去扩展名 → 去 _v<N> 序号后缀 → 各类括号/空白/连字符/点号
+ *   统一为下划线 → 归并重复下划线 → 去首尾下划线 → 转小写(消除大小写差异)。
+ * @param {string} name - 原始文件名或资产键
+ * @returns {string} 归一化键(小写)
+ */
+function _normMediaKey(name){
+  return String(name||'')
+    .replace(/\.(mp4|mov|webm|m4v|avi|mkv)$/i,'')
+    .replace(/[_\-]?v\d+([_\-]\d+)*$/i,'')
+    .replace(/[（(【［｛{]/g,'_')
+    .replace(/[）)】］｝}]/g,'_')
+    .replace(/[\s\-\/\\·.,、]+/g,'_')
+    .replace(/_{2,}/g,'_')
+    .replace(/^_+|_+$/g,'')
+    .toLowerCase();
+}
+
+/** V10.19.0: 归一化键 → 资产名 索引(模块加载时一次性构建,运行时零开销) */
+const MEDIA_ALIAS_INDEX=(function(){
+  const idx=Object.create(null);
+  Object.keys(MEDIA_DIRECT_ASSETS).forEach(function(k){
+    const nk=_normMediaKey(k);
+    if(nk&&!idx[nk])idx[nk]=MEDIA_DIRECT_ASSETS[k]; // 先到先得:同键不互相覆盖
+  });
+  return idx;
+})();
+
+/** V10.19.0: 归一化键有序表, 供"唯一前缀匹配"扫描(见 _mediaAliasByPrefix) */
+const MEDIA_ALIAS_KEYS=Object.keys(MEDIA_ALIAS_INDEX).sort();
+
+/**
+ * V10.19.0: 唯一前缀匹配——仅当查询键"唯一"命中一个官方资产时才采纳。
+ * ------------------------------------------------------------------
+ * 适用场景: 部分车型的 display 比资产键少了后缀(如 display「长安糯米」
+ *   对应资产键「长安糯米_糯米.mp4」), 改名后归一化精确匹配落空, 但按
+ *   "资产键以 查询键 + 下划线 开头"可以唯一确定。
+ * 安全性(已全量实测, 见 tests/test_video_playback_v1019.js S5i–S5l):
+ *   对全部 64 个改名查询做严格前缀扫描 —— 唯一命中 45 例 / 无命中 19 例 /
+ *   **歧义 0 例**; 且 45 例命中与"改名前的精确引用" 100% 一致, 无张冠李戴。
+ * 安全边界: 命中数 != 1 立即拒绝(0 个=无从判断, ≥2 个=存在歧义),
+ *   宁可漏(退回诚实空态)也绝不猜错——断电教学视频看错车型有现场安全隐患。
+ * @param {string} normQuery - 已归一化的查询键
+ * @returns {string|null} 资产名;不唯一或不存在时返回null
+ */
+function _mediaAliasByPrefix(normQuery){
+  if(!normQuery)return null;
+  const hits=[];
+  for(let i=0;i<MEDIA_ALIAS_KEYS.length;i++){
+    const k=MEDIA_ALIAS_KEYS[i];
+    if(k===normQuery||k.indexOf(normQuery+'_')===0)hits.push(k);
+  }
+  if(hits.length!==1)return null; // 0=无命中, ≥2=歧义, 一律拒绝
+  return MEDIA_ALIAS_INDEX[hits[0]];
+}
+
+/**
+ * V10.19.0: 别名容错解析——文件名被改写后仍回退到该车型的官方Release资产。
+ * 仅在"精确命中失败"且"飞书云端源不可用"时作为兜底源使用(源④.5),
+ * 以免组长新上传的视频被旧官方片覆盖(精确命中仍优先于云端新片)。
+ * @param {string} fileName - 视频文件名
+ * @returns {string|null} 直链URL;已精确命中或无对应官方资产时返回null
+ */
+function mediaDirectUrlAlias(fileName,canonicalName){
+  if(!fileName&&!canonicalName)return null;
+  if(MEDIA_DIRECT_ASSETS[fileName])return null; // 已能精确命中,无需别名
+  // 优先用上传时留档的官方原名(精确、零误配);无留档才退回归一化猜测
+  if(canonicalName&&MEDIA_DIRECT_ASSETS[canonicalName]){
+    return `${MEDIA_RELEASE_BASE}/${MEDIA_DIRECT_ASSETS[canonicalName]}`;
+  }
+  // 归一化精确命中 → 退化为唯一前缀命中(安全边界见 _mediaAliasByPrefix)
+  const nk=_normMediaKey(fileName);
+  const asset=MEDIA_ALIAS_INDEX[nk]||_mediaAliasByPrefix(nk);
+  return asset?`${MEDIA_RELEASE_BASE}/${asset}`:null;
+}
+
+/**
+ * V10.19.0: 生成视频封面(SVG data URI)——播放器 poster 与详情页卡片的唯一真源。
+ * 背景(反馈问题3·"视频无封面"): 未播放前播放器/卡片黑屏,用户误以为视频损坏。
+ * 此前播放器(06-media.js)与卡片(03-vehicles.js)各写一份内联SVG,文案与样式
+ * 易漂移;现收敛为单一函数,两处共用,并且任何情况下都返回可见封面(车型名+
+ * 播放标识),绝不返回空/黑屏。
+ * @param {string} display - 车型展示名(如 "比亚迪海豚(低配)")
+ * @param {string} [label] - 封面副标题(如 "断电教学视频")
+ * @returns {string} 可直接赋给 img.src / video.poster 的 data URI
+ */
+function videoCoverDataUri(display,label){
+  const name=String(display||'').replace(/[<>&'"]/g,'');
+  const sub=String(label||'').replace(/[<>&'"]/g,'')+' · 点按播放';
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">'
+    +'<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+    +'<stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#0f172a"/></linearGradient></defs>'
+    +'<rect width="640" height="360" fill="url(#g)"/>'
+    +'<circle cx="320" cy="160" r="46" fill="rgba(255,255,255,0.12)"/>'
+    +'<polygon points="310,142 310,178 342,160" fill="#ffffff"/>'
+    +'<text x="320" y="248" text-anchor="middle" fill="#94a3b8" font-size="18" font-family="sans-serif">'+name+'</text>'
+    +'<text x="320" y="276" text-anchor="middle" fill="#64748b" font-size="13" font-family="sans-serif">'+sub+'</text>'
+    +'</svg>';
+  return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
 }
 
 // HTML escape helper to prevent XSS

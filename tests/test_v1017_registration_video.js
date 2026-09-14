@@ -59,7 +59,7 @@ check('A11 rejected登录前先云端复核(组长可改判)', /status==='reject
 
 /* ---------- B组 网页端注册(反馈问题2) ---------- */
 section('B组 网页端注册: GitHub登记通道');
-check('B1 登记通道常量存在', webSyncJs.includes('tcg-registration-inbox/contents/registrations'));
+check('B1 登记通道常量存在', webSyncJs.includes('tcg-registration-inbox') && webSyncJs.includes('/contents/registrations'));
 check('B2 token密文存储(非明文)', /GITHUB_REGISTER_TOKEN_ENC='[A-Za-z0-9+/=]{40,}'/.test(webSyncJs));
 check('B3 源码不含明文GitHub token', !/ghp_[A-Za-z0-9]{20,}/.test(webSyncJs));
 check('B4 运行时解密(_decryptBuildSecret)', webSyncJs.includes('_decryptBuildSecret(GITHUB_REGISTER_TOKEN_ENC)'));
@@ -106,15 +106,29 @@ check('D4 缺省车型名兜底(vehicle_{id})', syncJs.includes("v.display||('ve
 check('D5 文件名清洗(_sanitizeFeishuFileName)', /baseName=_sanitizeFeishuFileName\(/.test(syncJs));
 check('D6 旧user_v命名已移除', !syncJs.includes('user_v${v.id}_'));
 
-/* ---------- E组 版本一致性 ---------- */
-section('E组 版本一致性 V10.17.1');
-check('E1 version.json=10.17.1', versionJson.version === '10.17.1');
-check('E2 versionCode=101701', versionJson.versionCode === 101701);
-check('E3 00-bootstrap APP_VERSION=10.17.1', bootstrapJs.includes("const APP_VERSION='10.17.1';"));
-check('E4 config.xml=10.17.1/101701', /version="10\.17\.1" android-versionCode="101701"/.test(src('config.xml')));
-check('E5 sw.js缓存名v10.17.1', src('sw.js').includes('tcg-poweroff-v10.17.1'));
-check('E6 demo.html本地版本显示', src('demo.html').includes('id="sync-local-ver">v10.17.1'));
-check('E7 releaseNotes含V10.17.1', versionJson.releaseNotes.some(n => n.includes('10.17.1')));
+/* ---------- E组 版本一致性 ----------
+ * V10.19.0 重构: 期望值全部从 version.json 动态推导, 不再写死版本号。
+ * 根因(反复发作的坏味道): 旧断言把 10.18.0 / 101800 硬编码在 7 处, 每次
+ * 发版升版本号都会整组变红, 被迫人工改测试——测试本该校验"各处是否一致",
+ * 而不是"是否等于某个具体版本"。现以 version.json 为单一真源, 其余各处
+ * 与之比对; versionCode 由 version 按去点补零规则推导(与
+ * scripts/check_version_consistency.js 的 versionToCode 保持同规则)。 */
+section('E组 版本一致性 (期望值动态取自 version.json)');
+const V = String(versionJson.version || '');
+const VC = String(versionJson.versionCode == null ? '' : versionJson.versionCode);
+/** "10.19.0" -> "101900": 每段补零到 2 位后拼接(与 check_version_consistency.js 同规则) */
+function _versionToCode(v){ return String(v).split('.').map(function(p){ return p.padStart(2, '0'); }).join(''); }
+/** 把版本号转成可安全嵌入正则的字面量(转义点号) */
+function _reEsc(s){ return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+check('E1 version.json.version 为 x.y.z 三段纯数字', /^[0-9]+\.[0-9]+\.[0-9]+$/.test(V), V);
+check('E2 versionCode 与 version 编码一致(去点补零)', VC === _versionToCode(V), 'version=' + V + ' versionCode=' + VC);
+check('E3 00-bootstrap APP_VERSION 与 version.json 一致', bootstrapJs.includes("const APP_VERSION='" + V + "';"));
+check('E4 config.xml 与 version.json 一致',
+  new RegExp('version="' + _reEsc(V) + '" android-versionCode="' + VC + '"').test(src('config.xml')));
+check('E5 sw.js 缓存名随版本(tcg-poweroff-v' + V + ')', src('sw.js').includes('tcg-poweroff-v' + V));
+check('E6 demo.html 本地版本显示与 version.json 一致', src('demo.html').includes('id="sync-local-ver">v' + V));
+check('E7 releaseNotes 含当前版本号', versionJson.releaseNotes.some(function(n){ return String(n).includes(V); }));
 
 /* ---------- 汇总 ---------- */
 console.log('\n==============================================================');

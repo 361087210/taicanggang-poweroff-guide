@@ -34,6 +34,11 @@
     "sync:feishu": "node scripts/sync_feishu_local.js --sync",
     "sync:status": "node scripts/sync_feishu_local.js --status",
     "migrate:bitable:dry": "node scripts/migrate_drive_to_bitable.js --dry-run",
-    "migrate:bitable": "node scripts/migrate_drive_to_bitable.js --force"
+    "migrate:bitable": "node scripts/migrate_drive_to_bitable.js --force",
+    "test:refactor": "node tests/test_refactor_v1018.js",
+    "test:registration": "node tests/test_v1017_registration_video.js",
+    "test:video": "node tests/test_video_playback_v1019.js",
+    "sync:web": "node scripts/sync_web_data.js --out web-data",
+    "scan:secrets": "node scripts/secret-scan.js"
   }
 }

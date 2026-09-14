@@ -226,7 +226,7 @@ setTimeout(async () => {
       G('(()=>{const c=getFeishuCfg();return c.appId&&c.folder&&c.dataFolder&&c.syncSub&&c.pendingSub&&c.approvedSub&&c.backupSub&&c.interval&&!c.appSecret})()'));
     check('4.2a 默认未注入时 feishuCfgReady=false(安全拦截,非静默失败)',
       G('feishuCfgReady(getFeishuCfg())') === false);
-    G("window.__BUILD_SECRETS__={appId:'cli_test',appSecret:'test_secret_for_jsdom_injection_32',folderToken:'fldcnTestToken'}");
+    G("window.__BUILD_SECRETS__={appId:'cli_test',appSecret:'test_secret_for_jsdom_injection_32',folderToken:'fldcnTestToken'}"); // noqa:secret (jsdom注入用假值,非真实凭据)
     check('4.2b 构建注入后 feishuCfgReady=true(真机APK出厂形态)',
       G('feishuCfgReady(getFeishuCfg())') === true);
     check('4.2c 注入Secret用完即焚(读取后__BUILD_SECRETS__已delete)',

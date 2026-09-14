@@ -410,7 +410,7 @@ section('Z10: 【修复C脏配置】成员localStorage含旧版垃圾appSecret �
   const sb = makeSandbox('user', { withSecrets: true });
   sb.sandbox.localStorage.setItem('feishu_config', JSON.stringify({
     appId: 'cli_admin_saved_override',
-    appSecret: 'admin_saved_secret_override',
+    appSecret: 'admin_saved_secret_override', // noqa:secret (jsdom注入用假值,非真实凭据)
     folder: 'admin_saved_folder',
     _writer: 'admin',
   }));

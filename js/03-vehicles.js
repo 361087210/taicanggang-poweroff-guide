@@ -292,7 +292,11 @@ function _renderVehicleDetail(id){
         // V10.17.1: 封面首帧层src走Release直链——有真实资产的车显示真实首帧,
         // 无直链的车仍走相对路径(404→onerror静默,保留SVG兜底封面)
         const direct=typeof mediaDirectUrl==='function'?mediaDirectUrl(fileName):null;
-        const fallbackSvg='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#0f172a"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><circle cx="320" cy="160" r="46" fill="rgba(255,255,255,0.12)"/><polygon points="310,142 310,178 342,160" fill="#ffffff"/><text x="320" y="248" text-anchor="middle" fill="#94a3b8" font-size="18" font-family="sans-serif">${(v.display||'').replace(/[<>&'"]/g,'')}</text><text x="320" y="276" text-anchor="middle" fill="#64748b" font-size="13" font-family="sans-serif">${esc(label)} · 点按播放</text></svg>`);
+        // V10.19.0: 封面生成收敛到 videoCoverDataUri(与播放器 poster 同一真源,
+        // 杜绝两处内联SVG文案/样式漂移);未加载时退化为简易车型名封面,绝不黑屏
+        const fallbackSvg=(typeof videoCoverDataUri==='function')
+          ?videoCoverDataUri(v.display,label)
+          :('data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><rect width="640" height="360" fill="#1e293b"/><circle cx="320" cy="160" r="46" fill="rgba(255,255,255,0.12)"/><polygon points="310,142 310,178 342,160" fill="#ffffff"/><text x="320" y="248" text-anchor="middle" fill="#94a3b8" font-size="18" font-family="sans-serif">'+String(v.display||'').replace(/[<>&'"]/g,'')+'</text><text x="320" y="276" text-anchor="middle" fill="#64748b" font-size="13" font-family="sans-serif">'+esc(label)+' · 点按播放</text></svg>'));
         return `<div onclick="openVideoPlayer(${i})" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative overflow-hidden">
           <img src="${fallbackSvg}" class="absolute inset-0 w-full h-full object-cover" alt="${esc(label)}封面" onerror="this.style.display='none'">
           <video src="${esc(direct||vp)}" preload="metadata" muted playsinline controlslist="nodownload" class="absolute inset-0 w-full h-full object-cover" style="opacity:0;transition:opacity .3s;" onloadeddata="this.style.opacity=1;this.previousElementSibling&&(this.previousElementSibling.style.display='none')" onerror="this.style.display='none'"></video>
