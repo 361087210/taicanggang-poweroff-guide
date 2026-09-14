@@ -287,12 +287,15 @@ function _renderVehicleDetail(id){
   const videoHtml=videoPaths.length?`
     <div class="space-y-2">
       ${videoPaths.map((vp,i)=>{
-        const fn=vp.split('/').pop().replace(/\.[^.]+$/,'');
+        const fileName=vp.split('/').pop();
         const label=i===0?'断电教学视频':`补充视频${i}`;
+        // V10.17.1: 封面首帧层src走Release直链——有真实资产的车显示真实首帧,
+        // 无直链的车仍走相对路径(404→onerror静默,保留SVG兜底封面)
+        const direct=typeof mediaDirectUrl==='function'?mediaDirectUrl(fileName):null;
         const fallbackSvg='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#0f172a"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><circle cx="320" cy="160" r="46" fill="rgba(255,255,255,0.12)"/><polygon points="310,142 310,178 342,160" fill="#ffffff"/><text x="320" y="248" text-anchor="middle" fill="#94a3b8" font-size="18" font-family="sans-serif">${(v.display||'').replace(/[<>&'"]/g,'')}</text><text x="320" y="276" text-anchor="middle" fill="#64748b" font-size="13" font-family="sans-serif">${esc(label)} · 点按播放</text></svg>`);
         return `<div onclick="openVideoPlayer(${i})" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative overflow-hidden">
           <img src="${fallbackSvg}" class="absolute inset-0 w-full h-full object-cover" alt="${esc(label)}封面" onerror="this.style.display='none'">
-          <video src="${esc(vp)}" preload="metadata" muted playsinline controlslist="nodownload" class="absolute inset-0 w-full h-full object-cover" style="opacity:0;transition:opacity .3s;" onloadeddata="this.style.opacity=1;this.previousElementSibling&&(this.previousElementSibling.style.display='none')" onerror="this.style.display='none'"></video>
+          <video src="${esc(direct||vp)}" preload="metadata" muted playsinline controlslist="nodownload" class="absolute inset-0 w-full h-full object-cover" style="opacity:0;transition:opacity .3s;" onloadeddata="this.style.opacity=1;this.previousElementSibling&&(this.previousElementSibling.style.display='none')" onerror="this.style.display='none'"></video>
           <svg viewBox="0 0 24 24" fill="white" class="w-10 h-10 absolute drop-shadow"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
           <span class="absolute bottom-2 left-2 text-xs text-white drop-shadow">${esc(label)}</span>
           ${videoPaths.length>1?`<span class="absolute top-2 right-2 text-xs text-white bg-black/50 px-1.5 rounded">${i+1}/${videoPaths.length}</span>`:''}
