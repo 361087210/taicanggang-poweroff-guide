@@ -30,7 +30,7 @@
 |------|------|
 | **规则** | JS-XSS-001 / 凭据管理基线 |
 | **位置** | [docs/DEVELOPMENT.md:33](docs/DEVELOPMENT.md#L33) |
-| **证据** | `- **App Secret**: \`s35nEpUBk8KtxN3Kwl2AEgUNnwXQHABb\`` |
+| **证据** | `- **App Secret**: \`s35nEpUBk8KtxN3Kwl2AEgUNnwXQHABb\`` | <!-- noqa:secret -->
 | **影响** | 该仓库为公开仓库，任何人可获取此 Secret。结合 App ID `cli_aa0ce4fd91f85be8`，攻击者可调用 `tenant_access_token/internal` 接口获取租户访问令牌，进而**读写整个飞书云文档目录、审批、多维表格**，导致所有车型断电数据、用户审批数据被窃取或篡改。Folder Token `WdXUfZPkClI1audQxIYc90XRnWc`（第 34 行）同样泄露。 |
 
 **修复方案**：
