@@ -176,10 +176,12 @@ section('C组: 照片手势引擎(锚点缩放/钳制/拖拽抑制/背景关闭)
 }
 
 // =============================================================
-section('D组: 版本一致性(三源对齐 V10.17.0)');
-check('D1 version.json = 10.17.0', versionJson.version === '10.17.0');
-check('D2 config.xml version = 10.17.0', /version="10\.17\.0"/.test(configXml));
-check('D3 APP_VERSION = 10.17.0', /APP_VERSION='10\.17\.0'/.test(src));
+section('D组: 版本一致性(三源对齐)');
+const _verFromConfig = (configXml.match(/version="([^"]+)"/) || [])[1];
+const _verFromBootstrap = (src.match(/APP_VERSION='([^']+)'/) || [])[1];
+check('D1 version.json 与 config.xml 一致', versionJson.version === _verFromConfig);
+check('D2 config.xml 与 APP_VERSION 一致', _verFromConfig === _verFromBootstrap);
+check('D3 versionCode 与 version 编码一致', versionJson.versionCode === parseInt(versionJson.version.split('.').map(p => p.padStart(2, '0')).join(''), 10));
 
 // =============================================================
 section('结果');

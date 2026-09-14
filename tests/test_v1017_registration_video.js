@@ -82,10 +82,13 @@ const assetsMatch = bootstrapJs.match(/const MEDIA_DIRECT_ASSETS=\{([\s\S]*?)\};
 const assetKeys = assetsMatch ? [...assetsMatch[1].matchAll(/'([^']+)':/g)].map(x => x[1]) : [];
 const vehicleSrc = src('vehicles_data.js');
 const referencedVids = [...new Set([...vehicleSrc.matchAll(/vehicle_videos\/([^'"]+)/g)].map(x => x[1]))];
-check('C1 直链映射表数量=46', assetKeys.length === 46);
+check('C1 直链映射表数量=46(全部真实资产)', assetKeys.length === 46);
 check('C2 视频引用数=46', referencedVids.length === 46);
-check('C3 引用全覆盖(引用无映射差集=0)', referencedVids.every(v => assetKeys.includes(v)));
-check('C4 映射无冗余(映射无引用差集=0)', assetKeys.every(k => referencedVids.includes(k)));
+check('C3 引用全覆盖(每个引用都有真实直链)', referencedVids.every(k => assetKeys.includes(k)));
+check('C4 资产值无重复(每个tcgv_仅对应一个车型,无张冠李戴)', (() => {
+  const vals = assetsMatch ? [...assetsMatch[1].matchAll(/:'([^']+)'/g)].map(x => x[1]) : [];
+  return new Set(vals).size === vals.length;
+})());
 check('C5 映射值均为tcgv_*.mp4资产名', assetKeys.length === 0 || assetKeys.every(() => true) && assetsMatch[1].includes('tcgv_'));
 check('C6 详情页视频卡含SVG兜底封面', vehiclesJs.includes('fallbackSvg') && vehiclesJs.includes('data:image/svg+xml'));
 check('C7 视频自然首帧层(preload=metadata)', vehiclesJs.includes('preload="metadata"'));
@@ -104,14 +107,14 @@ check('D5 文件名清洗(_sanitizeFeishuFileName)', /baseName=_sanitizeFeishuFi
 check('D6 旧user_v命名已移除', !syncJs.includes('user_v${v.id}_'));
 
 /* ---------- E组 版本一致性 ---------- */
-section('E组 版本一致性 V10.17.0');
-check('E1 version.json=10.17.0', versionJson.version === '10.17.0');
-check('E2 versionCode=101700', versionJson.versionCode === 101700);
-check('E3 00-bootstrap APP_VERSION=10.17.0', bootstrapJs.includes("const APP_VERSION='10.17.0';"));
-check('E4 config.xml=10.17.0/101700', /version="10\.17\.0" android-versionCode="101700"/.test(src('config.xml')));
-check('E5 sw.js缓存名v10.17.0', src('sw.js').includes('tcg-poweroff-v10.17.0'));
-check('E6 demo.html本地版本显示', src('demo.html').includes('id="sync-local-ver">v10.17.0'));
-check('E7 releaseNotes含V10.17.0', versionJson.releaseNotes.some(n => n.includes('10.17.0')));
+section('E组 版本一致性 V10.17.1');
+check('E1 version.json=10.17.1', versionJson.version === '10.17.1');
+check('E2 versionCode=101701', versionJson.versionCode === 101701);
+check('E3 00-bootstrap APP_VERSION=10.17.1', bootstrapJs.includes("const APP_VERSION='10.17.1';"));
+check('E4 config.xml=10.17.1/101701', /version="10\.17\.1" android-versionCode="101701"/.test(src('config.xml')));
+check('E5 sw.js缓存名v10.17.1', src('sw.js').includes('tcg-poweroff-v10.17.1'));
+check('E6 demo.html本地版本显示', src('demo.html').includes('id="sync-local-ver">v10.17.1'));
+check('E7 releaseNotes含V10.17.1', versionJson.releaseNotes.some(n => n.includes('10.17.1')));
 
 /* ---------- 汇总 ---------- */
 console.log('\n==============================================================');
