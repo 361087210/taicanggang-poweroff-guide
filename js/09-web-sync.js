@@ -19,15 +19,16 @@
  * 覆盖范围(仅激活后生效,安卓Cordova APP永不激活):
  *   1 feishuCfgReady/getFeishuToken/downloadJsonFromDataFeishu/
  *      downloadJsonFromFolder -- 下行下载原语改读同源镜像
- *   2 pullApprovedStatusFromFeishu -- 登录云端账号核对(手机号哈希匹配)
- *   3 checkMemberAccountAlive -- 组员账号存活守卫(哈希匹配)
+ *   2 pullApprovedStatusFromFeishu -- 登录云端账号核对(linkKey 匹配)
+ *   3 checkMemberAccountAlive -- 组员账号存活守卫(id 匹配)
  *   4 doSyncDownload原有主流程经1自动生效(镜像对齐语义不变)
  *   5 上行链路(doSyncUpload/注册/审批推送)封堵并给出引导提示
  *   6 即时同步引擎: 60秒轮询web-data/data_update_notice.json,
  *      检测到组长上传的新数据自动镜像对齐+提示
  *
- * 隐私约定: 镜像表手机号已脱敏为sha256(SALT+phone),
- *          SALT必须与scripts/sync_web_data.js保持一致。
+ * 隐私约定: 镜像账号表以 linkKey=PBKDF2(password, LINK_SALT|phone) 作为连接键,
+ *          熵来自密码, 仅凭手机号无法枚举还原; 明文手机号/密码哈希一律不出库
+ *          (见 scripts/sync_web_data.js)。
  * =========================================================== */
 (function(){
 'use strict';
@@ -47,9 +48,10 @@ if(document.documentElement&&document.documentElement.classList){
 }
 
 /* ---------- 常量(与scripts/sync_web_data.js严格一致) ----------
- * V10.18.0 重构: WEB_SYNC_SALT / MIRROR_BASE 改从单一真源 window.TCG_CONFIG 读取,
- * 仅当 TCG_CONFIG 未加载(极旧环境)时回退内置默认值, 杜绝散落硬编码漂移。 */
-var WEB_SYNC_SALT=(window.TCG_CONFIG&&window.TCG_CONFIG.WEB_SYNC_SALT)||'tcg-web-2026';
+ * V10.18.0 重构: MIRROR_BASE 改从单一真源 window.TCG_CONFIG 读取,
+ * 仅当 TCG_CONFIG 未加载(极旧环境)时回退内置默认值, 杜绝散落硬编码漂移。
+ * P0 脱敏: 原手机号 sha256 枚举向量(旧盐常量)已删除; 连接键改用
+ * deriveLinkKey(js/00-bootstrap.js), 镜像端只透传 linkKey, 不再自己算。 */
 var MIRROR_BASE=(window.TCG_CONFIG&&window.TCG_CONFIG.WEB_MIRROR_BASE)||'web-data/';
 var GITHUB_REGISTER_REPO=(window.TCG_CONFIG&&window.TCG_CONFIG.GITHUB_REGISTER_REPO)||'361087210/tcg-registration-inbox';
 /* V10.17.0: 网页端注册GitHub登记通道(反馈问题2)——
@@ -57,19 +59,6 @@ var GITHUB_REGISTER_REPO=(window.TCG_CONFIG&&window.TCG_CONFIG.GITHUB_REGISTER_R
  * 密钥同源), 明文不出现在源码/构建产物/网络日志中;轮换时仅需更新此密文。 */
 var GITHUB_REGISTER_API='https://api.github.com/repos/'+GITHUB_REGISTER_REPO+'/contents/registrations';
 var GITHUB_REGISTER_TOKEN_ENC='Mys3ABRgQg8+IDUYWlpafGAmECdlZnsTFnkKGn1GZ2UbKHQzOQJ8JQ==';
-
-/* ---------- 基础工具 ---------- */
-async function _sha256Hex(s){
-  // V10.15.9: 优先用00-bootstrap.js的_digestSha256Hex(含纯JS兜底),
-  // 保证非HTTPS/旧WebView下手机号哈希匹配仍能执行
-  var data=new TextEncoder().encode(String(s));
-  if(typeof _digestSha256Hex==='function')return _digestSha256Hex(data);
-  if(!(window.crypto&&window.crypto.subtle))throw new Error('WebCrypto不可用(需HTTPS环境)');
-  var buf=await window.crypto.subtle.digest('SHA-256',data);
-  var arr=new Uint8Array(buf),out='';
-  for(var i=0;i<arr.length;i++)out+=('0'+arr[i].toString(16)).slice(-2);
-  return out;
-}
 
 /** 拉取同源镜像JSON(时间戳防缓存+no-store双保险,配合SW网络优先策略)
  *  V10.15.9 弱网优化: 10s超时,避免弱网下fetch挂起阻塞UI;
@@ -102,9 +91,9 @@ function _install(){
   window.downloadJsonFromDataFeishu=async function(token,docName,subName){
     if(docName==='vehicle_sync_data.json')return _fetchMirror('vehicle_sync_data.json');
     if(docName==='data_update_notice.json')return _fetchMirror('data_update_notice.json');
-    /* approved_users.json: 镜像表手机号已哈希无法还原,返回null--
+    /* approved_users.json: 镜像账号表只含 linkKey 连接键(无明文手机号/密码),返回null--
      * 该文件的两个调用方(pullApprovedStatusFromFeishu/checkMemberAccountAlive)
-     * 已在下方23整体重写,不会走到这里 */
+     * 已在下方整体重写,不会走到这里 */
     if(docName==='approved_users.json')return null;
     return null;
   };
@@ -116,10 +105,10 @@ function _install(){
   };
 
   /* ============================================================
-   * 2 登录云端账号核对(手机号sha256匹配还原)
+   * 2 登录云端账号核对(linkKey 匹配, 命中即密码验真)
    * 语义对齐安卓版pullApprovedStatusFromFeishu(V5.7):
-   *  - 云端有而本地无(新设备登录)→以登录输入的真实手机号重建本地账号
-   *  - 本地已有→云端active状态传播(密码以本地为准,避免覆盖)
+   *  - 云端有而本地无(新设备登录)→用手机号+明文密码派生 linkKey 匹配镜像重建本地账号
+   *  - 本地已有→云端active状态传播(密码以本地为准,避免覆盖; 镜像已无密码)
    *  - fullMerge=true(登录流程)→返回true,由doLogin重新查找
    * ============================================================ */
   window.pullApprovedStatusFromFeishu=async function(userParam,fullMerge){
@@ -128,55 +117,56 @@ function _install(){
     try{
       var web=await _fetchMirror('approved_users.web.json');
       if(!web||!Array.isArray(web.users)||!web.users.length)return false;
-      /* 预计算: 登录者手机号哈希 + 本地全部手机号哈希索引 */
-      var whoH=(who&&who.phone)?await _sha256Hex(WEB_SYNC_SALT+String(who.phone)):null;
-      var localH={};
-      for(var i=0;i<USERS.length;i++){
-        var u=USERS[i];
-        if(u&&u.phone&&localH[u.phone]===undefined){
-          localH[u.phone]=await _sha256Hex(WEB_SYNC_SALT+String(u.phone));
+      var me=null;
+      /* 连接键匹配优先级:
+       *  ① 本地已有 id(注册/历史登录均保留镜像 id)→按 id 精确匹配;
+       *  ② 换设备登录(本地无 id)→用手机号+明文密码派生 linkKey 匹配镜像。
+       *     命中即密码验真(linkKey 需明文密码参与 PBKDF2, 密码错则派生值错, 匹配失败)。 */
+      if(who&&who.id!==undefined&&who.id!==null){
+        for(var i=0;i<web.users.length;i++){
+          var cu=web.users[i];
+          if(cu&&String(cu.id)===String(who.id)){me=cu;break;}
         }
       }
-      var changed=false,me=null;
-      for(var k=0;k<web.users.length;k++){
-        var cu=web.users[k];
-        if(!cu||!cu.phoneH)continue;
-        /* 哈希匹配本地账号 */
-        var local=null;
-        for(var j=0;j<USERS.length;j++){
-          var lu=USERS[j];
-          if(lu&&lu.phone&&localH[lu.phone]===cu.phoneH){local=lu;break;}
-        }
-        if(!local){
-          if(whoH&&whoH===cu.phoneH){
-            /* 新设备登录: 用登录输入的真实手机号重建本地账号(密码取云端哈希) */
-            State.addUser({
-              id:cu.id,name:cu.name||'',phone:String(who.phone),
-              password:cu.password||'',pw_ts:Number(cu.pw_ts)||0,role:cu.role||'user',
-              status:cu.status||'pending',created:cu.created||''
-            });
-            changed=true;
-          }
-        }else{
-          /* 本地已有: 云端审批状态/姓名/角色传播 */
-          if(cu.status==='active'&&local.status!=='active'){local.status='active';changed=true;}
-          if(cu.name&&local.name!==cu.name){local.name=cu.name;changed=true;}
-          if(cu.role&&(local.role||'user')!==cu.role){local.role=cu.role;changed=true;}
-          /* V10.15.11: 密码跨设备仲裁(账号级pw_ts取新者,语义对齐安卓版05-sync.js)--
-             安卓端改密推云端后,本浏览器拉取镜像采纳新哈希,旧密码同步失效。
-             V10.15.14: >改>=,修复旧版本改密(pw_ts=0)换设备登录新密码永不采纳的bug */
-          if(cu.password&&String(cu.password).indexOf('$')>=0&&String(cu.password)!==String(local.password||'')){
-            var cuTs=Number(cu.pw_ts)||0,loTs=Number(local.pw_ts)||0;
-            if(cuTs>=loTs){local.password=cu.password;local.pw_ts=cuTs;changed=true;}
+      if(!me&&who&&who.phone&&who.password&&String(who.password).indexOf('$')<0){
+        var lk=await deriveLinkKey(String(who.phone),String(who.password));
+        if(lk){
+          for(var j=0;j<web.users.length;j++){
+            var c2=web.users[j];
+            if(c2&&c2.linkKey&&String(c2.linkKey)===String(lk)){me=c2;break;}
           }
         }
-        if(whoH&&whoH===cu.phoneH)me=cu;
+      }
+      if(!me)return false; /* 未命中连接键: 密码错/账号不存在, 无法重建 */
+      /* 本地重建/合并 */
+      var local=null;
+      for(var k=0;k<USERS.length;k++){
+        if(String(USERS[k].id)===String(me.id)){local=USERS[k];break;}
+      }
+      var changed=false;
+      if(!local){
+        if(!who||!who.phone||!who.password)return false; /* 无明文密码无法重建本地账号 */
+        /* 换设备登录重建: id 取镜像, password 用本机新盐哈希存本地会话(镜像已无密码) */
+        var localHash=await hashPassword(String(who.password), genSalt());
+        State.addUser({
+          id:me.id,name:me.name||'',phone:String(who.phone),
+          password:localHash,pw_ts:0,role:me.role||'user',
+          status:me.status||'pending',created:me.created||'',
+          linkKey:me.linkKey||''
+        });
+        changed=true;
+      }else{
+        /* 本地已有: 云端审批状态/姓名/角色传播(密码以本地为准) */
+        if(me.status==='active'&&local.status!=='active'){local.status='active';changed=true;}
+        if(me.name&&local.name!==me.name){local.name=me.name;changed=true;}
+        if(me.role&&(local.role||'user')!==me.role){local.role=me.role;changed=true;}
+        if(me.linkKey&&local.linkKey!==me.linkKey){local.linkKey=me.linkKey;changed=true;}
       }
       if(changed)saveUsers(USERS);
       if(fullMerge)return true;
-      if(me&&me.status==='active'){
+      if(me.status==='active'){
         var mine=null;
-        for(var m=0;m<USERS.length;m++){if(USERS[m].phone===String(who.phone)){mine=USERS[m];break;}}
+        for(var m=0;m<USERS.length;m++){if(String(USERS[m].id)===String(me.id)){mine=USERS[m];break;}}
         if(mine&&mine.status!=='active'){
           mine.status='active';
           saveUsers(USERS);
@@ -193,7 +183,7 @@ function _install(){
   };
 
   /* ============================================================
-   * 3 组员账号存活守卫(哈希匹配,防误踢语义与安卓版一致)
+   * 3 组员账号存活守卫(id 匹配, 防误踢语义与安卓版一致)
    * ============================================================ */
   window.checkMemberAccountAlive=async function(){
     if(!state.currentUser||state.currentUser.role!=='user')return true;
@@ -203,11 +193,11 @@ function _install(){
       var web=await _fetchMirror('approved_users.web.json');
       /* 镜像不可用/无数据→跳过本轮,绝不因网络抖动误踢在线组员 */
       if(!web||!Array.isArray(web.users)||!web.users.length)return true;
-      var myH=await _sha256Hex(WEB_SYNC_SALT+String(state.currentUser.phone));
+      /* P0 脱敏: 按登录后本地已有的 id 匹配镜像 id, 不再用可枚举的手机号哈希 */
       var me=null;
       for(var i=0;i<web.users.length;i++){
         var cu=web.users[i];
-        if(cu&&cu.phoneH===myH){me=cu;break;}
+        if(cu&&String(cu.id)===String(state.currentUser.id)){me=cu;break;}
       }
       if(me&&me.status==='active')return true;
       await forceLogoutAsDeleted(me?'您的账号已被组长停用':'您的账号已被组长删除');
@@ -267,7 +257,10 @@ function _install(){
     if(regLock.length>=3){showToast('注册过于频繁,请1小时后再试');return;}
     var salt=genSalt();
     var hashedPass=await hashPassword(pass,salt);
+    // P0 脱敏: 在拿到明文密码的瞬间派生 linkKey, 随注册申请链一路透传到镜像
+    var linkKey=await deriveLinkKey(phone,pass);
     var newUser={id:now,name:name,phone:phone,password:hashedPass,role:'user',status:'pending',created:new Date().toLocaleDateString(),remarks:'网页端申请'};
+    if(linkKey)newUser.linkKey=linkKey;
     showToast('正在提交注册申请...');
     var ok=false, errMsg='网络异常，请稍后重试';
     try{
@@ -283,7 +276,7 @@ function _install(){
             message:'网页端注册申请 '+phone,
             content:btoa(unescape(encodeURIComponent(JSON.stringify({
               type:'pending_registration', source:'tcg-web', appVersion:'v'+APP_VERSION,
-              user:{id:newUser.id,name:name,phone:phone,password:hashedPass,role:'user',status:'pending',created:newUser.created,remarks:'网页端申请'},
+              user:{id:newUser.id,name:name,phone:phone,password:hashedPass,role:'user',status:'pending',created:newUser.created,remarks:'网页端申请',linkKey:newUser.linkKey||''},
               timestamp:new Date().toISOString()
             },null,2))))
           })
@@ -335,11 +328,11 @@ function _install(){
   /* ============================================================
    * 4c 网页端组员管理镜像桥 - V10.16.7 反馈修复
    * 根因: 网页版pullApprovedStatusFromFeishu只重建登录者自己(镜像手机号
-   * 为sha256哈希不可逆),组长浏览器本地USERS缺失往期审批通过的组员,
+   * 已脱敏为 linkKey 连接键),组长浏览器本地USERS缺失往期审批通过的组员,
    * 组员管理页列表为空,表现为"往期申请注册成功的组员账号无法查看"。
    * 方案: 包装renderMemberList--原逻辑(本地USERS)渲染后,组长视角下
-   * 异步拉镜像账号表,把"云端有而本地无"的active组员以只读卡片追加
-   * (手机号已脱敏,管理操作引导至安卓端),不动原渲染与操作逻辑。
+   * 异步拉镜像账号表,按 id 做差集把"云端有而本地无"的active组员以只读
+   * 卡片追加(手机号已脱敏,管理操作引导至安卓端),不动原渲染与操作逻辑。
    * ============================================================ */
   var _origRenderMemberList=window.renderMemberList;
   if(typeof _origRenderMemberList==='function'){
@@ -355,19 +348,15 @@ function _install(){
     if(!c)return;
     var web=await _fetchMirror('approved_users.web.json');
     if(!web||!Array.isArray(web.users)||!web.users.length)return;
-    /* 预计算本地全部手机号哈希(去重索引) */
-    var localH={};
+    /* P0 脱敏: 按 id 做本地差集索引(不再用可枚举的手机号哈希) */
+    var hasLocal={};
     for(var i=0;i<USERS.length;i++){
       var u=USERS[i];
-      if(u&&u.phone&&localH[u.phone]===undefined){
-        localH[u.phone]=await _sha256Hex(WEB_SYNC_SALT+String(u.phone));
-      }
+      if(u&&u.id!==undefined&&u.id!==null)hasLocal[String(u.id)]=true;
     }
-    var hasLocal={};
-    for(var k in localH)hasLocal[localH[k]]=true;
     /* 云端有而本地无的active组员(排除组长自己) */
     var cloudOnly=web.users.filter(function(cu){
-      return cu&&cu.phoneH&&cu.status==='active'&&cu.role!=='admin'&&!hasLocal[cu.phoneH];
+      return cu&&cu.id!==undefined&&cu.id!==null&&cu.status==='active'&&cu.role!=='admin'&&!hasLocal[String(cu.id)];
     });
     if(!cloudOnly.length)return;
     var extra=cloudOnly.map(function(cu){

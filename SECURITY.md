@@ -30,9 +30,15 @@
 - `.github/workflows/secret-scan.yml` 每次 push/PR 运行 `scripts/secret-scan.js`,
   命中 GitHub PAT / 已知泄露 Secret / 明文 appSecret 赋值时非零退出, 阻断合并。
 - `.github/workflows/sync-web-data.yml` 使用 `FEISHU_*` Secrets 运行镜像脚本,
-  产物 `web-data/` 仅含脱敏数据(手机号 sha256 哈希, 无明文)。
+  产物 `web-data/` 仅含脱敏数据(账号连接键 linkKey, 无明文手机号/密码哈希)。
 
 ## 网页镜像隐私
 
-`web-data/approved_users.web.json` 中的手机号经 `sha256(WEB_SYNC_SALT + phone)` 单向哈希,
-`WEB_SYNC_SALT` 为公开常量; 哈希不可反解, 网页端仅能做"哈希匹配", 无法还原真实手机号。
+`web-data/approved_users.web.json` 中的账号连接键为
+`linkKey = PBKDF2-HMAC-SHA256(password, LINK_SALT + '|' + phone, 100000, 256bit)`。
+
+- 熵完全来自密码: 攻击者拿不到明文密码, 就无法由公开镜像反推手机号
+  (旧方案 `phoneH = sha256(SALT + phone)` 的盐公开、手机号空间 ~10^10,
+  可分钟级离线枚举还原, 已下线)。
+- `LINK_SALT` 为公开常量, 公开无妨。
+- 明文手机号 `phone`、密码哈希 `password`、改密仲裁 `pw_ts` 一律不出库。

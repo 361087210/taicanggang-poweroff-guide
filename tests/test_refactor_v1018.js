@@ -18,7 +18,7 @@ function section(t){ console.log('\n========== ' + t + ' =========='); }
 section('F1 配置单一真源 00-config.js');
 check('F1a 00-config.js 存在', exists('js/00-config.js'));
 const cfg = src('js/00-config.js');
-check('F1b 定义 WEB_SYNC_SALT=tcg-web-2026', cfg.includes("WEB_SYNC_SALT: 'tcg-web-2026'"));
+check('F1b 定义 LINK_SALT=tcg-link-2026(替换旧 WEB_SYNC_SALT)', cfg.includes("LINK_SALT: 'tcg-link-2026'"));
 check('F1c 定义 GITHUB_REPO', cfg.includes("GITHUB_REPO: '361087210/taicanggang-poweroff-guide'"));
 check('F1d 定义 BASE_APP_TOKEN', cfg.includes('Gn4db7il9a27QrsOtVbclSE3nnf'));
 check('F1e 定义 DEFAULT_CHAT_ID', cfg.includes('oc_1b25c691971c61de0b7773e49cb42796'));
@@ -26,9 +26,9 @@ check('F1f 不含密钥明文', !/s35nEpUBk8KtxN3Kwl2AEgUNnwXQHABb|ghp_/.test(cf
 
 section('F2 配置读取改造(降级兜底)');
 const web = src('js/09-web-sync.js');
-check('F2a WEB_SYNC_SALT 改从 TCG_CONFIG 读取', web.includes('window.TCG_CONFIG&&window.TCG_CONFIG.WEB_SYNC_SALT'));
-check('F2b 保留兜底默认值', web.includes("||'tcg-web-2026'"));
 const boot = src('js/00-bootstrap.js');
+check('F2a 09-web-sync 不再硬编码 WEB_SYNC_SALT(去盐化)', !web.includes('WEB_SYNC_SALT'));
+check('F2b LINK_SALT 改从 TCG_CONFIG 读取(deriveLinkKey 兜底)', boot.includes('window.TCG_CONFIG&&window.TCG_CONFIG.LINK_SALT') && boot.includes("||'tcg-link-2026'"));
 check('F2c GITHUB_REPO 改从 TCG_CONFIG 读取', boot.includes('window.TCG_CONFIG&&window.TCG_CONFIG.GITHUB_REPO'));
 const bit = src('js/12-bitable.js');
 check('F2d BASE_APP_TOKEN 改从 TCG_CONFIG 读取', bit.includes('window.TCG_CONFIG&&window.TCG_CONFIG.BASE_APP_TOKEN'));
@@ -52,9 +52,9 @@ check('F5b 工作流 sync-web-data.yml 存在', exists('.github/workflows/sync-w
 check('F5c 工作流使用 FEISHU Secrets', src('.github/workflows/sync-web-data.yml').includes('FEISHU_APP_SECRET'));
 check('F5d 工作流提交 web-data', src('.github/workflows/sync-web-data.yml').includes('git add web-data/'));
 const script = src('scripts/sync_web_data.js');
-check('F5e 脚本 SALT 一致', script.includes("'tcg-web-2026'"));
+check('F5e 脚本去盐化(不含旧盐 tcg-web-2026)', !script.includes("'tcg-web-2026'"));
 check('F5f 支持本地离线模式', script.includes('--source-dir'));
-check('F5g 手机号脱敏', script.includes('phoneHash') && script.includes('sha256'));
+check('F5g 账号连接键 linkKey 透传(不再 phoneHash 补算)', script.includes('linkKey') && !script.includes('phoneHash'));
 
 section('F6 网页镜像产物已落地 web-data/');
 check('F6a meta.json 含 syncedAt', (function(){ try{ const m=JSON.parse(src('web-data/meta.json')); return !!(m&&m.syncedAt); }catch(e){ return false; } })());
@@ -85,16 +85,16 @@ try {
   fs.mkdirSync(tmp, { recursive: true }); fs.mkdirSync(sdir, { recursive: true });
   fs.writeFileSync(path.join(sdir, 'vehicle_sync_data.json'), JSON.stringify({ vehicles: [{ id: 'v1', display: '测试车', videoPaths: [] }], version: 'v10.18.0' }));
   fs.writeFileSync(path.join(sdir, 'approved_users.json'), JSON.stringify({ users: [
-    { id: 1, name: '甲', phone: '13800000001', status: 'active', password: 'x', pw_ts: 1, role: 'user', created: '2026' },
+    { id: 1, name: '甲', phone: '13800000001', status: 'active', password: 'x', pw_ts: 1, role: 'user', created: '2026', linkKey: 'a'.repeat(64) },
     /* V10.19.1 P0 回归: 本 App 组员 name 存的就是明文手机号, 曾被整包透传进
      * 公开的 web-data/(实测 curl 线上可取原文)。以下用例锁定"掩码 + 去凭据"。 */
-    { id: 2, name: '18570474454', phone: '18570474454', status: 'active', role: 'user', created: '2026', password: 'pbkdf2$deadbeef$100000$cafe', pw_ts: 9, device: 'Pixel 7' }
+    { id: 2, name: '18570474454', phone: '18570474454', status: 'active', role: 'user', created: '2026', password: 'pbkdf2$deadbeef$100000$cafe', pw_ts: 9, device: 'Pixel 7', phoneH: 'b'.repeat(64), linkKey: 'c'.repeat(64) }
   ] }));
   execSync('node scripts/sync_web_data.js --source-dir _verify_src --out _verify_out', { cwd: ROOT, stdio: 'inherit' });
   const meta = JSON.parse(fs.readFileSync(path.join(tmp, 'meta.json'), 'utf8'));
   check('F9a 本地模式生成 meta.syncedAt', !!(meta && meta.syncedAt));
   const aw = JSON.parse(fs.readFileSync(path.join(tmp, 'approved_users.web.json'), 'utf8'));
-  check('F9b 本地模式脱敏(无明文phone, phoneH=64位)', aw.users.every(u => !u.phone) && aw.users[0].phoneH && aw.users[0].phoneH.length === 64);
+  check('F9b 本地模式脱敏(无明文phone, linkKey=64位)', aw.users.every(u => !u.phone) && aw.users[0].linkKey && aw.users[0].linkKey.length === 64);
   /* V10.19.1 P0 回归: 账号镜像不得再含凭据/明文号码/未白名单字段 */
   const _noKey = k => aw.users.every(u => !(k in u));
   check('F9c 账号镜像无 password(密码哈希不得出库)', _noKey('password'));
@@ -103,9 +103,10 @@ try {
   check('F9f 未知字段不透传(device/白名单外字段)', _noKey('device'));
   const _u2 = aw.users.find(u => u.id === 2) || {};
   check('F9g name 命中手机号形态时掩码(18570474454→185****4454)', _u2.name === '185****4454', String(_u2.name));
-  const _awRaw = fs.readFileSync(path.join(tmp, 'approved_users.web.json'), 'utf8').replace(/"phoneH":\s*"[0-9a-f]{64}"/gi, '');
+  const _awRaw = fs.readFileSync(path.join(tmp, 'approved_users.web.json'), 'utf8').replace(/"linkKey":\s*"[0-9a-f]{64}"/gi, '');
   check('F9h 产物全文无独立11位明文手机号', ((_awRaw.match(/(?<!\d)1[3-9]\d{9}(?!\d)/g) || []).length) === 0);
-  check('F9i meta.json 不再输出盐值明文', meta.salt === undefined);
+  check('F9i 账号镜像无 phoneH(旧枚举连接键彻底下线)', _noKey('phoneH'));
+  check('F9j meta.json 不再输出盐值明文', meta.salt === undefined);
   fs.rmSync(tmp, { recursive: true }); fs.rmSync(sdir, { recursive: true });
 } catch (e) {
   check('F9 动态执行异常: ' + e.message, false);

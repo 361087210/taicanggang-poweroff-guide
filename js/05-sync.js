@@ -13,7 +13,7 @@ async function syncPendingToFeishu(user){
     // 密码已在本地注册时哈希化（salt$hash格式），同步到飞书安全无明文泄露风险
     // V10.4.0 问题5.2: 增加source来源标识——组长端据此区分本端申请(人工审批)
     // 与跨端申请(React版APK等,静默自动处理),见pullPendingFromFeishu
-    const pendingData={type:'pending_registration',source:'tcg-cordova',appVersion:'v'+APP_VERSION,user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
+    const pendingData={type:'pending_registration',source:'tcg-cordova',appVersion:'v'+APP_VERSION,user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created,linkKey:user.linkKey},timestamp:new Date().toISOString()};
     const jsonStr=JSON.stringify(pendingData,null,2);
     const blob=new Blob([jsonStr],{type:'application/json'});
     const token=await getFeishuToken(cfg,2);
@@ -26,7 +26,7 @@ async function syncPendingToFeishu(user){
     try{
       const token=await getFeishuToken(cfg,1);
       invalidateDataFolderCache();
-      const pendingData={type:'pending_registration',source:'tcg-cordova',appVersion:'v'+APP_VERSION,user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created},timestamp:new Date().toISOString()};
+      const pendingData={type:'pending_registration',source:'tcg-cordova',appVersion:'v'+APP_VERSION,user:{id:user.id,name:user.name,phone:user.phone,password:user.password,role:user.role,status:user.status,created:user.created,linkKey:user.linkKey},timestamp:new Date().toISOString()};
       const blob=new Blob([JSON.stringify(pendingData,null,2)],{type:'application/json'});
       await httpUploadFile({token,fileName:`pending_reg_${user.phone}.json`,folderToken:await getDataSubFolderToken(token,cfg.pendingSub),blob});
       showToast('注册申请已推送(重试成功)，请等待组长审核');
@@ -416,7 +416,7 @@ async function pushApprovedUsersToFeishu(){
     const token=await getFeishuToken(cfg);
     // V5.7: 含哈希密码(salt$hash不可逆,云端无明文),支撑组员新设备登录闭环
     // V10.15.11: users行含pw_ts(账号级最近改密时间,ms)——拉取端据此仲裁密码新旧
-    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>({id:u.id,name:u.name,phone:u.phone,password:u.password||'',pw_ts:u.pw_ts||0,role:u.role,status:u.status,created:u.created}))};
+    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>({id:u.id,name:u.name,phone:u.phone,password:u.password||'',pw_ts:u.pw_ts||0,role:u.role,status:u.status,created:u.created,linkKey:u.linkKey||''}))};
     await uploadJsonToDataFeishu(token,'approved_users.json',JSON.stringify(payload),cfg.approvedSub);
     // 迁移清理: 删除旧位置(数据区根)同名文件,防止读到陈旧审批结果
     try{
@@ -488,6 +488,8 @@ async function pullApprovedStatusFromFeishu(userParam,fullMerge){
           const cuTs=Number(cu.pw_ts)||0,loTs=Number(local.pw_ts)||0;
           if(cuTs>=loTs){local.password=cu.password;local.pw_ts=cuTs;}
         }
+        /* P0 脱敏: 透传云端 linkKey(新注册/迁移账号的连接键), 供本机回推与镜像匹配 */
+        if(cu.linkKey&&String(cu.linkKey)!==String(local.linkKey||'')){local.linkKey=cu.linkKey;}
         // 本地已有: 云端状态更新时同步(仅状态与审批信息,密码以本地为准避免覆盖)
         // V10.17.0: rejected状态同步补齐——旧版只合并active,组长拒绝后组员端
         // 永远停在"审核中",申请被拒了都不知道(反馈问题1根因A)。现active与

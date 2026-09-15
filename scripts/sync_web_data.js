@@ -20,8 +20,8 @@
  *      调用飞书 OpenAPI 拉取云端文件, 生成镜像。CI 使用此模式。
  *
  * ⚠️ 安全: 密钥仅来自环境变量/CI Secrets, 绝不读源码、绝不写日志、
- *   绝不出现在任何产物中。手机号脱敏为 sha256(SALT+phone), 与
- *   09-web-sync.js 的 WEB_SYNC_SALT 必须一致。
+ *   绝不出现在任何产物中。账号连接键 linkKey 由客户端用 PBKDF2(password,
+ *   LINK_SALT|phone) 派生, 本脚本只透传、不重算(见 sanitizeApprovedUsers)。
  *
  * ⚠️ 隐私红线(所有镜像): web-data/ 是要发布到 GitHub Pages 的**公开静态
  *   资源**, 原始云端数据含个人可识别字段。本脚本对**每一份**镜像(反馈表 +
@@ -76,9 +76,6 @@ function _reqText(urlStr, headers){
   });
 }
 
-/* MUST MATCH 09-web-sync.js WEB_SYNC_SALT / TCG_CONFIG.WEB_SYNC_SALT */
-const DEFAULT_SALT = process.env.TCG_WEB_SYNC_SALT || 'tcg-web-2026';
-
 /* ===========================================================
  * 反馈表镜像配置: 统一从 js/00-config.js 的 TCG_CONFIG 读取(单一真源)
  * -----------------------------------------------------------
@@ -130,34 +127,31 @@ const FEEDBACK_FIELD_ALLOWLIST = [
 const SENSITIVE_FIELD_RE = /(联系方式|设备信息|提交人|手机|电话|邮箱|邮件|微信|QQ|IMEI|设备型号|系统版本|平台|APP版本|角色|姓名|账号|IP|定位|地址)/i;
 
 /* ===========================================================
- * 账号表镜像字段白名单(默认拒绝) —— V10.19.1 P0 隐私修复
+ * 账号表镜像字段白名单(默认拒绝) —— V10.19.1 P0 隐私修复 / V10.22 P0 去盐化
  * -----------------------------------------------------------
  * 背景: approved_users 镜像此前走 buildApprovedWeb() 整包透传, 把
  *   - name  (本 App 组员 name 存的就是**明文手机号**)
  *   - password (pbkdf2 密码哈希, 可离线暴力破解还原弱口令)
- *   - phoneH(sha256(SALT+phone) 手机号哈希)
+ *   - phoneH(sha256(SALT+phone) 手机号哈希, 盐公开可分钟级枚举还原)
  * 一并写进了公开的 web-data/ —— 经实测 curl 线上 URL 可取到完整原文。
  *
  * 允许出库的判定标准: 网页端账号链路**必需**且不可识别到个人。
- *   - id     : 账号主键(09-web-sync.js:154 创建新设备账号时用)
- *   - name   : 组员显示名(09-web-sync.js:163 传播 / :375 组长端列表展示);
+ *   - id     : 账号主键(09-web-sync.js 换设备登录重建/存活守卫/差集时用)
+ *   - name   : 组员显示名(09-web-sync.js 状态传播 / 组长端列表展示);
  *              命中手机号形态时强制掩码 —— 保留可辨识性, 去掉号码本体
- *   - phoneH : 云端↔本地账号的**连接键**(09-web-sync.js:143/:210 哈希匹配)。
- *              ⚠️ 不能删: 删掉后 checkMemberAccountAlive 会遍历不到自己
- *              → 对所有在线组员执行 forceLogoutAsDeleted(网页端全员掉线),
- *              pullApprovedStatusFromFeishu 也全部 continue → 审批状态
- *              永不传播。见报告"存疑/未闭环"一节。
+ *   - linkKey: 网页账号连接键 = PBKDF2(password, LINK_SALT|phone)。
+ *              ⚠️ 熵来自密码: 拿不到密码就无法由公开镜像反推手机号;
+ *              客户端在拿到明文密码的瞬间派生并透传, 本脚本只透传不重算。
  *   - role / status / created : 权限与审批态, 非身份信息
  *
  * 明确拒绝出库: phone(明文手机号)、password(密码哈希)、pw_ts(改密时间戳,
  * 与 password 配套的凭据仲裁字段), 以及任何未列入白名单的字段。
  * =========================================================== */
-const APPROVED_FIELD_ALLOWLIST = ['id', 'name', 'phoneH', 'role', 'status', 'created'];
+const APPROVED_FIELD_ALLOWLIST = ['id', 'name', 'linkKey', 'role', 'status', 'created'];
 /* 凭据/密钥类字段兜底拦截(与白名单双保险: 即便被误加进白名单也会拦下) */
 const CREDENTIAL_FIELD_RE = /(password|passwd|pwd|pw_?ts|token|secret|salt)/i;
-/* 明文手机号字段兜底拦截: 必须**全字段精确匹配**——
- * 若写成 /phone/i 会把白名单里的 phoneH(哈希连接键)一起误杀, 导致
- * 网页端账号匹配全失效(09-web-sync.js:143/:210 依赖 phoneH)。 */
+/* 明文手机号字段兜底拦截: 必须**全字段精确匹配**(linkKey 是派生连接键,
+ * 不含"phone"字样, 天然不受此正则影响)。 */
 const PLAIN_PHONE_FIELD_RE = /^(phone|mobile|tel|telephone)$/i;
 /* 中国大陆手机号形态: 1[3-9] + 9位, 可选 +86/86 前缀 */
 const PHONE_PLAIN_RE = /(?:\+?86)?(1[3-9]\d{9})/g;
@@ -182,23 +176,19 @@ function maskPhoneLike(s){
 /** Bitable 字段值归一: 多选/单选等数组形态展平为字符串(与 10-feedback.js _flat 同义) */
 function _flatField(v){ return Array.isArray(v) ? v.join('') : v; }
 
-function sha256Hex(s){ return crypto.createHash('sha256').update(String(s), 'utf8').digest('hex'); }
-function phoneHash(salt, phone){ return sha256Hex(salt + String(phone)); }
-
 function parseArgs(argv){
-  const o = { out: 'web-data', sourceDir: process.env.TCG_LOCAL_SOURCE_DIR || null, salt: DEFAULT_SALT, dry: false };
+  const o = { out: 'web-data', sourceDir: process.env.TCG_LOCAL_SOURCE_DIR || null, dry: false };
   for(let i=2;i<argv.length;i++){
     const a = argv[i];
     if(a==='--out') o.out = argv[++i];
     else if(a==='--source-dir') o.sourceDir = argv[++i];
-    else if(a==='--salt') o.salt = argv[++i];
     else if(a==='--dry') o.dry = true;
     else if(a==='--help'||a==='-h'){ printHelp(); process.exit(0); }
   }
   return o;
 }
 function printHelp(){
-  console.log('Usage: node scripts/sync_web_data.js [--out web-data] [--source-dir <dir>] [--salt <salt>] [--dry]');
+  console.log('Usage: node scripts/sync_web_data.js [--out web-data] [--source-dir <dir>] [--dry]');
   console.log('  --source-dir <dir>   本地模式: 从该目录读取源 JSON (vehicle_sync_data.json / approved_users.json / feedback_data.json)');
   console.log('  (无 --source-dir 则为飞书模式, 需环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET)');
 }
@@ -374,13 +364,12 @@ async function buildFromFeishu(opt){
  *   - 字段白名单投影, 未列入即丢弃(旧版是显式列全字段, 新增字段自动透传)
  *   - name 命中手机号形态 → 掩码(旧版原样输出)
  *   - password / pw_ts 不再输出(旧版原样输出)
- *   - phoneH 只接受 64 位十六进制形态(旧版无条件透传上游值)
+ *   - linkKey 只接受 64 位十六进制形态(旧版 phoneH 同款防御, 且不再由 phone 补算)
  *
  * @param {Array<Object>|Object} raw - 原始账号数组或 {users:[...]}
- * @param {string} salt - 与 09-web-sync.js WEB_SYNC_SALT 一致的盐
  * @returns {{users:Array, timestamp:string, sanitized:boolean, fieldAllowlist:string[], droppedFields:string[]}}
  */
-function sanitizeApprovedUsers(raw, salt){
+function sanitizeApprovedUsers(raw){
   const src = Array.isArray(raw) ? raw : ((raw && Array.isArray(raw.users)) ? raw.users : []);
   const dropped = [];
   const droppedSet = new Set();
@@ -394,14 +383,13 @@ function sanitizeApprovedUsers(raw, salt){
       let v = u[k];
       if(v === undefined || v === null) continue;
       if(k === 'name') v = maskPhoneLike(v);
-      if(k === 'phoneH'){
-        // 只接受 sha256 十六进制(64位)形态; 上游整包透传的其它值一律置空
+      if(k === 'linkKey'){
+        // 只接受 PBKDF2 派生 64 位 hex 形态; 其它值一律不输出
         v = /^[0-9a-f]{64}$/i.test(String(v)) ? String(v).toLowerCase() : '';
+        if(!v) continue; // 存量账号无 linkKey / 非法形态: 不输出该字段
       }
       clean[k] = v;
     }
-    // phoneH 补算: 源数据带明文 phone 时按 sha256(SALT+phone) 生成(脱敏形态)
-    if(!clean.phoneH && u.phone) clean.phoneH = phoneHash(salt, u.phone);
     for(const k of Object.keys(u)){
       if(APPROVED_FIELD_ALLOWLIST.indexOf(k) === -1 || SENSITIVE_FIELD_RE.test(k) || CREDENTIAL_FIELD_RE.test(k) || PLAIN_PHONE_FIELD_RE.test(k)){
         if(!droppedSet.has(k)){ droppedSet.add(k); dropped.push(k); }
@@ -425,7 +413,7 @@ function sanitizeApprovedUsers(raw, salt){
 async function main(){
   const opt = parseArgs(process.argv);
   const isLocal = !!opt.sourceDir;
-  console.log(`[mirror] 模式: ${isLocal ? '本地('+opt.sourceDir+')' : '飞书'} · 输出: ${opt.out} · SALT=${opt.salt}`);
+  console.log(`[mirror] 模式: ${isLocal ? '本地('+opt.sourceDir+')' : '飞书'} · 输出: ${opt.out}`);
 
   const { vehicle, approved, feedback: rawFeedback } = isLocal ? buildFromLocal(opt) : await buildFromFeishu(opt);
 
@@ -437,7 +425,7 @@ async function main(){
    * 与反馈镜像同构——放在出库前而不是拉取后, 杜绝"换个数据源就绕过脱敏"。
    * V10.19.1 P0: 旧 buildApprovedWeb 把 name(明文手机号)/password(pbkdf2
    * 哈希)/phoneH 整包透传进公开的 web-data/, 已实测可 curl 取到原文。 */
-  const approvedWeb = sanitizeApprovedUsers(approved.users || [], opt.salt);
+  const approvedWeb = sanitizeApprovedUsers(approved.users || []);
 
   // 数据更新通知(网页端 60s 轮询据此自动镜像对齐)
   const notice = {
@@ -449,11 +437,8 @@ async function main(){
     syncedAt: new Date().toISOString(),     // 09-web-sync.js 探测激活的充要条件
     generatedAt: new Date().toISOString(),
     source: isLocal ? 'local' : 'feishu',
-    /* V10.19.1 P0: 不再输出盐值明文——它与 phoneH 放在同一公开目录下,
-     * 等于把"枚举手机号还原 phoneH"的最后一块拼图直接递给攻击者。
-     * 注: 盐仍硬编码在 js/00-config.js(WEB_SYNC_SALT)并随前端发布, 这是
-     * 网页端需自行计算 sha256(SALT+phone) 的架构性约束, 单改本脚本无法
-     * 根除, 需另行改造(见报告"未闭环"一节)。此处仅移除最廉价的那一环。 */
+    /* P0 脱敏: 连接键已改 linkKey=PBKDF2(password, LINK_SALT|phone),
+     * 熵来自密码, 无需也不输出任何盐值——盐(LINK_SALT)公开无妨。 */
     version: vehicle.version || 'mirror',
     counts: {
       vehicles: (vehicle.vehicles || []).length,

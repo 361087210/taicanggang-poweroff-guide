@@ -33,7 +33,8 @@
   - 来源①：构建期 `scripts/inject_build_secrets.js` 注入 `window.__BUILD_SECRETS__`
   - 来源②：CI 仓库 Secrets（`FEISHU_APP_SECRET` / `FEISHU_APP_ID`）
   - 来源③：用户设置页手动填写（仅存 localStorage）
-- `WEB_SYNC_SALT` 必须与 `scripts/sync_web_data.js` 中字面量**完全一致**（两运行时各自维护同一常量）。
+- 账号连接键 `linkKey = PBKDF2(password, LINK_SALT + '|' + phone)`：`LINK_SALT` 公开无妨（熵来自密码）。
+  安卓端与网页端共用 `deriveLinkKey` 原语（`js/00-bootstrap.js`），镜像端只透传、不重算。
 
 ## 三、数据流
 
@@ -48,7 +49,7 @@
 
 ### 3.3 网页镜像（根治 bug② + 网页端可用）
 `scripts/sync_web_data.js` 每 15 分钟从飞书生成静态 `web-data/`：
-`vehicle_sync_data.json` / `approved_users.web.json`(手机号 sha256 脱敏) / `feedback_data.json` / `data_update_notice.json` / `meta.json(syncedAt)`。
+`vehicle_sync_data.json` / `approved_users.web.json`(账号连接键 linkKey 脱敏) / `feedback_data.json` / `data_update_notice.json` / `meta.json(syncedAt)`。
 网页端 `sync/web-mirror` 探测 `meta.json.syncedAt` 后安装镜像覆盖层（注册走 GitHub inbox，规避 CORS）。
 
 ## 四、缺陷修复对照（原始 6 大 Bug）
@@ -97,5 +98,5 @@ npm run test         # 运行回归测试
 1. Token 缓存 2 小时，提前 5 分钟刷新
 2. 权限最小化（Camera/Filesystem/Share/Haptics）
 3. 数据隔离：车型/用户/日志分仓
-4. 手机号 `sha256(WEB_SYNC_SALT + phone)` 脱敏，网页镜像无明文
+4. 账号连接键 `linkKey = PBKDF2(password, LINK_SALT + '|' + phone)` 脱敏，网页镜像无明文手机号/密码哈希
 5. 密钥不落源码，CI Secrets + 构建注入
