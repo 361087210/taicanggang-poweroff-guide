@@ -44,6 +44,7 @@
     "test:v1020-crud": "node tests/test_v1020_vehicles_crud.js",
     "test:v1021-guard": "node tests/test_v1021_addvehicle_passthrough_guard.js",
     "sync:web": "node scripts/sync_web_data.js --out web-data",
-    "scan:secrets": "node scripts/secret-scan.js"
+    "scan:secrets": "node scripts/secret-scan.js",
+    "test:ci-coverage": "node scripts/check_ci_coverage.js"
   }
 }
