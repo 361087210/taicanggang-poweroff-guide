@@ -53,12 +53,11 @@ if(document.documentElement&&document.documentElement.classList){
  * P0 脱敏: 原手机号 sha256 枚举向量(旧盐常量)已删除; 连接键改用
  * deriveLinkKey(js/00-bootstrap.js), 镜像端只透传 linkKey, 不再自己算。 */
 var MIRROR_BASE=(window.TCG_CONFIG&&window.TCG_CONFIG.WEB_MIRROR_BASE)||'web-data/';
-var GITHUB_REGISTER_REPO=(window.TCG_CONFIG&&window.TCG_CONFIG.GITHUB_REGISTER_REPO)||'361087210/tcg-registration-inbox';
-/* V10.17.0: 网页端注册GitHub登记通道(反馈问题2)——
- * 登记库公开只写, token按项目既有XOR+base64模式加密存储(与appSecretEnc同款,
- * 密钥同源), 明文不出现在源码/构建产物/网络日志中;轮换时仅需更新此密文。 */
-var GITHUB_REGISTER_API='https://api.github.com/repos/'+GITHUB_REGISTER_REPO+'/contents/registrations';
-var GITHUB_REGISTER_TOKEN_ENC='Mys3ABRgQg8+IDUYWlpafGAmECdlZnsTFnkKGn1GZ2UbKHQzOQJ8JQ==';
+/* V10.19.3: 网页端自助注册(GitHub登记通道)已整体下线 ——
+ * 登记令牌可从公开源码解出且 scope 含 repo/workflow(即将吊销), 吊销后网页端
+ * 上行注册必失败, 保留只会给用户"假成功"。网页端定位"仅组员只读", 新增成员
+ * 改由组长在手机 App 端添加(见下方 doRegister 引导语)。
+ * 原"登记库 / 上行接口 / 令牌密文"三个常量已一并删除。 */
 
 /** 拉取同源镜像JSON(时间戳防缓存+no-store双保险,配合SW网络优先策略)
  *  V10.15.9 弱网优化: 10s超时,避免弱网下fetch挂起阻塞UI;
@@ -263,78 +262,17 @@ function _install(){
     showToast('网页版不支持重置密码,请在安卓APP「我的→账号安全」中修改');
   };
   /* ============================================================
-   * ④d 网页端自助注册(GitHub登记通道) - V10.17.0 反馈问题2
+   * ④d 网页端自助注册 —— V10.19.3 改为「引导语」(原 GitHub 登记通道已下线)
    * ============================================================
-   * 背景: 网页端无飞书直连能力(CORS),旧版直接拦截注册引导去安卓端;
-   *      用户要求网页端可申请注册。方案: 登记走GitHub专用库
-   *      (公开仓库+细粒度token,提交即创建pending_reg_<手机号>.json,
-   *      镜像工作流转投飞书“注册申请/”),组长端现有轮询零改动可见可审;
-   *      审批后组员经网页镜像approved_users.web.json登录。
-   * 诚实原则: 上行失败时立即删除本地pending账号并明确报错,绝不假成功。
+   * 变更原因:
+   *   ① 原方案的 GitHub 登记令牌可从公开源码解出, 且 scope 含 repo/workflow,
+   *      即将吊销; 吊销后网页端上行注册**必然失败**。
+   *   ② 网页端定位本就是「仅组员只读」, 新增成员应由组长在 App 端完成。
+   * 正解: 网页端不再提供注册入口, 直接给出明确指引。
+   *       安卓端 doRegister(js/02-auth.js)不受影响, 仍走飞书直连注册链。
    * ============================================================ */
   window.doRegister=async function(){
-    var name=document.getElementById('reg-name').value.trim();
-    var phone=document.getElementById('reg-phone').value.trim();
-    var pass=document.getElementById('reg-pass').value.trim();
-    var pass2=document.getElementById('reg-pass2').value.trim();
-    if(!name||!phone||!pass){showToast('请填写完整信息');return;}
-    if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
-    if(pass.length<6){showToast('密码至少6位');return;}
-    if(!/(?=.*\d)(?=.*[a-zA-Z])/.test(pass)){showToast('密码须包含数字和字母');return;}
-    if(pass!==pass2){showToast('两次密码不一致');return;}
-    if(USERS.find(function(u){return u.phone===phone;})){showToast('该手机号已注册');return;}
-    // 与安卓端一致的注册限流(同设备1小时3次)
-    var regKey='tcg_reg_lock';
-    var regLock=JSON.parse(localStorage.getItem(regKey)||'[]');
-    var now=Date.now();
-    regLock=regLock.filter(function(t){return now-t<3600000;});
-    if(regLock.length>=3){showToast('注册过于频繁,请1小时后再试');return;}
-    var salt=genSalt();
-    var hashedPass=await hashPassword(pass,salt);
-    // P0 脱敏: 在拿到明文密码的瞬间派生 linkKey, 随注册申请链一路透传到镜像
-    var linkKey=await deriveLinkKey(phone,pass);
-    var newUser={id:now,name:name,phone:phone,password:hashedPass,role:'user',status:'pending',created:new Date().toLocaleDateString(),remarks:'网页端申请'};
-    if(linkKey)newUser.linkKey=linkKey;
-    showToast('正在提交注册申请...');
-    var ok=false, errMsg='网络异常，请稍后重试';
-    try{
-      // 解密登记token(与appSecretEnc同款XOR+base64;00-bootstrap已加载,_SECRET_XOR_KEY在同文件闭包顶层可用)
-      var regToken='';
-      try{ regToken=(typeof _decryptBuildSecret==='function')?_decryptBuildSecret(GITHUB_REGISTER_TOKEN_ENC):''; }catch(e){ regToken=''; }
-      if(!regToken){ errMsg='注册通道未配置，请联系组长'; }
-      else{
-        var resp=await fetch(GITHUB_REGISTER_API,{
-          method:'POST',
-          headers:{'Authorization':'Bearer '+regToken,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
-          body:JSON.stringify({
-            message:'网页端注册申请 '+phone,
-            content:btoa(unescape(encodeURIComponent(JSON.stringify({
-              type:'pending_registration', source:'tcg-web', appVersion:'v'+APP_VERSION,
-              user:{id:newUser.id,name:name,phone:phone,password:hashedPass,role:'user',status:'pending',created:newUser.created,remarks:'网页端申请',linkKey:newUser.linkKey||''},
-              timestamp:new Date().toISOString()
-            },null,2))))
-          })
-        });
-        if(resp.status===201){ok=true;}
-        else if(resp.status===422){errMsg='该手机号已提交过申请，请等待组长审核';}
-        else if(resp.status===401||resp.status===403){errMsg='申请通道暂不可用，请联系组长';}
-        else{errMsg='提交失败('+(resp.status||'网络')+')，请稍后重试';}
-      }
-    }catch(e){
-      console.warn('[网页注册] GitHub上行失败:',e&&e.message);
-    }
-    if(ok){
-      State.addUser(newUser);
-      saveUsers(USERS);
-      regLock.push(now);
-      localStorage.setItem(regKey,JSON.stringify(regLock));
-      showToast('注册申请已提交，请等待组长审核');
-      showScreen('screen-login');
-      navReset();
-      watchRegistrationActivation(newUser);
-    }else{
-      showToast('注册提交失败: '+errMsg);
-    }
+    showToast('网页版不支持注册, 请联系组长在手机 App 端添加成员');
   };
 
   /* ============================================================
