@@ -500,6 +500,20 @@ function renderAboutPage() {
         </div>
       </div>
 
+      <!-- 运行环境自检(提交组A: 让组长更新 App 后"先看一眼就知道能不能成", 无需反复试) -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm">
+        <div class="flex items-center gap-2 mb-3">
+          <span>🛡️</span>
+          <span class="text-sm font-bold text-gray-700">运行环境自检</span>
+        </div>
+        <div class="flex items-center gap-3 py-1.5">
+          <span class="text-base" id="about-crypto-cap-icon">⏳</span>
+          <span class="text-xs text-gray-500 w-40">安全升级所需加密能力</span>
+          <span class="text-xs font-medium text-gray-400 flex-1" id="about-crypto-cap">检测中…</span>
+        </div>
+        <div class="text-xs text-gray-400 mt-1 hidden" id="about-crypto-hint"></div>
+      </div>
+
       <!-- 技术架构 -->
       <div class="bg-white rounded-2xl p-4 shadow-sm">
         <div class="flex items-center gap-2 mb-3">
@@ -576,6 +590,28 @@ function renderAboutPage() {
     </div>
   `;
   document.getElementById('screen-about').innerHTML = html;
+  // 异步填充"加密能力自检"结果(不阻塞渲染; 探测失败按不可用提示, 但绝不静默)
+  (function(){
+    const capEl=document.getElementById('about-crypto-cap');
+    if(!capEl||typeof probeCryptoCapability!=='function') return;
+    probeCryptoCapability().then(function(ok){
+      const iconEl=document.getElementById('about-crypto-cap-icon');
+      const hintEl=document.getElementById('about-crypto-hint');
+      if(ok){
+        capEl.textContent='可用';
+        capEl.className='text-xs font-medium text-green-600 flex-1';
+        if(iconEl)iconEl.textContent='✅';
+      }else{
+        capEl.textContent='不可用';
+        capEl.className='text-xs font-medium text-red-600 flex-1';
+        if(iconEl)iconEl.textContent='❌';
+        if(hintEl){
+          hintEl.textContent='本设备缺少所需加密能力，网页端安全升级无法完成；请换用较新的手机，或联系组长。';
+          hintEl.classList.remove('hidden');
+        }
+      }
+    }).catch(function(){ /* 探测异常: 保持"检测中"，不误导为可用 */ });
+  })();
 }
 
 function renderVersionItem(v, index) {

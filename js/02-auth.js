@@ -72,6 +72,44 @@ function _guideLinkKeyUpgrade(user){
   showToast('为完成网页端安全升级，请退出登录后用手机号+密码重新登录一次（不会丢失本机数据）');
 }
 
+/* ===========================================================
+ * 提交组A: 迁移失败的「两因区分」(可独立发布的诊断版)
+ * -----------------------------------------------------------
+ * 此前两种失败都被静默吞掉, 用户屏幕上什么都没有:
+ *   ① deriveLinkKey 返回 null(设备 crypto.subtle/PBKDF2 不可用) → if(lk) 直接跳过
+ *      (注意: hashPassword 有 SHA-256 兜底, 故"App 能登录"并不能证明加密能力可用)
+ *   ② 回推云端失败(push 抛错) → 仅 console.warn
+ * 现在分别给出**不同**的用户提示: ①换机/联系组长; ②查网络 + 重试入口。
+ * 目的: 组长更新 App 后若仍登不进, 一眼分清是"设备不支持"还是"回传失败"。
+ * =========================================================== */
+function _securityHintEl(){ return document.getElementById('security-hint'); }
+function _renderSecurityHint(text, withRetry){
+  const el=_securityHintEl(); if(!el) return;
+  el.innerHTML=text+(withRetry?'<button type="button" class="mt-2 w-full py-2 rounded-lg bg-amber-500 text-white text-xs font-medium active:scale-95" onclick="retryLinkKeySync()">重试上传</button>':'');
+  el.classList.remove('hidden');
+}
+function _showCryptoUnavailableHint(){
+  /* 原因①: 本设备不支持所需加密能力 */
+  showToast('本设备不支持所需加密能力, 无法完成安全升级; 请换用较新的手机或联系组长');
+  _renderSecurityHint('本设备不支持所需加密能力，无法完成网页端安全升级。请换用较新的手机，或联系组长。', false);
+}
+function _showLinkKeySyncFailedHint(){
+  /* 原因②: 已生成但回传云端失败 */
+  showToast('安全升级已生成, 但回传云端失败; 请检查网络后重试');
+  _renderSecurityHint('已生成连接键，但回传云端失败。请检查网络后重试。', true);
+}
+/* 重试入口(提示里的按钮 onclick 调用) */
+window.retryLinkKeySync=async function(){
+  try{
+    if(typeof pushApprovedUsersToFeishu!=='function'){ showToast('重试失败: 上行通道未就绪'); return; }
+    await pushApprovedUsersToFeishu();
+    showToast('已重新上传, 安全升级完成');
+    const el=_securityHintEl(); if(el){ el.classList.add('hidden'); el.innerHTML=''; }
+  }catch(e){
+    showToast('重试仍失败, 请检查网络后稍后再试');
+  }
+};
+
 async function doLogin(){
   const phone=document.getElementById('login-phone').value.trim();
   const pass=document.getElementById('login-pass').value.trim();
@@ -162,8 +200,13 @@ async function doLogin(){
       user.linkKey=lk;
       saveUsers(USERS);
       if(window.cordova&&window.cordova.platformId){
-        try{await pushApprovedUsersToFeishu();}catch(e){console.warn('[linkKey]回推失败:',e.message);}
+        try{await pushApprovedUsersToFeishu();}
+        catch(e){ /* 原因②: 已生成但回传云端失败 → 明确提示 + 重试入口(不再静默) */
+          console.warn('[linkKey]回推失败:',e&&e.message); _showLinkKeySyncFailedHint(); }
       }
+    }else{
+      /* 原因①: 设备不支持所需加密能力 → 明确提示(不再静默跳过) */
+      console.warn('[linkKey]本设备加密能力不可用, deriveLinkKey 返回空'); _showCryptoUnavailableHint();
     }
   }
   // V5.3.1跨设备审批闭环修复: 待审核用户登录时先从飞书拉取最新审批结果,

@@ -121,6 +121,22 @@ async function deriveLinkKey(phone, password){
   return await _pbkdf2Hex(String(password), salt, ITERATIONS);
 }
 
+/**
+ * 设备加密能力自检(提交组A): crypto.subtle 与 PBKDF2 通路是否可用。
+ * 为什么单独抽出来: hashPassword 在 crypto.subtle 不可用时会**静默降级 SHA-256**
+ * (App 仍能登录), 因此"能登录"**不能**证明加密能力可用; 而 deriveLinkKey 没有兜底,
+ * 不可用时返回 null → linkKey 迁移静默失败。故必须能**独立探测**并让用户看到。
+ * 探针用 iterations=1(足够验证 importKey/deriveBits 通路, 且几乎零耗时)。
+ * @returns {Promise<boolean>} true=可用(可派生 linkKey)
+ */
+async function probeCryptoCapability(){
+  try{
+    if(typeof crypto==='undefined'||!crypto||!crypto.subtle) return false;
+    const v=await _pbkdf2Hex('tcg-cap-probe','tcg-cap-probe-salt',1);
+    return !!(v&&typeof v==='string'&&v.length>0);
+  }catch(e){ return false; }
+}
+
 // ===================== SESSION SIGNING (V10.16.2 安全加固) =====================
 // 会话签名防伪造: 用用户密码哈希的前32字符作为密钥, 对 uid+phone+ts 做 HMAC-SHA256。
 // 攻击者即使修改 localStorage 的 uid 也无法伪造签名(不知道密码哈希)。
