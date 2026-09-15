@@ -298,7 +298,7 @@ window.submitFeedback = async function() {
           '提交人': user ? user.name : '匿名',
           '角色': user ? (user.role === 'admin' ? '组长' : '组员') : '用户',
           '平台': (window.cordova && window.cordova.platformId) ? 'Android' : '网页',
-          'APP版本': 'V' + (window.APP_VERSION || 'unknown'),
+          'APP版本': 'V' + (APP_VERSION || 'unknown'),
           '设备信息': deviceInfo,
           '联系方式': contact || '',
           '状态': '待处理',
