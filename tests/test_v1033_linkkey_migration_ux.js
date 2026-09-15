@@ -10,7 +10,7 @@
  *   用户以为密码错, 实为「迁移未完成」。
  *
  * 本测试锁定三类回归(先红后绿):
- *   V1 版本 10.19.2 七处一致性(含 sw.js CACHE_NAME, 否则修了也到不了用户)
+ *   V1 七源版本一致性(期望值取自 version.json, 不写死) + V2 变异自证(改坏任一源必红)
  *   V2 网页端登录失败的可操作提示(引导去 App 完成升级 + 重试入口)
  *      红线: 提示必须通用, 绝不能泄露「该手机号是否为已注册账号」(镜像无明文手机号,
  *            网页端本就无法区分「未注册」与「未迁移」, 文案不得引入存在性泄露)
@@ -36,10 +36,15 @@ function check(name, cond, extra){
 }
 function section(t){ console.log('\n========== ' + t + ' =========='); }
 
-const EXPECT_VER = '10.19.2';
-const EXPECT_CODE = '101902';
-
+/* V10.19.3: 期望值**不再写死** —— 从 version.json 单一真源推导(升版免维护, 避免
+ * "升版 = 测试红"的维护税与"习惯性改断言"的坏习惯)。真正的不变量是:
+ *   「其余六源与 version.json 一致」+「versionCode === encode(version)」。
+ * 为防"改成推导后断言恒真(防线被拆)", 下方 V2 段用**变异测试**自证:
+ *   改坏任一源 → 一致性判定必须判红。 */
 const versionJson = JSON.parse(src('version.json'));
+const EXPECT_VER = String(versionJson.version);
+const EXPECT_CODE = String(versionJson.versionCode);
+
 const configXml = src('config.xml');
 const bootstrapJs = src('js/00-bootstrap.js');
 const swJs = src('sw.js');
@@ -49,35 +54,65 @@ const authJs = src('js/02-auth.js');
 const webSyncJs = src('js/09-web-sync.js');
 
 /* ============================================================
- * V1 版本 10.19.2 七处一致性
+ * V1 版本一致性(期望值取自 version.json; 判定逻辑单一实现, 供 V2 变异自证复用)
  * ============================================================ */
-section('V1 版本 ' + EXPECT_VER + ' 七处一致性(版本门禁同款覆盖)');
-check('V1a version.json.version === ' + EXPECT_VER, String(versionJson.version) === EXPECT_VER, String(versionJson.version));
-check('V1b version.json.versionCode === ' + EXPECT_CODE, String(versionJson.versionCode) === EXPECT_CODE, String(versionJson.versionCode));
-check('V1c config.xml version/android-versionCode 同步',
-  new RegExp('version="' + EXPECT_VER.replace(/\./g, '\\.') + '" android-versionCode="' + EXPECT_CODE + '"').test(configXml));
-check('V1d js/00-bootstrap.js APP_VERSION === ' + EXPECT_VER,
-  bootstrapJs.includes("const APP_VERSION='" + EXPECT_VER + "';"));
-check('V1e js/11-about.js 兜底字面量 APP_VERSION || ' + EXPECT_VER,
-  new RegExp("APP_VERSION\\s*\\|\\|\\s*'" + EXPECT_VER.replace(/\./g, '\\.') + "'").test(aboutJs));
+/**
+ * 唯一的"七源一致"判定实现: 返回问题清单(空数组 = 一致)。
+ * @param {{version:object,config:string,bootstrap:string,sw:string,demo:string,about:string}} s
+ * @returns {string[]}
+ */
+function _versionProblems(s){
+  const V = String(s.version.version), C = String(s.version.versionCode);
+  const p = V.split('.');
+  const expectCode = String(Number(p[0]) * 10000 + Number(p[1]) * 100 + Number(p[2]));
+  const esc = V.replace(/\./g, '\\.');
+  const probs = [];
+  if(!/^\d+\.\d+\.\d+$/.test(V)) probs.push('version 非 x.y.z 形态: ' + V);
+  if(C !== expectCode) probs.push('versionCode=' + C + ' 与 version=' + V + ' 不匹配(期望 ' + expectCode + ')');
+  if(!new RegExp('version="' + esc + '" android-versionCode="' + C + '"').test(s.config)) probs.push('config.xml 与 version.json 不一致');
+  if(!s.bootstrap.includes("const APP_VERSION='" + V + "';")) probs.push('00-bootstrap APP_VERSION 不一致');
+  if(!new RegExp("APP_VERSION\\s*\\|\\|\\s*'" + esc + "'").test(s.about)) probs.push('11-about 兜底字面量不一致');
+  const swName = (s.sw.match(/const\s+CACHE_NAME\s*=\s*['"]([^'"]+)['"]/) || [])[1] || '';
+  if(swName !== 'tcg-poweroff-v' + V) probs.push('sw.js CACHE_NAME 不一致(' + swName + ')');
+  if(!s.demo.includes('id="sync-local-ver">v' + V)) probs.push('demo.html 显示版本不一致');
+  const hist = (s.about.match(/const\s+VERSION_HISTORY\s*=\s*\[\s*\{\s*version:\s*'(V?[0-9.]+)'/) || [])[1] || '';
+  if(hist.replace(/^V/, '') !== V) probs.push('11-about VERSION_HISTORY 头不一致(' + hist + ')');
+  return probs;
+}
+const REAL_SOURCES = { version: versionJson, config: configXml, bootstrap: bootstrapJs, sw: swJs, demo: demoHtml, about: aboutJs };
 
-/* sw.js CACHE_NAME: 缓存优先策略下不同步 = 修了也到不了用户 */
-const swM = swJs.match(/const\s+CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
-const swName = swM ? swM[1] : '';
-check('V1f sw.js CACHE_NAME 存在', !!swM, swName);
-check('V1g sw.js CACHE_NAME 内嵌版本 === ' + EXPECT_VER,
-  swName === 'tcg-poweroff-v' + EXPECT_VER, swName);
-check('V1h sw.js 缓存名版本 === version.json 版本(缓存诅咒根治)',
-  (swName.match(/(\d+\.\d+\.\d+)/) || [])[1] === String(versionJson.version), swName);
+section('V1 版本 ' + EXPECT_VER + ' 七处一致性(期望值取自 version.json, 不写死)');
+const v1probs = _versionProblems(REAL_SOURCES);
+check('V1a version 为 x.y.z 三段数字', /^\d+\.\d+\.\d+$/.test(EXPECT_VER), EXPECT_VER);
+check('V1b versionCode === encode(version)(' + EXPECT_CODE + ')', !v1probs.some(p => p.indexOf('versionCode') >= 0), v1probs.join(' | '));
+check('V1c config.xml version/android-versionCode 与 version.json 同步', !v1probs.some(p => p.indexOf('config.xml') >= 0), v1probs.join(' | '));
+check('V1d js/00-bootstrap.js APP_VERSION 与 version.json 一致', !v1probs.some(p => p.indexOf('00-bootstrap') >= 0), v1probs.join(' | '));
+check('V1e js/11-about.js 兜底字面量与 version.json 一致', !v1probs.some(p => p.indexOf('兜底字面量') >= 0), v1probs.join(' | '));
+check('V1f sw.js CACHE_NAME 存在', /const\s+CACHE_NAME\s*=\s*['"]/.test(swJs));
+check('V1g sw.js CACHE_NAME 与 version.json 一致(缓存优先下不同步=修了也到不了用户)', !v1probs.some(p => p.indexOf('sw.js') >= 0), v1probs.join(' | '));
+check('V1i demo.html sync-local-ver 与 version.json 一致', !v1probs.some(p => p.indexOf('demo.html') >= 0), v1probs.join(' | '));
+check('V1j js/11-about.js VERSION_HISTORY 最新条目与 version.json 一致', !v1probs.some(p => p.indexOf('VERSION_HISTORY') >= 0), v1probs.join(' | '));
+check('V1 汇总: 七源问题清单为空', v1probs.length === 0, v1probs.join(' | '));
 
-/* demo.html 本地版本展示位 */
-check('V1i demo.html sync-local-ver === v' + EXPECT_VER,
-  demoHtml.includes('id="sync-local-ver">v' + EXPECT_VER));
-
-/* 关于板块版本历史最新条目 */
-const histM = aboutJs.match(/const\s+VERSION_HISTORY\s*=\s*\[\s*\{\s*version:\s*'(V?[0-9.]+)'/);
-check('V1j js/11-about.js VERSION_HISTORY 最新 === V' + EXPECT_VER,
-  !!histM && histM[1].replace(/^V/, '') === EXPECT_VER, histM && histM[1]);
+/* ---------- V2 变异自证: 改成"推导"后防线仍有效(不恒真) ----------
+ * 若只把期望值改成推导、却不验"能否抓到不一致", 这道防线就退化成恒真。
+ * 这里对每一个源做一次变异, 断言 _versionProblems 必须报出对应问题。 */
+section('V1m 变异自证: 改坏任一源 → 一致性判定必红');
+const _mut = (o, k, from, to) => { const c = Object.assign({}, o); c[k] = String(o[k]).split(from).join(to); return c; };
+const _mutCode = (code) => { const c = Object.assign({}, REAL_SOURCES); c.version = Object.assign({}, versionJson, { versionCode: code }); return c; };
+const MUTANTS = [
+  ['M1 sw.js CACHE_NAME 改坏', _mut(REAL_SOURCES, 'sw', 'tcg-poweroff-v' + EXPECT_VER, 'tcg-poweroff-v9.9.9'), 'sw.js'],
+  ['M2 config.xml version 改坏', _mut(REAL_SOURCES, 'config', 'version="' + EXPECT_VER + '"', 'version="9.9.9"'), 'config.xml'],
+  ['M3 00-bootstrap APP_VERSION 改坏', _mut(REAL_SOURCES, 'bootstrap', "const APP_VERSION='" + EXPECT_VER + "';", "const APP_VERSION='9.9.9';"), '00-bootstrap'],
+  ['M4 demo.html 显示版本改坏', _mut(REAL_SOURCES, 'demo', 'id="sync-local-ver">v' + EXPECT_VER, 'id="sync-local-ver">v9.9.9'), 'demo.html'],
+  ['M5 11-about 兜底字面量改坏', _mut(REAL_SOURCES, 'about', "APP_VERSION || '" + EXPECT_VER + "'", "APP_VERSION || '9.9.9'"), '兜底字面量'],
+  ['M6 versionCode 改坏', _mutCode(999999), 'versionCode']
+];
+MUTANTS.forEach(function(m){
+  const probs = _versionProblems(m[1]);
+  const caught = probs.length > 0 && probs.some(p => p.indexOf(m[2]) >= 0);
+  check(m[0] + ' → 被判红(问题清单含 "' + m[2] + '")', caught, probs.join(' | ') || '(未报任何问题 = 防线失效)');
+});
 
 /* 版本门禁本身必须通过(单点真源, 不重复实现) */
 section('V1k 版本一致性门禁直接通过');
@@ -174,7 +209,7 @@ section('V5 行为级: 网页端登录失败真实渲染提示(jsdom)');
     win.state = { currentUser: null };
     win.showToast = function(){};
     win.pullApprovedStatusFromFeishu = async function(){ return false; };
-    win.APP_VERSION = '10.19.2';
+    win.APP_VERSION = EXPECT_VER;
     win.__TCG_WEB_MIRROR__ = true; /* 纯网页镜像端 */
     win.eval(authJs);              /* 顶层 function 声明挂到 win(window.doLogin 等) */
     win.document.getElementById('login-phone').value = '13800000000';
