@@ -46,17 +46,26 @@ function isRegexPreceding(ch) {
 
 /**
  * 从源码中提取指定名称的完整声明块
+ * V-QA: 兼容 ESM 导出前缀 —— 允许 `export ` / `export default ` 前缀,
+ *   并在返回前把该前缀剥离(否则 vm.runInContext 会因 export 关键字语法报错)。
+ *   注意 `export { a, b }` 聚合导出形态不带声明体, 本函数天然不会误匹配它,
+ *   实际仍会命中其下方的 `const a = ...` / `function a(` 原始声明, 无需额外处理。
  * @param {string} src - 源码
  * @param {string} name - 函数/常量名
- * @returns {string} 完整声明源码(含声明头)
+ * @returns {string} 完整声明源码(含声明头, 已剥离 export 前缀)
  */
 function extractNamedBlock(src, name) {
   const re = new RegExp(
-    '(?:^|\\n)[ \\t]*(?:(?:async\\s+)?function\\s+' + name + '\\s*\\(|(?:const|let|var)\\s+' + name + '\\s*=)',
+    // g1: 可剥离的前缀(缩进 + 可选 export / export default)
+    '(?:^|\\n)([ \\t]*(?:export[ \\t]+)?(?:default[ \\t]+)?)' +
+    // g2: 真正的声明头(函数声明 / const|let|var 初始化)
+    '((?:async\\s+)?function\\s+' + name + '\\s*\\(|(?:const|let|var)\\s+' + name + '\\s*=)',
     'm'
   );
   const m = re.exec(src);
   if (!m) throw new Error('extractNamedBlock: 未找到 ' + name);
+  // 声明起点: 跳过 export/default 前缀, 使提取结果可直接注入 vm
+  const declStart = m.index + m[0].length - m[2].length;
   let i = m.index + m[0].length;
 
   // ---- 阶段1: 定位第一个 `{`(函数参数表内可能含默认值, 用括号深度+字符串感知跳过) ----
@@ -74,7 +83,7 @@ function extractNamedBlock(src, name) {
       else if (c === '{' && paren === 0) break;
       else if (c === ';' && paren === 0) {
         // 简单单行声明(如 `const APP_VERSION='10.10.0';`), 无块体
-        return src.slice(m.index, i + 1);
+        return src.slice(declStart, i + 1);
       }
     } else if (st0 === 'sq') {
       if (c === '\\') i++;
@@ -125,7 +134,7 @@ function extractNamedBlock(src, name) {
         depth--;
         if (depth < frameBase[frameBase.length - 1]) {
           frames.pop(); frameBase.pop();
-          if (frames.length === 0) return src.slice(m.index, j + 1);
+          if (frames.length === 0) return src.slice(declStart, j + 1);
         }
       }
       if (!/\s/.test(c)) lastSig = c;
