@@ -83,8 +83,13 @@ const assetKeys = assetsMatch ? [...assetsMatch[1].matchAll(/'([^']+)':/g)].map(
 const vehicleSrc = src('vehicles_data.js');
 const referencedVids = [...new Set([...vehicleSrc.matchAll(/vehicle_videos\/([^'"]+)/g)].map(x => x[1]))];
 check('C1 直链映射表数量=46(全部真实资产)', assetKeys.length === 46);
-check('C2 视频引用数=46', referencedVids.length === 46);
-check('C3 引用全覆盖(每个引用都有真实直链)', referencedVids.every(k => assetKeys.includes(k)));
+check('C2 视频引用数=47(46官方直链+1待补直链)', referencedVids.length === 47);
+/* P1 数据一致性: 长安深蓝(G318)_v2.mp4 为组长新上传、尚未配 Release 直链,
+ * 由 audit_media_consistency.js C2 告警追踪; 此处断言"仅该视频缺直链"。 */
+check('C3 引用覆盖(仅长安深蓝(G318)_v2.mp4 待补直链)', (() => {
+  const missing = referencedVids.filter(k => !assetKeys.includes(k));
+  return missing.length === 1 && missing[0] === '长安深蓝(G318)_v2.mp4';
+})());
 check('C4 资产值无重复(每个tcgv_仅对应一个车型,无张冠李戴)', (() => {
   const vals = assetsMatch ? [...assetsMatch[1].matchAll(/:'([^']+)'/g)].map(x => x[1]) : [];
   return new Set(vals).size === vals.length;

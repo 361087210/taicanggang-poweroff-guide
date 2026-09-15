@@ -104,6 +104,37 @@ function main() {
     if (!referenced.has(f)) warns.push(`C4 孤儿文件(无车型引用): vehicle_images/${f}`);
   }
 
+  // ---- C5 数据源对账: vehicles_data.js vs web-data 镜像(P1 防复发) ----
+  const mirrorPath = path.join(ROOT, 'web-data', 'vehicle_sync_data.json');
+  if (!fs.existsSync(mirrorPath)) {
+    warns.push('C5 web-data/vehicle_sync_data.json 不存在, 跳过数据源对账');
+  } else {
+    try {
+      const mirror = JSON.parse(fs.readFileSync(mirrorPath, 'utf8'));
+      const mv = Array.isArray(mirror.vehicles) ? mirror.vehicles : [];
+      if (vehicles.length !== mv.length) {
+        fails.push(`C5 车型数量漂移: vehicles_data.js=${vehicles.length} web-data=${mv.length}`);
+      }
+      const mById = {};
+      mv.forEach(v => { mById[v.id] = v; });
+      const nameDrifts = [];
+      for (const v of vehicles) {
+        const m = mById[v.id];
+        if (m && String(m.display) !== String(v.display)) nameDrifts.push(`id=${v.id}:「${v.display}」vs「${m.display}」`);
+      }
+      if (nameDrifts.length) fails.push(`C5 display 名漂移 ${nameDrifts.length} 车: ${nameDrifts.slice(0, 5).join(' | ')}`);
+      const vVids = new Set(vehicles.flatMap(v => (v.videoPaths || []).map(p => String(p).split('/').pop())));
+      const mVids = new Set(mv.flatMap(v => (v.videoPaths || []).map(p => String(p).split('/').pop())));
+      const onlyV = [...vVids].filter(x => !mVids.has(x));
+      const onlyM = [...mVids].filter(x => !vVids.has(x));
+      if (onlyV.length || onlyM.length) {
+        fails.push(`C5 视频名集合漂移: 仅vehicles_data=[${onlyV.join(',')}] 仅web-data=[${onlyM.join(',')}]`);
+      }
+    } catch (e) {
+      fails.push('C5 web-data 镜像解析失败: ' + e.message);
+    }
+  }
+
   // ---- 汇总 ----
   warns.forEach(w => console.warn('[WARN] ' + w));
   if (fails.length) {

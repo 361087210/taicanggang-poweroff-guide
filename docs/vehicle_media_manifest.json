@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-15T06:48:01.343Z",
+  "generatedAt": "2026-09-15T11:49:55.444Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -12,7 +12,7 @@
   "vehicles": [
     {
       "id": 1,
-      "display": "比亚迪海豚(低配)",
+      "display": "比亚迪海豚DOLPHIN(低配)",
       "photos": [
         {
           "fileName": "image1.jpeg",
@@ -160,7 +160,7 @@
     },
     {
       "id": 5,
-      "display": "比亚迪海豹(海豹DM-I)",
+      "display": "比亚迪海豹SEAL-DM-I",
       "photos": [
         {
           "fileName": "image10.jpeg",
@@ -366,7 +366,7 @@
     },
     {
       "id": 14,
-      "display": "比亚迪唐(ATTO8)",
+      "display": "比亚迪唐ATTO-8",
       "photos": [
         {
           "fileName": "image21.jpeg",
@@ -588,12 +588,20 @@
           "mime": "video/mp4",
           "qiniuKey": "",
           "releaseAsset": "tcgv_a93a5f2ac6.mp4"
+        },
+        {
+          "fileName": "长安深蓝(G318)_v2.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": ""
         }
       ]
     },
     {
       "id": 23,
-      "display": "长安悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款))",
+      "display": "悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款))",
       "photos": [
         {
           "fileName": "image34.jpeg",
@@ -1629,7 +1637,7 @@
     },
     {
       "id": 54,
-      "display": "奇瑞欧萌达(欧萌达5)",
+      "display": "奇瑞欧萌达OMODA5",
       "photos": [
         {
           "fileName": "image112.jpeg",
@@ -2235,7 +2243,7 @@
     },
     {
       "id": 71,
-      "display": "零跑零跑(零跑B10)",
+      "display": "零跑Leapmotor-B10",
       "photos": [
         {
           "fileName": "image157.png",
@@ -2265,7 +2273,7 @@
     },
     {
       "id": 72,
-      "display": "零跑零跑(零跑C10)",
+      "display": "零跑Leapmotor-C10",
       "photos": [
         {
           "fileName": "image157.png",
@@ -2302,7 +2310,7 @@
     },
     {
       "id": 73,
-      "display": "广汽AION（埃安）(AION-V/AION-UT)",
+      "display": "广汽埃安AION-V/AION-UT",
       "photos": [
         {
           "fileName": "image160.jpeg",
@@ -2336,6 +2344,237 @@
           "releaseAsset": "tcgv_b5fc668c92.mp4"
         }
       ]
+    },
+    {
+      "id": 74,
+      "display": "吉利银河EX3PRO",
+      "photos": [
+        {
+          "fileName": "user_v74_p1_c0e6b738.jpeg",
+          "sha256": "824f78669c945ccea1e97b3b2035ce138c75930011ac01f9f0fc5efbb4d8e66e",
+          "size": 36171,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v74_p2_5277c320.jpeg",
+          "sha256": "2caa34bbc5a146bfb9e0acefc71b8aadf88d9caf433b1f35cc05125ed5cc6237",
+          "size": 56625,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v74_p3_8f0cc021.jpeg",
+          "sha256": "f297f47a729c23f734b2d4602d091f38a12a407f70d06c9f38bd3d63a3bebad6",
+          "size": 45986,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v74_p4_3c9b24ae.jpeg",
+          "sha256": "b40ad631acabcd046f1cf2705bbba14b363af7a6bb096fa46da5907cf1d568bc",
+          "size": 53539,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 75,
+      "display": "长安悦翔ALSVINPLUS",
+      "photos": [
+        {
+          "fileName": "user_v75_p1_f4341164.jpeg",
+          "sha256": "0521712ea81925d1f342561f6126f2f04bdfce5c70a14ce110bd80b863f77e0f",
+          "size": 47249,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v75_p2_907837b9.jpeg",
+          "sha256": "2c5af442854e00aa3f1c13948811ccba3f7888739fe2aab9ca8670b14798f2a0",
+          "size": 55963,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 76,
+      "display": "奇瑞欧萌达(OMODA)C7",
+      "photos": [
+        {
+          "fileName": "user_v76_p1_ae65b237.jpeg",
+          "sha256": "68e59708cb491f48c424f2361270bb3104ef8810fca5ec84ebc95766fc570acb",
+          "size": 44501,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v76_p2_1b3457ba.jpeg",
+          "sha256": "4db4471005171a22ec37ddbe65a16d872381570bd425b1059ea81f65e0635200",
+          "size": 59550,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v76_p3_805c73a.jpeg",
+          "sha256": "20579b3fcb4f25451b781a3f64d5a026874bf5c61d80b608b47b4b350de21ebd",
+          "size": 58073,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 77,
+      "display": "奇瑞捷途JAECOO5",
+      "photos": [
+        {
+          "fileName": "user_v77_p1_42b4272f.jpeg",
+          "sha256": "e088186f541761425bbe0d5c89b1caa811b85fdeddfebddb704a685728c80de4",
+          "size": 44812,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v77_p2_5e548764.jpeg",
+          "sha256": "3e01a09efe76102026947688512dcc178112969fd9a6583b6afd4961335da56b",
+          "size": 55736,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v77_p3_5fc5891e.jpeg",
+          "sha256": "bb09ba5ee9c087620d4bbbf903837e94ca3f95b14f3466038f855b9bc11c0deb",
+          "size": 56372,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 78,
+      "display": "欧萌达OMODA-C7-PHEV",
+      "photos": [
+        {
+          "fileName": "user_v78_p1_ae188ee5.jpeg",
+          "sha256": "ec92152fe44125a132d22c9a6e79ab8dad74b35b79a41678a5f12b395530e28a",
+          "size": 41450,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v78_p2_200ce149.jpeg",
+          "sha256": "e024c39d87b02a93a1749e9befe8cab45a07099f37bc88188d421990cd23b5b9",
+          "size": 49257,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 79,
+      "display": "捷途IAECOO-5-EV",
+      "photos": [
+        {
+          "fileName": "user_v79_p1_9a0ecd12.jpeg",
+          "sha256": "1766e626164df2fbf5ca94e71379a472f18da37f7faca52a1a12da8fee8e61cb",
+          "size": 55404,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v79_p2_ae188ee5.jpeg",
+          "sha256": "ec92152fe44125a132d22c9a6e79ab8dad74b35b79a41678a5f12b395530e28a",
+          "size": 41450,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v79_p3_99711ddf.jpeg",
+          "sha256": "8d023bc7e6076e6325ddebb92c70fce24eb0310923342994490365f20a29d13a",
+          "size": 56459,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 80,
+      "display": "比亚迪海豹SEAL-U DM-I",
+      "photos": [
+        {
+          "fileName": "user_v80_p1_3c143a8e.jpeg",
+          "sha256": "926b8524900b1b57d28d1ecd5f53374a6657313ad42b569e326197fba6e838f5",
+          "size": 57459,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v80_p2_c5019a63.jpeg",
+          "sha256": "8389e10f42db304d47843835a47bcbd8906dbe89680080da0d33864f75ef3abe",
+          "size": 64777,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 81,
+      "display": "比亚迪唐ATTO2-DM-I",
+      "photos": [
+        {
+          "fileName": "user_v81_p1_4ced59f3.jpeg",
+          "sha256": "b46c620cbc6d19ee7dea7da899b77bfac1ce2d60dc45d44ca6fb1aee0ffc558d",
+          "size": 53884,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v81_p2_b953fe4e.jpeg",
+          "sha256": "f529c38a3cf5b70a3b4553020377320867790528db8c4ddd39928c9476ba5d31",
+          "size": 56599,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 82,
+      "display": "比亚迪海豹SEAL-5-DM-I",
+      "photos": [
+        {
+          "fileName": "user_v82_p1_f3ad96de.jpeg",
+          "sha256": "3f2f2204385346aecab0b2190d03308c4a7537bf58a78e6e83d613c9e420ed95",
+          "size": 61595,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v82_p2_e65bf52f.jpeg",
+          "sha256": "c2e087768a91344a7444dae7dc26d0efad2d21742c3634c9f36e53dd688ebcad",
+          "size": 61945,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "user_v82_p3_10480634.jpeg",
+          "sha256": "19ba7e6de8f695a53733b1d3acc2f47bf8281d5e3c3e6ee1c434066c22e4b9f3",
+          "size": 59100,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
     }
   ],
   "assets": {
@@ -3482,12 +3721,174 @@
       "vehicleIds": [
         73
       ]
+    },
+    "824f78669c945ccea1e97b3b2035ce138c75930011ac01f9f0fc5efbb4d8e66e": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        74
+      ]
+    },
+    "2caa34bbc5a146bfb9e0acefc71b8aadf88d9caf433b1f35cc05125ed5cc6237": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        74
+      ]
+    },
+    "f297f47a729c23f734b2d4602d091f38a12a407f70d06c9f38bd3d63a3bebad6": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        74
+      ]
+    },
+    "b40ad631acabcd046f1cf2705bbba14b363af7a6bb096fa46da5907cf1d568bc": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        74
+      ]
+    },
+    "0521712ea81925d1f342561f6126f2f04bdfce5c70a14ce110bd80b863f77e0f": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        75
+      ]
+    },
+    "2c5af442854e00aa3f1c13948811ccba3f7888739fe2aab9ca8670b14798f2a0": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        75
+      ]
+    },
+    "68e59708cb491f48c424f2361270bb3104ef8810fca5ec84ebc95766fc570acb": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        76
+      ]
+    },
+    "4db4471005171a22ec37ddbe65a16d872381570bd425b1059ea81f65e0635200": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        76
+      ]
+    },
+    "20579b3fcb4f25451b781a3f64d5a026874bf5c61d80b608b47b4b350de21ebd": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        76
+      ]
+    },
+    "e088186f541761425bbe0d5c89b1caa811b85fdeddfebddb704a685728c80de4": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        77
+      ]
+    },
+    "3e01a09efe76102026947688512dcc178112969fd9a6583b6afd4961335da56b": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        77
+      ]
+    },
+    "bb09ba5ee9c087620d4bbbf903837e94ca3f95b14f3466038f855b9bc11c0deb": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        77
+      ]
+    },
+    "ec92152fe44125a132d22c9a6e79ab8dad74b35b79a41678a5f12b395530e28a": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        78,
+        79
+      ]
+    },
+    "e024c39d87b02a93a1749e9befe8cab45a07099f37bc88188d421990cd23b5b9": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        78
+      ]
+    },
+    "1766e626164df2fbf5ca94e71379a472f18da37f7faca52a1a12da8fee8e61cb": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        79
+      ]
+    },
+    "8d023bc7e6076e6325ddebb92c70fce24eb0310923342994490365f20a29d13a": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        79
+      ]
+    },
+    "926b8524900b1b57d28d1ecd5f53374a6657313ad42b569e326197fba6e838f5": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        80
+      ]
+    },
+    "8389e10f42db304d47843835a47bcbd8906dbe89680080da0d33864f75ef3abe": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        80
+      ]
+    },
+    "b46c620cbc6d19ee7dea7da899b77bfac1ce2d60dc45d44ca6fb1aee0ffc558d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        81
+      ]
+    },
+    "f529c38a3cf5b70a3b4553020377320867790528db8c4ddd39928c9476ba5d31": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        81
+      ]
+    },
+    "3f2f2204385346aecab0b2190d03308c4a7537bf58a78e6e83d613c9e420ed95": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        82
+      ]
+    },
+    "c2e087768a91344a7444dae7dc26d0efad2d21742c3634c9f36e53dd688ebcad": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        82
+      ]
+    },
+    "19ba7e6de8f695a53733b1d3acc2f47bf8281d5e3c3e6ee1c434066c22e4b9f3": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        82
+      ]
     }
   },
   "stats": {
-    "vehicleCount": 73,
-    "photoCount": 178,
-    "videoCount": 64,
-    "totalBytes": 13122727
+    "vehicleCount": 82,
+    "photoCount": 202,
+    "videoCount": 65,
+    "totalBytes": 14396683
   }
 }

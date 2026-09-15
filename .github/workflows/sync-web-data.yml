@@ -8,6 +8,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/sync_web_data.js'
+      - 'scripts/gen_vehicles_data.js'
+      - 'scripts/gen_media_mapping.js'
       - '.github/workflows/sync-web-data.yml'
   workflow_dispatch:
 
@@ -35,14 +37,21 @@ jobs:
           FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
         run: node scripts/sync_web_data.js --out web-data
 
+      # P1 数据一致性根治: 把最新镜像反向写回 App 打包内置源 vehicles_data.js,
+      # 并同步重生成车型映射表 + 媒体 manifest(三者收敛为同一份事实; 幂等, 无变化不写)
+      - name: Reverse-generate vehicles_data.js + media mapping/manifest
+        run: |
+          node scripts/gen_vehicles_data.js
+          node scripts/gen_media_mapping.js
+
       - name: Commit & push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add web-data/
+          git add web-data/ vehicles_data.js docs/vehicle_media_mapping.json docs/vehicle_media_mapping.csv docs/vehicle_media_manifest.json
           if git diff --cached --quiet; then
-            echo "web-data 无变化, 跳过提交"
+            echo "无变化, 跳过提交"
           else
-            git commit -m "chore: 自动同步网页镜像 web-data ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
+            git commit -m "chore: 自动同步数据 (web-data + vehicles_data + manifest) ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
             git push
           fi
