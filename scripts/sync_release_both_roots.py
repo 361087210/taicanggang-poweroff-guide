@@ -12,10 +12,14 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts"))
 from sync_release_to_feishu import (
     get_token, list_children, get_or_create_folder,
     upload_file, delete_if_exists, DATA_FOLDER_NAME, RELEASE_FOLDER_NAME,
-    QPS_INTERVAL, qps_gate
+    QPS_INTERVAL, qps_gate, APP_VERSION
 )
 
-APP_VERSION = "10.17.1"
+# 注: APP_VERSION 由 sync_release_to_feishu 从项目根 version.json 动态读取(单一真源)。
+# 历史缺陷: 本文件曾自带 `APP_VERSION = "10.17.1"` 覆盖它 —— 而本脚本由
+# sync-release-feishu.yml(workflow_run) 在**每次发版后**执行, 于是每次发版都把产物
+# 传进名为 `v10.17.1` 的飞书目录(旧根+新根), 目录名长期停留旧版本且反复覆盖同一目录。
+# 勿再写死版本号。
 OLD_ROOT = "WdXUfZPkClI1audQxIYc90XRnWc"
 NEW_ROOT = "nodcnGA95g93RhIUSdCeTkhKlQc"
 

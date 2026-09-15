@@ -20,6 +20,9 @@ const path = require('path');
 const vm = require('vm');
 
 const REPO = path.resolve(__dirname, '..');
+/* 版本号单一真源(勿写死): 本脚本此前把 '10.17.1' 写进每条迁移记录的 syncVersion,
+ * 运行一次就会给整批记录打上陈旧版本号(且 syncVersion 参与同步仲裁)。 */
+const APP_VERSION = JSON.parse(fs.readFileSync(path.join(REPO, 'version.json'), 'utf8')).version;
 const BITABLE_VEHICLES = 'tbl Vehicles';
 const BITABLE_USERS = 'tbl Users';
 const BATCH = 100;
@@ -107,7 +110,6 @@ class FeishuClient {
 
 // ---- 字段映射(与 feishu-api.js 的 vehicleToBitable/userToBitable 保持一致) ----
 function vehicleToBitable(v, userName) {
-  const APP_VERSION = '10.17.1';
   return {
     id: v.id, brand: v.brand, series: v.series, config: v.config, display: v.display,
     powerType: v.powerType, position: v.position,
