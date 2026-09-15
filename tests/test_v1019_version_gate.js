@@ -136,6 +136,9 @@ function buildSandbox(){
   cp('scripts/check_version_consistency.js');
   cp('config.xml'); cp('version.json'); cp('sw.js'); cp('demo.html');
   cp('js/00-bootstrap.js');
+  /* 门禁 getAboutHistoryTop() 强校验 VERSION_HISTORY 最新版本, 沙箱必须带上
+   * 该文件, 否则副本基线会因 ENOENT 误红(见 S7a 变异测试自洽性要求)。 */
+  cp('js/11-about.js');
   try { cp('web-data/meta.json'); } catch (e) { /* 可选 */ }
   return dir;
 }

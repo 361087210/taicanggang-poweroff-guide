@@ -150,7 +150,11 @@ async function addMember(){
   // V5.4: 密码哈希化存储
   const salt = genSalt();
   const hashedPass = await hashPassword(pass, salt);
-  State.addUser({id:Date.now(),name,phone,password:hashedPass,role:'user',status:'active',created:new Date().toLocaleDateString()}); // A3状态守卫
+  // P0 脱敏: 组长直接加人时派生 linkKey(该组员此后可用网页端登录)
+  const linkKey = await deriveLinkKey(phone, pass);
+  const nu={id:Date.now(),name,phone,password:hashedPass,role:'user',status:'active',created:new Date().toLocaleDateString()};
+  if(linkKey)nu.linkKey=linkKey;
+  State.addUser(nu); // A3状态守卫
   saveUsers(USERS);
   document.getElementById('mem-name').value='';
   document.getElementById('mem-phone').value='';
@@ -306,6 +310,9 @@ async function resetMemberPass(id){
     const salt = genSalt();
     u.password = await hashPassword('123456', salt);
     u.pw_ts = Date.now();
+    // P0 脱敏: 重置密码后重算 linkKey(组员用重置密码登录网页端需匹配镜像)
+    const linkKey = await deriveLinkKey(u.phone, '123456');
+    if(linkKey)u.linkKey=linkKey;
     saveUsers(USERS);
     showToast(`已重置${u.name}的密码为123456`);
     // V10.15.11: 推送前fullMerge拉云端最新——防旧表覆盖其他成员新改的密码
@@ -335,18 +342,21 @@ async function changePassword(){
   if (!oldOk) { showToast('原密码错误'); return; }
   const salt = genSalt();
   const hashedNew = await hashPassword(n, salt);
+  // P0 脱敏: 改密后重算 linkKey(连接键随密码变化, 旧 linkKey 即告失效)
+  const linkKey = await deriveLinkKey(state.currentUser.phone, n);
   // V10.15.11: 账号级改密时间戳——跨设备拉取端据此仲裁密码新旧(见05-sync.js合并逻辑)
   const pwTs = Date.now();
   state.currentUser.password = hashedNew;
   state.currentUser.pw_ts = pwTs;
+  if(linkKey)state.currentUser.linkKey=linkKey;
   let u=USERS.find(x=>x.id===state.currentUser.id);
-  if(u){u.password=hashedNew;u.pw_ts=pwTs;saveUsers(USERS);}
+  if(u){u.password=hashedNew;u.pw_ts=pwTs;if(linkKey)u.linkKey=linkKey;saveUsers(USERS);}
   // V10.15.11: 推送前先fullMerge拉云端最新名单——防止组员本地滞后的旧名单
   // (缺新审批组员)整表覆盖云端,导致新组员在存活守卫中被误踢(数据覆盖竞态修复)
   try{ await pullApprovedStatusFromFeishu(state.currentUser, true); }catch(e){}
   // fullMerge可能以云端档重建本账号对象,重新写入新密码保证推送值正确
   u=USERS.find(x=>x.phone===state.currentUser.phone);
-  if(u&&u.password!==hashedNew){u.password=hashedNew;u.pw_ts=pwTs;saveUsers(USERS);}
+  if(u){if(u.password!==hashedNew){u.password=hashedNew;u.pw_ts=pwTs;}if(linkKey&&u.linkKey!==linkKey){u.linkKey=linkKey;}saveUsers(USERS);}
   localStorage.setItem('tcg_session',JSON.stringify({uid:state.currentUser.id,phone:state.currentUser.phone,ts:Date.now()}));
   // V10.15.11: 密码修改必须推送云端——修复"换设备登录时新密码失效"根因:
   // 原逻辑只写本地localStorage,云端approved_users.json仍是旧密码哈希,

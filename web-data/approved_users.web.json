@@ -5,32 +5,28 @@
       "name": "组长",
       "role": "admin",
       "status": "active",
-      "created": "2026/08-20",
-      "phoneH": "a5b1dbd7df66b8173174f3f8a59ce1f41e5bef099135f1b2b3e08397bcb00692"
+      "created": "2026/08-20"
     },
     {
       "id": 1788748623886,
       "name": "185****4454",
       "role": "user",
       "status": "active",
-      "created": "2026/9/7",
-      "phoneH": "55dc57718eeac4bf2a62e93714ff668f43aedc1c444840f5eb1be201cf23102f"
+      "created": "2026/9/7"
     },
     {
       "id": 1788785665003,
       "name": "177****6102",
       "role": "user",
       "status": "active",
-      "created": "2026/9/7",
-      "phoneH": "928df2cce841fec05dbbadf3772cc86923f5797a02d9d8e715d97814fd6e0faa"
+      "created": "2026/9/7"
     },
     {
       "id": 1789096616310,
       "name": "123",
       "role": "user",
       "status": "rejected",
-      "created": "2026/9/11",
-      "phoneH": "647c8f03e70b06dd08a4160eb2c168fa91eb23de444ac9bef17f3890c63f937e"
+      "created": "2026/9/11"
     }
   ],
   "timestamp": "2026-09-15T01:31:46.648Z",
@@ -38,7 +34,7 @@
   "fieldAllowlist": [
     "id",
     "name",
-    "phoneH",
+    "linkKey",
     "role",
     "status",
     "created"

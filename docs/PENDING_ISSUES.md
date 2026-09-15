@@ -4,9 +4,10 @@
 
 ## P0 — 安全（最高优先）
 
-### 1. phoneH 仍可枚举还原（架构级）
-- **现状**：`web-data/approved_users.web.json` 已脱敏（无明文手机号/密码哈希），但 `phoneH = sha256(SALT + phone)`、`SALT='tcg-web-2026'` 仍公开在 `js/00-config.js`。手机号空间（~10^10）可离线枚举还原。
-- **修法**：改为随机不透明 token（如 `crypto.randomUUID()`），或用服务端加盐的 HMAC。需同步改前端连接键与飞书同步逻辑。
+### 1. phoneH 可枚举还原（架构级）—— 已修复 ✅
+- **旧现状**：`phoneH = sha256(SALT + phone)`、`SALT='tcg-web-2026'` 公开在 `js/00-config.js`，手机号空间（~10^10）可离线枚举还原。
+- **修复**：连接键改为 `linkKey = PBKDF2(password, LINK_SALT + '|' + phone, 100000)`，熵来自密码，仅凭 phone 无法枚举。客户端在拿到明文密码的瞬间派生并透传，镜像端只透传不重算；网页端换设备登录用「手机号+密码」派生 linkKey 匹配镜像（命中即密码验真），存活守卫/云端组员列表改按 id 匹配。
+- **存量账号**：惰性迁移——安卓端登录时若本地账号无 linkKey 则补算并回推云端，下次镜像生成即带上 linkKey，该账号即可网页端登录。
 - **关联**：受影响用户（手机号曾公开）需通知改密码，通知方式待用户确认。
 
 ## P1 — 数据一致性（工程师 429 中断，未完成）
@@ -38,6 +39,7 @@
 - ✅ **jscrambler 模板残留删除**：node-version 20 告警源清零
 - ✅ **发布产物行业标准补全**：CHANGELOG 补全 + RELEASE 文档 + body_path 正文 + 飞书同步自动化（workflow_run）
 - ✅ **P0 隐私脱敏上线**：approved_users.web.json 无明文手机号/密码哈希（phoneH 架构风险见 P0-1）
+- ✅ **P0 phoneH→linkKey 架构级脱敏**：连接键改用 PBKDF2(password, LINK_SALT|phone)，镜像不再含可枚举的 phoneH；网页端三使用点(换设备登录重建/存活守卫/云端组员)改 linkKey+id 匹配；存量账号惰性迁移
 
 ## 已结案（无需再处理）
 - **CI-011**：工程师 + QA 独立全盘搜索均确认不存在（编号记错）。已抽成常驻断言 `test_v1019_repo_hygiene.js` S4。

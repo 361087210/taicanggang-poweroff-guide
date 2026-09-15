@@ -101,6 +101,26 @@ async function verifyPassword(password, stored) {
   }
   return false;
 }
+
+/**
+ * 网页账号连接键(linkKey)派生 —— P0 架构级脱敏
+ * linkKey = PBKDF2-HMAC-SHA256(password, LINK_SALT + '|' + phone,
+ *           100000, 256bit)  → 64 位 hex
+ * 熵完全来自密码: 旧方案 phoneH=sha256(SALT+phone) 可被分钟级枚举还原手机号,
+ * 而 linkKey 需要明文密码参与 PBKDF2 派生, 仅凭 phone 无法枚举。
+ * 与安卓端/网页端共用本原语; 镜像端(sync_web_data.js)只透传不重算。
+ * 调用时机: 仅"拿到明文密码的瞬间"(注册/登录/改密/重置/组长加人)。
+ * @param {string} phone - 11 位手机号
+ * @param {string} password - 明文密码
+ * @returns {Promise<string|null>} 64 位 hex; crypto.subtle 不可用时返回 null
+ */
+async function deriveLinkKey(phone, password){
+  const LINK_SALT=(window.TCG_CONFIG&&window.TCG_CONFIG.LINK_SALT)||'tcg-link-2026';
+  const ITERATIONS = 100000;
+  const salt = LINK_SALT + '|' + String(phone);
+  return await _pbkdf2Hex(String(password), salt, ITERATIONS);
+}
+
 // ===================== SESSION SIGNING (V10.16.2 安全加固) =====================
 // 会话签名防伪造: 用用户密码哈希的前32字符作为密钥, 对 uid+phone+ts 做 HMAC-SHA256。
 // 攻击者即使修改 localStorage 的 uid 也无法伪造签名(不知道密码哈希)。

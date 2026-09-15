@@ -23,7 +23,9 @@ async function doLogin(){
   // 换手机登录场景,本地还没有该账号),拉取后重新查找——跨设备登录闭环
   if(!user){
     showToast('正在从云端核对账号...');
-    await pullApprovedStatusFromFeishu({phone:phone},true);
+    // P0 脱敏: 网页端换设备登录需手机号+明文密码派生 linkKey 去匹配镜像,
+    // 故把密码一并传入(安卓端按 phone 匹配, 忽略 password, 无副作用)。
+    await pullApprovedStatusFromFeishu({phone:phone,password:pass},true);
     user=USERS.find(u=>u.phone===phone);
     // V10.16.5 安全加固: 不暴露账号是否存在, 统一返回"账号或密码错误"
     if(!user){
@@ -57,7 +59,7 @@ async function doLogin(){
     // 设备A改密已推云端(pw_ts新),设备B本地还是旧哈希,输入新密码时
     // 必须先同步云端再验证,否则新密码在旧设备上永远"密码错误"(V10.15.11修复缺口)
     try{
-      await pullApprovedStatusFromFeishu({phone:phone},true);
+      await pullApprovedStatusFromFeishu({phone:phone,password:pass},true);
       user=USERS.find(u=>u.phone===phone);
       if(user&&user.password&&user.password.includes('$')){
         passOk=await verifyPassword(pass,user.password);
@@ -78,6 +80,19 @@ async function doLogin(){
       showToast(`账号或密码错误,还剩${5-lock.fails}次机会`);
     }
     return;
+  }
+  // P0 惰性迁移: 存量账号无 linkKey → 登录成功(已验真密码)后补算并回推云端,
+  // 使镜像端(sync_web_data.js)下次生成即可带上 linkKey, 该账号随后可用网页端登录。
+  // 仅安卓端回推(网页端 pushApprovedUsersToFeishu 被封堵, 且网页镜像端本就只读)。
+  if(!user.linkKey){
+    const lk=await deriveLinkKey(phone, pass);
+    if(lk){
+      user.linkKey=lk;
+      saveUsers(USERS);
+      if(window.cordova&&window.cordova.platformId){
+        try{await pushApprovedUsersToFeishu();}catch(e){console.warn('[linkKey]回推失败:',e.message);}
+      }
+    }
   }
   // V5.3.1跨设备审批闭环修复: 待审核用户登录时先从飞书拉取最新审批结果,
   // 组长在另一台设备/另一网络已通过时,组员本机立即放行,不再被本地旧状态永久拦截
@@ -202,9 +217,12 @@ async function doRegister(){
   // V5.4: 密码哈希化存储
   const salt = genSalt();
   const hashedPass = await hashPassword(pass, salt);
+  // P0 脱敏: 在拿到明文密码的瞬间派生 linkKey(账号连接键), 随注册链一路透传到镜像
+  const linkKey = await deriveLinkKey(phone, pass);
   // V10.16.1 安全加固: 首个注册用户自动为 admin(组长先注册), 其余为待审组员
   const isFirstUser = USERS.length === 0;
   const newUser={id:Date.now(),name,phone,password:hashedPass,role:isFirstUser?'admin':'user',status:isFirstUser?'active':'pending',created:new Date().toLocaleDateString()};
+  if(linkKey)newUser.linkKey=linkKey;
   State.addUser(newUser); // A3状态守卫: 入列走State API(落盘仍由下一行saveUsers控制)
   saveUsers(USERS);
   // V10.16.5: 记录注册时间戳用于限流
@@ -240,6 +258,9 @@ async function doForgotPassword(){
   // V5.4: 新密码哈希化存储
   const salt = genSalt();
   user.password = await hashPassword(pass, salt);
+  // P0 脱敏: 重置密码后重算 linkKey(连接键随密码变化)
+  const linkKey = await deriveLinkKey(phone, pass);
+  if(linkKey)user.linkKey=linkKey;
   saveUsers(USERS);
   showToast('密码重置成功');
   showScreen('screen-login');

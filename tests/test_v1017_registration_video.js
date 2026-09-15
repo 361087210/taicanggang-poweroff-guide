@@ -73,7 +73,7 @@ check('B11 载荷source=tcg-web(区别安卓端)', webSyncJs.includes("source:'t
 check('B12 密码哈希后才提交(hashPassword)', webSyncJs.includes('await hashPassword(pass,salt)'));
 check('B13 失败不落本地账号(诚实失败)', /errMsg='[^']+'/i.test(webSyncJs) && webSyncJs.includes('注册提交失败'));
 check('B14 成功后进入激活守望', webSyncJs.includes('watchRegistrationActivation(newUser)'));
-check('B15 镜像脱敏通道保留(phoneH)', webSyncJs.includes("sha256Hex(WEB_SYNC_SALT+String(who.phone))") && webSyncJs.includes("localH[u.phone]=await _sha256Hex(WEB_SYNC_SALT+String(u.phone))"));
+check('B15 镜像脱敏通道改造(phoneH→linkKey)', webSyncJs.includes('deriveLinkKey') && webSyncJs.includes('.linkKey') && !webSyncJs.includes('WEB_SYNC_SALT') && !webSyncJs.includes('phoneH'));
 check('B16 登记流程含GitHub PUT(content字段)', webSyncJs.includes("content:btoa(unescape(encodeURIComponent("));
 
 /* ---------- C组 视频恢复与封面(反馈问题3) ---------- */
