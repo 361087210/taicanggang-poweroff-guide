@@ -1,4 +1,4 @@
-// 飞书云端同步于 2026-09-01T08:36:02.638Z
+// 飞书云端同步于 2026-09-15T04:41:03.746Z
 window.VEHICLES = [
   {
     "id": 1,
@@ -6,9 +6,9 @@ window.VEHICLES = [
     "brand": "比亚迪",
     "series": "海豚",
     "config": "低配",
-    "display": "比亚迪海豚(低配)",
-    "powerType": "纯电",
+    "display": "比亚迪海豚DOLPHIN(低配)",
     "size": "",
+    "powerType": "纯电",
     "position": "副驾驶底部",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -44,8 +44,8 @@ window.VEHICLES = [
     "series": "海豚",
     "config": "高配",
     "display": "比亚迪海豚(高配)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "后排座椅腿托下方",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -81,8 +81,8 @@ window.VEHICLES = [
     "series": "海鸥",
     "config": "低配",
     "display": "比亚迪海鸥(低配)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "主驾驶座椅下面",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -118,8 +118,8 @@ window.VEHICLES = [
     "series": "海鸥",
     "config": "高配(天窗)",
     "display": "比亚迪海鸥(高配(天窗))",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "后排座椅腿托下方",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -153,10 +153,10 @@ window.VEHICLES = [
     "brandId": "byd",
     "brand": "比亚迪",
     "series": "海豹",
-    "config": "海豹DM-I",
-    "display": "比亚迪海豹(海豹DM-I)",
-    "powerType": "混动",
+    "config": "标准",
+    "display": "比亚迪海豹SEAL-DM-I",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱左侧储物网兜盖板内",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -192,8 +192,8 @@ window.VEHICLES = [
     "series": "海豹",
     "config": "海豹EV",
     "display": "比亚迪海豹(海豹EV)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "后排腿托下方",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙，打开左后车门。",
@@ -229,8 +229,8 @@ window.VEHICLES = [
     "series": "海狮",
     "config": "海狮",
     "display": "比亚迪海狮",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "主驾驶底部前端",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -262,8 +262,8 @@ window.VEHICLES = [
     "series": "鲨鱼皮卡（SHARK）",
     "config": "鲨鱼皮卡（SHARK）",
     "display": "比亚迪鲨鱼皮卡（SHARK）",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -290,8 +290,8 @@ window.VEHICLES = [
     "series": "秦",
     "config": "秦/秦PLUS/PRO",
     "display": "比亚迪秦(秦/秦PLUS/PRO)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -318,8 +318,8 @@ window.VEHICLES = [
     "series": "宋",
     "config": "宋PLUS DM-I",
     "display": "比亚迪宋(宋PLUS DM-I)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -352,8 +352,8 @@ window.VEHICLES = [
     "series": "宋",
     "config": "宋PRO",
     "display": "比亚迪宋(宋PRO)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -385,8 +385,8 @@ window.VEHICLES = [
     "series": "唐",
     "config": "唐L-EV（天神之眼）",
     "display": "比亚迪唐(唐L-EV（天神之眼）)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "前机盖电池负极",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -422,8 +422,8 @@ window.VEHICLES = [
     "series": "唐",
     "config": "唐EV（欧标）",
     "display": "比亚迪唐(唐EV（欧标）)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "前机盖电池负极",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，拉动前机盖开关打开前机盖，取出车钥匙。",
@@ -455,11 +455,11 @@ window.VEHICLES = [
     "brandId": "byd",
     "brand": "比亚迪",
     "series": "唐",
-    "config": "ATTO8",
-    "display": "比亚迪唐(ATTO8)",
-    "powerType": "纯电",
+    "config": "标准",
+    "display": "比亚迪唐ATTO-8",
     "size": "",
-    "position": "前机盖电池负极",
+    "powerType": "纯电",
+    "position": "无需断电",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
       "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。"
@@ -491,8 +491,8 @@ window.VEHICLES = [
     "series": "元",
     "config": "元UP",
     "display": "比亚迪元(元UP)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "后排坐椅腿托下方",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -523,11 +523,11 @@ window.VEHICLES = [
     "id": 16,
     "brandId": "byd",
     "brand": "比亚迪",
-    "series": "元",
+    "series": "���",
     "config": "元PRO",
     "display": "比亚迪元(元PRO)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "前机盖电池负极",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -556,8 +556,8 @@ window.VEHICLES = [
     "series": "元",
     "config": "元PLUS",
     "display": "比亚迪元(元PLUS)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "副驾驶底部",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -593,8 +593,8 @@ window.VEHICLES = [
     "series": "汉",
     "config": "汉",
     "display": "比亚迪汉",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -621,8 +621,8 @@ window.VEHICLES = [
     "series": "驱逐舰05（KING）",
     "config": "驱逐舰05（KING）",
     "display": "比亚迪驱逐舰05（KING）",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -649,8 +649,8 @@ window.VEHICLES = [
     "series": "腾势",
     "config": "方程豹B5",
     "display": "比亚迪腾势(方程豹B5)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "副驾驶底部",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -686,8 +686,8 @@ window.VEHICLES = [
     "series": "深蓝",
     "config": "S7/S5",
     "display": "长安深蓝(S7/S5)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "屏幕下电",
     "steps": [
       "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
@@ -719,8 +719,8 @@ window.VEHICLES = [
     "series": "深蓝",
     "config": "G318",
     "display": "长安深蓝(G318)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱右下方",
     "steps": [
       "1.打开主驾驶车门，取出车钥匙。",
@@ -744,9 +744,10 @@ window.VEHICLES = [
       "vehicle_images/image32.jpeg",
       "vehicle_images/image33.jpeg"
     ],
-    "videos": 1,
+    "videos": 2,
     "videoPaths": [
-      "vehicle_videos/长安深蓝_G318.mp4"
+      "vehicle_videos/长安深蓝_G318.mp4",
+      "vehicle_videos/长安深蓝(G318)_v2.mp4"
     ]
   },
   {
@@ -755,9 +756,9 @@ window.VEHICLES = [
     "brand": "长安",
     "series": "悦翔",
     "config": "CS15/CS35MAX/CS75/CS55PLUS(2025款)",
-    "display": "长安悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款))",
-    "powerType": "混动",
+    "display": "悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款))",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
@@ -793,8 +794,8 @@ window.VEHICLES = [
     "series": "启源",
     "config": "CS55PLUS(2026款)",
     "display": "长安启源(CS55PLUS(2026款))",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱右下方",
     "steps": [
       "1.打开主驾驶车门，取出车钥匙。",
@@ -830,8 +831,8 @@ window.VEHICLES = [
     "series": "启源",
     "config": "EADO PLUS",
     "display": "长安启源(EADO PLUS)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱左下方",
     "steps": [
       "1.打开主驾驶车门，取出车钥匙。",
@@ -867,8 +868,8 @@ window.VEHICLES = [
     "series": "糯米",
     "config": "糯米",
     "display": "长安糯米",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
@@ -904,8 +905,8 @@ window.VEHICLES = [
     "series": "UNI-",
     "config": "UNI-T",
     "display": "长安UNI-(UNI-T)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
@@ -940,8 +941,8 @@ window.VEHICLES = [
     "series": "UNI-",
     "config": "UNI-V",
     "display": "长安UNI-(UNI-V)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
@@ -976,8 +977,8 @@ window.VEHICLES = [
     "series": "长安之星",
     "config": "小货车",
     "display": "长安长安之星(小货车)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "主驾驶座位下方",
     "steps": [
       "1.打开主驾驶车门，松开座椅卡扣抬起座椅。",
@@ -1011,8 +1012,8 @@ window.VEHICLES = [
     "series": "皮卡",
     "config": "HUNTER（猎手）燃油版/混动版",
     "display": "长安皮卡(HUNTER（猎手）燃油版/混动版)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
@@ -1048,8 +1049,8 @@ window.VEHICLES = [
     "series": "名爵",
     "config": "ZS/HS/EHS(PHEV)",
     "display": "上汽名爵(ZS/HS/EHS(PHEV))",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "断电器熄灭后自动断电",
     "steps": [
       "1.打开主驾驶车门，短按断电器点亮蓝灯，再次短按断电器蓝灯熄灭，确认车窗全部关闭后，取出车钥匙。",
@@ -1084,8 +1085,8 @@ window.VEHICLES = [
     "series": "名爵",
     "config": "赛博斯特",
     "display": "上汽名爵(赛博斯特)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，打开前保险杠左前盖板，拉动拉线打开前机盖，扣回盖板，取出车钥匙。",
@@ -1120,8 +1121,8 @@ window.VEHICLES = [
     "series": "大通",
     "config": "大通货车",
     "display": "上汽大通(大通货车)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
@@ -1156,8 +1157,8 @@ window.VEHICLES = [
     "series": "哈佛",
     "config": "H6",
     "display": "长城哈佛(H6)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱盖板下方",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -1193,8 +1194,8 @@ window.VEHICLES = [
     "series": "好猫",
     "config": "好猫",
     "display": "长城好猫",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
@@ -1229,8 +1230,8 @@ window.VEHICLES = [
     "series": "风行",
     "config": "T5EVO",
     "display": "东风风行(T5EVO)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "后备箱盖板右下方",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -1266,8 +1267,8 @@ window.VEHICLES = [
     "series": "风度",
     "config": "帕拉丁（PALADIN）",
     "display": "东风风度(帕拉丁（PALADIN）)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
@@ -1303,8 +1304,8 @@ window.VEHICLES = [
     "series": "风神",
     "config": "风神HUGEMHD500T/MAGEMHD500T",
     "display": "东风风神(风神HUGEMHD500T/MAGEMHD500T)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱右后方",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -1339,8 +1340,8 @@ window.VEHICLES = [
     "series": "VIGO",
     "config": "VIGO（纳米06海外版）/纳米06国内版",
     "display": "东风VIGO(VIGO（纳米06海外版）/纳米06国内版)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "屏幕下电",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -1373,8 +1374,8 @@ window.VEHICLES = [
     "series": "VIGO",
     "config": "纳米01",
     "display": "东风VIGO(纳米01)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "屏幕下电",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -1404,8 +1405,8 @@ window.VEHICLES = [
     "series": "VIGO",
     "config": "BOX",
     "display": "东风VIGO(BOX)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "屏幕下电",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -1435,8 +1436,8 @@ window.VEHICLES = [
     "series": "锐棋（RICH）",
     "config": "RICH6",
     "display": "东风锐棋（RICH）(RICH6)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
@@ -1472,8 +1473,8 @@ window.VEHICLES = [
     "series": "小康",
     "config": "MPVC37",
     "display": "东风小康(MPVC37)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "主驾驶座位下方",
     "steps": [
       "1.打开主驾驶车门，松开座椅卡扣抬起座椅。",
@@ -1508,8 +1509,8 @@ window.VEHICLES = [
     "series": "E-JS1/4",
     "config": "E-JS1/4",
     "display": "江淮E-JS1/4",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -1545,8 +1546,8 @@ window.VEHICLES = [
     "series": "江淮皮卡",
     "config": "T8PRO",
     "display": "江淮江淮皮卡(T8PRO)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -1582,8 +1583,8 @@ window.VEHICLES = [
     "series": "江淮皮卡",
     "config": "T6",
     "display": "江淮江淮皮卡(T6)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -1619,8 +1620,8 @@ window.VEHICLES = [
     "series": "极氪",
     "config": "极氪001/X/7X",
     "display": "吉利极氪(极氪001/X/7X)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "前机盖电池负极",
     "steps": [
       "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
@@ -1652,8 +1653,8 @@ window.VEHICLES = [
     "series": "沃尔沃",
     "config": "S60",
     "display": "吉利沃尔沃(S60)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱左后盖板处",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -1688,8 +1689,8 @@ window.VEHICLES = [
     "series": "雷达（RIODARA）皮卡",
     "config": "雷达6",
     "display": "吉利雷达（RIODARA）皮卡(雷达6)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -1725,8 +1726,8 @@ window.VEHICLES = [
     "series": "银河",
     "config": "EX5（银河E5）",
     "display": "吉利银河(EX5（银河E5）)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "屏幕下电",
     "steps": [
       "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
@@ -1758,8 +1759,8 @@ window.VEHICLES = [
     "series": "银河",
     "config": "EX2（银河E2）",
     "display": "吉利银河(EX2（银河E2）)",
-    "powerType": "纯电",
     "size": "",
+    "powerType": "纯电",
     "position": "前机盖",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -1795,8 +1796,8 @@ window.VEHICLES = [
     "series": "领克",
     "config": "领克02",
     "display": "吉利领克(领克02)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "屏幕下电",
     "steps": [
       "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
@@ -1827,8 +1828,8 @@ window.VEHICLES = [
     "series": "领克",
     "config": "领克08",
     "display": "吉利领克(领克08)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "屏幕下电",
     "steps": [
       "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
@@ -1855,10 +1856,10 @@ window.VEHICLES = [
     "brandId": "chery",
     "brand": "奇瑞",
     "series": "欧萌达",
-    "config": "欧萌达5",
-    "display": "奇瑞欧萌达(欧萌达5)",
-    "powerType": "混动",
+    "config": "标准",
+    "display": "奇瑞欧萌达OMODA5",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱盖板下方",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -1894,8 +1895,8 @@ window.VEHICLES = [
     "series": "瑞虎",
     "config": "瑞虎7PRO",
     "display": "奇瑞瑞虎(瑞虎7PRO)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -1930,8 +1931,8 @@ window.VEHICLES = [
     "series": "瑞虎",
     "config": "瑞虎7 CSH/PLUGIN HYBRID",
     "display": "奇瑞瑞虎(瑞虎7 CSH/PLUGIN HYBRID)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱泡沫板底部",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -1967,8 +1968,8 @@ window.VEHICLES = [
     "series": "瑞虎",
     "config": "瑞虎8 CSH",
     "display": "奇瑞瑞虎(瑞虎8 CSH)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱电池负极",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -2004,8 +2005,8 @@ window.VEHICLES = [
     "series": "艾瑞泽",
     "config": "艾瑞泽5PRO",
     "display": "奇瑞艾瑞泽(艾瑞泽5PRO)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -2040,8 +2041,8 @@ window.VEHICLES = [
     "series": "皮卡",
     "config": "RELY（瑞麟）R8",
     "display": "奇瑞皮卡(RELY（瑞麟）R8)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -2077,8 +2078,8 @@ window.VEHICLES = [
     "series": "捷途JETOUR",
     "config": "X50",
     "display": "奇瑞捷途JETOUR(X50)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -2114,8 +2115,8 @@ window.VEHICLES = [
     "series": "捷途JETOUR",
     "config": "X70",
     "display": "奇瑞捷途JETOUR(X70)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -2151,8 +2152,8 @@ window.VEHICLES = [
     "series": "捷途JETOUR",
     "config": "DASHENG",
     "display": "奇瑞捷途JETOUR(DASHENG)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -2188,8 +2189,8 @@ window.VEHICLES = [
     "series": "捷途JETOUR",
     "config": "T1 I-DM",
     "display": "奇瑞捷途JETOUR(T1 I-DM)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱电池负极",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -2225,8 +2226,8 @@ window.VEHICLES = [
     "series": "捷途JETOUR",
     "config": "T2 I-DM",
     "display": "奇瑞捷途JETOUR(T2 I-DM)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱电池负极",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -2262,8 +2263,8 @@ window.VEHICLES = [
     "series": "捷途JETOUR",
     "config": "T2 XWD",
     "display": "奇瑞捷途JETOUR(T2 XWD)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -2299,8 +2300,8 @@ window.VEHICLES = [
     "series": "捷途JETOUR",
     "config": "G700-GAIA",
     "display": "奇瑞捷途JETOUR(G700-GAIA)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱右后方",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -2332,8 +2333,8 @@ window.VEHICLES = [
     "series": "东南SOUEAST",
     "config": "S06DM",
     "display": "奇瑞东南SOUEAST(S06DM)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱电池负极",
     "steps": [
       "1.打开车门，先放倒后排座椅，确保四个车窗关闭，取出车钥匙。",
@@ -2369,8 +2370,8 @@ window.VEHICLES = [
     "series": "东南SOUEAST",
     "config": "S07",
     "display": "奇瑞东南SOUEAST(S07)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -2406,8 +2407,8 @@ window.VEHICLES = [
     "series": "东南SOUEAST",
     "config": "S08DM",
     "display": "奇瑞东南SOUEAST(S08DM)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "后备箱电池负极",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -2443,8 +2444,8 @@ window.VEHICLES = [
     "series": "东南SOUEAST",
     "config": "S09-AWD",
     "display": "奇瑞东南SOUEAST(S09-AWD)",
-    "powerType": "混动",
     "size": "",
+    "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -2478,10 +2479,10 @@ window.VEHICLES = [
     "brandId": "leapmotor",
     "brand": "零跑",
     "series": "零跑",
-    "config": "零跑B10",
-    "display": "零跑零跑(零跑B10)",
-    "powerType": "纯电",
+    "config": "标准",
+    "display": "零跑Leapmotor-B10",
     "size": "",
+    "powerType": "纯电",
     "position": "前机盖电池负极",
     "steps": [
       "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
@@ -2510,10 +2511,10 @@ window.VEHICLES = [
     "brandId": "leapmotor",
     "brand": "零跑",
     "series": "零跑",
-    "config": "零跑C10",
-    "display": "零跑零跑(零跑C10)",
-    "powerType": "纯电",
+    "config": "标准",
+    "display": "零跑Leapmotor-C10",
     "size": "",
+    "powerType": "纯电",
     "position": "后备箱盖板下方",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
@@ -2547,10 +2548,10 @@ window.VEHICLES = [
     "brandId": "gac",
     "brand": "广汽",
     "series": "AION（埃安）",
-    "config": "AION-V/AION-UT",
-    "display": "广汽AION（埃安）(AION-V/AION-UT)",
-    "powerType": "纯电",
+    "config": "标准",
+    "display": "广汽埃安AION-V/AION-UT",
     "size": "",
+    "powerType": "纯电",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
@@ -2578,5 +2579,314 @@ window.VEHICLES = [
     "videoPaths": [
       "vehicle_videos/通用断电视频.mp4"
     ]
+  },
+  {
+    "id": 74,
+    "brandId": "geely",
+    "brand": "吉利",
+    "series": "银河",
+    "config": "PRO",
+    "display": "吉利银河EX3PRO",
+    "size": "",
+    "powerType": "燃油",
+    "position": "前机盖",
+    "steps": [
+      "取出车钥匙，打开前机盖",
+      "确保电源车窗全部关闭，遥控钥匙锁车",
+      "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
+      "拔掉负极线束，套上珍珠套管避免接触",
+      "关闭前机盖，断电结束"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "1.车辆钥匙数量及绑扎检查完。",
+      "2.确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "确认钥匙数量，电源、车窗是否全部关闭",
+    "photos": 4,
+    "photoPaths": [
+      "vehicle_images/user_v74_p1_c0e6b738.jpeg",
+      "vehicle_images/user_v74_p2_5277c320.jpeg",
+      "vehicle_images/user_v74_p3_8f0cc021.jpeg",
+      "vehicle_images/user_v74_p4_3c9b24ae.jpeg"
+    ],
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 75,
+    "brandId": "changan",
+    "brand": "长安",
+    "series": "悦翔",
+    "config": "PLUS",
+    "display": "长安悦翔ALSVINPLUS",
+    "size": "",
+    "powerType": "燃油",
+    "position": "前机盖",
+    "steps": [
+      "取出车钥匙，打开前机盖",
+      "确保电源车窗全部关闭，遥控钥匙锁车",
+      "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
+      "拔掉负极线束，套上珍珠套管避免接触",
+      "关闭前机盖，断电结束"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "1.车辆钥匙数量及绑扎检查完。",
+      "2.确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "确认钥匙数量，电源、车窗是否全部关闭",
+    "photos": 2,
+    "photoPaths": [
+      "vehicle_images/user_v75_p1_f4341164.jpeg",
+      "vehicle_images/user_v75_p2_907837b9.jpeg"
+    ],
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 76,
+    "brandId": "chery",
+    "brand": "奇瑞",
+    "series": "欧萌达",
+    "config": "标准",
+    "display": "奇瑞欧萌达(OMODA)C7",
+    "size": "",
+    "powerType": "燃油",
+    "position": "前机盖",
+    "steps": [
+      "取出车钥匙，打开前机盖",
+      "确保电源车窗全部关闭，遥控钥匙锁车",
+      "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
+      "拔掉负极线束，套上珍珠套管避免接触",
+      "关闭前机盖，断电结束"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "1.车辆钥匙数量及绑扎检查完。",
+      "2.确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "确认钥匙数量，电源、车窗是否全部关闭",
+    "photos": 3,
+    "photoPaths": [
+      "vehicle_images/user_v76_p1_ae65b237.jpeg",
+      "vehicle_images/user_v76_p2_1b3457ba.jpeg",
+      "vehicle_images/user_v76_p3_805c73a.jpeg"
+    ],
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 77,
+    "brandId": "chery",
+    "brand": "奇瑞",
+    "series": "捷途JAECOO",
+    "config": "标准",
+    "display": "奇瑞捷途JAECOO5",
+    "size": "",
+    "powerType": "燃油",
+    "position": "前机盖",
+    "steps": [
+      "取出车钥匙，打开前机盖",
+      "确保电源车窗全部关闭，遥控钥匙锁车",
+      "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
+      "拔掉负极线束，套上珍珠套管避免接触",
+      "关闭前机盖，断电结束"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "1.车辆钥匙数量及绑扎检查完。",
+      "2.确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "确认钥匙数量，电源、车窗是否全部关闭",
+    "photos": 3,
+    "photoPaths": [
+      "vehicle_images/user_v77_p1_42b4272f.jpeg",
+      "vehicle_images/user_v77_p2_5e548764.jpeg",
+      "vehicle_images/user_v77_p3_5fc5891e.jpeg"
+    ],
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 78,
+    "brandId": "chery",
+    "brand": "奇瑞",
+    "series": "欧萌达",
+    "config": "标准",
+    "display": "欧萌达OMODA-C7-PHEV",
+    "size": "",
+    "powerType": "混动",
+    "position": "断电器",
+    "steps": [
+      "打开车门，车内断电器按2次，保持蓝灯关闭，取出钥匙",
+      "确保电源车窗全部关闭，遥控钥匙锁车"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "1.车辆钥匙数量及绑扎检查完。",
+      "2.确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "确认钥匙数量，电源、车窗是否全部关闭",
+    "photos": 2,
+    "photoPaths": [
+      "vehicle_images/user_v78_p1_ae188ee5.jpeg",
+      "vehicle_images/user_v78_p2_200ce149.jpeg"
+    ],
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 79,
+    "brandId": "chery",
+    "brand": "奇瑞",
+    "series": "捷途JAECOO",
+    "config": "EV",
+    "display": "捷途IAECOO-5-EV",
+    "size": "",
+    "powerType": "纯电",
+    "position": "断电器",
+    "steps": [
+      "打开车门，车内断电器按2次，保持蓝灯关闭，取出钥匙",
+      "确保电源车窗全部关闭，遥控钥匙锁车"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "1.车辆钥匙数量及绑扎检查完。",
+      "2.确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "确认钥匙数量，电源、车窗是否全部关闭",
+    "photos": 3,
+    "photoPaths": [
+      "vehicle_images/user_v79_p1_9a0ecd12.jpeg",
+      "vehicle_images/user_v79_p2_ae188ee5.jpeg",
+      "vehicle_images/user_v79_p3_99711ddf.jpeg"
+    ],
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 80,
+    "brandId": "byd",
+    "brand": "比亚迪",
+    "series": "海豹",
+    "config": "标准",
+    "display": "比亚迪海豹SEAL-U DM-I",
+    "size": "",
+    "powerType": "混动",
+    "position": "无需断电",
+    "steps": [
+      "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
+      "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "1.车辆钥匙数量及绑扎检查完。",
+      "2.确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "放干燥剂，确认钥匙数量，电源、车窗是否全部关闭",
+    "photos": 2,
+    "photoPaths": [
+      "vehicle_images/user_v80_p1_3c143a8e.jpeg",
+      "vehicle_images/user_v80_p2_c5019a63.jpeg"
+    ],
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 81,
+    "brandId": "byd",
+    "brand": "比亚迪",
+    "series": "唐",
+    "config": "标准",
+    "display": "比亚迪唐ATTO2-DM-I",
+    "size": "",
+    "powerType": "混动",
+    "position": "无需断电",
+    "steps": [
+      "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
+      "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "1.车辆钥匙数量及绑扎检查完。",
+      "2.确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "放干燥剂，确认钥匙数量，电源、车窗是否全部关闭",
+    "photos": 2,
+    "photoPaths": [
+      "vehicle_images/user_v81_p1_4ced59f3.jpeg",
+      "vehicle_images/user_v81_p2_b953fe4e.jpeg"
+    ],
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 82,
+    "brandId": "byd",
+    "brand": "比亚迪",
+    "series": "海豹",
+    "config": "标准",
+    "display": "比亚迪海豹SEAL-5-DM-I",
+    "size": "",
+    "powerType": "混动",
+    "position": "后备箱左后方",
+    "steps": [
+      "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
+      "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。",
+      "3.遥控钥匙打开后备箱，10号扳手逆时针旋转拧松电池负极螺丝",
+      "4.拔掉负极线束，套上珍珠套管避免接触",
+      "5.关闭后备箱，断电结束"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "1.车辆钥匙数量及绑扎检查完。",
+      "2.确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "放干燥剂，确认钥匙数量，电源、车窗是否全部关闭",
+    "photos": 3,
+    "photoPaths": [
+      "vehicle_images/user_v82_p1_f3ad96de.jpeg",
+      "vehicle_images/user_v82_p2_e65bf52f.jpeg",
+      "vehicle_images/user_v82_p3_10480634.jpeg"
+    ],
+    "videos": 0,
+    "videoPaths": []
   }
 ];

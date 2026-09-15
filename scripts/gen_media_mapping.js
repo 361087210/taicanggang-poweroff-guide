@@ -204,6 +204,11 @@ function buildManifest(vehicles, mediaAssets, localImages) {
   return { manifest, warnings };
 }
 
+/** manifest 内容指纹(忽略 generatedAt, 用于幂等与 --check-manifest) */
+function stripManifest(m){
+  return JSON.stringify({ schemaVersion: m.schemaVersion, qiniu: m.qiniu, release: m.release, vehicles: m.vehicles, assets: m.assets, stats: m.stats });
+}
+
 // ---- 主流程 ----
 const vehicles = loadVehicles();
 const records = buildRecords(vehicles, loadLocalImages());
@@ -230,24 +235,37 @@ if (CHECK_MODE) {
   }
   const { manifest: fresh } = buildManifest(vehicles, parseMediaDirectAssets(), loadLocalImages());
   const committed = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
-  const strip = m => JSON.stringify({ schemaVersion: m.schemaVersion, qiniu: m.qiniu, release: m.release, vehicles: m.vehicles, assets: m.assets, stats: m.stats });
-  if (strip(fresh) !== strip(committed)) {
+  if (stripManifest(fresh) !== stripManifest(committed)) {
     console.error('[FAIL] manifest 与 vehicles_data.js 不一致(数据漂移), 请重新运行: node scripts/gen_media_mapping.js 并提交');
     process.exit(1);
   }
   console.log('[OK] manifest 一致性校验通过: ' + (fresh.vehicles || []).length + ' 车型');
 } else {
   const { manifest, warnings } = buildManifest(vehicles, parseMediaDirectAssets(), loadLocalImages());
-  fs.mkdirSync(MANIFEST_DIR, { recursive: true });
-  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2), 'utf8');
-  if (warnings.length) warnings.forEach(w => console.warn('[manifest] ' + w));
-  if (MANIFEST_ONLY) {
-    console.log('[OK] manifest 已生成: ' + manifest.stats.vehicleCount + ' 车型 / ' + manifest.stats.photoCount + ' 照片 / ' + manifest.stats.videoCount + ' 视频 -> ' + MANIFEST_PATH);
+  // 幂等: 内容无变化(忽略 generatedAt)则跳过写, 避免 cron 每 15 分钟无意义提交
+  let unchanged = false;
+  try {
+    if (fs.existsSync(OUT_JSON) && fs.existsSync(MANIFEST_PATH)) {
+      const oldMap = JSON.parse(fs.readFileSync(OUT_JSON, 'utf8'));
+      const oldManifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
+      unchanged = JSON.stringify({ stats, records }) === JSON.stringify({ stats: oldMap.stats, records: oldMap.records })
+        && stripManifest(manifest) === stripManifest(oldManifest);
+    }
+  } catch (e) { unchanged = false; }
+  if (unchanged && !process.argv.includes('--force')) {
+    console.log('[OK] 映射表/manifest 无变化, 跳过写入 (' + records.length + ' 条记录)');
   } else {
-    fs.writeFileSync(OUT_JSON, JSON.stringify({ generatedAt: new Date().toISOString(), stats, records }, null, 2), 'utf8');
-    fs.writeFileSync(OUT_CSV, toCsv(records), 'utf8');
-    console.log('[OK] 映射表已生成: ' + records.length + ' 条 -> docs/vehicle_media_mapping.json + .csv');
-    console.log('[OK] manifest 已生成: ' + manifest.stats.vehicleCount + ' 车型 / ' + manifest.stats.photoCount + ' 照片 / ' + manifest.stats.videoCount + ' 视频 -> ' + MANIFEST_PATH);
+    fs.mkdirSync(MANIFEST_DIR, { recursive: true });
+    fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2), 'utf8');
+    if (warnings.length) warnings.forEach(w => console.warn('[manifest] ' + w));
+    if (MANIFEST_ONLY) {
+      console.log('[OK] manifest 已生成: ' + manifest.stats.vehicleCount + ' 车型 / ' + manifest.stats.photoCount + ' 照片 / ' + manifest.stats.videoCount + ' 视频 -> ' + MANIFEST_PATH);
+    } else {
+      fs.writeFileSync(OUT_JSON, JSON.stringify({ generatedAt: new Date().toISOString(), stats, records }, null, 2), 'utf8');
+      fs.writeFileSync(OUT_CSV, toCsv(records), 'utf8');
+      console.log('[OK] 映射表已生成: ' + records.length + ' 条 -> docs/vehicle_media_mapping.json + .csv');
+      console.log('[OK] manifest 已生成: ' + manifest.stats.vehicleCount + ' 车型 / ' + manifest.stats.photoCount + ' 照片 / ' + manifest.stats.videoCount + ' 视频 -> ' + MANIFEST_PATH);
+    }
   }
 }
 console.log('[STATS] ' + JSON.stringify(stats));
