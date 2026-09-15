@@ -48,52 +48,16 @@ jobs:
       - name: 安装测试依赖(jsdom)
         run: npm ci --ignore-scripts || npm install --no-audit --no-fund
 
-      - name: 逻辑测试(30项)
-        run: npm run test:logic
+      # V10.19.1: 改用 test:all 聚合入口。此前逐个测试套件手串 14 个入口,
+      #   实际漏跑 12 个套件(含版本门禁/视频播放/addVehicle 回归/原型污染守卫),
+      #   新增套件忘了接链也无人发现。test:all 覆盖全部测试文件;
+      #   test:cross 需飞书 Secret, 已移至链尾且缺凭据时按"跳过"语义 exit 0, 不再掐断后续套件。
+      - name: 全量回归测试(npm run test:all)
+        run: npm run test:all
 
-      - name: 运行时仿真测试(21项)
-        run: npm run test:runtime
-
-      - name: 版本专项测试(V10.3问题修复61项)
-        run: npm run test:v103
-
-      - name: 版本专项测试(V10.4根因修复)
-        run: npm run test:v104
-
-      - name: 版本专项测试(V10.5分享真实化+缓存留存)
-        run: npm run test:v105
-
-      - name: 版本专项测试(V10.6导出修复+中文PDF/Word真OOXML)
-        run: npm run test:v106
-
-      - name: 版本专项测试(V10.7防抖同步+菜单权限收紧)
-        run: npm run test:v107
-
-      - name: 版本专项测试(V10.8云同步根治FormData+注册审批回退)
-        run: npm run test:v108
-
-      - name: 版本专项测试(V10.9视频分离+UI适配修复)
-        run: npm run test:v109
-
-      - name: 版本专项测试(V10.10大文件分片同步+方案对比)
-        run: npm run test:v1010
-
-      - name: 版本专项测试(V10.11镜像同步删除传播)
-        run: npm run test:v1011
-
-      - name: 版本专项测试(V10.13复杂度治理A3)
-        run: npm run test:v1013
-
-      # V10.14.0: 组员零配置同步专项(秘钥闭包永久化/双通道镜像决策/三色横幅/写入深度防御)
-      #   - 本地mock飞书全链路 ≈49 项断言, 0 FAIL 才能合并
-      #   - 真实跨网络端到端(test:cross)因需飞书 Secret,已从ci.yml去掉(在 release.yml 中按需执行)
-      - name: 版本专项测试(V10.14组员零配置镜像同步+横幅防御+脏配置)
-        run: npm run test:v1014
-
-      # V10.14.1: 同步配置出口统一专项(js/05-sync.js五处直读localStorage改走getFeishuCfg)
-      #   - 组长/组员 × 注入/零本地/脏配置 × 上传/拉取/轮询/导出矩阵 ≈50 项断言, 0 FAIL 才能合并
-      - name: 版本专项测试(V10.14.1同步配置出口统一门禁修复)
-        run: npm run test:v1015
+      # 防漏串门禁: 任何测试文件未被 CI 触达即 FAIL, 防止"新增套件忘了接链"重演
+      - name: CI 覆盖率门禁(测试资产必须全部被触达)
+        run: npm run test:ci-coverage
 
       - name: 上传校验摘要
         if: always()
