@@ -8,6 +8,16 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.19.2',
+    date: '2026-09-15',
+    highlight: '网页端登录修复版: 修「App能用/网页端报密码错误」的 P0 迁移缺口',
+    features: [
+      '网页端登录失败: 通用可操作提示, 引导去 App 完成升级后重试(不泄露账号存在性)',
+      'App 迁移闭环: 启动检测缺 linkKey 一次性引导重登 + 低频补推, 不静默失败',
+      '缓存: sw.js CACHE_NAME 升版, 解除缓存优先导致修复到不了用户'
+    ]
+  },
+  {
     version: 'V10.19.1',
     date: '2026-09-15',
     highlight: '稳定性加固版: 修新建车辆照片分区丢失 + 三处工程防线',
@@ -474,7 +484,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.19.1'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.19.2'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
