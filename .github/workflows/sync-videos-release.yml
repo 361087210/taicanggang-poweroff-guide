@@ -1,0 +1,49 @@
+name: Sync Videos to GitHub Release
+
+on:
+  schedule:
+    # 每天 1 次(UTC 02:00), 低频避免与 15 分钟镜像同步抢飞书 QPS
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Sync videos from Feishu to GitHub Release
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+          # GitHub 上传: 优先 GH_TOKEN(PAT), 回退 GITHUB_TOKEN(需本 workflow contents:write)
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/sync_videos_to_release.js
+
+      - name: Regenerate media mapping + manifest (if mapping changed)
+        run: node scripts/gen_media_mapping.js
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add js/00-bootstrap.js docs/vehicle_media_mapping.json docs/vehicle_media_mapping.csv docs/vehicle_media_manifest.json
+          if git diff --cached --quiet; then
+            echo "无变化, 跳过提交"
+          else
+            git commit -m "chore: 同步新视频直链映射 (media-videos)"
+            git push
+          fi
