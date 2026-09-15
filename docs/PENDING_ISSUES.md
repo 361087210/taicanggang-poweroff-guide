@@ -17,6 +17,19 @@
 - **附带教训（本轮已修）**：源码注释曾写"P0(>=10.19.1)"——把首次发布版本号记错，并**据此误导了运维操作步骤**。注释与事实不符比没有注释更危险。
 - **最小修复路径（待裁定）**：① 任何触碰 `js/` 或行为语义的提交**必须同批升版本号**（哪怕 patch）；② CI 增门禁"`main` 相比上一个 tag 若有 `js/**` 变更却 `APP_VERSION` 未变 → FAIL（或先做粗粒度告警）"；③ 成本最低：发布/PR 流程强提示"改 `js/` 必 bump"，并在 RELEASE 说明标注本版行为变化。
 
+### 1.2 版本归属事实基线（**证据留存**；判版本归属必须拉该标签真实内容，勿按发布说明推断）
+> **方法纪律**：判断"某改动属于哪个发布"，**必须**用 `git show <tag>:<path>` 拉该标签的**真实文件内容**核对，
+>   不可依据 `version.json` / RELEASE 文档 / 源码注释的文字描述推断 —— 本轮即因按注释/发布说明推断，
+>   误把 P0 归属到 10.19.1（并据此给出了错误的运维步骤）。
+- **v10.19.1 已上线**：账号表**字段白名单**（`web-data/approved_users.web.json` 内
+  `fieldAllowlist = [id, name, phoneH, role, status, created]`、`droppedFields = [phone, password, pw_ts]`）
+  —— 即"去掉明文手机号 + 密码哈希"的隐私修复。
+- **v10.19.2 才上线**：`phoneH → linkKey` 去盐化（`deriveLinkKey`，客户端 PBKDF2 派生）。
+- **证据（可复现）**：
+  - `git show v10.19.1:web-data/approved_users.web.json` → allowlist 含 `phoneH`；dropped 含 `phone/password/pw_ts`；
+  - `git show v10.19.1:scripts/sync_web_data.js` → `linkKey`=0 次、`phoneH`=15 次；
+  - `git show v10.19.1:js/02-auth.js` → `deriveLinkKey`=0、`linkKey`=0。
+
 ## P1 — 数据一致性（工程师 429 中断，未完成）
 
 ### 2. 数据一致性/资源完整性 4 项
