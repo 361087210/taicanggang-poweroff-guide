@@ -129,9 +129,19 @@
         "创建时间": 1789041426000
       },
       "record_id": "recvuOLvcXBsQE"
+    },
+    {
+      "fields": {
+        "反馈ID": "fb_1789446959791_5txucs",
+        "问题板块": "断电操作-单辆车导出",
+        "问题描述": "照片内嵌失败\n\n[截图1张,已上传云盘]",
+        "状态": "待处理",
+        "创建时间": 1789446966000
+      },
+      "record_id": "recvvgd6CdvZyV"
     }
   ],
-  "timestamp": "2026-09-15T01:31:46.647Z",
+  "timestamp": "2026-09-15T05:23:40.279Z",
   "sanitized": true,
   "fieldAllowlist": [
     "反馈ID",
