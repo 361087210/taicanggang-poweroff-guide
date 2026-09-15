@@ -43,8 +43,22 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # V10.19.1: 移除 android-actions/setup-android@v3(第三方 action, 依赖下载 cmdline-tools,
+      #   2026-09-15 起失效导致构建失败)。ubuntu-latest 已预装 Android SDK
+      #   (build-tools 34.0.0 + platforms android-34), 直接使用, 无需额外下载。
+      - name: Setup Android SDK (使用 runner 预装)
+        run: |
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          # 把 cmdline-tools 的 sdkmanager 加进 PATH, 供后续 accept licenses 使用
+          CMDLINE_BIN=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
+          if [ -n "$CMDLINE_BIN" ]; then echo "$CMDLINE_BIN" >> $GITHUB_PATH; fi
+          echo "build-tools: $(ls "$ANDROID_HOME/build-tools" 2>/dev/null | tr '\n' ' ')"
+          test -x "$ANDROID_HOME/build-tools/34.0.0/zipalign"  || { echo "❌ 预装 SDK 缺少 build-tools 34.0.0/zipalign";  exit 1; }
+          test -x "$ANDROID_HOME/build-tools/34.0.0/apksigner" || { echo "❌ 预装 SDK 缺少 build-tools 34.0.0/apksigner"; exit 1; }
+          echo "✅ Android SDK 就绪"
 
       - name: Install Cordova
         run: |
