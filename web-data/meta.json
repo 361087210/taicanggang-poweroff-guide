@@ -1,8 +1,7 @@
 {
-  "syncedAt": "2026-09-15T00:37:57.132Z",
-  "generatedAt": "2026-09-15T00:37:57.132Z",
-  "source": "feishu",
-  "salt": "tcg-web-2026",
+  "syncedAt": "2026-09-15T00:18:50.440Z",
+  "generatedAt": "2026-09-15T00:18:50.440Z",
+  "source": "local",
   "version": "v10.17.1",
   "counts": {
     "vehicles": 82,

@@ -84,12 +84,28 @@ try {
   if (fs.existsSync(tmp)) fs.rmSync(tmp, { recursive: true });
   fs.mkdirSync(tmp, { recursive: true }); fs.mkdirSync(sdir, { recursive: true });
   fs.writeFileSync(path.join(sdir, 'vehicle_sync_data.json'), JSON.stringify({ vehicles: [{ id: 'v1', display: '测试车', videoPaths: [] }], version: 'v10.18.0' }));
-  fs.writeFileSync(path.join(sdir, 'approved_users.json'), JSON.stringify({ users: [{ id: 1, name: '甲', phone: '13800000001', status: 'active', password: 'x', pw_ts: 1, role: 'user', created: '2026' }] }));
+  fs.writeFileSync(path.join(sdir, 'approved_users.json'), JSON.stringify({ users: [
+    { id: 1, name: '甲', phone: '13800000001', status: 'active', password: 'x', pw_ts: 1, role: 'user', created: '2026' },
+    /* V10.19.1 P0 回归: 本 App 组员 name 存的就是明文手机号, 曾被整包透传进
+     * 公开的 web-data/(实测 curl 线上可取原文)。以下用例锁定"掩码 + 去凭据"。 */
+    { id: 2, name: '18570474454', phone: '18570474454', status: 'active', role: 'user', created: '2026', password: 'pbkdf2$deadbeef$100000$cafe', pw_ts: 9, device: 'Pixel 7' }
+  ] }));
   execSync('node scripts/sync_web_data.js --source-dir _verify_src --out _verify_out', { cwd: ROOT, stdio: 'inherit' });
   const meta = JSON.parse(fs.readFileSync(path.join(tmp, 'meta.json'), 'utf8'));
   check('F9a 本地模式生成 meta.syncedAt', !!(meta && meta.syncedAt));
   const aw = JSON.parse(fs.readFileSync(path.join(tmp, 'approved_users.web.json'), 'utf8'));
   check('F9b 本地模式脱敏(无明文phone, phoneH=64位)', aw.users.every(u => !u.phone) && aw.users[0].phoneH && aw.users[0].phoneH.length === 64);
+  /* V10.19.1 P0 回归: 账号镜像不得再含凭据/明文号码/未白名单字段 */
+  const _noKey = k => aw.users.every(u => !(k in u));
+  check('F9c 账号镜像无 password(密码哈希不得出库)', _noKey('password'));
+  check('F9d 账号镜像无 pw_ts(改密仲裁字段随凭据一并剔除)', _noKey('pw_ts'));
+  check('F9e 账号镜像无明文 phone', _noKey('phone'));
+  check('F9f 未知字段不透传(device/白名单外字段)', _noKey('device'));
+  const _u2 = aw.users.find(u => u.id === 2) || {};
+  check('F9g name 命中手机号形态时掩码(18570474454→185****4454)', _u2.name === '185****4454', String(_u2.name));
+  const _awRaw = fs.readFileSync(path.join(tmp, 'approved_users.web.json'), 'utf8').replace(/"phoneH":\s*"[0-9a-f]{64}"/gi, '');
+  check('F9h 产物全文无独立11位明文手机号', ((_awRaw.match(/(?<!\d)1[3-9]\d{9}(?!\d)/g) || []).length) === 0);
+  check('F9i meta.json 不再输出盐值明文', meta.salt === undefined);
   fs.rmSync(tmp, { recursive: true }); fs.rmSync(sdir, { recursive: true });
 } catch (e) {
   check('F9 动态执行异常: ' + e.message, false);
