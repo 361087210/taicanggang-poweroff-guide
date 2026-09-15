@@ -30,6 +30,15 @@
   - `git show v10.19.1:scripts/sync_web_data.js` → `linkKey`=0 次、`phoneH`=15 次；
   - `git show v10.19.1:js/02-auth.js` → `deriveLinkKey`=0、`linkKey`=0。
 
+**附：版本字面量分类表（**处理任何"版本号"前先分类，禁止一刀切全局替换**）**
+| 类别 | 例子 | 判定依据 | 处理 |
+|---|---|---|---|
+| 期望值（写死真实版本） | 原 `tests/test_v1033:39-40` `EXPECT_VER='10.19.2'` | 断言"某处应等于该版本" → 升版必红 | **改为从 `version.json` 推导** + 配**变异自证** |
+| 自洽 fixture（输入） | `test_v110_audit:92/151`、`test_v1014:140`、`test_v1015:133`、`test_v1023:45` | 把版本喂进去再断言往返，与真实版本无关 | 保留（升版不会红） |
+| 历史/归属引用（正确事实） | "P0 首次发布=10.19.2"、`V10.x 修复` 注释、各 `RELEASE_V*.md` | 描述已发生的事实 | 保留（误改 = 制造新的错误归属） |
+| **活代码里的版本常量** | 原 `sync_release_both_roots.py:18` `APP_VERSION="10.17.1"` | 被用于**命名/拼路径** → 输出会带旧版本 | **改为从 `version.json` 读**（见 §1.4） |
+| 已是动态（范式） | `test_v1019_version_gate.js`、`sync_release_to_feishu.py` | 从单一真源推导 + 含变异自证 | 参考 |
+
 ### 1.3 10.19.3「诊断版」独立发布配方（可直接执行；**尚未执行**，待用户拍板）
 > 目的：让用户**只更新一次**即同时拿到「修复(linkKey 迁移) + 诊断(加密能力自检 / 两种失败提示)」。
 > 纪律：全程在 `release/10.19.3`，**不 push、不打 tag**，直到用户点头。
@@ -37,6 +46,7 @@
 **A. 要独立发布的提交（叠在 F0-c 之上，需 cherry-pick 到 main）**
 - `921fddc` 提交组A（加密能力自检 + 迁移失败两因区分）
 - `db21274` F0-a（反馈「APP版本」字段）
+- ＋ **发版工具链修复**（`scripts/sync_release_both_roots.py` Feishu 目录名 + `scripts/migrate_drive_to_bitable.js` 的 `syncVersion` 改为从 `version.json` 读，见 §1.4）—— 与本次同一提交，**发布集必须含它**，否则发版时飞书目录名仍停在 `v10.17.1`。
 - **不要包含** `718d0ce` / `2ff1964`（F0-c）——F0-c 运行期依赖飞书「状态」选项（未补），带了会红。
 
 **B. cherry-pick 到 main 的冲突与解决**
@@ -73,6 +83,18 @@ node scripts/check_ci_coverage.js
 node scripts/validate_web_assets.js
 ```
 **F. 发布动作（仅用户点头后）**：推 main → **紧邻**推 `git tag v10.19.3`（避免 `version.json.downloadUrl` 指向空资产的窗口）→ 验收 7 条（两条 release workflow / 两个资产 / `curl -I` 非 404 / `sync-release-feishu` / `deploy-pages` 且 demo.html 哈希变化 / 登录页实测 / `git status`）。
+
+### 1.4 发版工具链里写死版本号（`v10.17.1`）—— 已判定**活代码**，已修
+- **`scripts/sync_release_both_roots.py:18`** `APP_VERSION = "10.17.1"` → **活代码**：
+  - 该文件 `from sync_release_to_feishu import (...)` **未导入** `APP_VERSION`，反而在下方**自带同名常量覆盖**；而基座 `sync_release_to_feishu.py:30-36` 是**从 `version.json` 动态读取**的（正确）。
+  - 该常量在 `:29` 被用于 `get_or_create_folder(..., f"v{APP_VERSION}")` → **命名飞书目录**；`:30/:91` 打印同名。
+  - **链路**：`.github/workflows/sync-release-feishu.yml:62`（`workflow_run`，**每次发版后自动跑**）执行本脚本 → 于是**每次发版的产物都被传进名为 `v10.17.1` 的飞书目录**（旧根+新根两处），因 `delete_if_exists` 还会**反复覆盖同一目录**（无按版本留档）。即：文件是新的、**目录名是旧的**。
+  - **实际影响**：飞书端浏览发版产物的人会看到 `发版产物/v10.17.1/` 里装着 10.19.2 的 APK → 误导；且丢失按版本留档。
+  - **修法**：改为从基座导入 `APP_VERSION`（单一真源，动态读 `version.json`），删除本地写死常量。✅ 已在本轮修复。
+- **`scripts/migrate_drive_to_bitable.js:110`** `const APP_VERSION = '10.17.1'` → **活代码但不在 CI**（npm `migrate:bitable`，操作员手动跑）：
+  - 在 `:120` 用作 `syncVersion: APP_VERSION` → **把陈旧版本号写进每条迁移记录**（`syncVersion` 参与同步仲裁）→ 一旦运行即污染整批数据。
+  - **修法**：改为模块级 `JSON.parse(fs.readFileSync(path.join(REPO,'version.json')))` 读取。✅ 已在本轮修复。
+- **教训**：CHANGELOG 里这些脚本一直被列入"发版版本号同步清单"，但**从 10.17.1 起被漏更**（清单靠人工，漏了就静默漂移）。→ 建议把"脚本内版本常量"也纳入门禁（与 §1.1 的"改 js 必 bump"同源问题）。
 
 ## P1 — 数据一致性（工程师 429 中断，未完成）
 
