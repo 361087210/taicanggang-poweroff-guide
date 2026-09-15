@@ -168,13 +168,28 @@ const State={
   /**
    * 新增车辆(创建语义): id自增+必填兜底+拼音+入列+持久化
    * 与旧saveVehicle新增分支逐字段一致(含steps/keyFrame/keyContainer空兜底)
-   * @param {object} data {brand,series,config,display,powerType,size,position,steps,keyFrame,keyContainer,remarks,photoPaths,videoPaths}
+   * V10.19.1 缺陷修复: 字面量补回 photoSections/photoLabels/keyPhotoRemark
+   *   (V10.15.5 板块化照片元数据)。此前这三个字段由 03-vehicles.js:900 传入却
+   *   被逐字段字面量静默丢弃, 导致"新增车辆"选的板块(车钥匙/断电位置)与钥匙
+   *   备注保存即丢, loadEditMedia 回读时 v.photoSections 为 undefined 而全部
+   *   回退到 exterior; 编辑路径走 updateVehicle(Object.assign) 正常——新增与
+   *   编辑不对称。补字段的同时加了下方透传, 杜绝同类字段再次静默丢失。
+   * @param {object} data {brand,series,config,display,powerType,size,position,steps,keyFrame,keyContainer,remarks,photoPaths,videoPaths,photoSections,photoLabels,keyPhotoRemark}
    * @returns {object} 新建车辆对象(含id/pinyin/photos/videos计数)
    */
   addVehicle(data){
     const maxId=VEHICLES.reduce((m,v)=>Math.max(m,v.id),0);
     const brandObj=BRANDS.find(b=>b.name===data.brand);
-    const v={id:maxId+1,brandId:brandObj?brandObj.id:'custom',brand:data.brand,series:data.series,config:data.config,display:data.display,powerType:data.powerType||'纯电',size:data.size,position:data.position,steps:data.steps&&data.steps.length?data.steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:data.keyFrame&&data.keyFrame.length?data.keyFrame:['钥匙数量绑扎检查完'],keyContainer:data.keyContainer&&data.keyContainer.length?data.keyContainer:['车辆进箱无需收钥匙'],remarks:data.remarks,photos:data.photoPaths.length,photoPaths:data.photoPaths,videos:data.videoPaths.length,videoPaths:data.videoPaths,pinyin:getPinyin(data.display)};
+    const v={id:maxId+1,brandId:brandObj?brandObj.id:'custom',brand:data.brand,series:data.series,config:data.config,display:data.display,powerType:data.powerType||'纯电',size:data.size,position:data.position,steps:data.steps&&data.steps.length?data.steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:data.keyFrame&&data.keyFrame.length?data.keyFrame:['钥匙数量绑扎检查完'],keyContainer:data.keyContainer&&data.keyContainer.length?data.keyContainer:['车辆进箱无需收钥匙'],remarks:data.remarks,photos:data.photoPaths.length,photoPaths:data.photoPaths,videos:data.videoPaths.length,videoPaths:data.videoPaths,pinyin:getPinyin(data.display),photoSections:data.photoSections,photoLabels:data.photoLabels,keyPhotoRemark:data.keyPhotoRemark};
+    /* 透传: 调用方传入但字面量未列出的字段一并保留(追加在末尾, 不改变既有键序)。
+     * 只用 "字面量里没有的键" 判断, 因此 id/brandId/photos/videos/pinyin 等
+     * 计算字段不会被入参覆盖。语义与 updateVehicle 的 Object.assign 对齐。
+     * 注: 这里刻意用 `k in v` 而非 hasOwnProperty——`in` 会遍历原型链,
+     * __proto__/constructor/toString 等键必然在链上命中而被跳过, 因此不存在
+     * 原型污染风险(若改成 hasOwnProperty, 这些键反而会被写成自有属性)。
+     * 另注: 不写 `data||{}` —— 上面 data.brand 已先对 null/undefined 抛错,
+     * 加 ||{} 只会制造"已做空值防护"的假象(入参为空依然抛, 与修复前一致)。 */
+    Object.keys(data).forEach(k=>{ if(!(k in v)) v[k]=data[k]; });
     VEHICLES.push(v);
     persistVehicles(); // V10.6.0 问题4: 车辆数据(含文字图片照片)立即持久化,重启不丢,可同步飞书
     if(window.Audit&&window.Audit.track)window.Audit.track('vehicle.create','vehicle',v.id,{brand:v.brand,series:v.series,display:v.display});
