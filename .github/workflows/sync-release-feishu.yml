@@ -10,17 +10,25 @@
 #      Actions → Sync Release to Feishu → Run workflow。
 # 设计: 仓库不放二进制(gitignore红线),产物从GitHub Release
 #      按version.json的版本号现场下载到release/再上传。
+# V10.19.1: 增加 workflow_run 自动触发——Android 发版构建(tag 触发)成功后
+#      自动同步飞书, 不再依赖手动点 Run workflow(行业标准: 发版全自动)。
 # ============================================================
 name: Sync Release to Feishu
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Android CI Build & Release"]
+    types: [completed]
 
 permissions:
   contents: read
 
 jobs:
   sync:
+    # 手动触发总是执行; workflow_run 仅当 Android 构建成功且为 tag 发版(v*)时执行,
+    # 避免 PR/普通 push 触发多余的飞书同步, 也避免 Release 产物未就绪时抢先下载。
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

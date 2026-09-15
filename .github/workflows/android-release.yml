@@ -197,9 +197,9 @@ jobs:
           files: |
             release/tcg_poweroff_v${{ env.APP_VERSION }}.apk
             release/tcg_poweroff_v${{ env.APP_VERSION }}.apk.sha256
-          generate_release_notes: true
-          # V10.14.0: 若 release notes 需要直接引用详细的 RELEASE_Vxx.md,取消下行注释,构建时 docs/RELEASE 会自动拼接
-          # body_path: docs/RELEASE_V${{ env.APP_VERSION_DOTTED }}0.md
+          # V10.19.1: 用 docs/RELEASE_V<版本>.md 作为 Release 正文(行业标准: 完整发布说明),
+          #   取代 generate_release_notes 的自动 diff 摘要(仅一条 Full Changelog 链接, 无实质内容)
+          body_path: docs/RELEASE_V${{ env.APP_VERSION }}.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
