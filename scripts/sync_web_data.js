@@ -127,7 +127,7 @@ const FEEDBACK_FIELD_ALLOWLIST = [
 const SENSITIVE_FIELD_RE = /(联系方式|设备信息|提交人|手机|电话|邮箱|邮件|微信|QQ|IMEI|设备型号|系统版本|平台|APP版本|角色|姓名|账号|IP|定位|地址)/i;
 
 /* ===========================================================
- * 账号表镜像字段白名单(默认拒绝) —— V10.19.1 P0 隐私修复 / V10.22 P0 去盐化
+ * 账号表镜像字段白名单(默认拒绝) —— V10.19.1 P0 隐私修复 / V10.19.2 P0 去盐化(phoneH→linkKey)
  * -----------------------------------------------------------
  * 背景: approved_users 镜像此前走 buildApprovedWeb() 整包透传, 把
  *   - name  (本 App 组员 name 存的就是**明文手机号**)
@@ -426,8 +426,9 @@ async function main(){
 
   /* 账号脱敏(输出侧白名单投影): 本地模式与飞书模式一视同仁。
    * 与反馈镜像同构——放在出库前而不是拉取后, 杜绝"换个数据源就绕过脱敏"。
-   * V10.19.1 P0: 旧 buildApprovedWeb 把 name(明文手机号)/password(pbkdf2
-   * 哈希)/phoneH 整包透传进公开的 web-data/, 已实测可 curl 取到原文。 */
+   * P0: 旧 buildApprovedWeb 曾把 name(明文手机号)/password(pbkdf2 哈希)/phoneH
+   * 整包透传进公开的 web-data/(实测 curl 可取原文)。字段白名单自 v10.19.1 起生效
+   * (name/password 不再出库); phoneH→linkKey 去盐化在 v10.19.2。 */
   const approvedWeb = sanitizeApprovedUsers(approved.users || []);
 
   // 数据更新通知(网页端 60s 轮询据此自动镜像对齐)

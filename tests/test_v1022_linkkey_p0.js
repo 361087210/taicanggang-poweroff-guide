@@ -144,7 +144,7 @@ check('L8c 强制 role=user(仅组员只读)', webSyncJs.includes("role:'user'")
 /* ---------- 全链路写入点(注册/改密/重置/加人/推送) ---------- */
 section('L9 全链路 linkKey 写入与透传');
 check('L9a 安卓注册写入 linkKey', /deriveLinkKey\s*\(\s*phone\s*,\s*pass\s*\)/.test(authJs));
-check('L9b 网页注册写入 linkKey', /deriveLinkKey\s*\(\s*phone\s*,\s*pass\s*\)/.test(webSyncJs));
+check('L9b 网页端 linkKey 派生仍在(登录重建路径; 网页注册已随 10.19.3 下线)', /deriveLinkKey\(String\(who\.phone\),String\(who\.password\)\)/.test(webSyncJs));
 check('L9c 安卓改密重算 linkKey', /deriveLinkKey\s*\(\s*state\.currentUser\.phone\s*,\s*n\s*\)/.test(cacheJs));
 check('L9d 组长加人写入 linkKey', /deriveLinkKey\s*\(\s*phone\s*,\s*pass\s*\)/.test(cacheJs));
 check('L9e 重置密码重算 linkKey(123456)', /deriveLinkKey\s*\(\s*u\.phone\s*,\s*'123456'\s*\)|deriveLinkKey\(u\.phone,'123456'\)/.test(cacheJs));

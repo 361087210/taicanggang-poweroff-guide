@@ -27,10 +27,10 @@
     BASE_APP_TOKEN: 'Gn4db7il9a27QrsOtVbclSE3nnf',
     FEEDBACK_TABLE_ID: 'tblPB0AnsTS9puqw',
 
-    /* ---------- GitHub(仓库 / 分支 / 网页注册登记库) ---------- */
+    /* ---------- GitHub(仓库 / 分支) ----------
+     * V10.19.3: 网页注册登记库(GITHUB_REGISTER_REPO)已随"网页端自助注册"下线一并移除。 */
     GITHUB_REPO: '361087210/taicanggang-poweroff-guide',
     GITHUB_BRANCH: 'main',
-    GITHUB_REGISTER_REPO: '361087210/tcg-registration-inbox',
 
     /* ---------- 网页镜像桥 ----------
      * LINK_SALT 是账号连接键 linkKey = PBKDF2-HMAC-SHA256(password,

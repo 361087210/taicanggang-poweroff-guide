@@ -57,24 +57,26 @@ check('A9 登录pending态拉取后复核rejected', authJs.includes("after&&afte
 check('A10 登录rejected文案含联系组长指引', authJs.includes('您的注册申请未通过组长审核，如有疑问请联系组长'));
 check('A11 rejected登录前先云端复核(组长可改判)', /status==='rejected'[\s\S]{0,120}pullApprovedStatusFromFeishu\(user\)/.test(authJs));
 
-/* ---------- B组 网页端注册(反馈问题2) ---------- */
-section('B组 网页端注册: GitHub登记通道');
-check('B1 登记通道常量存在', webSyncJs.includes('tcg-registration-inbox') && webSyncJs.includes('/contents/registrations'));
-check('B2 token密文存储(非明文)', /GITHUB_REGISTER_TOKEN_ENC='[A-Za-z0-9+/=]{40,}'/.test(webSyncJs));
+/* ---------- B组 网页端注册: V10.19.3 已改为「引导语」(原 GitHub 登记通道下线) ----------
+ * 下线理由: 登记令牌可从公开源码解出且 scope 含 repo/workflow(即将吊销); 吊销后
+ * 网页端上行注册必然失败。网页端定位"仅组员只读", 新增成员改由组长在 App 端添加。
+ * 以下断言防"悄悄复活旧上行注册链"与"令牌/接口常量回流"两类回潮。 */
+section('B组 网页端注册: 下线 GitHub 通道 + 改为引导语');
+check('B1 不再含 GitHub 登记通道常量(repo/contents)', !webSyncJs.includes('tcg-registration-inbox') && !webSyncJs.includes('/contents/registrations'));
+check('B2 不再含登记令牌密文常量(已删除)', !webSyncJs.includes('GITHUB_REGISTER_TOKEN_ENC'));
 check('B3 源码不含明文GitHub token', !/ghp_[A-Za-z0-9]{20,}/.test(webSyncJs));
-check('B4 运行时解密(_decryptBuildSecret)', webSyncJs.includes('_decryptBuildSecret(GITHUB_REGISTER_TOKEN_ENC)'));
-check('B5 手机号11位校验', /\\d\{11\}/.test(webSyncJs));
-check('B6 密码复杂度校验(数字+字母)', webSyncJs.includes('(?=.*\\d)(?=.*[a-zA-Z])'));
-check('B7 二次密码一致性校验', webSyncJs.includes('两次密码不一致'));
-check('B8 重复注册拦截', webSyncJs.includes('该手机号已注册'));
-check('B9 注册限流(1小时3次)', webSyncJs.includes('tcg_reg_lock'));
-check('B10 载荷type=pending_registration', webSyncJs.includes("type:'pending_registration'"));
-check('B11 载荷source=tcg-web(区别安卓端)', webSyncJs.includes("source:'tcg-web'"));
-check('B12 密码哈希后才提交(hashPassword)', webSyncJs.includes('await hashPassword(pass,salt)'));
-check('B13 失败不落本地账号(诚实失败)', /errMsg='[^']+'/i.test(webSyncJs) && webSyncJs.includes('注册提交失败'));
-check('B14 成功后进入激活守望', webSyncJs.includes('watchRegistrationActivation(newUser)'));
-check('B15 镜像脱敏通道改造(phoneH→linkKey)', webSyncJs.includes('deriveLinkKey') && webSyncJs.includes('.linkKey') && !webSyncJs.includes('WEB_SYNC_SALT') && !webSyncJs.includes('phoneH'));
-check('B16 登记流程含GitHub PUT(content字段)', webSyncJs.includes("content:btoa(unescape(encodeURIComponent("));
+check('B4 不再引用登记上行接口/不再解登记令牌', !webSyncJs.includes('GITHUB_REGISTER_API') && !webSyncJs.includes('_decryptBuildSecret(GITHUB_REGISTER_TOKEN_ENC)'));
+check('B5 不再向 GitHub API 上行提交', !/api\.github\.com\/repos\//.test(webSyncJs) && !webSyncJs.includes('content:btoa(unescape(encodeURIComponent('));
+check('B6 doRegister 仍被覆盖(异步函数)', /window\.doRegister\s*=\s*async\s+function/.test(webSyncJs));
+check('B7 引导语明确"网页版不支持注册"', webSyncJs.includes('网页版不支持注册'));
+check('B8 引导语指向组长在 App 端添加', webSyncJs.includes('组长') && webSyncJs.includes('App'));
+check('B9 不再生成 pending 注册载荷(pending_registration/tcg-web)', !webSyncJs.includes("type:'pending_registration'") && !webSyncJs.includes("source:'tcg-web'"));
+check('B10 网页端不再调用 watchRegistrationActivation', !webSyncJs.includes('watchRegistrationActivation(newUser)'));
+check('B11 注册限流链已随注册下线(tcg_reg_lock 不再出现)', !webSyncJs.includes('tcg_reg_lock'));
+check('B12 网页端注册不再做密码哈希上行(hashPassword(pass,salt) 已移除)', !webSyncJs.includes('await hashPassword(pass,salt)'));
+check('B13 不再有"注册提交失败"上行分支', !webSyncJs.includes('注册提交失败'));
+check('B15 镜像脱敏通道改造(linkKey, 无旧盐/phoneH)', webSyncJs.includes('deriveLinkKey') && webSyncJs.includes('.linkKey') && !webSyncJs.includes('WEB_SYNC_SALT') && !webSyncJs.includes('phoneH'));
+check('B16 仍保留安卓端注册链参照(02-auth.js 未受影响)', authJs.includes('await hashPassword(pass, salt)'));
 
 /* ---------- C组 视频恢复与封面(反馈问题3) ---------- */
 section('C组 视频恢复: 直链映射与封面');
