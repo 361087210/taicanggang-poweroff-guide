@@ -534,15 +534,34 @@ async function fetchPhotoDataURL(path){
   if(_exportPhotoCache.hasOwnProperty(path))return _exportPhotoCache[path];
   let result=null;
   const fileName=path.split('/').pop();
-  // 源①: 本地文件(浏览器预览取仓库目录;APK内取打包进www/的资源)
-  try{
-    const r=await fetch(path);
-    if(r.ok){
-      const blob=await r.blob();
-      if(blob&&blob.size>100)result=await blobToDataURL(blob);
-    }
-  }catch(e){/* 本地未命中,继续云端回退 */}
-  // 源②: 飞书云端(组长上传的真实照片)
+  // 源①: 本地文件——网页端同源 fetch(vehicle_images 部署在 Pages, 200);
+  // App 端 cordova 的 www 是 file:// 协议, fetch 被浏览器安全策略阻断(源①必失败),
+  // 改用 cordova-plugin-file 的 resolveLocalFileSystemURL + FileReader.readAsDataURL
+  // 读取打包进 www/vehicle_images/ 的本地资源, 绕开 file:// fetch 限制。
+  if(window.cordova&&window.resolveLocalFileSystemURL&&window.cordova.file){
+    const abs=(window.cordova.file.applicationDirectory||'')+'www/'+path;
+    result=await new Promise(resolve=>{
+      try{
+        window.resolveLocalFileSystemURL(abs, fileEntry=>{
+          fileEntry.file(file=>{
+            const reader=new FileReader();
+            reader.onloadend=()=>resolve(reader.result||null);
+            reader.onerror=()=>resolve(null);
+            reader.readAsDataURL(file);
+          }, ()=>resolve(null));
+        }, ()=>resolve(null));
+      }catch(e){resolve(null);}
+    });
+  }else{
+    try{
+      const r=await fetch(path);
+      if(r.ok){
+        const blob=await r.blob();
+        if(blob&&blob.size>100)result=await blobToDataURL(blob);
+      }
+    }catch(e){/* 本地未命中,继续云端回退 */}
+  }
+  // 源②: 飞书云端(组长上传的真实照片, 本地未命中时兜底)
   if(!result)result=await fetchFeishuPhotoDataURL(fileName);
   _exportPhotoCache[path]=result;
   if(result)console.log('[导出]照片命中:',fileName);
