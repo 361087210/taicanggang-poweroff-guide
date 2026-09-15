@@ -1,8 +1,13 @@
 {
-  "version": "10.19.0",
-  "versionCode": 101900,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.19.0/tcg_poweroff_v10.19.0.apk",
+  "version": "10.19.1",
+  "versionCode": 101901,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.19.1/tcg_poweroff_v10.19.1.apk",
   "releaseNotes": [
+    "V10.19.1 稳定性加固版。一句话总结: 修复新建车辆照片分区丢失, 并给版本一致性、CI 测试覆盖、测试产物入库三处工程隐患补上常驻防线。",
+    "修复(新建车辆): addVehicle 逐字段字面量遗漏 photoSections/photoLabels/keyPhotoRemark 三字段, 导致新建车辆照片分区与备注丢失; 现补回并加透传兜底, 配 16 条回归断言",
+    "工程(版本门禁): 版本一致性校验扩展至 sw.js 缓存名/demo.html 展示位/js 兜底字面量, 任何一处漏改升版立即拦截(附变异测试证明拦得住), 杜绝缓存优先导致的旧 JS 常驻",
+    "工程(测试覆盖): 补原型污染守卫 23 条 + 车辆 CRUD 冒烟 51 条, test:all 聚合入口补全至 27 个测试文件; 飞书跨网络套件缺凭据时改为「跳过」语义 exit 0, 不再掐断全链",
+    "工程(卫生): 测试产物 *_results.json 不再入库(加 .gitignore), 测试不得依赖 git 工作区状态, 二者均固化常驻断言防复发",
     "V10.19.0 视频可播性修复版。一句话总结: 修好视频「无封面/迭代后失效/网页端不可播」三症状, 并给公开镜像加上隐私白名单。",
     "修复(视频无封面): 封面生成收敛为单一真源 videoCoverDataUri, 播放器 poster 与详情页卡片共用, 未播放态必定可见车型名封面, 不再黑屏",
     "修复(迭代后失效): 组长上传会把视频改名为「车型名_v序号.mp4」, 与官方资产表的下划线扁平化键 100% 失配导致 Release 直链被跳过; 现新增官方片别名回退源 + 上传时留档原名(videoBaseNames), 改名后仍可播",
