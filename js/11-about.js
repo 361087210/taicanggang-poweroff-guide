@@ -437,7 +437,12 @@ function renderAboutPage() {
           </svg>
         </div>
         <div class="text-lg font-bold">太仓港断电指导</div>
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.15.0'}</div>
+        <!-- V10.19.1: 兜底字面量由 10.15.0 同步为当前版本。该兜底仅在
+             APP_VERSION 缺失时生效, 而一旦它生效, 它就是用户看到的"版本号"——
+             留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
+             已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
+             注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.19.0'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
