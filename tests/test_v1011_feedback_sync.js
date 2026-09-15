@@ -63,7 +63,7 @@ check('A18 Bitable字段展平防御(数组状态值通吃)', src.feedback.inclu
 check('A19 feishu-api.js 配置回落getFeishuCfg(反馈/同步凭据统一)', src.api.includes('typeof getFeishuCfg === \'function\''));
 check('A20 bitableListRecords分页拉全量(page_token循环)', src.api.includes("params.set('page_token', pageToken)") && src.api.includes('has_more'));
 check('A21 06-media.js 组长端组员管理页拉云端全量用户(防抖)', src.media.includes('function pullApprovedForMembersView') && src.media.includes('pullApprovedStatusFromFeishu(null,true)'));
-check('A22 09-web-sync.js 网页端组员列表镜像合并(云端组员追加)', src.websync.includes('function _appendCloudOnlyMembers') && src.websync.includes("approved_users.web.json"));
+check('A22 09-web-sync.js 网页端仅组员只读(删除云端组员追加死代码)', !src.websync.includes('function _appendCloudOnlyMembers') && src.websync.includes("role:'user'"));
 check('A23 组长判定双保险(state+isLeader函数)', src.feedback.includes('leaderByState') && src.feedback.includes('leaderByFn'));
 
 /* ---------- V10.19.0 反馈镜像隐私白名单 ----------

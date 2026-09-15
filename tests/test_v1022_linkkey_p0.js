@@ -136,10 +136,10 @@ section('L7 存活守卫: 按 id 匹配(不再用 phoneH)');
 check('L7a checkMemberAccountAlive 按 state.currentUser.id 匹配镜像 id', /String\(cu\.id\)===String\(state\.currentUser\.id\)|String\(state\.currentUser\.id\)===String\(cu\.id\)/.test(webSyncJs));
 check('L7b 存活守卫不再计算 myH/sha256', !/checkMemberAccountAlive[\s\S]{0,800}_sha256Hex|checkMemberAccountAlive[\s\S]{0,800}myH/.test(webSyncJs));
 
-section('L8 云端组员列表: 按 id 差集(不再用 phoneH)');
-check('L8a _appendCloudOnlyMembers 按 id 建本地索引', /hasLocal\[String\(u\.id\)\]|hasLocal\[u\.id\]/.test(webSyncJs));
-check('L8b 云端组员按 id 差集过滤', /!hasLocal\[String\(cu\.id\)\]|!hasLocal\[cu\.id\]/.test(webSyncJs));
-check('L8c 云端组员不再计算 localH(sha256)', !/_appendCloudOnlyMembers[\s\S]{0,600}localH/.test(webSyncJs));
+section('L8 网页端仅组员只读(_appendCloudOnlyMembers 死代码删除)');
+check('L8a _appendCloudOnlyMembers 已删除', !webSyncJs.includes('_appendCloudOnlyMembers'));
+check('L8b 不再包装 renderMemberList(admin 路径)', !/window\.renderMemberList=function/.test(webSyncJs));
+check('L8c 强制 role=user(仅组员只读)', webSyncJs.includes("role:'user'") && webSyncJs.includes("local.role!=='user'"));
 
 /* ---------- 全链路写入点(注册/改密/重置/加人/推送) ---------- */
 section('L9 全链路 linkKey 写入与透传');

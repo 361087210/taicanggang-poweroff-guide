@@ -691,7 +691,10 @@ async function doBackup(){
     try{
       // V5.7: 备份属用户操作数据,上传至"APP数据备份/备份文件"子文件夹,与项目产物彻底分离
       const token=await getFeishuToken(cfg);
-      await httpUploadFile({token,fileName:filename,folderToken:await getDataSubFolderToken(token,cfg.backupSub),blob});
+      const up=await httpUploadFile({token,fileName:filename,folderToken:await getDataSubFolderToken(token,cfg.backupSub),blob});
+      // V10.22 修复: 飞书业务错误码(权限/文件名/父目录失效等)是"返回"而非"抛错",
+      // 必须显式校验, 否则真失败也弹「备份完成」假成功
+      if(up&&up.code!==undefined&&up.code!==0)throw new Error(up.msg||'上传失败');
       showToast('飞书备份完成(已存入 APP数据备份/备份文件)');
       addBackupHistory('feishu',filename,VEHICLES.length,blob.size);
       addSyncLog(`飞书备份完成 · ${VEHICLES.length}条 · ${filename}`,'green');
@@ -700,14 +703,18 @@ async function doBackup(){
       try{
         const token=await getFeishuToken(cfg,1);
         invalidateDataFolderCache();
-        await httpUploadFile({token,fileName:filename,folderToken:await getDataSubFolderToken(token,cfg.backupSub),blob});
+        const up=await httpUploadFile({token,fileName:filename,folderToken:await getDataSubFolderToken(token,cfg.backupSub),blob});
+        if(up&&up.code!==undefined&&up.code!==0)throw new Error(up.msg||'上传失败');
         showToast('飞书备份完成(已存入 APP数据备份/备份文件)');
         addBackupHistory('feishu',filename,VEHICLES.length,blob.size);
         addSyncLog(`飞书备份完成 · ${VEHICLES.length}条 · ${filename}`,'green');
         return;
-      }catch(e2){/* 重试仍失败 */}
-      showToast('飞书备份失败: '+err.message);
-      addSyncLog('飞书备份失败: '+err.message,'red');
+      }catch(e2){
+        // V10.22 修复: 保留重试阶段的真实错误, 避免用户只看到首次泛化错误
+        err=e2;
+      }
+      showToast('飞书备份失败: '+(err&&err.message?err.message:String(err)));
+      addSyncLog('飞书备份失败: '+(err&&err.message?err.message:String(err)),'red');
     }
   }
 }
