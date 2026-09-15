@@ -28,7 +28,7 @@
     "test:v110-audit": "node tests/test_v110_audit.js",
     "test:v1016": "node tests/test_v1016_self_learning.js",
     "test:version": "node scripts/check_version_consistency.js",
-    "test:all": "npm run test:version && npm run test:logic && npm run test:runtime && npm run test:cross && npm run test:v103 && npm run test:v104 && npm run test:v105 && npm run test:v106 && npm run test:v107 && npm run test:v108 && npm run test:v109 && npm run test:v1010 && npm run test:v1011 && npm run test:v1013 && npm run test:v1014 && npm run test:v1015 && npm run test:v110-bitable && npm run test:v110-audit && npm run test:v1016",
+    "test:all": "npm run test:version && npm run test:logic && npm run test:runtime && npm run test:v103 && npm run test:v104 && npm run test:v105 && npm run test:v106 && npm run test:v107 && npm run test:v108 && npm run test:v109 && npm run test:v1010 && npm run test:v1011 && npm run test:v1013 && npm run test:v1014 && npm run test:v1015 && npm run test:v110-bitable && npm run test:v110-audit && npm run test:v1016 && npm run test:refactor && npm run test:registration && npm run test:video && npm run test:v1019-addvehicle && npm run test:v1020-crud && npm run test:v1019-gate && npm run test:v1019-hygiene && npm run test:cross",
     "sync:push": "node scripts/sync_feishu_local.js --push",
     "sync:pull": "node scripts/sync_feishu_local.js --pull",
     "sync:feishu": "node scripts/sync_feishu_local.js --sync",
@@ -38,6 +38,10 @@
     "test:refactor": "node tests/test_refactor_v1018.js",
     "test:registration": "node tests/test_v1017_registration_video.js",
     "test:video": "node tests/test_video_playback_v1019.js",
+    "test:v1019-addvehicle": "node tests/test_v1019_addvehicle_meta.js",
+    "test:v1019-gate": "node tests/test_v1019_version_gate.js",
+    "test:v1019-hygiene": "node tests/test_v1019_repo_hygiene.js",
+    "test:v1020-crud": "node tests/test_v1020_vehicles_crud.js",
     "sync:web": "node scripts/sync_web_data.js --out web-data",
     "scan:secrets": "node scripts/secret-scan.js"
   }

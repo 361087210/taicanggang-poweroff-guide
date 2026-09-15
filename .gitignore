@@ -30,3 +30,11 @@ vehicles_data.js.bak
 # V10.15.15: 自动生成/构建产物不入库
 web-data/debug_structure.json
 .trae-html-share-packages/
+
+# ===== V10.19.1: 测试运行产物不入库 =====
+# tests/v1010_e2e_results.json / v1010_solutions_results.json /
+# v1011_mirror_sync_results.json 由三个测试每次运行写入, 全仓无人读取
+# (docs/TEST_MATRIX.md 仅把它们列为"历史结果产物")。此前被 git 跟踪,
+# 导致每跑一次测试就产生无意义 diff, 淹没有意义的代码改动。
+# 入库移除 + 忽略规则双管齐下; 由 tests/test_v1019_repo_hygiene.js 守卫。
+tests/*_results.json
