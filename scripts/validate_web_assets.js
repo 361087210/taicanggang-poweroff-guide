@@ -82,7 +82,11 @@ const obfOld = demo.match(/appSecret\s*:\s*_fsDec\(\s*['"][0-9a-fA-F]{16,}['"]\s
 const usesBuildSecrets = demo.includes('window.__BUILD_SECRETS__') && demo.includes('delete window.__BUILD_SECRETS__');
 const injectScriptExists = require('fs').existsSync(path.join(ROOT, 'scripts', 'inject_build_secrets.js'));
 const DEFAULT_HAS_NO_SECRET_LINE = !/^\s*appSecret\s*:/m.test(
-  (demo.match(/const DEFAULT_FEISHU_CONFIG\s*=\s*\{([\s\S]*?)\n\};?\n/) || [])[0] || ''
+  // V10.22 修复: 原正则尾部 `\n\};?\n` 未处理 CRLF(仓库为 \r\n), 匹配不到
+  // `\r\n};\r\n` → 非贪婪 `[\s\S]*?` 过度延伸到 getFeishuCfg() 内部, 误捕获
+  // 合法的 `appSecret: savedSecret || pick('appSecret',...)` 行 → 恒误报。
+  // 补 `\s*` 吸收 \r, 使块提取精确止于 DEFAULT_FEISHU_CONFIG 的 `};`。
+  (demo.match(/const DEFAULT_FEISHU_CONFIG\s*=\s*\{([\s\S]*?)\n\};?\s*\n/) || [])[0] || ''
 );
 if (injectScriptExists && usesBuildSecrets && DEFAULT_HAS_NO_SECRET_LINE) {
   ok('飞书凭证走构建期注入(V10.12: 源码无硬编码Secret + inject脚本存在 + getFeishuCfg用完即delete)');
