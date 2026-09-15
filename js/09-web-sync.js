@@ -118,9 +118,10 @@ function _install(){
       var web=await _fetchMirror('approved_users.web.json');
       if(!web||!Array.isArray(web.users)||!web.users.length)return false;
       var me=null;
+      var matchedByLinkKey=false;
       /* 连接键匹配优先级:
        *  ① 本地已有 id(注册/历史登录均保留镜像 id)→按 id 精确匹配;
-       *  ② 换设备登录(本地无 id)→用手机号+明文密码派生 linkKey 匹配镜像。
+       *  ② 换设备登录 / 本地密码已失效→用手机号+明文密码派生 linkKey 匹配镜像。
        *     命中即密码验真(linkKey 需明文密码参与 PBKDF2, 密码错则派生值错, 匹配失败)。 */
       if(who&&who.id!==undefined&&who.id!==null){
         for(var i=0;i<web.users.length;i++){
@@ -133,38 +134,57 @@ function _install(){
         if(lk){
           for(var j=0;j<web.users.length;j++){
             var c2=web.users[j];
-            if(c2&&c2.linkKey&&String(c2.linkKey)===String(lk)){me=c2;break;}
+            if(c2&&c2.linkKey&&String(c2.linkKey)===String(lk)){me=c2;matchedByLinkKey=true;break;}
           }
         }
       }
       if(!me)return false; /* 未命中连接键: 密码错/账号不存在, 无法重建 */
+      /* legacy 状态归一(与安卓 LEGACY_OK 对齐): 空/approved/normal/verified → active */
+      var norm=me.status;
+      if(!norm||norm==='approved'||norm==='normal'||norm==='verified')norm='active';
       /* 本地重建/合并 */
       var local=null;
       for(var k=0;k<USERS.length;k++){
         if(String(USERS[k].id)===String(me.id)){local=USERS[k];break;}
       }
       var changed=false;
+      var rejectedTransition=false;
       if(!local){
         if(!who||!who.phone||!who.password)return false; /* 无明文密码无法重建本地账号 */
-        /* 换设备登录重建: id 取镜像, password 用本机新盐哈希存本地会话(镜像已无密码) */
+        /* 换设备登录重建: id 取镜像, password 用本机新盐哈希存本地会话(镜像已无密码)。
+         * 网页端仅组员只读: 强制 role='user'(组长功能一律引导去安卓端)。 */
         var localHash=await hashPassword(String(who.password), genSalt());
         State.addUser({
           id:me.id,name:me.name||'',phone:String(who.phone),
-          password:localHash,pw_ts:0,role:me.role||'user',
-          status:me.status||'pending',created:me.created||'',
+          password:localHash,pw_ts:0,role:'user',
+          status:norm,created:me.created||'',
           linkKey:me.linkKey||''
         });
         changed=true;
       }else{
-        /* 本地已有: 云端审批状态/姓名/角色传播(密码以本地为准) */
-        if(me.status==='active'&&local.status!=='active'){local.status='active';changed=true;}
+        /* 本地已有: 云端审批状态(含 rejected)/姓名传播; 网页端 role 恒为 user */
+        if((norm==='active'||norm==='rejected')&&local.status!==norm){
+          if(norm==='rejected')rejectedTransition=true;
+          local.status=norm;changed=true;
+        }
         if(me.name&&local.name!==me.name){local.name=me.name;changed=true;}
-        if(me.role&&(local.role||'user')!==me.role){local.role=me.role;changed=true;}
+        if(local.role!=='user'){local.role='user';changed=true;}
         if(me.linkKey&&local.linkKey!==me.linkKey){local.linkKey=me.linkKey;changed=true;}
+        /* 采纳安卓改密后的新密码: linkKey 命中即密码验真, 用明文重哈希本地密码
+         * (镜像无 password, 本地旧哈希已失效时靠此闭环, 使安卓改密后网页端仍可登录) */
+        if(matchedByLinkKey&&who&&who.password){
+          var localHash2=await hashPassword(String(who.password), genSalt());
+          if(String(local.password)!==String(localHash2)){local.password=localHash2;local.pw_ts=0;changed=true;}
+        }
       }
       if(changed)saveUsers(USERS);
       if(fullMerge)return true;
-      if(me.status==='active'){
+      if(norm==='rejected'){
+        /* 拒绝态: 复用安卓 pushRegistrationRejectionNotice(网页端无 cordova, 走 Toast 降级) */
+        if(rejectedTransition&&typeof pushRegistrationRejectionNotice==='function')pushRegistrationRejectionNotice(local);
+        return false;
+      }
+      if(norm==='active'){
         var mine=null;
         for(var m=0;m<USERS.length;m++){if(String(USERS[m].id)===String(me.id)){mine=USERS[m];break;}}
         if(mine&&mine.status!=='active'){
@@ -227,6 +247,12 @@ function _install(){
    * 直接拦截并引导至安卓端操作,避免"假成功"陷阱。 */
   window.changePassword=async function(){
     showToast('网页版不支持修改密码,请在安卓APP「我的→账号安全」中修改');
+  };
+  /* 网页端禁止重置密码(与 changePassword 一致): 网页版只读镜像无法直连飞书,
+   * doForgotPassword 只改本浏览器 localStorage、不推云端, 换安卓登录仍用旧密码,
+   * 是"假成功"陷阱。直接拦截并引导至安卓端。 */
+  window.doForgotPassword=async function(){
+    showToast('网页版不支持重置密码,请在安卓APP「我的→账号安全」中修改');
   };
   /* ============================================================
    * ④d 网页端自助注册(GitHub登记通道) - V10.17.0 反馈问题2
@@ -326,48 +352,11 @@ function _install(){
   };
 
   /* ============================================================
-   * 4c 网页端组员管理镜像桥 - V10.16.7 反馈修复
-   * 根因: 网页版pullApprovedStatusFromFeishu只重建登录者自己(镜像手机号
-   * 已脱敏为 linkKey 连接键),组长浏览器本地USERS缺失往期审批通过的组员,
-   * 组员管理页列表为空,表现为"往期申请注册成功的组员账号无法查看"。
-   * 方案: 包装renderMemberList--原逻辑(本地USERS)渲染后,组长视角下
-   * 异步拉镜像账号表,按 id 做差集把"云端有而本地无"的active组员以只读
-   * 卡片追加(手机号已脱敏,管理操作引导至安卓端),不动原渲染与操作逻辑。
+   * 4c 网页端组员管理镜像桥 —— V10.22 删除(仅组员只读落地)
+   * 原"云端组员列表追加"逻辑依赖 admin 角色(组长端), 网页端已定为
+   * 「仅组员只读」(重建账号强制 role='user'), 该路径永不可达, 属死代码。
+   * 组员审批/组员管理一律引导去安卓端(见下方上行封堵 + doForgotPassword 等)。
    * ============================================================ */
-  var _origRenderMemberList=window.renderMemberList;
-  if(typeof _origRenderMemberList==='function'){
-    window.renderMemberList=function(){
-      _origRenderMemberList.apply(this,arguments);
-      if(state.currentUser&&state.currentUser.role==='admin'){
-        _appendCloudOnlyMembers().catch(function(){});
-      }
-    };
-  }
-  async function _appendCloudOnlyMembers(){
-    var c=document.getElementById('member-list');
-    if(!c)return;
-    var web=await _fetchMirror('approved_users.web.json');
-    if(!web||!Array.isArray(web.users)||!web.users.length)return;
-    /* P0 脱敏: 按 id 做本地差集索引(不再用可枚举的手机号哈希) */
-    var hasLocal={};
-    for(var i=0;i<USERS.length;i++){
-      var u=USERS[i];
-      if(u&&u.id!==undefined&&u.id!==null)hasLocal[String(u.id)]=true;
-    }
-    /* 云端有而本地无的active组员(排除组长自己) */
-    var cloudOnly=web.users.filter(function(cu){
-      return cu&&cu.id!==undefined&&cu.id!==null&&cu.status==='active'&&cu.role!=='admin'&&!hasLocal[String(cu.id)];
-    });
-    if(!cloudOnly.length)return;
-    var extra=cloudOnly.map(function(cu){
-      return '<div class="flex items-center justify-between py-2 px-2 bg-purple-50 rounded-lg">'
-        +'<div class="min-w-0"><div class="text-sm text-gray-800 truncate">'+esc(String(cu.name||'组员'))+'<span class="px-1.5 py-0.5 text-xs bg-purple-100 text-purple-600 rounded ml-1">云端</span></div>'
-        +'<div class="text-xs text-gray-400">手机号已脱敏 · '+esc(String(cu.created||''))+'</div></div>'
-        +'<div class="text-xs text-gray-400 flex-shrink-0">请在安卓端管理</div>'
-        +'</div>';
-    }).join('');
-    c.innerHTML+=extra;
-  }
 
   /* ============================================================
    * 5 即时同步引擎: 60秒轮询镜像通知→自动镜像对齐
