@@ -223,7 +223,10 @@ async function feishuListFiles(token, folderToken){
   const out = [];
   let pageToken = '';
   do {
-    const url = `${FEISHU_HOST}/open-apis/drive/v1/files?folder_token=${encodeURIComponent(folderToken)}&page_size=50&types=folder,file${pageToken?('&page_token='+encodeURIComponent(pageToken)):''}`;
+    // P1#1 修复: 不传 types(拿全类型)——原 `types=folder,file` 会漏掉飞书原生
+    // sheet/docx/bitable 等类型文件; 下游 feishuFindFile 按 name 精确匹配 + 仅递归
+    // folder, 对新类型安全跳过, 不崩溃。
+    const url = `${FEISHU_HOST}/open-apis/drive/v1/files?folder_token=${encodeURIComponent(folderToken)}&page_size=50${pageToken?('&page_token='+encodeURIComponent(pageToken)):''}`;
     const j = await _req('GET', url, { Authorization: 'Bearer ' + token });
     if(j.code !== 0) throw new Error('列出云盘文件失败: ' + JSON.stringify(j));
     (j.data.files || []).forEach(f => out.push(f));
