@@ -97,6 +97,18 @@ function getVersionFallbacks() {
   return out;
 }
 
+/**
+ * js/11-about.js 关于板块 VERSION_HISTORY 数组的最新条目版本号。
+ * 关于板块需随版本迭代同步更新, 最新版本必须与 version.json 对齐,
+ * 否则"关于"页展示的版本历史落后于实际发版(网页版与安卓版共用此文件)。
+ * @returns {string|null} 最新版本号(不含 V 前缀), 解析失败返回 null
+ */
+function getAboutHistoryTop() {
+  const about = readText('js/11-about.js');
+  const m = about.match(/const\s+VERSION_HISTORY\s*=\s*\[\s*\{\s*version:\s*'V?(\d+\.\d+\.\d+)'/);
+  return m ? m[1] : null;
+}
+
 /** "10.15.1" -> "101501"：每段补零到 2 位后拼接（major*10000 + minor*100 + patch） */
 function versionToCode(version) {
   const parts = version.split('.');
@@ -143,6 +155,14 @@ function main() {
     }
   }
 
+  // 1e. 关于板块版本历史(VERSION_HISTORY 最新条目须随迭代同步, 否则关于页落后于发版)
+  const aboutTop = getAboutHistoryTop();
+  if (!aboutTop) {
+    errors.push('js/11-about.js: 未能在 VERSION_HISTORY 解析到最新版本');
+  } else if (aboutTop !== ver.version) {
+    errors.push(`关于板块版本历史未同步: VERSION_HISTORY 最新=${aboutTop}, version.json=${ver.version}（发版需同步更新关于页版本历史）`);
+  }
+
   // 2. versionCode 一致
   if (cfg.versionCode !== ver.versionCode) {
     errors.push(`versionCode 不一致: config.xml=${cfg.versionCode}, version.json=${ver.versionCode}`);
@@ -164,7 +184,7 @@ function main() {
 
   // 附注：versionCode 应随版本号递增（防止回退），此处仅提示非强制
   console.log(`[版本一致性校验] 通过: version=${cfg.version}, versionCode=${ver.versionCode}`);
-  console.log(`  已覆盖: config.xml / version.json / 00-bootstrap / sw.js / demo.html / js兜底字面量(${fallbacks.length}处)`);
+  console.log(`  已覆盖: config.xml / version.json / 00-bootstrap / sw.js / demo.html / js兜底字面量(${fallbacks.length}处) / 关于板块版本历史`);
 
   /* 仅提示, 不阻断: web-data/meta.json 的 version 是**数据镜像版本**
    * (源自 vehicle_sync_data.json), 由 sync-web-data.yml 每 15 分钟 cron 重写,
