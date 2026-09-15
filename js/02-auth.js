@@ -5,11 +5,77 @@
  * 源范围: demo.html L1947-L2123
  * 不变量: 函数名/签名100%保留,顶层function声明挂window供onclick裸调用
  * =========================================================== */
+
+/* ===========================================================
+ * P0 迁移缺口 UX (V10.19.2)
+ * -----------------------------------------------------------
+ * 网页端镜像账号表只透传 linkKey(见 scripts/sync_web_data.js 白名单),
+ * 而 linkKey 必须由持有**明文密码**的 App 端在登录瞬间派生并回推(见下方
+ * doLogin 的 P0 惰性迁移)。存量账号若从未在 P0(>=10.19.1) 版 App 登录过,
+ * 云端镜像就没有 linkKey → 网页端无从校验 → doLogin 统一报"账号或密码错误"。
+ * 用户以为密码错, 实为"迁移未完成"。
+ *
+ * 安全红线: 镜像不含明文手机号, 网页端**无法**区分"未注册"与"未迁移",
+ * 故提示必须通用 —— 绝不能泄露"该手机号是否为已注册账号"(P0 初衷: 不公开账号表)。
+ * =========================================================== */
+
+/**
+ * 是否纯网页/镜像端环境(App/Cordova 环境返回 false, 保证 App 行为零变化)。
+ * @returns {boolean} true=网页/PWA 镜像端
+ */
+function _isWebMirrorEnv(){
+  try{
+    if(window.__TCG_WEB_MIRROR__)return true;
+    return !window.cordova&&!!document.documentElement&&!!document.documentElement.classList&&
+      document.documentElement.classList.contains('web-env');
+  }catch(e){return false;}
+}
+
+/**
+ * 网页端登录失败的可操作提示: 引导用户去手机 App 完成一次登录以补算 linkKey,
+ * 并提供明确重试入口。文案通用(不含任何账号存在性信息)。
+ * @returns {void}
+ */
+function showWebLoginMigrationHint(){
+  var el=document.getElementById('login-hint');
+  if(!el)return;
+  var need=(typeof APP_VERSION!=='undefined'&&APP_VERSION)?APP_VERSION:'';
+  el.innerHTML='账号或密码错误。若这是您第一次在网页端登录，请先在手机 App（V'+need+' 及以上）用手机号+密码登录一次完成安全升级，再回到本页重试。'
+    +'<button type="button" class="mt-2 w-full py-2 rounded-lg bg-amber-500 text-white text-xs font-medium active:scale-95" onclick="doLogin()">我已升级，重新登录</button>';
+  el.classList.remove('hidden');
+}
+
+/**
+ * 清除网页端登录提示(每次尝试登录前重置, 避免残留误导)。
+ * @returns {void}
+ */
+function _clearWebLoginHint(){
+  var el=document.getElementById('login-hint');
+  if(el){el.classList.add('hidden');el.innerHTML='';}
+}
+
+/**
+ * App 端引导: 本地账号缺 linkKey(从未完成 P0 惰性迁移)→ 一次性引导用户
+ * 重新登录以补算并回推 linkKey, 不静默失败。
+ * 安全红线: **绝不**为"自动补算"而把明文密码写盘(那会毁掉 P0 脱敏初衷);
+ * 拿不到明文密码时, 只能引导用户重新输入。
+ * @param {Object} user - 当前恢复的账号
+ * @returns {void}
+ */
+function _guideLinkKeyUpgrade(user){
+  if(!user||user.linkKey)return;
+  if(!(window.cordova&&window.cordova.platformId))return; /* 仅 App 端触发 */
+  try{ if(localStorage.getItem('tcg_link_upgrade_prompted_v1019')==='1')return; }catch(e){}
+  try{ localStorage.setItem('tcg_link_upgrade_prompted_v1019','1'); }catch(e){}
+  showToast('为完成网页端安全升级，请退出登录后用手机号+密码重新登录一次（不会丢失本机数据）');
+}
+
 async function doLogin(){
   const phone=document.getElementById('login-phone').value.trim();
   const pass=document.getElementById('login-pass').value.trim();
   if(!phone||!pass){showToast('请输入手机号和密码');return;}
   if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
+  _clearWebLoginHint(); // V10.19.2: 每次尝试登录前重置网页端迁移提示, 避免残留误导
   // V10.16.4 安全加固: 登录失败限流, 5次失败后锁定5分钟
   const lockKey='tcg_login_lock';
   const lock=JSON.parse(localStorage.getItem(lockKey)||'{"fails":0,"until":0}');
@@ -38,6 +104,8 @@ async function doLogin(){
         localStorage.setItem(lockKey,JSON.stringify(lock));
         showToast(`账号或密码错误,还剩${5-lock.fails}次机会`);
       }
+      // V10.19.2: 网页端"迁移未完成"可操作提示(通用, 不泄露账号存在性)
+      if(_isWebMirrorEnv())showWebLoginMigrationHint();
       return;
     }
   }
@@ -79,6 +147,8 @@ async function doLogin(){
       localStorage.setItem(lockKey,JSON.stringify(lock));
       showToast(`账号或密码错误,还剩${5-lock.fails}次机会`);
     }
+    // V10.19.2: 网页端"迁移未完成"可操作提示(本地旧哈希已失效且镜像无 linkKey 时同样命中此分支)
+    if(_isWebMirrorEnv())showWebLoginMigrationHint();
     return;
   }
   // P0 惰性迁移: 存量账号无 linkKey → 登录成功(已验真密码)后补算并回推云端,
@@ -186,6 +256,22 @@ async function restoreSession(){
       localStorage.setItem('tcg_session',JSON.stringify({...session,sig:newSig}));
     }
     state.currentUser=user;
+    // V10.19.2: P0 迁移缺口 —— 会话恢复路径也要闭环(仅 doLogin 补算会让"长期只靠
+    // 会话恢复、从不重新登录"的账号永远缺 linkKey)。缺 linkKey → 一次性引导重新登录;
+    // 已有 linkKey 但云端可能缺(曾回推失败)→ 低频补推一次(6h 节流, 避免每次启动都上传)。
+    if(user.linkKey){
+      if(window.cordova&&window.cordova.platformId&&typeof pushApprovedUsersToFeishu==='function'){
+        try{
+          var _lastLkPush=Number(localStorage.getItem('tcg_link_push_ts')||0);
+          if(Date.now()-_lastLkPush>6*60*60*1000){
+            localStorage.setItem('tcg_link_push_ts',String(Date.now()));
+            setTimeout(function(){try{pushApprovedUsersToFeishu();}catch(e){console.warn('[linkKey]启动补推失败:',e&&e.message);}},8000);
+          }
+        }catch(e){}
+      }
+    }else{
+      _guideLinkKeyUpgrade(user);
+    }
     // V10.16.4: 会话恢复后启动空闲超时监控
     if(typeof _startIdleWatch==='function')_startIdleWatch();
     return true;

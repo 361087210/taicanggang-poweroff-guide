@@ -114,6 +114,8 @@ function _install(){
   window.pullApprovedStatusFromFeishu=async function(userParam,fullMerge){
     var who=userParam||state.currentUser;
     if(!who&&!fullMerge)return false;
+    /* V10.19.2: 每次核对先复位"迁移未完成"信号, 供 doLogin 精确判定并给出新提示 */
+    try{ window.__TCG_WEB_MIGRATION_HINT__=false; }catch(e){}
     try{
       var web=await _fetchMirror('approved_users.web.json');
       if(!web||!Array.isArray(web.users)||!web.users.length)return false;
@@ -138,7 +140,14 @@ function _install(){
           }
         }
       }
-      if(!me)return false; /* 未命中连接键: 密码错/账号不存在, 无法重建 */
+      if(!me){
+        /* V10.19.2 P0 迁移缺口: 未命中连接键。网页端镜像不含明文手机号, 因而**无法**
+         * 区分"未注册"与"存量账号从未在 P0(>=10.19.1)版 App 登录过→云端镜像缺 linkKey"。
+         * 置中立信号, 由 doLogin 给出通用可操作提示(引导去 App 完成一次登录),
+         * 全程不泄露该手机号是否为已注册账号。 */
+        try{ window.__TCG_WEB_MIGRATION_HINT__=true; }catch(e){}
+        return false;
+      }
       /* legacy 状态归一(与安卓 LEGACY_OK 对齐): 空/approved/normal/verified → active */
       var norm=me.status;
       if(!norm||norm==='approved'||norm==='normal'||norm==='verified')norm='active';
