@@ -260,7 +260,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: tcg_poweroff_v${{ env.APP_VERSION }}_ios.ipa
-          generate_release_notes: true
+          body_path: docs/RELEASE_V${{ env.APP_VERSION }}.md
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
