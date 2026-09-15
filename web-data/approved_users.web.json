@@ -6,29 +6,23 @@
       "phoneH": "a5b1dbd7df66b8173174f3f8a59ce1f41e5bef099135f1b2b3e08397bcb00692",
       "role": "admin",
       "status": "active",
-      "created": "2026/08-20",
-      "pw_ts": 1789388314921,
-      "password": "pbkdf2$255534fd4db878d9$100000$93bc02cb43031487bb90488f6d0121a661d1a0c09027bce21e289d9c7af862db"
+      "created": "2026/08-20"
     },
     {
       "id": 1788748623886,
-      "name": "18570474454",
+      "name": "185****4454",
       "phoneH": "55dc57718eeac4bf2a62e93714ff668f43aedc1c444840f5eb1be201cf23102f",
       "role": "user",
       "status": "active",
-      "created": "2026/9/7",
-      "pw_ts": 1789387698477,
-      "password": "pbkdf2$d3168c541bd42b65$100000$f8e9a8199d340b6d85db7ad50017def684f273a30c467b9d3a81b016620c582c"
+      "created": "2026/9/7"
     },
     {
       "id": 1788785665003,
-      "name": "17704856102",
+      "name": "177****6102",
       "phoneH": "928df2cce841fec05dbbadf3772cc86923f5797a02d9d8e715d97814fd6e0faa",
       "role": "user",
       "status": "active",
-      "created": "2026/9/7",
-      "pw_ts": 1789387670100,
-      "password": "pbkdf2$c08b12e55ca5d8bb$100000$024eb718ef207d5d42b18dfc8395326128c92cf40f20d438f00878c9ded61ab1"
+      "created": "2026/9/7"
     },
     {
       "id": 1789096616310,
@@ -36,10 +30,21 @@
       "phoneH": "647c8f03e70b06dd08a4160eb2c168fa91eb23de444ac9bef17f3890c63f937e",
       "role": "user",
       "status": "rejected",
-      "created": "2026/9/11",
-      "pw_ts": 0,
-      "password": "pbkdf2$d36b84d9c44b6605$100000$13a1b194fa25ddd278856b7423d68830247de9b33dfb836a3809fa525cee3c9a"
+      "created": "2026/9/11"
     }
   ],
-  "timestamp": "2026-09-15T00:37:57.132Z"
+  "timestamp": "2026-09-15T00:18:50.440Z",
+  "sanitized": true,
+  "fieldAllowlist": [
+    "id",
+    "name",
+    "phoneH",
+    "role",
+    "status",
+    "created"
+  ],
+  "droppedFields": [
+    "pw_ts",
+    "password"
+  ]
 }

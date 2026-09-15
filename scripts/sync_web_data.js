@@ -23,11 +23,13 @@
  *   绝不出现在任何产物中。手机号脱敏为 sha256(SALT+phone), 与
  *   09-web-sync.js 的 WEB_SYNC_SALT 必须一致。
  *
- * ⚠️ 隐私红线(反馈表镜像): web-data/ 是要发布到 GitHub Pages 的**公开静态
- *   资源**, 反馈表原始数据含提交人姓名/联系方式/设备信息等个人可识别字段。
- *   本脚本对反馈镜像一律执行**字段白名单**投影(默认拒绝, 而非黑名单剔除——
- *   黑名单会漏掉将来新增的敏感列), 只允许问题描述/板块/状态/时间戳等非敏感
- *   字段出库, 并叠加一层敏感字段名正则兜底。详见 FEEDBACK_FIELD_ALLOWLIST。
+ * ⚠️ 隐私红线(所有镜像): web-data/ 是要发布到 GitHub Pages 的**公开静态
+ *   资源**, 原始云端数据含个人可识别字段。本脚本对**每一份**镜像(反馈表 +
+ *   账号表)一律执行**字段白名单**投影(默认拒绝, 而非黑名单剔除——黑名单会
+ *   漏掉将来新增的敏感列), 并叠加一层敏感字段名正则兜底。
+ *   - 反馈表: 详见 FEEDBACK_FIELD_ALLOWLIST / sanitizeFeedback
+ *   - 账号表: 详见 APPROVED_FIELD_ALLOWLIST / sanitizeApprovedUsers
+ *     (V10.19.1 P0: 明文手机号 + pbkdf2 密码哈希曾在此处公网暴露)
  * =========================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -126,6 +128,56 @@ const FEEDBACK_FIELD_ALLOWLIST = [
 ];
 /* 兜底拦截: 字段名命中即丢弃(与白名单形成双保险) */
 const SENSITIVE_FIELD_RE = /(联系方式|设备信息|提交人|手机|电话|邮箱|邮件|微信|QQ|IMEI|设备型号|系统版本|平台|APP版本|角色|姓名|账号|IP|定位|地址)/i;
+
+/* ===========================================================
+ * 账号表镜像字段白名单(默认拒绝) —— V10.19.1 P0 隐私修复
+ * -----------------------------------------------------------
+ * 背景: approved_users 镜像此前走 buildApprovedWeb() 整包透传, 把
+ *   - name  (本 App 组员 name 存的就是**明文手机号**)
+ *   - password (pbkdf2 密码哈希, 可离线暴力破解还原弱口令)
+ *   - phoneH(sha256(SALT+phone) 手机号哈希)
+ * 一并写进了公开的 web-data/ —— 经实测 curl 线上 URL 可取到完整原文。
+ *
+ * 允许出库的判定标准: 网页端账号链路**必需**且不可识别到个人。
+ *   - id     : 账号主键(09-web-sync.js:154 创建新设备账号时用)
+ *   - name   : 组员显示名(09-web-sync.js:163 传播 / :375 组长端列表展示);
+ *              命中手机号形态时强制掩码 —— 保留可辨识性, 去掉号码本体
+ *   - phoneH : 云端↔本地账号的**连接键**(09-web-sync.js:143/:210 哈希匹配)。
+ *              ⚠️ 不能删: 删掉后 checkMemberAccountAlive 会遍历不到自己
+ *              → 对所有在线组员执行 forceLogoutAsDeleted(网页端全员掉线),
+ *              pullApprovedStatusFromFeishu 也全部 continue → 审批状态
+ *              永不传播。见报告"存疑/未闭环"一节。
+ *   - role / status / created : 权限与审批态, 非身份信息
+ *
+ * 明确拒绝出库: phone(明文手机号)、password(密码哈希)、pw_ts(改密时间戳,
+ * 与 password 配套的凭据仲裁字段), 以及任何未列入白名单的字段。
+ * =========================================================== */
+const APPROVED_FIELD_ALLOWLIST = ['id', 'name', 'phoneH', 'role', 'status', 'created'];
+/* 凭据/密钥类字段兜底拦截(与白名单双保险: 即便被误加进白名单也会拦下) */
+const CREDENTIAL_FIELD_RE = /(password|passwd|pwd|pw_?ts|token|secret|salt)/i;
+/* 明文手机号字段兜底拦截: 必须**全字段精确匹配**——
+ * 若写成 /phone/i 会把白名单里的 phoneH(哈希连接键)一起误杀, 导致
+ * 网页端账号匹配全失效(09-web-sync.js:143/:210 依赖 phoneH)。 */
+const PLAIN_PHONE_FIELD_RE = /^(phone|mobile|tel|telephone)$/i;
+/* 中国大陆手机号形态: 1[3-9] + 9位, 可选 +86/86 前缀 */
+const PHONE_PLAIN_RE = /(?:\+?86)?(1[3-9]\d{9})/g;
+
+/**
+ * 手机号掩码: 18570474454 → 185****4454
+ * 只遮中间 4 位, 保留号段与尾号, 使组长在网页端仍能大致辨认组员。
+ * @param {*} s - 原始值
+ * @returns {string} 掩码后的字符串(非手机号原样返回)
+ */
+function maskPhoneLike(s){
+  const str = String(s === undefined || s === null ? '' : s);
+  if(!str) return '';
+  let out = str.replace(PHONE_PLAIN_RE, (m, p1) => String(p1).slice(0, 3) + '****' + String(p1).slice(7));
+  /* 兜底: 纯数字且长度≥7(基本只可能是手机号/长串账号), 整体掩码 */
+  if(out === str && /^\d{7,}$/.test(str)){
+    out = str.slice(0, 3) + '****' + str.slice(-2);
+  }
+  return out;
+}
 
 /** Bitable 字段值归一: 多选/单选等数组形态展平为字符串(与 10-feedback.js _flat 同义) */
 function _flatField(v){ return Array.isArray(v) ? v.join('') : v; }
@@ -313,21 +365,60 @@ async function buildFromFeishu(opt){
 }
 
 /* ---------- 转换: 账号表脱敏 ---------- */
-function buildApprovedWeb(approvedUsers, salt){
-  const users = (approvedUsers || []).map(u => {
-    const status = u.status || 'active';
-    return {
-      id: u.id,
-      name: u.name || '',
-      phoneH: u.phone ? phoneHash(salt, u.phone) : '',
-      role: u.role || 'user',
-      status: status,
-      created: u.created || '',
-      pw_ts: Number(u.pw_ts) || 0,
-      password: u.password || ''
-    };
-  });
-  return { users, timestamp: new Date().toISOString() };
+/**
+ * 账号镜像脱敏: 按字段白名单投影, 默认拒绝
+ * 输出侧统一调用(飞书模式与本地模式都走这里), 保证任何来源都不会把明文
+ * 手机号 / 密码哈希 / 凭据仲裁字段写进公开的 web-data/。
+ *
+ * 与旧 buildApprovedWeb 的区别(后者已删除——正是它把 password 整包透传):
+ *   - 字段白名单投影, 未列入即丢弃(旧版是显式列全字段, 新增字段自动透传)
+ *   - name 命中手机号形态 → 掩码(旧版原样输出)
+ *   - password / pw_ts 不再输出(旧版原样输出)
+ *   - phoneH 只接受 64 位十六进制形态(旧版无条件透传上游值)
+ *
+ * @param {Array<Object>|Object} raw - 原始账号数组或 {users:[...]}
+ * @param {string} salt - 与 09-web-sync.js WEB_SYNC_SALT 一致的盐
+ * @returns {{users:Array, timestamp:string, sanitized:boolean, fieldAllowlist:string[], droppedFields:string[]}}
+ */
+function sanitizeApprovedUsers(raw, salt){
+  const src = Array.isArray(raw) ? raw : ((raw && Array.isArray(raw.users)) ? raw.users : []);
+  const dropped = [];
+  const droppedSet = new Set();
+  const users = [];
+  for(const u of src){
+    if(!u || typeof u !== 'object') continue;
+    const clean = {};
+    for(const k of APPROVED_FIELD_ALLOWLIST){
+      // 白名单字段仍过一遍敏感名/凭据名兜底(防止有人往白名单里误加敏感列)
+      if(SENSITIVE_FIELD_RE.test(k) || CREDENTIAL_FIELD_RE.test(k) || PLAIN_PHONE_FIELD_RE.test(k)) continue;
+      let v = u[k];
+      if(v === undefined || v === null) continue;
+      if(k === 'name') v = maskPhoneLike(v);
+      if(k === 'phoneH'){
+        // 只接受 sha256 十六进制(64位)形态; 上游整包透传的其它值一律置空
+        v = /^[0-9a-f]{64}$/i.test(String(v)) ? String(v).toLowerCase() : '';
+      }
+      clean[k] = v;
+    }
+    // phoneH 补算: 源数据带明文 phone 时按 sha256(SALT+phone) 生成(脱敏形态)
+    if(!clean.phoneH && u.phone) clean.phoneH = phoneHash(salt, u.phone);
+    for(const k of Object.keys(u)){
+      if(APPROVED_FIELD_ALLOWLIST.indexOf(k) === -1 || SENSITIVE_FIELD_RE.test(k) || CREDENTIAL_FIELD_RE.test(k) || PLAIN_PHONE_FIELD_RE.test(k)){
+        if(!droppedSet.has(k)){ droppedSet.add(k); dropped.push(k); }
+      }
+    }
+    users.push(clean);
+  }
+  if(dropped.length){
+    console.log('[mirror] 账号镜像已按白名单剔除敏感字段:', dropped.join(', '));
+  }
+  return {
+    users,
+    timestamp: new Date().toISOString(),
+    sanitized: true,
+    fieldAllowlist: APPROVED_FIELD_ALLOWLIST.slice(),
+    droppedFields: dropped
+  };
 }
 
 /* ---------- 主流程 ---------- */
@@ -342,8 +433,11 @@ async function main(){
    * 放在出库前而不是拉取后, 是为了杜绝"换个数据源就绕过脱敏"的漏网路径。 */
   const feedback = sanitizeFeedback(rawFeedback);
 
-  // 账号脱敏(手机号 sha256(SALT+phone))
-  const approvedWeb = buildApprovedWeb(approved.users || [], opt.salt);
+  /* 账号脱敏(输出侧白名单投影): 本地模式与飞书模式一视同仁。
+   * 与反馈镜像同构——放在出库前而不是拉取后, 杜绝"换个数据源就绕过脱敏"。
+   * V10.19.1 P0: 旧 buildApprovedWeb 把 name(明文手机号)/password(pbkdf2
+   * 哈希)/phoneH 整包透传进公开的 web-data/, 已实测可 curl 取到原文。 */
+  const approvedWeb = sanitizeApprovedUsers(approved.users || [], opt.salt);
 
   // 数据更新通知(网页端 60s 轮询据此自动镜像对齐)
   const notice = {
@@ -355,7 +449,11 @@ async function main(){
     syncedAt: new Date().toISOString(),     // 09-web-sync.js 探测激活的充要条件
     generatedAt: new Date().toISOString(),
     source: isLocal ? 'local' : 'feishu',
-    salt: opt.salt,
+    /* V10.19.1 P0: 不再输出盐值明文——它与 phoneH 放在同一公开目录下,
+     * 等于把"枚举手机号还原 phoneH"的最后一块拼图直接递给攻击者。
+     * 注: 盐仍硬编码在 js/00-config.js(WEB_SYNC_SALT)并随前端发布, 这是
+     * 网页端需自行计算 sha256(SALT+phone) 的架构性约束, 单改本脚本无法
+     * 根除, 需另行改造(见报告"未闭环"一节)。此处仅移除最廉价的那一环。 */
     version: vehicle.version || 'mirror',
     counts: {
       vehicles: (vehicle.vehicles || []).length,
@@ -367,7 +465,9 @@ async function main(){
   if(opt.dry){
     console.log('[mirror] --dry 模式, 不写入文件。产物预览:');
     console.log('  vehicle_sync_data.json:', (vehicle.vehicles||[]).length, '条车型');
-    console.log('  approved_users.web.json:', approvedWeb.users.length, '条账号(已脱敏)');
+    console.log('  approved_users.web.json:', approvedWeb.users.length, '条账号(已按白名单脱敏)');
+    console.log('  账号白名单字段:', (approvedWeb.fieldAllowlist||[]).join(', '));
+    console.log('  账号被剔除字段:', (approvedWeb.droppedFields||[]).join(', ') || '(无)');
     console.log('  feedback_data.json:', (feedback.items||[]).length, '条反馈(已按白名单脱敏)');
     console.log('  反馈白名单字段:', (feedback.fieldAllowlist||[]).join(', '));
     console.log('  反馈被剔除字段:', (feedback.droppedFields||[]).join(', ') || '(无)');
