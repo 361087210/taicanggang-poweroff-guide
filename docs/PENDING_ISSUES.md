@@ -30,6 +30,50 @@
   - `git show v10.19.1:scripts/sync_web_data.js` → `linkKey`=0 次、`phoneH`=15 次；
   - `git show v10.19.1:js/02-auth.js` → `deriveLinkKey`=0、`linkKey`=0。
 
+### 1.3 10.19.3「诊断版」独立发布配方（可直接执行；**尚未执行**，待用户拍板）
+> 目的：让用户**只更新一次**即同时拿到「修复(linkKey 迁移) + 诊断(加密能力自检 / 两种失败提示)」。
+> 纪律：全程在 `release/10.19.3`，**不 push、不打 tag**，直到用户点头。
+
+**A. 要独立发布的提交（叠在 F0-c 之上，需 cherry-pick 到 main）**
+- `921fddc` 提交组A（加密能力自检 + 迁移失败两因区分）
+- `db21274` F0-a（反馈「APP版本」字段）
+- **不要包含** `718d0ce` / `2ff1964`（F0-c）——F0-c 运行期依赖飞书「状态」选项（未补），带了会红。
+
+**B. cherry-pick 到 main 的冲突与解决**
+- `git checkout main && git cherry-pick db21274 921fddc`
+- 唯一预期冲突：`package.json`（A 的片段上下文含 F0-c 的 `test:process-feedback`）。解决：
+  - `scripts` 增一行 `"test:crypto-capability": "node tests/test_crypto_capability_ux.js",`
+  - `test:all` 目标行（**照抄**）：
+    `... && npm run test:v1033 && npm run test:feedback-version && npm run test:crypto-capability && npm run test:cross`
+    （含 `test:feedback-version`(F0-a) 与 `test:crypto-capability`(A)，**不含** `test:process-feedback`）
+
+**C. 七源版本号 10.19.2 → 10.19.3（原子同改；versionCode 101902 → 101903 = 10×10000+19×100+3）**
+| 源 | 位置 | 目标 |
+|---|---|---|
+| `config.xml` | `:2` | `version="10.19.3" android-versionCode="101903"` |
+| `version.json` | `:2/:3/:4` | `10.19.3` / `101903` / `downloadUrl` 指向 `v10.19.3` |
+| `release/version.json` | `:2/:3/:4` | 同上（镜像，保持一致） |
+| `sw.js` | `:11` | `const CACHE_NAME='tcg-poweroff-v10.19.3';` |
+| `demo.html` | `:338` | `id="sync-local-ver">v10.19.3` |
+| `js/00-bootstrap.js` | `:1310` | `const APP_VERSION='10.19.3';` |
+| `js/11-about.js` | `:11` / `:487` | VERSION_HISTORY 头新增 `V10.19.3` 条目 / 兜底字面量 `'10.19.3'` |
+- ⚠️ **禁止全局替换 `10.19.2`**：仓库另有**历史引用**（`js/02-auth.js`、`js/09-web-sync.js`、`scripts/sync_web_data.js` 注释；`tests/test_v1033`、`tests/test_crypto_capability_ux` 说明）指「P0 首次发布 = 10.19.2」——误改会制造新的**错误版本归属**（与 §1.2 同类坑）。
+- ⚠️ `tests/test_v1033_linkkey_migration_ux.js:39-40` **写死** `EXPECT_VER='10.19.2'` / `EXPECT_CODE='101902'` → 升版必红。二选一：(a) 同步改常量；(b) **推荐** 改为从 `version.json` 推导（只校验"七源彼此一致"，与 `test_v1017` E组 同款，以后免维护）。
+
+**D. Release 正文硬前置**
+- 生成 `docs/RELEASE_V10.19.3.md` —— `android-release.yml:202` / `ios-release.yml:263` 的
+  `body_path: docs/RELEASE_V<config.xml version>.md`，**缺文件发版必失败**。
+- `version.json` / `release/version.json` 的 `releaseNotes` **必须含 10.19.3 条目**（`tests/test_v1017` E7 校验）。
+
+**E. 验收命令**
+```
+node scripts/check_version_consistency.js   # 七源一致 + versionCode===encode(version)
+npm run test:all                            # 全绿(含 test:crypto-capability / test:feedback-version)
+node scripts/check_ci_coverage.js
+node scripts/validate_web_assets.js
+```
+**F. 发布动作（仅用户点头后）**：推 main → **紧邻**推 `git tag v10.19.3`（避免 `version.json.downloadUrl` 指向空资产的窗口）→ 验收 7 条（两条 release workflow / 两个资产 / `curl -I` 非 404 / `sync-release-feishu` / `deploy-pages` 且 demo.html 哈希变化 / 登录页实测 / `git status`）。
+
 ## P1 — 数据一致性（工程师 429 中断，未完成）
 
 ### 2. 数据一致性/资源完整性 4 项
