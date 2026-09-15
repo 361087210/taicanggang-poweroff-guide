@@ -58,6 +58,23 @@ function makePhone(name) {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
+  /* V10.19.1: 缺凭据时**前置跳过**并 exit(0), 不再 exit(1)。
+   * 为什么必须前置: 本套件需要真实飞书 App Secret 才能访问云端, 没有凭据时
+   *   它不是"测试失败", 而是"本环境不具备执行条件"。原先在流程中段(云端验证
+   *   处)才判定并 exit(1), 有两个坏处:
+   *     ① 前半段本地断言先跑完再退出, 输出里混着 PASS 与"环境缺失", 难以判断
+   *        到底是跳过还是失败;
+   *     ② exit(1) 会让 `npm run test:all` 整条链中断——CI 一切到 test:all,
+   *        第一天就会因为"没配凭据"而红, 而红灯应当只为真 bug 而亮。
+   * 故提到最前面: 不具备条件就明确打印"跳过"并 exit(0)。
+   * 断言真失败时仍走下方 FAILED 分支 exit(1), 语义未变。 */
+  if (!process.env.TCG_FEISHU_APP_SECRET) {
+    console.log('[环境缺失] 跳过飞书跨网络测试');
+    console.log('  本套件需真实飞书 App Secret: export TCG_FEISHU_APP_SECRET=<你的Secret>');
+    console.log('  未提供视为"本环境不具备执行条件", 非测试失败, 退出码 0。');
+    process.exit(0);
+  }
+
   console.log('='.repeat(62));
   console.log('真机模拟: 两台手机 + 真实飞书云端');
   console.log('='.repeat(62));
@@ -104,9 +121,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // V5.7.1 安全规范: Secret 不落库, 从环境变量读取 (见 tests/README.md)
   const APP_SECRET = process.env.TCG_FEISHU_APP_SECRET || '';
   if (!APP_SECRET) {
-    console.error('[环境缺失] 请先设置环境变量 TCG_FEISHU_APP_SECRET (飞书应用Secret):');
-    console.error('  export TCG_FEISHU_APP_SECRET=<你的Secret>');
-    process.exit(1);
+    /* 正常流程下不可达(文件开头已前置跳过), 保留作防御: 同样 exit(0),
+     * 确保"缺凭据"在任何路径下都不会被误报为测试失败。 */
+    console.log('[环境缺失] 跳过飞书跨网络测试');
+    console.log('  本套件需真实飞书 App Secret: export TCG_FEISHU_APP_SECRET=<你的Secret>');
+    process.exit(0);
   }
   const cfg = { app_id: 'cli_aa0ce4fd91f85be8', app_secret: APP_SECRET };
   const tokRes = await (await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
