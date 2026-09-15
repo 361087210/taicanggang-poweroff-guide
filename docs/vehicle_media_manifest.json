@@ -1,0 +1,3493 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-15T06:48:01.343Z",
+  "qiniu": {
+    "bucket": "tcg-media",
+    "cdnBase": "",
+    "region": ""
+  },
+  "release": {
+    "base": ""
+  },
+  "vehicles": [
+    {
+      "id": 1,
+      "display": "比亚迪海豚(低配)",
+      "photos": [
+        {
+          "fileName": "image1.jpeg",
+          "sha256": "af66a21a784d59c8f6279ba0b660da132b65ab6276b64a6cd61206c973ac9a4f",
+          "size": 29531,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image2.jpeg",
+          "sha256": "85da442c91afbd7511e1fe861a687fbcdf200b79804a710cccdc55eb87b9f924",
+          "size": 30908,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image3.jpeg",
+          "sha256": "edf2485d5767217276c05fa20d131c88432fc06bd0f25c56c8ce5b99dba312b3",
+          "size": 35660,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "比亚迪海豚_低配.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_31d9a7e1f6.mp4"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "display": "比亚迪海豚(高配)",
+      "photos": [
+        {
+          "fileName": "image1.jpeg",
+          "sha256": "af66a21a784d59c8f6279ba0b660da132b65ab6276b64a6cd61206c973ac9a4f",
+          "size": 29531,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image2.jpeg",
+          "sha256": "85da442c91afbd7511e1fe861a687fbcdf200b79804a710cccdc55eb87b9f924",
+          "size": 30908,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image4.jpeg",
+          "sha256": "a87944d89c1d4a12440011a25d8c640b97d28787a0652328ba67beb3d3c0e1ac",
+          "size": 8188,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "display": "比亚迪海鸥(低配)",
+      "photos": [
+        {
+          "fileName": "image5.jpeg",
+          "sha256": "c2d8f5ecf46abf9047a17e3daf2c2ab6643c48d5d2cff3883013229cedc72cad",
+          "size": 34890,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image6.jpeg",
+          "sha256": "ddd70d71dd8daa2b4b75c1a909cef39f74e1f903eed6563602ec2bc4ee308902",
+          "size": 43137,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image7.jpeg",
+          "sha256": "61572598abec9495ff6a32bac7203f3bce98217fa5e970310dd950e1059f6faf",
+          "size": 26798,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "display": "比亚迪海鸥(高配(天窗))",
+      "photos": [
+        {
+          "fileName": "image8.jpeg",
+          "sha256": "d9544cab347223db23db8ecca9b7ea306260efd242e9c084319856511459fd9d",
+          "size": 10673,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image9.jpeg",
+          "sha256": "1cdc516d45c3778e6041fbb3860251d63a441fff175b5e73ae9f0fda4008a2cd",
+          "size": 9880,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image4.jpeg",
+          "sha256": "a87944d89c1d4a12440011a25d8c640b97d28787a0652328ba67beb3d3c0e1ac",
+          "size": 8188,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "比亚迪海鸥_高配_天窗_.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_899fce1c47.mp4"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "display": "比亚迪海豹(海豹DM-I)",
+      "photos": [
+        {
+          "fileName": "image10.jpeg",
+          "sha256": "f41521e3f39e5d8ddf4bdd22bf24fad2df2477758a923e393d1524439ab5ddb9",
+          "size": 37677,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image11.jpeg",
+          "sha256": "aecd367cfd8c001f1dbd3f146c8e903be8eeffef4d08aa508d313eb82c22bbb7",
+          "size": 35870,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image12.jpeg",
+          "sha256": "016ee3d0daa13b7c663950830fd77915f29e143a7578a1583c2706c63e5a7f51",
+          "size": 67341,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "比亚迪海豹_海豹DM_I.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_3cbf27c326.mp4"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "display": "比亚迪海豹(海豹EV)",
+      "photos": [
+        {
+          "fileName": "image13.jpeg",
+          "sha256": "f689d9d0b0e67550b5e58391a93c41bc7338ef4ea93eba07661929876f6b0c62",
+          "size": 34138,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image14.jpeg",
+          "sha256": "286b90b70ee8f8ff7d562bf25de384360a3a4c5a00e0d867772d1f2b3422dd93",
+          "size": 34152,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image4.jpeg",
+          "sha256": "a87944d89c1d4a12440011a25d8c640b97d28787a0652328ba67beb3d3c0e1ac",
+          "size": 8188,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "display": "比亚迪海狮",
+      "photos": [],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "display": "比亚迪鲨鱼皮卡（SHARK）",
+      "photos": [],
+      "videos": []
+    },
+    {
+      "id": 9,
+      "display": "比亚迪秦(秦/秦PLUS/PRO)",
+      "photos": [],
+      "videos": []
+    },
+    {
+      "id": 10,
+      "display": "比亚迪宋(宋PLUS DM-I)",
+      "photos": [
+        {
+          "fileName": "image15.jpeg",
+          "sha256": "e5e0b585d758dc8de6915cb7cf499a523acff18159f83b049b66f4c1f98eef5a",
+          "size": 38718,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image16.jpeg",
+          "sha256": "5c02faf6dbd6b41f09f6be58afaf8a1659be32f7f0ca389090dfca78c6a29ea6",
+          "size": 43400,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "比亚迪宋_宋PLUS_DM_I.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_c8f5274b15.mp4"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "display": "比亚迪宋(宋PRO)",
+      "photos": [],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "display": "比亚迪唐(唐L-EV（天神之眼）)",
+      "photos": [
+        {
+          "fileName": "image17.png",
+          "sha256": "1646265495635ad923f64db6165be16b36afcb2df8ac21f027007345c2748513",
+          "size": 374257,
+          "mime": "image/png",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image18.png",
+          "sha256": "7cbf4d041a305fa54b4718386036e1c45f6ef4197175b3231d2132413062aab8",
+          "size": 404036,
+          "mime": "image/png",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image19.png",
+          "sha256": "c9942de238b500d4b6f1075083a0a8e87d07e7b746532a5560f6e0aff77a590e",
+          "size": 344122,
+          "mime": "image/png",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "display": "比亚迪唐(唐EV（欧标）)",
+      "photos": [
+        {
+          "fileName": "image20.png",
+          "sha256": "ddec9493f04ce81f0885f8ab51361d9297d6d04cb396d5bb492a58361cf8100c",
+          "size": 286904,
+          "mime": "image/png",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "display": "比亚迪唐(ATTO8)",
+      "photos": [
+        {
+          "fileName": "image21.jpeg",
+          "sha256": "d6235acfc1d551c2510570de2c42b1173f5a84e8b8cf317688c099c20c65f864",
+          "size": 27284,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image22.jpeg",
+          "sha256": "3dc4f280a579845a411eaf5b6c2a8bed51301ed08af10a420a79688507e1bf47",
+          "size": 30528,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "比亚迪唐_ATTO8.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_1a4e8e380c.mp4"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "display": "比亚迪元(元UP)",
+      "photos": [
+        {
+          "fileName": "image4.jpeg",
+          "sha256": "a87944d89c1d4a12440011a25d8c640b97d28787a0652328ba67beb3d3c0e1ac",
+          "size": 8188,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "比亚迪元_元UP.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_22119c21b2.mp4"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "display": "比亚迪元(元PRO)",
+      "photos": [
+        {
+          "fileName": "image23.jpeg",
+          "sha256": "2947d5641efc7bb80669c965113c6d1fdbf473cbaaf6578140641266b753088c",
+          "size": 89755,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 17,
+      "display": "比亚迪元(元PLUS)",
+      "photos": [
+        {
+          "fileName": "image24.jpeg",
+          "sha256": "7d0c44a15db5acc54c873a1ee2883a569b2bddb4e6e66b1cd766c4786eb25c56",
+          "size": 38418,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image25.jpeg",
+          "sha256": "053cc8dd426ba92301369f71b04a79bf8dfc06a49964fc90bcb758630e6db2c8",
+          "size": 40933,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image3.jpeg",
+          "sha256": "edf2485d5767217276c05fa20d131c88432fc06bd0f25c56c8ce5b99dba312b3",
+          "size": 35660,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "display": "比亚迪汉",
+      "photos": [],
+      "videos": []
+    },
+    {
+      "id": 19,
+      "display": "比亚迪驱逐舰05（KING）",
+      "photos": [],
+      "videos": []
+    },
+    {
+      "id": 20,
+      "display": "比亚迪腾势(方程豹B5)",
+      "photos": [
+        {
+          "fileName": "image26.jpeg",
+          "sha256": "3af5733d39eb00c1ac82b06cbd39f66543491101a383e77fc1df32eb910f0c3b",
+          "size": 43784,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image27.jpeg",
+          "sha256": "e6e19ece6b4bcdcbf1c3d10171a66f625ad07ab94bc7ed56ec425efa64c4e3d0",
+          "size": 36303,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image3.jpeg",
+          "sha256": "edf2485d5767217276c05fa20d131c88432fc06bd0f25c56c8ce5b99dba312b3",
+          "size": 35660,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "比亚迪腾势_方程豹B5.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_e01aad92b9.mp4"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "display": "长安深蓝(S7/S5)",
+      "photos": [
+        {
+          "fileName": "image28.jpeg",
+          "sha256": "e14f658f125773cbcfc93f5fb96cd9edf1bcec44909f65102563ac3ce16c6b29",
+          "size": 34526,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image29.jpeg",
+          "sha256": "990e8a68e2f79f4d48fc86accee9394e6fb92cc2fce3063fa00a5eafedca5803",
+          "size": 36907,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image30.png",
+          "sha256": "a44dc3d34f62c4e79b478cbe2cd685927204151cefd79c968b8d5cff474a7154",
+          "size": 244002,
+          "mime": "image/png",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长安深蓝_S7_S5.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b1cd814e4b.mp4"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "display": "长安深蓝(G318)",
+      "photos": [
+        {
+          "fileName": "image31.jpeg",
+          "sha256": "87888916e1e33659f572bec3c0fc8a0d3f2a5899f4395299e885d648a29eadea",
+          "size": 42447,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image32.jpeg",
+          "sha256": "f54ad6e24ff1c5de85d7dab89733d42c5b7c84a72a96c4c7de25f61f5d2063f3",
+          "size": 49647,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image33.jpeg",
+          "sha256": "e7c9457fb1eac8886f10e0a2089ffa7c3c8cd67fde34e6d70a0a435786ad73dc",
+          "size": 39237,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长安深蓝_G318.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_a93a5f2ac6.mp4"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "display": "长安悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款))",
+      "photos": [
+        {
+          "fileName": "image34.jpeg",
+          "sha256": "fa70e44790b49de6a0f23d237adb6f0e5ee0f0a21744e97cfa682d0213a58cf8",
+          "size": 32582,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image35.jpeg",
+          "sha256": "bbd82ebdb618bcecd9d874c74627ded6d9ad47fe902b2c5a8c8669f1ffc1eedd",
+          "size": 50240,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image36.jpeg",
+          "sha256": "4dd67eb9744447e80abc44774f75cf8c35e9f7971cd177ae08dfe4f4ee32dcb9",
+          "size": 35583,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长安悦翔_CS15_CS35MAX_CS75_CS55PLUS_2025款_.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_572084283f.mp4"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "display": "长安启源(CS55PLUS(2026款))",
+      "photos": [
+        {
+          "fileName": "image37.jpeg",
+          "sha256": "a817a105a4f663d70488a714b3f7feaa443134101445db71b09353ba53c5e5c5",
+          "size": 47523,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image38.jpeg",
+          "sha256": "0b7c5e447cd3966b76368882c63f51b10422efc27e20461615d99fe4bf906359",
+          "size": 43084,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image39.jpeg",
+          "sha256": "6b3491af1535694cc23695b726d16a7413a867132548cb45d22dd35df5e434df",
+          "size": 38883,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长安启源_CS55PLUS_2026款_.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_592deb3e23.mp4"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "display": "长安启源(EADO PLUS)",
+      "photos": [
+        {
+          "fileName": "image40.jpeg",
+          "sha256": "b27603102642b7430bd5533dacb7f8eab0e8ddb721502efacee2f8d710d0b7cf",
+          "size": 133379,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image41.jpeg",
+          "sha256": "67d7208bfa99088f8f52b0e5e161763a9d86300fdc539531f4b1a010a29447b8",
+          "size": 148676,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image42.jpeg",
+          "sha256": "3acf75838093eaa918e6ce2eeb32ea88a661bd581f6b6744ab71a342453a478d",
+          "size": 101044,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长安启源_EADO_PLUS.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_24411bae03.mp4"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "display": "长安糯米",
+      "photos": [
+        {
+          "fileName": "image43.jpeg",
+          "sha256": "2188a376e54a1a68260c5ada094980a2c3cb0b9620a36f83030d1dd8d94caee2",
+          "size": 47773,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image44.jpeg",
+          "sha256": "6f95d1bb0b22e30fb74e52ceafbab201ad699e7be9c5f92d17ea8505b6350ebc",
+          "size": 40233,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image36.jpeg",
+          "sha256": "4dd67eb9744447e80abc44774f75cf8c35e9f7971cd177ae08dfe4f4ee32dcb9",
+          "size": 35583,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长安糯米_糯米.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_5f94195e59.mp4"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "display": "长安UNI-(UNI-T)",
+      "photos": [
+        {
+          "fileName": "image45.jpeg",
+          "sha256": "4618e8929de597da04dd5ccbe47b8fada77b31de86ab183243c0eac3ebef6850",
+          "size": 44036,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image46.jpeg",
+          "sha256": "d672495e6091b91f5a8d551aa6e7cf53557426479de072621c9dd17158dcb03e",
+          "size": 47540,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长安UNI__UNI_T.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_cea9e0e51f.mp4"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "display": "长安UNI-(UNI-V)",
+      "photos": [
+        {
+          "fileName": "image45.jpeg",
+          "sha256": "4618e8929de597da04dd5ccbe47b8fada77b31de86ab183243c0eac3ebef6850",
+          "size": 44036,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image46.jpeg",
+          "sha256": "d672495e6091b91f5a8d551aa6e7cf53557426479de072621c9dd17158dcb03e",
+          "size": 47540,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长安UNI__UNI_T.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_cea9e0e51f.mp4"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "display": "长安长安之星(小货车)",
+      "photos": [
+        {
+          "fileName": "image47.jpeg",
+          "sha256": "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897",
+          "size": 41132,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image48.jpeg",
+          "sha256": "dcf9314516288313f528e0a5c46ecdfc81ae0a6dcbd2a4c0e50c166677ccc92d",
+          "size": 45942,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长安长安之星_小货车.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_3a9d541a72.mp4"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "display": "长安皮卡(HUNTER（猎手）燃油版/混动版)",
+      "photos": [
+        {
+          "fileName": "image49.jpeg",
+          "sha256": "2646de759b43583ada839a8d26568745e3fb04f21bc2f1138aee2ed98a1a8e5b",
+          "size": 38884,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image50.jpeg",
+          "sha256": "7c31070d0351517c64db362d9eb62de68388d94aa61add3d1a1a5d232d0b1878",
+          "size": 38455,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image51.jpeg",
+          "sha256": "c1f31c9b62b55af1ca60efcba88b2e70400af205814c56fc5012f75bfff96dd5",
+          "size": 37668,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长安皮卡_HUNTER_猎手_燃油版_混动版.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_ec0bb6fa76_2.mp4"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "display": "上汽名爵(ZS/HS/EHS(PHEV))",
+      "photos": [
+        {
+          "fileName": "image52.jpeg",
+          "sha256": "e17dfc498e3c92e505309b913e2e64bfc83b0f44d50cb4ac26373f101ea0f4db",
+          "size": 40240,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image53.jpeg",
+          "sha256": "0498964b6407a5a2960f16c3fd5868d93173f5e52addea64afd2acec0d2a43c8",
+          "size": 42031,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image54.jpeg",
+          "sha256": "fadea6e8bd65ce52b74fe90ea6b7f1443e13c953cb422b9256394536f4848c37",
+          "size": 21188,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "上汽名爵_ZS_HS_EHS_PHEV_.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_104bb1ef84.mp4"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "display": "上汽名爵(赛博斯特)",
+      "photos": [
+        {
+          "fileName": "image55.jpeg",
+          "sha256": "9c885c8fe411bfb4ecd22e335920f24dab1d285216b007cae89a353da53d99a6",
+          "size": 44004,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image56.jpeg",
+          "sha256": "43e1db8cd2bc673f1375580c137cc70373a27a2b625de79a4df54f05751f2db3",
+          "size": 35000,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "上汽名爵_赛博斯特.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_0267256ec1.mp4"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "display": "上汽大通(大通货车)",
+      "photos": [
+        {
+          "fileName": "image58.jpeg",
+          "sha256": "af4bcee16608cfe96dae4952aab16d200b5a0b41988b58959afcc7c33ceda547",
+          "size": 41002,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image59.jpeg",
+          "sha256": "c2159375340c9ed2faaf88a15163f20c8e2815b96cfc4fb30b60018930b64c1c",
+          "size": 44420,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "上汽大通_大通货车.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_3d0e993e4d.mp4"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "display": "长城哈佛(H6)",
+      "photos": [
+        {
+          "fileName": "image60.jpeg",
+          "sha256": "dd292e9a5ca3422fb2e3b2d4f5d97686c3fc1c5b1f017dc03b19c7a1dce09142",
+          "size": 43693,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image61.jpeg",
+          "sha256": "3e822e8df8d6fdfa4ccfa4261cf839a4b5f96072380f0545bbc30be23d45c070",
+          "size": 41503,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image62.jpeg",
+          "sha256": "0dddbb1ec547ada9d8579dde9b741e6a600f79904f96a18e9d9328c967b488b7",
+          "size": 78639,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长城哈佛_H6.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_eb64e09d2f.mp4"
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "display": "长城好猫",
+      "photos": [
+        {
+          "fileName": "image63.png",
+          "sha256": "f7b08c9481b9082f9b0e222d2b06fee1a7414a54d3191ac84a06419df582d327",
+          "size": 725039,
+          "mime": "image/png",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image64.png",
+          "sha256": "8010bca90e309dce4f295c14c9346abb262ba2821880ecf54647c9d5a6125253",
+          "size": 328134,
+          "mime": "image/png",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "长城好猫_好猫.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_83b045688d.mp4"
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "display": "东风风行(T5EVO)",
+      "photos": [
+        {
+          "fileName": "image65.jpeg",
+          "sha256": "03a2eb32adf7b9cc46ee7f41dd205f093afe860e200380ed3abe8d95a3f3cc9b",
+          "size": 40125,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image66.jpeg",
+          "sha256": "ff08249af06221732d8dad55ac24e4bf023d194b53ddffcc65b424676d10b6d9",
+          "size": 53476,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image67.jpeg",
+          "sha256": "26853570869997975ca09c42ec83838692e2fb825cf5c2bd15b753244dbc2c93",
+          "size": 38847,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "东风风行_T5EVO.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_ba44523dad.mp4"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "display": "东风风度(帕拉丁（PALADIN）)",
+      "photos": [
+        {
+          "fileName": "image68.jpeg",
+          "sha256": "4ea85ec16290024446e372a0e7c6b31b3fe42c56691fa1a8e07d0c4a1be83c1b",
+          "size": 36247,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image69.jpeg",
+          "sha256": "6227473d5c74e3194d2c6b65f58835764366bf3977f4ce2c78405bef758655a6",
+          "size": 32090,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image70.jpeg",
+          "sha256": "2511b4a89fb2b925b85f7d918fb9c5eacd9cdf04bf7089ee2ee11c6474072477",
+          "size": 37237,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "东风风度_帕拉丁_PALADIN_.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_dc3fd70d32.mp4"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "display": "东风风神(风神HUGEMHD500T/MAGEMHD500T)",
+      "photos": [
+        {
+          "fileName": "image71.jpeg",
+          "sha256": "164f7bcc7eb8f7dea2e399b7ee7d7f9ac20da968f9bce738d090843ab2c58f8c",
+          "size": 40354,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image72.jpeg",
+          "sha256": "d474d125ed6d8c12808def666317c47aa4b3172eab0c95f6e5e9b95b5ffd54b1",
+          "size": 8974,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image73.jpeg",
+          "sha256": "dd9535c9e69613601e3166d7c17d8d06de60367be14e5d19487c787af42873eb",
+          "size": 41847,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "东风风神_风神HUGEMHD500T_MAGEMHD500T.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_54a5a92db2.mp4"
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "display": "东风VIGO(VIGO（纳米06海外版）/纳米06国内版)",
+      "photos": [
+        {
+          "fileName": "image74.jpeg",
+          "sha256": "7e8b729f2b50559fd743b69a8938f81eb49d9911c1e36715c705bb66395cc234",
+          "size": 27973,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image75.jpeg",
+          "sha256": "be60d1cead0af636e2a021b2f2694818cc343e2db66ab245f708145245a874d7",
+          "size": 31534,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "东风VIGO_VIGO_纳米06海外版__纳米06国内版.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_f543b57fde.mp4"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "display": "东风VIGO(纳米01)",
+      "photos": [
+        {
+          "fileName": "image76.jpeg",
+          "sha256": "054f2f19c1adf5067d2bc0b00764a0014ce2c81d7ab063c13a122e8a9b2058c9",
+          "size": 30558,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image77.jpeg",
+          "sha256": "c7ac93eeba5f478932d0a35ceb430b7e1d05811f28cdfaddfca6687af7c8a619",
+          "size": 28090,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 41,
+      "display": "东风VIGO(BOX)",
+      "photos": [
+        {
+          "fileName": "image78.jpeg",
+          "sha256": "2cd821f90f34c16cfbf78742c97ef9931e034f4763f5701b6aaf2487cad09495",
+          "size": 39034,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image79.jpeg",
+          "sha256": "506a1a747ae30e3b7b578a6e48606178bbace5b399426bc2a080a847f53d5dbe",
+          "size": 44701,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 42,
+      "display": "东风锐棋（RICH）(RICH6)",
+      "photos": [
+        {
+          "fileName": "image80.jpeg",
+          "sha256": "6ebefbb9f991f33f8d94727b25111b2b6274603d50486c7cf1227697756708b3",
+          "size": 46578,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image81.jpeg",
+          "sha256": "5ce48edc3a8d1360e65319f180ed1990555cc2a21acc0d695317779c200a1997",
+          "size": 39750,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image82.jpeg",
+          "sha256": "9b354a1b471b3e3dc7164b6cb46c78c756a21620490e55a0390ae9fe29b2524d",
+          "size": 44793,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "东风锐棋_RICH__RICH6.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_2390f2570f.mp4"
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "display": "东风小康(MPVC37)",
+      "photos": [
+        {
+          "fileName": "image83.jpeg",
+          "sha256": "d53c9a69b69ef8fd680eb98af4682f35d2db35963180ff8132281efe1a9be71d",
+          "size": 40323,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image84.jpeg",
+          "sha256": "94f367949d336e3421ec26f9a3448cfa227f4f7441f420266ea9f0731942b52c",
+          "size": 41051,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image85.jpeg",
+          "sha256": "f05b1f3f79a0f97241f92c6f79b3a6300632296f39d971d70823cb997acbf116",
+          "size": 60133,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "东风小康_MPVC37.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_4b14a1d1ef.mp4"
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "display": "江淮E-JS1/4",
+      "photos": [
+        {
+          "fileName": "image86.jpeg",
+          "sha256": "5846bb1e9db087017d1a443ae2f1d8e05accab9e80949b9146ba178c0680d959",
+          "size": 37334,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image87.jpeg",
+          "sha256": "b1c9188659d220081b41df4a99ce44ec2411d45e5883221a9657d7c69245fe1e",
+          "size": 44946,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image88.jpeg",
+          "sha256": "4fb35cada42ba30646ccae75f9afacd62df9ba7bb07ff772cb1ac7c9b619ac81",
+          "size": 47787,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "江淮E_JS1_4_E_JS1_4.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_3af4ec1480.mp4"
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "display": "江淮江淮皮卡(T8PRO)",
+      "photos": [
+        {
+          "fileName": "image89.jpeg",
+          "sha256": "4b481316b09966ff831db26f6c68f191df5dd6b3d3969f0200092ca4c43942b2",
+          "size": 34376,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image90.jpeg",
+          "sha256": "7f707a3a9e8bcde3f62e684703f15309693c17d9b6b5db41af4839a914e11bf9",
+          "size": 36876,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image91.jpeg",
+          "sha256": "b3a2a11185bdf09b36e111da020e733681e32aec66f478c1fba54fba7c262569",
+          "size": 41652,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "display": "江淮江淮皮卡(T6)",
+      "photos": [
+        {
+          "fileName": "image92.jpeg",
+          "sha256": "fc6c89db060e166fe698aea99c4aa799a42395b08d8fc45753d4a173579194f9",
+          "size": 37158,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image93.jpeg",
+          "sha256": "10cd7af563c2875a202d32f71e57cc3fbd46d8502652ae558dd921a43431e458",
+          "size": 35235,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image94.jpeg",
+          "sha256": "307b591835257636edca6491884e8c7fa570e20bbd733d0ea367d292ae874182",
+          "size": 51752,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "display": "吉利极氪(极氪001/X/7X)",
+      "photos": [
+        {
+          "fileName": "image95.jpeg",
+          "sha256": "b927b4983a678aa4c2c45c89531b4d9f7ffad8ef8cfbfbba3e3188c69efab831",
+          "size": 31741,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image96.jpeg",
+          "sha256": "04363c385f33f66696bd6ed993cdbbd1e47839698edf98bb9890b363c59f7b78",
+          "size": 37942,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "吉利极氪_极氪001_X_7X.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_4cda31cd18.mp4"
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "display": "吉利沃尔沃(S60)",
+      "photos": [
+        {
+          "fileName": "image97.jpeg",
+          "sha256": "232bb6e79081c628152c87d77e44e905e4e7b52951f4a4f6683706031b5e0aeb",
+          "size": 53228,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image98.jpeg",
+          "sha256": "2a54a0af39d2a965d98ad22dd9606c237801e248c554cdce7c3fd31d12c496d6",
+          "size": 43818,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image99.jpeg",
+          "sha256": "07f74dc7947f4010a499ad5ca89676f562209308a83999519c38bc3f87543372",
+          "size": 39513,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "吉利沃尔沃_S60.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_454b6bb506.mp4"
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "display": "吉利雷达（RIODARA）皮卡(雷达6)",
+      "photos": [
+        {
+          "fileName": "image100.jpeg",
+          "sha256": "320df5df13e6aca4b63383834492eb49aea053ac9a8b42a7cca2a949def51b9d",
+          "size": 33699,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image101.jpeg",
+          "sha256": "4baed88427873557f7bc4e557fa5c73a45794cb67731f576979e771c491926ab",
+          "size": 34796,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image102.jpeg",
+          "sha256": "541c92a279dafa06a0c873a0095a27443a19a47896dfc4984da3b321e9da0bc6",
+          "size": 46841,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "display": "吉利银河(EX5（银河E5）)",
+      "photos": [
+        {
+          "fileName": "image103.jpeg",
+          "sha256": "2ee6a84ebf160e6ed8816bcec2b6e62fec4ae65f329466971c0c85e33b39c46c",
+          "size": 84269,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image104.jpeg",
+          "sha256": "c68507a88684b59ba20fd135799b157c6183f3a99ba611a3b5b81488c192ba33",
+          "size": 32884,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "吉利银河_EX5_银河E5_.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_6e6b51930c.mp4"
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "display": "吉利银河(EX2（银河E2）)",
+      "photos": [
+        {
+          "fileName": "image105.jpeg",
+          "sha256": "0a3cb3484933629e6c4e5f2ffef0c1574e5249ce0d4f7fbb616bd33eaed32b19",
+          "size": 242417,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image106.jpeg",
+          "sha256": "48e9092ef73c9e41e6d928aa5f0c0e642c71f9e927f130bd8db17b8051d74615",
+          "size": 34997,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image107.jpeg",
+          "sha256": "8737c2d097dd56f6f9c216d49060129f73a976d82d619c3ed48db5423ca4584e",
+          "size": 39623,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "display": "吉利领克(领克02)",
+      "photos": [
+        {
+          "fileName": "image108.jpeg",
+          "sha256": "ccb9b1470336964f13f785b4cda712e9669804f9fb32db4bc6b5f3147e66205a",
+          "size": 156553,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image109.jpeg",
+          "sha256": "7f6407bd8edfec3f2839cd13a8c19c76fdaeff55727aba02e1be93384d89aeb2",
+          "size": 20435,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "吉利领克_领克02.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_88925e8630.mp4"
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "display": "吉利领克(领克08)",
+      "photos": [
+        {
+          "fileName": "image110.jpeg",
+          "sha256": "6df2cfb9f178929ad64018e6e652ff6936ea6177a055641aaee7187f42e46c0b",
+          "size": 35289,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image111.jpeg",
+          "sha256": "78da74f274be5b9dccec1d99dd30691fd20cc02882c8d879d4e5a319c78b8d0f",
+          "size": 23984,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image109.jpeg",
+          "sha256": "7f6407bd8edfec3f2839cd13a8c19c76fdaeff55727aba02e1be93384d89aeb2",
+          "size": 20435,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 54,
+      "display": "奇瑞欧萌达(欧萌达5)",
+      "photos": [
+        {
+          "fileName": "image112.jpeg",
+          "sha256": "6ed55978e9cbb3441d23b5c8bb30f79574f996894091e87f9c1d21164ed630f4",
+          "size": 43979,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image113.jpeg",
+          "sha256": "740c6b27cbbe4b6f360644efeb93adf7a7e6283938beb99f88ab9c9447a44624",
+          "size": 37156,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image114.png",
+          "sha256": "b9c29c4c9e885f98cef2d3bf6e309a946330d77a87af8432f2fdf491464d8582",
+          "size": 369269,
+          "mime": "image/png",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞欧萌达_欧萌达5.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_6f0841a530.mp4"
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "display": "奇瑞瑞虎(瑞虎7PRO)",
+      "photos": [
+        {
+          "fileName": "image115.jpeg",
+          "sha256": "68f4a7846563d104437736e79802940717f4135a8432fb4f1ab0a7d9bc36c226",
+          "size": 50154,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image116.jpeg",
+          "sha256": "ea1023c71e2c81674254d6b1918163065b92d569d6b790dd50a7428eee32f754",
+          "size": 51182,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞瑞虎_瑞虎7PRO.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_212333ea73.mp4"
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "display": "奇瑞瑞虎(瑞虎7 CSH/PLUGIN HYBRID)",
+      "photos": [
+        {
+          "fileName": "image117.jpeg",
+          "sha256": "e013317a51fabcc02c87f513609821fbba0152e19c3df10685fc6a35d47e0e56",
+          "size": 33825,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image118.jpeg",
+          "sha256": "7b964bd3687a45861cc376bce31ac2fa394d7966b868a0b65ac65e3d97e01414",
+          "size": 26484,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image119.jpeg",
+          "sha256": "6ef500bd951f2bb5b38fed828585a53bf97a6884c34d0428e18f081006b72055",
+          "size": 39997,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "display": "奇瑞瑞虎(瑞虎8 CSH)",
+      "photos": [
+        {
+          "fileName": "image120.jpeg",
+          "sha256": "079308b53f93f575cc22feab7b2882d845fcf9a923f18cef028b8868d6d51a8d",
+          "size": 32725,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image121.jpeg",
+          "sha256": "b8f638696cb850e67358ade0e5fa76a3cd02539cd9b8610b87f4e5c4447a3a94",
+          "size": 26704,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image122.jpeg",
+          "sha256": "c3bba2e5ddec158bebc2bb88325f756ee483cc2fd71b17d10441c64e122bfc3d",
+          "size": 36962,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞瑞虎_瑞虎8_CSH.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_ec0bb6fa76.mp4"
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "display": "奇瑞艾瑞泽(艾瑞泽5PRO)",
+      "photos": [
+        {
+          "fileName": "image123.jpeg",
+          "sha256": "53a5d7fdfe17ed99c51746341bce93ce3974f75ed01ef9344ebdd53e7d244d1f",
+          "size": 59162,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image124.jpeg",
+          "sha256": "a071d7cd496ef3735590892ed789da208fae8388367496d0216518b918ab64b2",
+          "size": 56483,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞艾瑞泽_艾瑞泽5PRO.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_8a190f229f.mp4"
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "display": "奇瑞皮卡(RELY（瑞麟）R8)",
+      "photos": [
+        {
+          "fileName": "image125.jpeg",
+          "sha256": "6c9eab9aab58906243107ab61cb28407baeeb8d7a5deb6196ee5c23fee6aa8e3",
+          "size": 39981,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image126.jpeg",
+          "sha256": "4e518d04008ce3fc96231bcf7022cc70f0933a1ad631f5cd12c8294a3ad18f8f",
+          "size": 40722,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image127.jpeg",
+          "sha256": "0dde3133e6c691e758d879b08c96a93257f6801b04a631d34c54de366438ba68",
+          "size": 45776,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "display": "奇瑞捷途JETOUR(X50)",
+      "photos": [
+        {
+          "fileName": "image128.jpeg",
+          "sha256": "a21a5d1a48437fcf568fb9b4770f0fd8a0a638638d48e6405e3d859ad0e9f549",
+          "size": 7821,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image129.jpeg",
+          "sha256": "4cd951186ac4420c801539f1b86b080d27eb780f69cb1b5e4a7aa66fccc4860c",
+          "size": 44149,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image130.jpeg",
+          "sha256": "f9a944ba9aab3fa4de260cf8ccad68c98ef677ddc2f140094ed9cc2abe046855",
+          "size": 22051,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞捷途JETOUR_X50.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_77f5a28d53.mp4"
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "display": "奇瑞捷途JETOUR(X70)",
+      "photos": [
+        {
+          "fileName": "image131.jpeg",
+          "sha256": "94fc41102ff4a313bb60e705895110f87d863502b3bf55b62a4a549ddb8cadcf",
+          "size": 12944,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image132.jpeg",
+          "sha256": "f3f33c5a9a6f1b40c0596bfe2bdd281399e4d743a4bff35cdfbb20b37daddb9f",
+          "size": 9263,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image130.jpeg",
+          "sha256": "f9a944ba9aab3fa4de260cf8ccad68c98ef677ddc2f140094ed9cc2abe046855",
+          "size": 22051,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞捷途JETOUR_X70.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_e84bf378ac.mp4"
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "display": "奇瑞捷途JETOUR(DASHENG)",
+      "photos": [
+        {
+          "fileName": "image133.jpeg",
+          "sha256": "b214a3aac74a399bade277468f25771a6cff9e0c9f26e8771c654b2277cc0709",
+          "size": 10303,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image134.jpeg",
+          "sha256": "70e79f34fe0c7bd9545d082cb8c8179a6ff67d9912406c5324c6c803fab4ea7a",
+          "size": 10064,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image135.jpeg",
+          "sha256": "cb8e9950c80145552956360e24b60a2761370cfba6db972126a68379fcd7a4eb",
+          "size": 15239,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞捷途JETOUR_DASHENG.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_44e962a169.mp4"
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "display": "奇瑞捷途JETOUR(T1 I-DM)",
+      "photos": [
+        {
+          "fileName": "image136.jpeg",
+          "sha256": "82c0897ae5aa36c968552d59b1c11413c3288ffd4aba653a4228bff4dab7b84b",
+          "size": 9793,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image137.jpeg",
+          "sha256": "bed1ff126a235253c4c4279103c590e1416aa9c4a07e5bfc067d201c1924deeb",
+          "size": 9442,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image138.jpeg",
+          "sha256": "ea89a6c58ffdcbd09872471196b4f3a2c36a51e92d0e2aa3eaf516754d5d24d8",
+          "size": 33754,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞捷途JETOUR_T1_I_DM.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_1d7b63d0d5.mp4"
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "display": "奇瑞捷途JETOUR(T2 I-DM)",
+      "photos": [
+        {
+          "fileName": "image139.jpeg",
+          "sha256": "bfb52ebdc62bf741bd4ff7caef2c8e2afb45cadf17d8e1c44f9d8777879d5422",
+          "size": 10358,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image140.jpeg",
+          "sha256": "8a8fe733a62272f96b9320703e731b55ef7e00bb8842577b59504411d322141a",
+          "size": 39186,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image141.jpeg",
+          "sha256": "159a60b1756714b4637c11cc79e423dc5d5c4f2ea37ab0b522e21a25b54c66ff",
+          "size": 23311,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞捷途JETOUR_T2_I_DM.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_8a31a3eac5.mp4"
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "display": "奇瑞捷途JETOUR(T2 XWD)",
+      "photos": [
+        {
+          "fileName": "image139.jpeg",
+          "sha256": "bfb52ebdc62bf741bd4ff7caef2c8e2afb45cadf17d8e1c44f9d8777879d5422",
+          "size": 10358,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image142.jpeg",
+          "sha256": "38b126b9e79a284f23643bfbd7d77d4613511887511e58ec4c3fff5ee1439f29",
+          "size": 9425,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image141.jpeg",
+          "sha256": "159a60b1756714b4637c11cc79e423dc5d5c4f2ea37ab0b522e21a25b54c66ff",
+          "size": 23311,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞捷途JETOUR_T2_XWD.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_abb8e25867.mp4"
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "display": "奇瑞捷途JETOUR(G700-GAIA)",
+      "photos": [
+        {
+          "fileName": "image143.jpeg",
+          "sha256": "29be427614d417aa3e3089d263d5ca9a2f10ead329a7729a16e47f00d9b8d563",
+          "size": 181442,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image144.jpeg",
+          "sha256": "f808b0bc2834beaf81134dd70ff8630e968c794d9dcaf31509351187843168d7",
+          "size": 152656,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image73.jpeg",
+          "sha256": "dd9535c9e69613601e3166d7c17d8d06de60367be14e5d19487c787af42873eb",
+          "size": 41847,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 67,
+      "display": "奇瑞东南SOUEAST(S06DM)",
+      "photos": [
+        {
+          "fileName": "image145.jpeg",
+          "sha256": "146483796880ccb9b85b9f8ef3f1f31ec50e81a682fa18fef8e1fae344bccb96",
+          "size": 9438,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image146.jpeg",
+          "sha256": "8613b2bb86ae0d46ff3b6b891b10e46d67cdb6cc57a5bd38ea522665c60b7f00",
+          "size": 9953,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image147.jpeg",
+          "sha256": "e5f437207054d063affb7983af4a6eee3db24e196a84fc3f4735a611127959ef",
+          "size": 53332,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "display": "奇瑞东南SOUEAST(S07)",
+      "photos": [
+        {
+          "fileName": "image148.jpeg",
+          "sha256": "55e69e2ef78ca4846b2494e3a1d029a56540590ce243d1ec29676db3962fcf1a",
+          "size": 10576,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image149.jpeg",
+          "sha256": "4f7cf36bff446112339efde78a26c7a5611be91e368df92bcda8c4a8fa42e4a8",
+          "size": 10168,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image150.jpeg",
+          "sha256": "43735595725900201f7f25ac95086d6e99bd2b980bc03a05659dce17a833a2db",
+          "size": 42388,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞东南SOUEAST_S07.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_78fe67067e.mp4"
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "display": "奇瑞东南SOUEAST(S08DM)",
+      "photos": [
+        {
+          "fileName": "image151.jpeg",
+          "sha256": "116a7bb6154c8f32cf7a996593902c66d43d0c7be0a4a08b8d19979848f93967",
+          "size": 9817,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image152.jpeg",
+          "sha256": "f09a1c85ab747f2025a46ae5e092f37721248fdfb03d6dc232fe71715ae81efb",
+          "size": 10548,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image153.jpeg",
+          "sha256": "5e67c81dede093214c2c6aea9ce1c184eca96257872cf1eb9b367ba5105a0468",
+          "size": 18720,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "奇瑞东南SOUEAST_S08DM.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b3d7b8ed9a.mp4"
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "display": "奇瑞东南SOUEAST(S09-AWD)",
+      "photos": [
+        {
+          "fileName": "image154.jpeg",
+          "sha256": "4f997cfc30bd4cd169ab8da7c853095d5a6a26afcba323729001cffc7ad683ba",
+          "size": 39884,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image155.jpeg",
+          "sha256": "75cded6e98e5c0654a2875dac157bc6e3249eec727b5345aa88b5bd5e2966d76",
+          "size": 36458,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image156.jpeg",
+          "sha256": "d3033ec13d87fae6e9467188fdf87d2ae81daee46d0b9c86b90806221b131f1d",
+          "size": 37078,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "display": "零跑零跑(零跑B10)",
+      "photos": [
+        {
+          "fileName": "image157.png",
+          "sha256": "a58b9ad0b52ba456d0e6c9205bc5b8e5bba753cc768bb0e582849480b021e151",
+          "size": 760051,
+          "mime": "image/png",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image158.png",
+          "sha256": "b3dab969a3830ede1425f92f52c19c256f5c435b4ccf64d2a06f36c9e863a18d",
+          "size": 776091,
+          "mime": "image/png",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "零跑零跑_零跑B10.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_e6e7f70cf0.mp4"
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "display": "零跑零跑(零跑C10)",
+      "photos": [
+        {
+          "fileName": "image157.png",
+          "sha256": "a58b9ad0b52ba456d0e6c9205bc5b8e5bba753cc768bb0e582849480b021e151",
+          "size": 760051,
+          "mime": "image/png",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image158.png",
+          "sha256": "b3dab969a3830ede1425f92f52c19c256f5c435b4ccf64d2a06f36c9e863a18d",
+          "size": 776091,
+          "mime": "image/png",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image159.png",
+          "sha256": "a61d9d09a3d15dbaea2bcbaae5b5e794e902495bc0e5dcd9795d31d83a1ae388",
+          "size": 307422,
+          "mime": "image/png",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "display": "广汽AION（埃安）(AION-V/AION-UT)",
+      "photos": [
+        {
+          "fileName": "image160.jpeg",
+          "sha256": "2dbb6138aeece01df9d581e10422400bd1bd6ff1dc3397459ee28633c6a73258",
+          "size": 37757,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image161.jpeg",
+          "sha256": "776b15e6a635f7b8b23e5494b50c3469bc4f7260e537f7f95a0ed0e4956d1b05",
+          "size": 34719,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "image162.jpeg",
+          "sha256": "c5e70aa7110aad969fc4cb7035bc69f48a8c570964ebbf562c40d9de07fd82bc",
+          "size": 44478,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": [
+        {
+          "fileName": "通用断电视频.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "af66a21a784d59c8f6279ba0b660da132b65ab6276b64a6cd61206c973ac9a4f": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        1,
+        2
+      ]
+    },
+    "85da442c91afbd7511e1fe861a687fbcdf200b79804a710cccdc55eb87b9f924": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        1,
+        2
+      ]
+    },
+    "edf2485d5767217276c05fa20d131c88432fc06bd0f25c56c8ce5b99dba312b3": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        1,
+        17,
+        20
+      ]
+    },
+    "a87944d89c1d4a12440011a25d8c640b97d28787a0652328ba67beb3d3c0e1ac": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        2,
+        4,
+        6,
+        15
+      ]
+    },
+    "c2d8f5ecf46abf9047a17e3daf2c2ab6643c48d5d2cff3883013229cedc72cad": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        3
+      ]
+    },
+    "ddd70d71dd8daa2b4b75c1a909cef39f74e1f903eed6563602ec2bc4ee308902": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        3
+      ]
+    },
+    "61572598abec9495ff6a32bac7203f3bce98217fa5e970310dd950e1059f6faf": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        3
+      ]
+    },
+    "d9544cab347223db23db8ecca9b7ea306260efd242e9c084319856511459fd9d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        4
+      ]
+    },
+    "1cdc516d45c3778e6041fbb3860251d63a441fff175b5e73ae9f0fda4008a2cd": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        4
+      ]
+    },
+    "f41521e3f39e5d8ddf4bdd22bf24fad2df2477758a923e393d1524439ab5ddb9": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        5
+      ]
+    },
+    "aecd367cfd8c001f1dbd3f146c8e903be8eeffef4d08aa508d313eb82c22bbb7": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        5
+      ]
+    },
+    "016ee3d0daa13b7c663950830fd77915f29e143a7578a1583c2706c63e5a7f51": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        5
+      ]
+    },
+    "f689d9d0b0e67550b5e58391a93c41bc7338ef4ea93eba07661929876f6b0c62": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        6
+      ]
+    },
+    "286b90b70ee8f8ff7d562bf25de384360a3a4c5a00e0d867772d1f2b3422dd93": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        6
+      ]
+    },
+    "e5e0b585d758dc8de6915cb7cf499a523acff18159f83b049b66f4c1f98eef5a": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        10
+      ]
+    },
+    "5c02faf6dbd6b41f09f6be58afaf8a1659be32f7f0ca389090dfca78c6a29ea6": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        10
+      ]
+    },
+    "1646265495635ad923f64db6165be16b36afcb2df8ac21f027007345c2748513": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        12
+      ]
+    },
+    "7cbf4d041a305fa54b4718386036e1c45f6ef4197175b3231d2132413062aab8": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        12
+      ]
+    },
+    "c9942de238b500d4b6f1075083a0a8e87d07e7b746532a5560f6e0aff77a590e": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        12
+      ]
+    },
+    "ddec9493f04ce81f0885f8ab51361d9297d6d04cb396d5bb492a58361cf8100c": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        13
+      ]
+    },
+    "d6235acfc1d551c2510570de2c42b1173f5a84e8b8cf317688c099c20c65f864": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        14
+      ]
+    },
+    "3dc4f280a579845a411eaf5b6c2a8bed51301ed08af10a420a79688507e1bf47": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        14
+      ]
+    },
+    "2947d5641efc7bb80669c965113c6d1fdbf473cbaaf6578140641266b753088c": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        16
+      ]
+    },
+    "7d0c44a15db5acc54c873a1ee2883a569b2bddb4e6e66b1cd766c4786eb25c56": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        17
+      ]
+    },
+    "053cc8dd426ba92301369f71b04a79bf8dfc06a49964fc90bcb758630e6db2c8": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        17
+      ]
+    },
+    "3af5733d39eb00c1ac82b06cbd39f66543491101a383e77fc1df32eb910f0c3b": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        20
+      ]
+    },
+    "e6e19ece6b4bcdcbf1c3d10171a66f625ad07ab94bc7ed56ec425efa64c4e3d0": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        20
+      ]
+    },
+    "e14f658f125773cbcfc93f5fb96cd9edf1bcec44909f65102563ac3ce16c6b29": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        21
+      ]
+    },
+    "990e8a68e2f79f4d48fc86accee9394e6fb92cc2fce3063fa00a5eafedca5803": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        21
+      ]
+    },
+    "a44dc3d34f62c4e79b478cbe2cd685927204151cefd79c968b8d5cff474a7154": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        21
+      ]
+    },
+    "87888916e1e33659f572bec3c0fc8a0d3f2a5899f4395299e885d648a29eadea": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        22
+      ]
+    },
+    "f54ad6e24ff1c5de85d7dab89733d42c5b7c84a72a96c4c7de25f61f5d2063f3": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        22
+      ]
+    },
+    "e7c9457fb1eac8886f10e0a2089ffa7c3c8cd67fde34e6d70a0a435786ad73dc": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        22
+      ]
+    },
+    "fa70e44790b49de6a0f23d237adb6f0e5ee0f0a21744e97cfa682d0213a58cf8": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        23
+      ]
+    },
+    "bbd82ebdb618bcecd9d874c74627ded6d9ad47fe902b2c5a8c8669f1ffc1eedd": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        23
+      ]
+    },
+    "4dd67eb9744447e80abc44774f75cf8c35e9f7971cd177ae08dfe4f4ee32dcb9": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        23,
+        26
+      ]
+    },
+    "a817a105a4f663d70488a714b3f7feaa443134101445db71b09353ba53c5e5c5": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        24
+      ]
+    },
+    "0b7c5e447cd3966b76368882c63f51b10422efc27e20461615d99fe4bf906359": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        24
+      ]
+    },
+    "6b3491af1535694cc23695b726d16a7413a867132548cb45d22dd35df5e434df": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        24
+      ]
+    },
+    "b27603102642b7430bd5533dacb7f8eab0e8ddb721502efacee2f8d710d0b7cf": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        25
+      ]
+    },
+    "67d7208bfa99088f8f52b0e5e161763a9d86300fdc539531f4b1a010a29447b8": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        25
+      ]
+    },
+    "3acf75838093eaa918e6ce2eeb32ea88a661bd581f6b6744ab71a342453a478d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        25
+      ]
+    },
+    "2188a376e54a1a68260c5ada094980a2c3cb0b9620a36f83030d1dd8d94caee2": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        26
+      ]
+    },
+    "6f95d1bb0b22e30fb74e52ceafbab201ad699e7be9c5f92d17ea8505b6350ebc": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        26
+      ]
+    },
+    "4618e8929de597da04dd5ccbe47b8fada77b31de86ab183243c0eac3ebef6850": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        27,
+        28
+      ]
+    },
+    "d672495e6091b91f5a8d551aa6e7cf53557426479de072621c9dd17158dcb03e": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        27,
+        28
+      ]
+    },
+    "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        29
+      ]
+    },
+    "dcf9314516288313f528e0a5c46ecdfc81ae0a6dcbd2a4c0e50c166677ccc92d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        29
+      ]
+    },
+    "2646de759b43583ada839a8d26568745e3fb04f21bc2f1138aee2ed98a1a8e5b": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        30
+      ]
+    },
+    "7c31070d0351517c64db362d9eb62de68388d94aa61add3d1a1a5d232d0b1878": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        30
+      ]
+    },
+    "c1f31c9b62b55af1ca60efcba88b2e70400af205814c56fc5012f75bfff96dd5": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        30
+      ]
+    },
+    "e17dfc498e3c92e505309b913e2e64bfc83b0f44d50cb4ac26373f101ea0f4db": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        31
+      ]
+    },
+    "0498964b6407a5a2960f16c3fd5868d93173f5e52addea64afd2acec0d2a43c8": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        31
+      ]
+    },
+    "fadea6e8bd65ce52b74fe90ea6b7f1443e13c953cb422b9256394536f4848c37": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        31
+      ]
+    },
+    "9c885c8fe411bfb4ecd22e335920f24dab1d285216b007cae89a353da53d99a6": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        32
+      ]
+    },
+    "43e1db8cd2bc673f1375580c137cc70373a27a2b625de79a4df54f05751f2db3": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        32
+      ]
+    },
+    "af4bcee16608cfe96dae4952aab16d200b5a0b41988b58959afcc7c33ceda547": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        33
+      ]
+    },
+    "c2159375340c9ed2faaf88a15163f20c8e2815b96cfc4fb30b60018930b64c1c": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        33
+      ]
+    },
+    "dd292e9a5ca3422fb2e3b2d4f5d97686c3fc1c5b1f017dc03b19c7a1dce09142": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        34
+      ]
+    },
+    "3e822e8df8d6fdfa4ccfa4261cf839a4b5f96072380f0545bbc30be23d45c070": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        34
+      ]
+    },
+    "0dddbb1ec547ada9d8579dde9b741e6a600f79904f96a18e9d9328c967b488b7": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        34
+      ]
+    },
+    "f7b08c9481b9082f9b0e222d2b06fee1a7414a54d3191ac84a06419df582d327": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        35
+      ]
+    },
+    "8010bca90e309dce4f295c14c9346abb262ba2821880ecf54647c9d5a6125253": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        35
+      ]
+    },
+    "03a2eb32adf7b9cc46ee7f41dd205f093afe860e200380ed3abe8d95a3f3cc9b": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        36
+      ]
+    },
+    "ff08249af06221732d8dad55ac24e4bf023d194b53ddffcc65b424676d10b6d9": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        36
+      ]
+    },
+    "26853570869997975ca09c42ec83838692e2fb825cf5c2bd15b753244dbc2c93": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        36
+      ]
+    },
+    "4ea85ec16290024446e372a0e7c6b31b3fe42c56691fa1a8e07d0c4a1be83c1b": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        37
+      ]
+    },
+    "6227473d5c74e3194d2c6b65f58835764366bf3977f4ce2c78405bef758655a6": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        37
+      ]
+    },
+    "2511b4a89fb2b925b85f7d918fb9c5eacd9cdf04bf7089ee2ee11c6474072477": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        37
+      ]
+    },
+    "164f7bcc7eb8f7dea2e399b7ee7d7f9ac20da968f9bce738d090843ab2c58f8c": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        38
+      ]
+    },
+    "d474d125ed6d8c12808def666317c47aa4b3172eab0c95f6e5e9b95b5ffd54b1": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        38
+      ]
+    },
+    "dd9535c9e69613601e3166d7c17d8d06de60367be14e5d19487c787af42873eb": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        38,
+        66
+      ]
+    },
+    "7e8b729f2b50559fd743b69a8938f81eb49d9911c1e36715c705bb66395cc234": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        39
+      ]
+    },
+    "be60d1cead0af636e2a021b2f2694818cc343e2db66ab245f708145245a874d7": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        39
+      ]
+    },
+    "054f2f19c1adf5067d2bc0b00764a0014ce2c81d7ab063c13a122e8a9b2058c9": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        40
+      ]
+    },
+    "c7ac93eeba5f478932d0a35ceb430b7e1d05811f28cdfaddfca6687af7c8a619": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        40
+      ]
+    },
+    "2cd821f90f34c16cfbf78742c97ef9931e034f4763f5701b6aaf2487cad09495": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        41
+      ]
+    },
+    "506a1a747ae30e3b7b578a6e48606178bbace5b399426bc2a080a847f53d5dbe": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        41
+      ]
+    },
+    "6ebefbb9f991f33f8d94727b25111b2b6274603d50486c7cf1227697756708b3": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        42
+      ]
+    },
+    "5ce48edc3a8d1360e65319f180ed1990555cc2a21acc0d695317779c200a1997": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        42
+      ]
+    },
+    "9b354a1b471b3e3dc7164b6cb46c78c756a21620490e55a0390ae9fe29b2524d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        42
+      ]
+    },
+    "d53c9a69b69ef8fd680eb98af4682f35d2db35963180ff8132281efe1a9be71d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        43
+      ]
+    },
+    "94f367949d336e3421ec26f9a3448cfa227f4f7441f420266ea9f0731942b52c": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        43
+      ]
+    },
+    "f05b1f3f79a0f97241f92c6f79b3a6300632296f39d971d70823cb997acbf116": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        43
+      ]
+    },
+    "5846bb1e9db087017d1a443ae2f1d8e05accab9e80949b9146ba178c0680d959": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        44
+      ]
+    },
+    "b1c9188659d220081b41df4a99ce44ec2411d45e5883221a9657d7c69245fe1e": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        44
+      ]
+    },
+    "4fb35cada42ba30646ccae75f9afacd62df9ba7bb07ff772cb1ac7c9b619ac81": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        44
+      ]
+    },
+    "4b481316b09966ff831db26f6c68f191df5dd6b3d3969f0200092ca4c43942b2": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        45
+      ]
+    },
+    "7f707a3a9e8bcde3f62e684703f15309693c17d9b6b5db41af4839a914e11bf9": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        45
+      ]
+    },
+    "b3a2a11185bdf09b36e111da020e733681e32aec66f478c1fba54fba7c262569": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        45
+      ]
+    },
+    "fc6c89db060e166fe698aea99c4aa799a42395b08d8fc45753d4a173579194f9": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        46
+      ]
+    },
+    "10cd7af563c2875a202d32f71e57cc3fbd46d8502652ae558dd921a43431e458": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        46
+      ]
+    },
+    "307b591835257636edca6491884e8c7fa570e20bbd733d0ea367d292ae874182": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        46
+      ]
+    },
+    "b927b4983a678aa4c2c45c89531b4d9f7ffad8ef8cfbfbba3e3188c69efab831": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        47
+      ]
+    },
+    "04363c385f33f66696bd6ed993cdbbd1e47839698edf98bb9890b363c59f7b78": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        47
+      ]
+    },
+    "232bb6e79081c628152c87d77e44e905e4e7b52951f4a4f6683706031b5e0aeb": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        48
+      ]
+    },
+    "2a54a0af39d2a965d98ad22dd9606c237801e248c554cdce7c3fd31d12c496d6": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        48
+      ]
+    },
+    "07f74dc7947f4010a499ad5ca89676f562209308a83999519c38bc3f87543372": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        48
+      ]
+    },
+    "320df5df13e6aca4b63383834492eb49aea053ac9a8b42a7cca2a949def51b9d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        49
+      ]
+    },
+    "4baed88427873557f7bc4e557fa5c73a45794cb67731f576979e771c491926ab": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        49
+      ]
+    },
+    "541c92a279dafa06a0c873a0095a27443a19a47896dfc4984da3b321e9da0bc6": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        49
+      ]
+    },
+    "2ee6a84ebf160e6ed8816bcec2b6e62fec4ae65f329466971c0c85e33b39c46c": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        50
+      ]
+    },
+    "c68507a88684b59ba20fd135799b157c6183f3a99ba611a3b5b81488c192ba33": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        50
+      ]
+    },
+    "0a3cb3484933629e6c4e5f2ffef0c1574e5249ce0d4f7fbb616bd33eaed32b19": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        51
+      ]
+    },
+    "48e9092ef73c9e41e6d928aa5f0c0e642c71f9e927f130bd8db17b8051d74615": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        51
+      ]
+    },
+    "8737c2d097dd56f6f9c216d49060129f73a976d82d619c3ed48db5423ca4584e": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        51
+      ]
+    },
+    "ccb9b1470336964f13f785b4cda712e9669804f9fb32db4bc6b5f3147e66205a": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        52
+      ]
+    },
+    "7f6407bd8edfec3f2839cd13a8c19c76fdaeff55727aba02e1be93384d89aeb2": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        52,
+        53
+      ]
+    },
+    "6df2cfb9f178929ad64018e6e652ff6936ea6177a055641aaee7187f42e46c0b": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        53
+      ]
+    },
+    "78da74f274be5b9dccec1d99dd30691fd20cc02882c8d879d4e5a319c78b8d0f": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        53
+      ]
+    },
+    "6ed55978e9cbb3441d23b5c8bb30f79574f996894091e87f9c1d21164ed630f4": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        54
+      ]
+    },
+    "740c6b27cbbe4b6f360644efeb93adf7a7e6283938beb99f88ab9c9447a44624": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        54
+      ]
+    },
+    "b9c29c4c9e885f98cef2d3bf6e309a946330d77a87af8432f2fdf491464d8582": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        54
+      ]
+    },
+    "68f4a7846563d104437736e79802940717f4135a8432fb4f1ab0a7d9bc36c226": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        55
+      ]
+    },
+    "ea1023c71e2c81674254d6b1918163065b92d569d6b790dd50a7428eee32f754": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        55
+      ]
+    },
+    "e013317a51fabcc02c87f513609821fbba0152e19c3df10685fc6a35d47e0e56": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        56
+      ]
+    },
+    "7b964bd3687a45861cc376bce31ac2fa394d7966b868a0b65ac65e3d97e01414": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        56
+      ]
+    },
+    "6ef500bd951f2bb5b38fed828585a53bf97a6884c34d0428e18f081006b72055": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        56
+      ]
+    },
+    "079308b53f93f575cc22feab7b2882d845fcf9a923f18cef028b8868d6d51a8d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        57
+      ]
+    },
+    "b8f638696cb850e67358ade0e5fa76a3cd02539cd9b8610b87f4e5c4447a3a94": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        57
+      ]
+    },
+    "c3bba2e5ddec158bebc2bb88325f756ee483cc2fd71b17d10441c64e122bfc3d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        57
+      ]
+    },
+    "53a5d7fdfe17ed99c51746341bce93ce3974f75ed01ef9344ebdd53e7d244d1f": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        58
+      ]
+    },
+    "a071d7cd496ef3735590892ed789da208fae8388367496d0216518b918ab64b2": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        58
+      ]
+    },
+    "6c9eab9aab58906243107ab61cb28407baeeb8d7a5deb6196ee5c23fee6aa8e3": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        59
+      ]
+    },
+    "4e518d04008ce3fc96231bcf7022cc70f0933a1ad631f5cd12c8294a3ad18f8f": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        59
+      ]
+    },
+    "0dde3133e6c691e758d879b08c96a93257f6801b04a631d34c54de366438ba68": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        59
+      ]
+    },
+    "a21a5d1a48437fcf568fb9b4770f0fd8a0a638638d48e6405e3d859ad0e9f549": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        60
+      ]
+    },
+    "4cd951186ac4420c801539f1b86b080d27eb780f69cb1b5e4a7aa66fccc4860c": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        60
+      ]
+    },
+    "f9a944ba9aab3fa4de260cf8ccad68c98ef677ddc2f140094ed9cc2abe046855": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        60,
+        61
+      ]
+    },
+    "94fc41102ff4a313bb60e705895110f87d863502b3bf55b62a4a549ddb8cadcf": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        61
+      ]
+    },
+    "f3f33c5a9a6f1b40c0596bfe2bdd281399e4d743a4bff35cdfbb20b37daddb9f": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        61
+      ]
+    },
+    "b214a3aac74a399bade277468f25771a6cff9e0c9f26e8771c654b2277cc0709": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        62
+      ]
+    },
+    "70e79f34fe0c7bd9545d082cb8c8179a6ff67d9912406c5324c6c803fab4ea7a": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        62
+      ]
+    },
+    "cb8e9950c80145552956360e24b60a2761370cfba6db972126a68379fcd7a4eb": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        62
+      ]
+    },
+    "82c0897ae5aa36c968552d59b1c11413c3288ffd4aba653a4228bff4dab7b84b": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        63
+      ]
+    },
+    "bed1ff126a235253c4c4279103c590e1416aa9c4a07e5bfc067d201c1924deeb": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        63
+      ]
+    },
+    "ea89a6c58ffdcbd09872471196b4f3a2c36a51e92d0e2aa3eaf516754d5d24d8": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        63
+      ]
+    },
+    "bfb52ebdc62bf741bd4ff7caef2c8e2afb45cadf17d8e1c44f9d8777879d5422": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        64,
+        65
+      ]
+    },
+    "8a8fe733a62272f96b9320703e731b55ef7e00bb8842577b59504411d322141a": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        64
+      ]
+    },
+    "159a60b1756714b4637c11cc79e423dc5d5c4f2ea37ab0b522e21a25b54c66ff": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        64,
+        65
+      ]
+    },
+    "38b126b9e79a284f23643bfbd7d77d4613511887511e58ec4c3fff5ee1439f29": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        65
+      ]
+    },
+    "29be427614d417aa3e3089d263d5ca9a2f10ead329a7729a16e47f00d9b8d563": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        66
+      ]
+    },
+    "f808b0bc2834beaf81134dd70ff8630e968c794d9dcaf31509351187843168d7": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        66
+      ]
+    },
+    "146483796880ccb9b85b9f8ef3f1f31ec50e81a682fa18fef8e1fae344bccb96": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        67
+      ]
+    },
+    "8613b2bb86ae0d46ff3b6b891b10e46d67cdb6cc57a5bd38ea522665c60b7f00": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        67
+      ]
+    },
+    "e5f437207054d063affb7983af4a6eee3db24e196a84fc3f4735a611127959ef": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        67
+      ]
+    },
+    "55e69e2ef78ca4846b2494e3a1d029a56540590ce243d1ec29676db3962fcf1a": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        68
+      ]
+    },
+    "4f7cf36bff446112339efde78a26c7a5611be91e368df92bcda8c4a8fa42e4a8": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        68
+      ]
+    },
+    "43735595725900201f7f25ac95086d6e99bd2b980bc03a05659dce17a833a2db": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        68
+      ]
+    },
+    "116a7bb6154c8f32cf7a996593902c66d43d0c7be0a4a08b8d19979848f93967": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        69
+      ]
+    },
+    "f09a1c85ab747f2025a46ae5e092f37721248fdfb03d6dc232fe71715ae81efb": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        69
+      ]
+    },
+    "5e67c81dede093214c2c6aea9ce1c184eca96257872cf1eb9b367ba5105a0468": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        69
+      ]
+    },
+    "4f997cfc30bd4cd169ab8da7c853095d5a6a26afcba323729001cffc7ad683ba": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        70
+      ]
+    },
+    "75cded6e98e5c0654a2875dac157bc6e3249eec727b5345aa88b5bd5e2966d76": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        70
+      ]
+    },
+    "d3033ec13d87fae6e9467188fdf87d2ae81daee46d0b9c86b90806221b131f1d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        70
+      ]
+    },
+    "a58b9ad0b52ba456d0e6c9205bc5b8e5bba753cc768bb0e582849480b021e151": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        71,
+        72
+      ]
+    },
+    "b3dab969a3830ede1425f92f52c19c256f5c435b4ccf64d2a06f36c9e863a18d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        71,
+        72
+      ]
+    },
+    "a61d9d09a3d15dbaea2bcbaae5b5e794e902495bc0e5dcd9795d31d83a1ae388": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        72
+      ]
+    },
+    "2dbb6138aeece01df9d581e10422400bd1bd6ff1dc3397459ee28633c6a73258": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        73
+      ]
+    },
+    "776b15e6a635f7b8b23e5494b50c3469bc4f7260e537f7f95a0ed0e4956d1b05": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        73
+      ]
+    },
+    "c5e70aa7110aad969fc4cb7035bc69f48a8c570964ebbf562c40d9de07fd82bc": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        73
+      ]
+    }
+  },
+  "stats": {
+    "vehicleCount": 73,
+    "photoCount": 178,
+    "videoCount": 64,
+    "totalBytes": 13122727
+  }
+}

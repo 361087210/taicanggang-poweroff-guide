@@ -924,7 +924,14 @@ function saveVehicle(){
 }
 
 function confirmDeleteVehicle(id){
-  showConfirm('删除车辆','确定删除该车辆信息？此操作不可撤销。',()=>{
+  // 需求3第一阶段删除保护: 删除前查唯一真源 manifest(State.mediaShare),
+  // 共享媒体弹「仅解除本车引用」、独享媒体弹「将同时删除云端照片视频」,
+  // 无媒体/manifest 缺失回退通用不可撤销文案(保持旧确认语义)。
+  const share=State.mediaShare(id);
+  let msg='确定删除该车辆信息？此操作不可撤销。';
+  if(share.shared.length>0){msg=`该媒体被 ${share.sharedVehicles.length} 车共用，仅解除本车引用`;}
+  else if(share.exclusive.length>0){msg='将同时删除云端照片/视频';}
+  showConfirm('删除车辆',msg,()=>{
     // A3状态守卫: 删除走State API(splice+持久化), 返回bool保持原idx>-1卫语句语义
     if(State.removeVehicle(id)){showToast('删除成功');renderBrandTags();renderVehicleList();goBack();}
   });

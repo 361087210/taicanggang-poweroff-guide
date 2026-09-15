@@ -220,7 +220,48 @@ const State={
     return v;
   },
   /**
+   * 删除保护辅助(需求3第一阶段): 查询该车引用的媒体在唯一真源 manifest 中的共享情况
+   * manifest 经 window.__MEDIA_MANIFEST__ 注入(构建期打包/运行时拉取), 缺失时返回空
+   * (优雅降级, 不阻断删除)。按 fileName 扫描 manifest.vehicles 计算共享关系——
+   * 同时覆盖照片(有 sha256)与视频(无 sha256), 比 assets.vehicleIds 更完整。
+   * @param {number} id - 车辆 id
+   * @returns {{shared:Array<string>, exclusive:Array<string>}} 共享/独享的 fileName 列表
+   */
+  mediaShare(id){
+    const v=VEHICLES.find(x=>x.id===id);
+    if(!v)return {shared:[],exclusive:[],sharedVehicles:[]};
+    const manifest=(typeof window!=='undefined'&&window.__MEDIA_MANIFEST__)||null;
+    if(!manifest||!Array.isArray(manifest.vehicles))return {shared:[],exclusive:[],sharedVehicles:[]};
+    // fileName -> 引用它的车辆 id 数组
+    const owners={};
+    for(const mv of manifest.vehicles){
+      const names=[];
+      (Array.isArray(mv.photos)?mv.photos:[]).forEach(p=>{if(p&&p.fileName)names.push(p.fileName);});
+      (Array.isArray(mv.videos)?mv.videos:[]).forEach(vv=>{if(vv&&vv.fileName)names.push(vv.fileName);});
+      names.forEach(n=>{(owners[n]=owners[n]||[]).push(mv.id);});
+    }
+    // 本车引用的 fileName 集合(photoPaths/videoPaths 的 basename)
+    const mine={};
+    (Array.isArray(v.photoPaths)?v.photoPaths:[]).forEach(p=>{mine[String(p).split('/').pop()]=1;});
+    (Array.isArray(v.videoPaths)?v.videoPaths:[]).forEach(p=>{mine[String(p).split('/').pop()]=1;});
+    const shared=[],exclusive=[],sharedVehicles=[];
+    const svSet={};
+    Object.keys(mine).forEach(fn=>{
+      const others=(owners[fn]||[]).filter(x=>String(x)!==String(id));
+      if(others.length>0){
+        shared.push(fn);
+        others.forEach(x=>{const k=String(x);if(!svSet[k]){svSet[k]=1;sharedVehicles.push(x);}});
+      }else{
+        exclusive.push(fn);
+      }
+    });
+    return {shared,exclusive,sharedVehicles};
+  },
+  /**
    * 删除车辆: splice+持久化;未找到返回false
+   * 需求3第一阶段删除保护: 删除前由调用方(confirmDeleteVehicle)经 State.mediaShare(id)
+   * 查唯一真源 manifest——共享媒体弹「仅解除本车引用」、独享媒体弹「将同时删除云端照片视频」,
+   * 无媒体/manifest 缺失则走通用确认。本方法保持纯同步删除语义, 签名不变。
    * @returns {boolean} 是否删除成功
    */
   removeVehicle(id){
