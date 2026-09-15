@@ -143,15 +143,59 @@ check('V3g 09-web-sync.js 无 localStorage 明文密码写入',
   !/localStorage\.setItem\([^)]*(password|passwd|pwd|明文)/i.test(webSyncJs));
 
 /* ============================================================
- * V4 09-web-sync.js 迁移未完成信号
+ * V4 网页端环境判定 + 死信号清理回归
  * ============================================================ */
-section('V4 09-web-sync.js 迁移未完成信号');
-check('V4a 无匹配时置信号(供上层精确判定迁移缺口)',
-  /__TCG_WEB_MIGRATION_HINT__/.test(webSyncJs));
-check('V4b 仍在探测式激活内设置 __TCG_WEB_MIRROR__',
+section('V4 网页端环境判定与死信号清理');
+check('V4a 探测式激活内设置 __TCG_WEB_MIRROR__(网页端判定依据)',
   /__TCG_WEB_MIRROR__\s*=\s*true/.test(webSyncJs));
+check('V4b 已移除只写不读的 __TCG_WEB_MIGRATION_HINT__ 死信号(整洁性回归)',
+  !/__TCG_WEB_MIGRATION_HINT__/.test(webSyncJs));
 
-console.log('\n==============================================================');
-console.log('P0 迁移缺口 UX 修复测试汇总: ' + pass + ' passed, ' + fail + ' failed');
-if (failures.length) { console.log('失败项: ' + failures.join(' / ')); process.exit(1); }
-else console.log('全部通过 OK');
+/* ============================================================
+ * V5 行为级验证(jsdom 真实渲染): 登录失败 → 提示与重试按钮真的出现
+ * ------------------------------------------------------------
+ * 为什么不是"源码里含某字符串": 源码匹配无法发现"函数定义了却没被调用""提示
+ * 元素被删/被隐藏"等回归。这里真实执行 doLogin 的失败路径, 断言 DOM 上确实渲染
+ * 出可操作提示与「我已升级，重新登录」按钮。
+ * 安全约束: 宽提示是**隐私选择**(镜像不含手机号, 收窄提示会泄露账号存在性),
+ * 故断言文案与账号存在性无关(仅"账号或密码错误"通用开头)。
+ * ============================================================ */
+section('V5 行为级: 网页端登录失败真实渲染提示(jsdom)');
+(async function(){
+  let ok = false, detail = '';
+  try {
+    const { JSDOM } = require('jsdom');
+    /* url 必填: 否则 origin 为 opaque, jsdom 的 localStorage 不可用(doLogin 会用到) */
+    const dom = new JSDOM(src('demo.html'), { url: 'https://tcg.test/demo.html', runScripts: 'outside-only', pretendToBeVisual: true });
+    const win = dom.window;
+    /* 只注入 doLogin 失败路径所需的最小全局(成功路径的依赖不会被触达)。
+     * USERS 为空 + pullApprovedStatusFromFeishu 返回 false ⇒ 必落"账号未命中"失败分支。 */
+    win.USERS = [];
+    win.state = { currentUser: null };
+    win.showToast = function(){};
+    win.pullApprovedStatusFromFeishu = async function(){ return false; };
+    win.APP_VERSION = '10.19.2';
+    win.__TCG_WEB_MIRROR__ = true; /* 纯网页镜像端 */
+    win.eval(authJs);              /* 顶层 function 声明挂到 win(window.doLogin 等) */
+    win.document.getElementById('login-phone').value = '13800000000';
+    win.document.getElementById('login-pass').value = 'whatever1';
+    await win.eval('doLogin()');
+    const el = win.document.getElementById('login-hint');
+    const html = el ? el.innerHTML : '';
+    ok = !!el && !el.classList.contains('hidden')
+      && html.indexOf('账号或密码错误') >= 0
+      && html.indexOf('我已升级，重新登录') >= 0
+      && /doLogin\s*\(/.test(html);
+    detail = 'hidden=' + (el ? el.classList.contains('hidden') : 'no-el') + ' html=' + html.slice(0, 70);
+  } catch (e) { detail = 'exception: ' + e.message; }
+  check('V5a 行为级: 登录失败 → #login-hint 可见且含文案与重试按钮', ok, detail);
+  finish();
+})();
+
+/* 汇总在异步行为断言完成后输出(避免 process.exit 抢跑, 漏报 V5) */
+function finish(){
+  console.log('\n==============================================================');
+  console.log('P0 迁移缺口 UX 修复测试汇总: ' + pass + ' passed, ' + fail + ' failed');
+  if (failures.length) { console.log('失败项: ' + failures.join(' / ')); process.exit(1); }
+  else console.log('全部通过 OK');
+}
