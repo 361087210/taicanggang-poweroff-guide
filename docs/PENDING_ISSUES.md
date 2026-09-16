@@ -43,12 +43,25 @@
 > 目的：让用户**只更新一次**即同时拿到「修复(linkKey 迁移) + 诊断(加密能力自检 / 两种失败提示)」。
 > 纪律：全程在 `release/10.19.3`，**不 push、不打 tag**，直到用户点头。
 
-**A. 要独立发布的提交（叠在 F0-c 之上，需 cherry-pick 到 main）**
-- `921fddc` 提交组A（加密能力自检 + 迁移失败两因区分）
-- `db21274` F0-a（反馈「APP版本」字段）
-- ＋ **发版工具链修复**（`scripts/sync_release_both_roots.py` Feishu 目录名 + `scripts/migrate_drive_to_bitable.js` 的 `syncVersion` 改为从 `version.json` 读，见 §1.4）—— 与本次同一提交，**发布集必须含它**，否则发版时飞书目录名仍停在 `v10.17.1`。
-- ＋ **未登录导航守卫修复**（R1 返回键补登录族分支 / R2 `goBack` 无用户不落应用内页 / R3 用户卡去"组长"硬编码 / R4 已登录禁入登录族；见 §1.5）—— 同一提交，属**用户可见**的"注册页返回泄漏"缺陷，随 10.19.3 发。
-- **不要包含** `718d0ce` / `2ff1964`（F0-c）——F0-c 运行期依赖飞书「状态」选项（未补），带了会红。
+**A. 要独立发布的提交（**精确清单**：按序 cherry-pick 到当时的 `origin/main` tip）**
+> `release/10.19.3` 相对 `f254205` 共 **15** 个提交；其中 **3 个不入本次发布**（1 个已在 main、2 个是 F0-c），
+> 故**实际要重放的是下面这 12 个**（顺序即依赖序）：
+1. `db21274` F0-a（反馈「APP版本」字段）
+2. `cc6acd6` P0 版本归属更正 + §1.1（纯注释/文档）
+3. `5b557ce` §1.2 版本归属事实基线（纯文档）
+4. `921fddc` **提交组A**（加密能力自检 + 迁移失败两因区分）
+5. `b9060a6` §1.3 发布配方（纯文档）
+6. `b2404f3` `test_v1033` 期望值改动态推导 + 变异自证
+7. `6770791` **`docs/RELEASE_V10.19.3.md`**（`body_path` 硬前置）
+8. `eaef20b` 发版工具链修复（Feishu 目录名 / 迁移 `syncVersion` 改读 `version.json`，见 §1.4）
+9. `7d1cf11` **未登录导航守卫**（注册页返回泄漏 R1+R2+R3+R4，见 §1.5）
+10. `0c9ac5f` 环境纪律文档（纯文档）
+11. `6b04935` **七源版本号 10.19.2→10.19.3**（versionCode 101903）+ releaseNotes/VERSION_HISTORY
+12. **`CHANGELOG.md` 补 10.19.2 / 10.19.3 两条**（本条提交，位于 `6b04935` 之后；内容自 `docs/RELEASE_V10.19.2.md` / `RELEASE_V10.19.3.md` 提炼）
+
+**不入本次发布的 3 个**：
+- `44fb793`（注册改引导语 + 删登记令牌）—— **已在 main**（由 team-lead 以 `e7b5869` 重放推送），**勿重复 cherry-pick**（内容相同，会报 empty/冲突）。
+- `718d0ce` / `2ff1964`（**F0-c**）—— 运行期依赖飞书「状态」选项（未补），带入会让 `ai-feedback` cron 在 main 上失败；**继续留在分支**。
 
 **B. cherry-pick 到 main 的冲突与解决**
 - `git checkout main && git cherry-pick db21274 921fddc`
@@ -57,6 +70,24 @@
   - `test:all` 目标行（**照抄**）：
     `... && npm run test:v1033 && npm run test:feedback-version && npm run test:crypto-capability && npm run test:cross`
     （含 `test:feedback-version`(F0-a) 与 `test:crypto-capability`(A)，**不含** `test:process-feedback`）
+
+**B2. ★发版前如何确认「某提交的改动已在 main」—— 不要用祖先关系判断**
+> `cherry-pick` / `replay` 会**新生成对象**，所以原提交**当然不是**新提交的祖先 —— 用
+> `git merge-base --is-ancestor <原提交> <main>` 判断「改动是否已上线」**从原理上就是错的**（本项目实测踩过）。
+> 要**比内容**，不比对象：
+```
+# 方法一(推荐): patch-id 相同 = 同一改动
+git show <原提交>          | git patch-id
+git show <main 上的提交>   | git patch-id     # 两行第一列相等 → 同一改动
+
+# 方法二(直观): 对该提交改动的每个文件逐个比内容, 全部无输出 = 完全一致
+for f in $(git show --pretty= --name-only <原提交>); do
+  git diff --stat <原提交>:"$f" <main>:"$f"
+done
+```
+> ⚠️ 注意：若 main 上还有**其他未重放的提交**也动过同一文件，方法二会显示**非空 diff** ——
+> 此时要确认差异**只来自那些未重放的提交**。实例：`44fb793` 与 `e7b5869` 的 **patch-id 相同**
+> （`18010065…`），逐文件仅在 `js/09-web-sync.js` 差 **3 行**，而那 3 行正是**尚未重放的 `cc6acd6`** 的注释改动。
 
 **C. 七源版本号 10.19.2 → 10.19.3（原子同改；versionCode 101902 → 101903 = 10×10000+19×100+3）**
 | 源 | 位置 | 目标 |
