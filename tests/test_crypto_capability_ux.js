@@ -100,7 +100,7 @@ try {
 
 section('A7 接线门禁(本测试必须可达)');
 check('package.json 有 test:crypto-capability', !!pkg.scripts['test:crypto-capability']);
-check('test:all 含 test:crypto-capability', String(pkg.scripts['test:all'] || '').indexOf('test:crypto-capability') >= 0);
+check('test:all 经 run_all_tests 闭包可达 test:crypto-capability', require('../scripts/run_all_tests.js').TEST_SUITES.indexOf('test:crypto-capability') >= 0);
 
 console.log('\n==============================================================');
 console.log('提交组A 加密能力自检+两因区分 测试汇总: ' + pass + ' passed, ' + fail + ' failed');

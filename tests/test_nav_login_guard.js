@@ -122,7 +122,7 @@ section('S5 R3 行为级: 未登录时不得显示具体身份');
 section('S6 接线门禁(本测试必须可达)');
 const pkg = JSON.parse(src('package.json'));
 check('package.json 有 test:nav-guard', !!pkg.scripts['test:nav-guard']);
-check('test:all 含 test:nav-guard', String(pkg.scripts['test:all'] || '').indexOf('test:nav-guard') >= 0);
+check('test:all 经 run_all_tests 闭包可达 test:nav-guard', require('../scripts/run_all_tests.js').TEST_SUITES.indexOf('test:nav-guard') >= 0);
 
 console.log('\n==============================================================');
 console.log('未登录导航守卫测试汇总: ' + pass + ' passed, ' + fail + ' failed');

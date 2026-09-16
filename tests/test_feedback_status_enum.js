@@ -206,8 +206,8 @@ section('C. 接线门禁');
 let PKG = {};
 try { PKG = JSON.parse(src('package.json')); } catch(e){ /* 下面断言会红 */ }
 check('C1 package.json 有 test:feedback-status', !!(PKG.scripts && PKG.scripts['test:feedback-status']));
-check('C2 test:all 含 test:feedback-status(未入 test:all 会被 test:ci-coverage 拦)',
-  String((PKG.scripts && PKG.scripts['test:all']) || '').indexOf('test:feedback-status') >= 0);
+check('C2 test:all 经 run_all_tests 闭包可达 test:feedback-status(否则被 test:ci-coverage 拦)',
+  require('../scripts/run_all_tests.js').TEST_SUITES.indexOf('test:feedback-status') >= 0);
 check('C3 test:feedback-status 指向本文件',
   String((PKG.scripts && PKG.scripts['test:feedback-status']) || '').indexOf('test_feedback_status_enum.js') >= 0);
 

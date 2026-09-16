@@ -240,8 +240,8 @@ section('G. CI 接线门禁');
 let PKG = {};
 try { PKG = JSON.parse(src('package.json')); } catch (e) { /* 下面断言会红 */ }
 check('G1 package.json 有 test:process-feedback', !!(PKG.scripts && PKG.scripts['test:process-feedback']));
-check('G2 test:all 含 test:process-feedback',
-  String((PKG.scripts && PKG.scripts['test:all']) || '').indexOf('test:process-feedback') >= 0);
+check('G2 test:all 经 run_all_tests 闭包可达 test:process-feedback',
+  require('../scripts/run_all_tests.js').TEST_SUITES.indexOf('test:process-feedback') >= 0);
 check('G3 test:process-feedback 指向本文件',
   String((PKG.scripts && PKG.scripts['test:process-feedback']) || '').indexOf('test_process_feedback_wiring.js') >= 0);
 
