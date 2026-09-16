@@ -22,16 +22,78 @@ let _draftScreenshots = []; // [{blob, dataUrl, name}]
 let _feedbackList = [];
 let _currentFilter = 'all';
 
+/* ===========================================================
+ * F0-b 反馈状态枚举对齐 (§1.2 / §1.3 / §1.4)
+ *   内部 5 态 + 用户可见 3 桶; 状态值与字段名**单一真源集中定义**(勿散落字面量)。
+ *   ⚠️ 本区块内的常量/纯函数由 tests/test_feedback_status_enum.js 按名提取(vm)测试,
+ *      改动时请保持各自**独立可提取**(一个声明一个名字)。
+ *   ⚠️ **不得单独发布**: 必须与 F0-c 一起、且等飞书「状态」补选项后才激活(见 PENDING_ISSUES §8)。
+ * =========================================================== */
+/* 内部 5 态(§1.2) —— 唯一真源 */
+const FEEDBACK_STATUS = Object.freeze({
+  PENDING: '待处理',
+  ANALYZING: '分析中',
+  FIXING: '修复中',
+  FIXED: '已修复',
+  FAILED: '修复失败',
+});
+/* 5 态全集(顺序即飞书「状态」选项顺序) */
+const FEEDBACK_STATUS_OPTIONS = [
+  FEEDBACK_STATUS.PENDING, FEEDBACK_STATUS.ANALYZING,
+  FEEDBACK_STATUS.FIXING, FEEDBACK_STATUS.FIXED, FEEDBACK_STATUS.FAILED,
+];
+/* §1.4 历史/别名 → 内部终态 归一表: 旧的两个终态值 '已解决'(脚本写) 与 '已处理'(组长写) 统一为 '已修复' */
+const LEGACY_STATUS_MAP = { '已解决': FEEDBACK_STATUS.FIXED, '已处理': FEEDBACK_STATUS.FIXED };
+/* §1.3 B0: AI 承载字段(与 F0-b 同批建表); 回写前须校验存在 */
+const FEEDBACK_AI_FIELDS = [ 'AI定位报告', '修复PR链接', '门禁结果', '尝试次数' ];
+
 /* V10.16.7 反馈修复: Bitable 单选字段在不同API版本/客户端可能返回数组
  * (如 状态:["待处理"]),统一展平为字符串,两端(安卓直连/网页镜像)通吃 */
 function _flat(v){ return Array.isArray(v) ? v.join('') : v; }
-/* V10.16.7 状态流转对齐: AI分析后→待处理,组长确认处理好后→已处理。
- * 历史云端值'已解决'归一为'已处理',本地旧值'分析中'归一为'待处理' */
+
+/* F0-b 状态归一(§1.2): 历史/别名 → 内部 5 态。
+ * 与旧实现的区别: **不再**把 '分析中' 降级为 '待处理'(分析中是一个真实、用户可见的态)。 */
 function _normStatus(s){
   s = _flat(s);
-  if (s === '已解决') return '已处理';
-  if (s === '分析中') return '待处理';
-  return s || '待处理';
+  if (LEGACY_STATUS_MAP[s]) return LEGACY_STATUS_MAP[s];   /* 已解决/已处理 → 已修复 */
+  if (FEEDBACK_STATUS_OPTIONS.indexOf(s) >= 0) return s;   /* 已是内部 5 态(含 分析中/修复中/修复失败) */
+  return s || FEEDBACK_STATUS.PENDING;                     /* 空/未知 → 待处理(兜底) */
+}
+
+/* F0-b 内部态 → 用户可见 3 桶(§1.2): 返回 {label,color}。
+ *   待处理(含 分析中) / 修复中 / 已处理(含 已修复)
+ *   '修复失败' 字样**仅组长可见**; 组员折入 '已处理' 桶(避免组员追问且无自助能力)。 */
+function _uiBucket(status, isLeader){
+  const st = _normStatus(status);
+  if (st === FEEDBACK_STATUS.FIXED)  return { label: '已处理', color: 'status-done' };
+  if (st === FEEDBACK_STATUS.FIXING) return { label: '修复中', color: 'bg-blue-50 text-blue-600' };
+  if (st === FEEDBACK_STATUS.FAILED) {
+    return isLeader
+      ? { label: '修复失败', color: 'bg-red-50 text-red-600' }
+      : { label: '已处理', color: 'status-done' };
+  }
+  return { label: '待处理', color: 'bg-amber-50 text-amber-600' }; /* 待处理 + 分析中 */
+}
+
+/* §1.3 回写前字段存在性校验(纯函数): 目标字段缺失即**点名**。
+ * 动机: 防"写到不存在的字段被静默丢弃"(F5 失败降级最需可观测的点)。 */
+function checkFeedbackFields(actualFieldNames, required){
+  const actual = Array.isArray(actualFieldNames) ? actualFieldNames : [];
+  const need = Array.isArray(required) ? required : [];
+  const missing = need.filter(function(n){ return actual.indexOf(n) < 0; });
+  return { ok: missing.length === 0, missing: missing };
+}
+/* §1.3 断言版: 缺字段即**抛错**(带 .code), 绝不静默写入不存在的字段。
+ * 由 F1/F2/F3/F5 的回写路径调用(本批只提供机制, 不接入运行期写入)。 */
+function assertFeedbackFields(actualFieldNames, required){
+  const r = checkFeedbackFields(actualFieldNames, required);
+  if (!r.ok) {
+    const e = new Error('反馈表缺少字段: ' + r.missing.map(function(m){ return '`' + m + '`'; }).join('、') +
+      ' —— 请先在多维表格补齐上述字段后再回写(避免写入不存在的字段被静默丢弃)');
+    e.code = 'FEEDBACK_FIELD_MISSING';
+    throw e;
+  }
+  return true;
 }
 
 /** 初始化反馈页面 */
@@ -106,6 +168,7 @@ function renderFeedbackForm() {
         <div class="flex gap-2 overflow-x-auto pb-1 scroll-y">
           <button class="fb-filter-btn px-3 py-1.5 rounded-full text-xs bg-blue-500 text-white whitespace-nowrap" data-filter="all" onclick="filterFeedback('all')">全部</button>
           <button class="fb-filter-btn px-3 py-1.5 rounded-full text-xs bg-gray-100 text-gray-600 whitespace-nowrap" data-filter="待处理" onclick="filterFeedback('待处理')">待处理</button>
+          <button class="fb-filter-btn px-3 py-1.5 rounded-full text-xs bg-gray-100 text-gray-600 whitespace-nowrap" data-filter="修复中" onclick="filterFeedback('修复中')">修复中</button>
           <button class="fb-filter-btn px-3 py-1.5 rounded-full text-xs bg-gray-100 text-gray-600 whitespace-nowrap" data-filter="已处理" onclick="filterFeedback('已处理')">已处理</button>
         </div>
         <div id="fb-list-container" class="space-y-3">
@@ -513,9 +576,9 @@ function renderFeedbackList() {
     const myPhone = user && user.phone;
     list = list.filter(f => f.reporterPhone === myPhone || f._isMine);
   }
-  // 筛选
+  // 筛选(F0-b: 用用户可见 3 桶匹配; 桶由 _uiBucket 内部归一后得出)
   if (_currentFilter !== 'all') {
-    list = list.filter(f => f.status === _currentFilter);
+    list = list.filter(f => _uiBucket(f.status, isLeader).label === _currentFilter);
   }
 
   if (!list.length) {
@@ -524,12 +587,11 @@ function renderFeedbackList() {
   }
 
   container.innerHTML = list.map(f => {
-    const st = _normStatus(f.status);
-    const statusColor = st === '已处理' ? 'status-done' : 'bg-amber-50 text-amber-600';
+    const bucket = _uiBucket(f.status, isLeader);
     return `<div class="bg-white rounded-xl p-3 shadow-sm cursor-pointer active:bg-gray-50" onclick="showFeedbackDetail('${f.id}')">
       <div class="flex items-center justify-between mb-2">
         <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">${f.category || '未分类'}</span>
-        <span class="text-xs px-2 py-0.5 rounded-full ${statusColor}">${st}</span>
+        <span class="text-xs px-2 py-0.5 rounded-full ${bucket.color}">${bucket.label}</span>
       </div>
       <div class="text-sm text-gray-800 line-clamp-2 mb-2">${escapeHtml(f.description || '')}</div>
       <div class="flex items-center justify-between text-xs text-gray-400">
@@ -555,13 +617,14 @@ window.filterFeedback = function(status) {
 window.showFeedbackDetail = function(id) {
   const fb = _feedbackList.find(f => f.id === id);
   if (!fb) return;
-  const st = _normStatus(fb.status);
-  const statusColor = st === '已处理' ? 'status-done' : 'bg-amber-50 text-amber-600';
+  const _me = state && state.currentUser;
+  const isLeaderView = !!(_me && _me.role === 'admin');
+  const bucket = _uiBucket(fb.status, isLeaderView);   // F0-b: 用户 3 桶(组长可见"修复失败"字样)
 
   let html = `
     <div class="flex items-center gap-2 mb-3">
       <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">${fb.category || '未分类'}</span>
-      <span class="text-xs px-2 py-0.5 rounded-full ${statusColor}">${st}</span>
+      <span class="text-xs px-2 py-0.5 rounded-full ${bucket.color}">${bucket.label}</span>
     </div>
     <div class="text-sm text-gray-800 leading-relaxed mb-4">${escapeHtml(fb.description || '')}</div>
   `;
@@ -588,23 +651,23 @@ window.showFeedbackDetail = function(id) {
     <div class="flex justify-between"><span>提交时间</span><span class="text-gray-700">${formatTime(fb.createdAt)}</span></div>
   </div>`;
 
-  // V10.15.11: 组长状态审核——对云端已同步的反馈可标记 已解决/待处理
+  // V10.15.11→F0-b: 组长状态审核(对云端已同步的反馈)。按钮判定用用户桶, 写入值用**内部终态 '已修复'**。
   // (网页镜像端无上行通道,审核按钮隐藏并提示走安卓端)
   // V10.15.11: 组长角色为admin(isLeader()==='admin'),此前误用'leader'致按钮永不渲染
-  const user4btn = state && state.currentUser;
+  const user4btn = _me; /* F0-b: 复用上方已取的当前用户 */
   if (user4btn && user4btn.role === 'admin' && fb.recordId && window.FeedbackBase && window.FeedbackBase.isAvailable()) {
     if (window.__TCG_WEB_MIRROR__) {
       html += `<div class="mt-4 pt-3 border-t border-gray-100">
         <div class="text-xs text-gray-400 leading-relaxed">状态审核请通过安卓APP操作(网页版为只读镜像)</div>
       </div>`;
     } else {
-      // V10.16.7 状态流转: AI分析后→待处理,组长确认处理好后→已处理
-      const canResolve = st !== '已处理';
-      const canReopen = st === '已处理';
+      // F0-b(§3.2): 判定改用用户桶(bucket.label); 写入值改内部终态 '已修复'(显示仍由 _uiBucket 折叠)
+      const canResolve = bucket.label !== '已处理';
+      const canReopen = bucket.label === '已处理';
       html += `<div class="mt-4 pt-3 border-t border-gray-100">
         <div class="text-xs font-bold text-gray-600 mb-2">组长审核</div>
         <div class="flex gap-2">
-          ${canResolve ? `<button onclick="setFeedbackStatus('${fb.id}','已处理')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-green-600 text-white active:scale-[0.98] transition-transform">✓ 标记已处理</button>` : ''}
+          ${canResolve ? `<button onclick="setFeedbackStatus('${fb.id}','已修复')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-green-600 text-white active:scale-[0.98] transition-transform">✓ 标记已处理</button>` : ''}
           ${canReopen ? `<button onclick="setFeedbackStatus('${fb.id}','待处理')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-amber-500 text-white active:scale-[0.98] transition-transform">↩ 重新打开(待处理)</button>` : ''}
         </div>
       </div>`;
@@ -615,8 +678,8 @@ window.showFeedbackDetail = function(id) {
   openModal('modal-fb-detail');
 };
 
-/** V10.15.11: 组长更新反馈状态(本地+云端Bitable)
- *  需求: 反馈过并分析过的问题提交到组长端,由组长确定反馈的问题状态-已解决/待处理 */
+/** V10.15.11→F0-b: 组长更新反馈状态(本地+云端Bitable)
+ *  写入值用**内部 5 态**(组长"标记已处理"实际写 '已修复'); 显示由 _uiBucket 折叠为用户桶 */
 window.setFeedbackStatus = async function(id, status) {
   // 函数层角色守卫: 组长角色为admin,防止绕过UI直接调用(网页镜像端无上行也会被FeedbackBase封堵)
   const me = state && state.currentUser;
