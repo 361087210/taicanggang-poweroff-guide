@@ -172,6 +172,7 @@ node scripts/validate_web_assets.js
 10. **手写 `refs/heads/<带斜杠的名字>` 前必须先建父目录**：`refs/heads/release/`、`refs/heads/feat/` 不存在时，`[IO.File]::WriteAllText` 会**抛异常且可能被静默吞掉** → 分支 ref 落不了盘、HEAD 指向不存在的 ref（曾导致 `feat-f0b` 被错落到另一分支的 tip）。处置：先 `New-Item -ItemType Directory -Force` 建父目录；**含 `/` 的分支名在本环境不可靠**，优先用**扁平名**（远端可用 refspec 映射成带斜杠的名字）。
 11. **`reset --hard` / `checkout -f` 之前必须先提交**：未提交的改动会被**直接丢弃**（本会话丢过一次"门禁接线"编辑，只能重做一遍）。同理，要丢弃临时提交（如变异测试提交）时，**先提交要保留的东西，再 reset**。
 12. **不要把 HEAD 留在 detached 就下结论**：detached 下 `--abbrev-ref HEAD` = `'HEAD'` ⇒ 任何"是否 main"的门禁会**降级**（本会话第一次跑变异③得到 `test:all=0`，真因就是上一轮 `checkout --detach` 没回去；**那是假绿灯，不是通过**）。跑门禁/回归前先确认 `git rev-parse --abbrev-ref HEAD` 是期望的分支名。
+13. **`cherry-pick` / `merge` 失败会留下中间态文件**（`.git/CHERRY_PICK_HEAD` / `.git/MERGE_HEAD`）：此时**工作树与分支可能都正常**，但仓库停在"操作进行中"状态，后续 git 命令行为异常。**清理用 `git cherry-pick --quit`（只清中间态，不动 HEAD 与工作树）**；**不要**无脑 `--abort` —— 它会**重置 HEAD**，**有丢提交风险**。每次 cherry-pick/merge 之后一并 `ls .git/CHERRY_PICK_HEAD .git/MERGE_HEAD` 检查。
 
 ### 6.0 门禁**接线 / 健壮性修复**（`security-sensitive`：`scripts/check_*.js`，**由 team-lead 审 diff 后放行**）
 **问题（自查发现并上报，team-lead 独立核验一致）**：门禁**从未真正执行** ——
