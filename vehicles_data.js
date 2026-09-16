@@ -1,4 +1,4 @@
-// 飞书云端同步于 2026-09-15T04:41:03.746Z
+// 飞书云端同步于 2026-09-16T05:54:28.025Z
 window.VEHICLES = [
   {
     "id": 1,
@@ -42,15 +42,15 @@ window.VEHICLES = [
     "brandId": "byd",
     "brand": "比亚迪",
     "series": "海豚",
-    "config": "高配",
-    "display": "比亚迪海豚(高配)",
+    "config": "EV",
+    "display": "比亚迪海豚EV",
     "size": "",
     "powerType": "纯电",
     "position": "后排座椅腿托下方",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
-      "2.打开后排车门，短按钥匙锁车键。",
-      "3.塑料撬棍撬开电池盖板，用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
+      "2.打开副驾驶和右后车门，副驾驶座椅调到最前方，关闭副驾驶车门，短按钥匙锁车键。",
+      "3.进入右后排，副驾驶底部电池用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
       "4.关闭后排车门，再次拉动车门确保关闭。"
     ],
     "keyFrame": [
@@ -69,10 +69,19 @@ window.VEHICLES = [
       "vehicle_images/image2.jpeg",
       "vehicle_images/image4.jpeg"
     ],
-    "videos": 1,
-    "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
-    ]
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "",
+      "",
+      ""
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
   },
   {
     "id": 3,
@@ -506,7 +515,7 @@ window.VEHICLES = [
       "3.放入钥匙盒关好，封好铅封。"
     ],
     "keyContainer": [
-      "1.车辆钥匙数量及绑扎检查完。",
+      "1.车辆钥匙数量及绑扎检查完���",
       "2.确认断电无误后放置于车内中控台。"
     ],
     "remarks": "放干燥剂",
@@ -523,7 +532,7 @@ window.VEHICLES = [
     "id": 16,
     "brandId": "byd",
     "brand": "比亚迪",
-    "series": "���",
+    "series": "元",
     "config": "元PRO",
     "display": "比亚迪元(元PRO)",
     "size": "",
@@ -543,11 +552,22 @@ window.VEHICLES = [
       "2.确认断电无误后放置于车内中控台。"
     ],
     "remarks": "放干燥剂",
-    "photos": 1,
+    "photos": 2,
     "photoPaths": [
-      "vehicle_images/image23.jpeg"
+      "vehicle_images/比亚迪元(元PRO)_p1_f17d44b3.jpeg",
+      "vehicle_images/比亚迪元(元PRO)_p2_93102652.jpeg"
     ],
-    "videos": 0
+    "photoSections": [
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "车头",
+      "车尾"
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
   },
   {
     "id": 17,
@@ -1125,7 +1145,7 @@ window.VEHICLES = [
     "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
-      "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
+      "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出���钥匙。",
       "2.关闭车门，短按钥匙锁车键。",
       "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
       "4.关闭前机盖，再次拉动车门确保关闭。"
@@ -2575,10 +2595,19 @@ window.VEHICLES = [
       "vehicle_images/image161.jpeg",
       "vehicle_images/image162.jpeg"
     ],
-    "videos": 1,
-    "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
-    ]
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "",
+      "",
+      ""
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
   },
   {
     "id": 74,
