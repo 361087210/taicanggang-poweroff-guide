@@ -168,6 +168,35 @@ node scripts/validate_web_assets.js
    `git checkout -B main <远端 tip>` → `git cherry-pick <我们的提交>` → **手动写 `.git/refs/heads/main`（LF）** → `git show-ref` 复核 → `git ls-remote` 复核远端 → `git push origin main`（**必须 PAT**：`GITHUB_TOKEN` 不触发下游 Deploy Pages）。
 7. 本环境 `fetch`/`push` 会间歇 **502**；`git ls-remote` 可作轻量网络探测。
 8. **推论**：远端 main 会被 cron（`chore: 自动同步数据`）持续推进 —— 任何"重放到 main"的计划都要**基于当时的远端 tip**，且用 `ls-remote` 复核，不能假设 tip 不变。
+9. **★ 动 git 前先查 `.git/index.lock`**（2026-09-16 定位到的"幽灵故障"共同根因）：残留锁会让**所有"写索引"的命令静默失败** —— `checkout` / `read-tree` / `reset --hard` / `commit` 都会**报错但状态不变**，表现正是本会话反复出现的"命令报成功但状态没变"（如 `reset --hard` 后工作树/索引仍停在旧树）。处置：`ls .git/index.lock`；存在且确认**无 git 在跑** → **删除后再操作**。
+10. **手写 `refs/heads/<带斜杠的名字>` 前必须先建父目录**：`refs/heads/release/`、`refs/heads/feat/` 不存在时，`[IO.File]::WriteAllText` 会**抛异常且可能被静默吞掉** → 分支 ref 落不了盘、HEAD 指向不存在的 ref（曾导致 `feat-f0b` 被错落到另一分支的 tip）。处置：先 `New-Item -ItemType Directory -Force` 建父目录；**含 `/` 的分支名在本环境不可靠**，优先用**扁平名**（远端可用 refspec 映射成带斜杠的名字）。
+
+### 6. 「两端错配」防复发门禁（分支 `feat-two-end-gate`，已实现）
+**拦截的系统性根因**：网页端跟 `main` **自动更新**、App 只跟 **tag** 更新 ⇒ 代码进了 main 却
+**没升版本号 / 没打 tag** = **静默错配**（本次线上故障的根因）。
+- **判定**（`scripts/check_two_end_sync.js`）：`TAG`=语义化最新 tag；**无 tag → exit 2 跳过**（防浅克隆/首次误报）；
+  `base=merge-base(TAG,HEAD)`；`diff base..HEAD ∩ SHARED_CODE_PATHS` 为空 → PASS；
+  非空且 `version.json@HEAD == version.json@TAG` → **FAIL(1)**（未发布变更堆积）；版本已升 → **WARN(0)**（发布窗口内瞬态）；
+  **ref ≠ main 一律降级 WARN**（特性分支/PR 不该因此变红）。
+- **`SHARED_CODE_PATHS`**：`js/**`、`demo.html`、`feishu-api.js`、`css/**`、`vendor/**`（两端都发、影响运行契约）。
+- **告警必须自解释**：固定三段（**①当前未阻断 → ②第 2 次发布后转 FAIL → ③现在该做什么**），用 GitHub
+  `::warning::`（**FAIL 用 `::error::`**）——**藏在日志里的告警等于没报**。
+- **告警→FAIL 的切换需人工确认，不自动**：`--record` 人工登记已观察周期数（状态文件 `.ci/two_end_gate_state.json`，需人工提交）。
+- **变异测试** `tests/test_v1034_two_end_gate.js`（M0–M8，23 断言）：M1 改 `js/**` 不动版本 → **FAIL 且点名文件**；
+  **M2/M3 反假阳性**（只改 `web-data/**`、只改 `index.html` → 必须 PASS）；M4 bump 无 tag → WARN；M5 补 tag → PASS；
+  M6 无 tag → exit 2；M7 ref≠main → WARN；M8 还原 → PASS。**没有 M2/M3，白名单被写宽了也没人发现。**
+- **接入**：`ci.yml` 加 **`fetch-depth: 0`**（否则拿不到 tag → 恒 exit 2，门禁形同不存在）；已并入 `test:all`（否则 `test:ci-coverage` 判"未被触达"）。
+
+**★ 已知局限（架构师明确说过做不到，**不要硬造一个会误报的东西**）**
+1. **只覆盖"版本维度"** —— 判不了"**两端契约差异**"（隐式契约不是 `main`-vs-`tag` 的 diff 能表达的）。
+2. **`vehicles_data.js` 被永久排除**（**cron 每 15 分钟重写** → 纳入必红）⇒ 其**结构性变更不拦**。
+   若要覆盖，需另设"按字段/结构指纹"的独立巡检（**当前未做**，登记在此以免被当成遗漏）。
+
+### 7. 组员口令重置加固（`455dbb4`）—— **已评估、已实现、待随 10.20.0 发布**
+- **内容**：`resetMemberPass` 由"写死 `123456`"改为 **12 位随机一次性口令**（`crypto.getRandomValues` + 拒绝采样 + 去歧义字符集）、**用同一口令重算 `linkKey`**、弹窗**仅显示一次**、toast 不再念出口令；含 `tests/test_v1035_reset_member_pass.js`（16 断言，先红后绿）。
+- **为何不能单独落**：它改 **`js/`**，按「两端错配门禁」规则属共享代码 → **必须随版本升号**发布，否则 `main` 会被门禁判 FAIL。
+- **裁定**：**改乘 10.20.0**（team-lead）。实现已完成并提交在 `feat-two-end-gate`（`455dbb4`），**不是遗漏**，勿当缺失处理。
+- 同分支另含门禁本体（`cefd791`）与其"落地时机"（`9b0da2d`），二者**已随 10.19.3 之后落地**。
 
 ## 已完成（2026-09-15 本轮）
 
