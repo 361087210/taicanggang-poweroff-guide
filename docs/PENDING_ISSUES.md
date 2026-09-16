@@ -170,6 +170,8 @@ node scripts/validate_web_assets.js
 8. **推论**：远端 main 会被 cron（`chore: 自动同步数据`）持续推进 —— 任何"重放到 main"的计划都要**基于当时的远端 tip**，且用 `ls-remote` 复核，不能假设 tip 不变。
 9. **★ 动 git 前先查 `.git/index.lock`**（2026-09-16 定位到的"幽灵故障"共同根因）：残留锁会让**所有"写索引"的命令静默失败** —— `checkout` / `read-tree` / `reset --hard` / `commit` 都会**报错但状态不变**，表现正是本会话反复出现的"命令报成功但状态没变"（如 `reset --hard` 后工作树/索引仍停在旧树）。处置：`ls .git/index.lock`；存在且确认**无 git 在跑** → **删除后再操作**。
 10. **手写 `refs/heads/<带斜杠的名字>` 前必须先建父目录**：`refs/heads/release/`、`refs/heads/feat/` 不存在时，`[IO.File]::WriteAllText` 会**抛异常且可能被静默吞掉** → 分支 ref 落不了盘、HEAD 指向不存在的 ref（曾导致 `feat-f0b` 被错落到另一分支的 tip）。处置：先 `New-Item -ItemType Directory -Force` 建父目录；**含 `/` 的分支名在本环境不可靠**，优先用**扁平名**（远端可用 refspec 映射成带斜杠的名字）。
+11. **`reset --hard` / `checkout -f` 之前必须先提交**：未提交的改动会被**直接丢弃**（本会话丢过一次"门禁接线"编辑，只能重做一遍）。同理，要丢弃临时提交（如变异测试提交）时，**先提交要保留的东西，再 reset**。
+12. **不要把 HEAD 留在 detached 就下结论**：detached 下 `--abbrev-ref HEAD` = `'HEAD'` ⇒ 任何"是否 main"的门禁会**降级**（本会话第一次跑变异③得到 `test:all=0`，真因就是上一轮 `checkout --detach` 没回去；**那是假绿灯，不是通过**）。跑门禁/回归前先确认 `git rev-parse --abbrev-ref HEAD` 是期望的分支名。
 
 ### 6.0 门禁**接线 / 健壮性修复**（`security-sensitive`：`scripts/check_*.js`，**由 team-lead 审 diff 后放行**）
 **问题（自查发现并上报，team-lead 独立核验一致）**：门禁**从未真正执行** ——
