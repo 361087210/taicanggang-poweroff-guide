@@ -58,7 +58,12 @@ check('A15 resetMemberPass 函数层组长守卫+禁重置组长', src.cache.inc
 
 /* ---------- V10.16.7 反馈修复静态检查 ---------- */
 check('A16 状态流转对齐: 提交初始状态为待处理(AI分析后)', src.feedback.includes("status: '待处理'"));
-check('A17 状态归一化: 已解决→已处理/分析中→待处理(历史数据兼容)', src.feedback.includes("if (s === '已解决') return '已处理';") && src.feedback.includes("if (s === '分析中') return '待处理';"));
+check('A17 状态归一化: 历史/别名→内部终态(已解决/已处理→已修复; 分析中不再降级; 单一真源 LEGACY_STATUS_MAP)',
+  src.feedback.includes('const LEGACY_STATUS_MAP') &&
+  src.feedback.includes("'已解决': FEEDBACK_STATUS.FIXED") &&
+  src.feedback.includes("'已处理': FEEDBACK_STATUS.FIXED") &&
+  !src.feedback.includes("if (s === '分析中') return '待处理';") &&
+  !src.feedback.includes("if (s === '已解决') return '已处理';"));
 check('A18 Bitable字段展平防御(数组状态值通吃)', src.feedback.includes('function _flat(v){ return Array.isArray(v) ? v.join(\'\') : v; }'));
 check('A19 feishu-api.js 配置回落getFeishuCfg(反馈/同步凭据统一)', src.api.includes('typeof getFeishuCfg === \'function\''));
 check('A20 bitableListRecords分页拉全量(page_token循环)', src.api.includes("params.set('page_token', pageToken)") && src.api.includes('has_more'));
@@ -182,7 +187,7 @@ setTimeout(async () => {
     G(`state.currentUser = { id: 'user1', name: '组员乙', phone: '13911112222', role: 'user', status: 'active', password: 'x$y' };`);
     window.localStorage.setItem('tcg_feedback_list', JSON.stringify([]));
     // 模拟云端: 一条他人反馈 + 一条组员乙自己的反馈(新设备本地无记录)
-    // 注1: 云端历史状态值'已解决'应被V10.16.7归一化为'已处理'
+    // 注1: 云端历史状态值'已解决'应被 F0-b 归一化为**内部终态'已修复'**(用户桶折叠显示'已处理')
     // 注2: '提交人'用数组形态模拟Bitable单选字段,验证V10.16.7 _flat展平防御
     const cloudItems = [
       { record_id: 'rec_other', fields: { '反馈ID': 'fb_other', '问题板块': '其他问题', '状态': '待处理', '提交人': '组员丙', '平台': 'Android' } },
@@ -195,7 +200,7 @@ setTimeout(async () => {
     await new Promise(r => setTimeout(r, 300));
     const stored = JSON.parse(window.localStorage.getItem('tcg_feedback_list'));
     check('B2-1 云端拉回自己的反馈(fb_mine_9)', stored.some(f => f.id === 'fb_mine_9' && f._isMine));
-    check('B2-2 云端历史值已解决归一为已处理+AI摘要/文档链接保留', (() => { const m = stored.find(f => f.id === 'fb_mine_9'); return m && m.status === '已处理' && m.analysisSummary === '已定位根因' && m.techDocUrl === 'https://doc.example/x'; })());
+    check('B2-2 云端历史值已解决归一为内部终态已修复(不再字面残留)+AI摘要/文档链接保留', (() => { const m = stored.find(f => f.id === 'fb_mine_9'); return m && m.status === '已修复' && m.status !== '已解决' && m.analysisSummary === '已定位根因' && m.techDocUrl === 'https://doc.example/x'; })());
     check('B2-3 他人反馈不进入组员本地列表(fb_other排除)', !stored.some(f => f.id === 'fb_other'));
 
     // 组长(admin)跨设备: 切换到组长后,云端他人反馈也应进入组长本地列表
