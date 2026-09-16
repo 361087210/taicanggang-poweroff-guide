@@ -21,8 +21,12 @@ jobs:
     name: Web资产与安全校验
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 —— **两端错配门禁必需**: 默认浅克隆(depth 1)拿不到 tag 与
+      #   merge-base, 门禁会退化成恒 exit 2(等于不存在)。见 scripts/check_two_end_sync.js
       - name: 检出代码
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: 配置 Node 22
         uses: actions/setup-node@v5
