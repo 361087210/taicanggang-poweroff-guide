@@ -154,6 +154,11 @@ setTimeout(async () => {
     check('2.3 弹层打开→仅关弹层', !m1.classList.contains('show') && G('state.screen') === 'screen-my');
   } else check('2.3 弹层打开→仅关弹层', true, '无弹层(跳过)');
 
+  /* V10.19.3: 以下 2.4~2.8 涉及的页面(详情/编辑/同步/组员/我的)都是**需登录**页面,
+   * 故显式置入登录用户作为真实前置条件。旧用例默认 state.currentUser=null, 之所以曾经
+   * 通过, 是因为当时 goBack 缺少登录守卫(与"注册页返回泄漏"同一根因); 现在未登录会被
+   * 结构性收口到登录页, 故必须给出真实前置, 否则测的是"不可能存在的状态"。 */
+  G("state.currentUser={id:'t1',name:'测试组长',phone:'13800000000',role:'admin',status:'active'}");
   // 2.4 正常历史栈回退 (真实navHistory变量)
   G("state.screen='screen-detail'"); G("navHistory=['screen-vehicles']");
   G('goBack()');
@@ -192,6 +197,8 @@ setTimeout(async () => {
   G("state.screen='screen-my'"); G("navHistory=['screen-login']");
   G('goBack()');
   check('2.8 登出后返回键不回登录页(防御)', G('state.screen') === 'screen-vehicles');
+  // V10.19.3: 归还"未登录"前置(2.4 之前临时置入的登录用户), 避免影响后续维度用例
+  G("state.currentUser=null");
 
   console.log();
   console.log('='.repeat(62));

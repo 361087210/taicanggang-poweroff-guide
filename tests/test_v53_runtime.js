@@ -128,6 +128,11 @@ setScreen('screen-vehicles');
 const screenBefore = state().screen;
 vm.runInContext('lastBackPressTs=Date.now()-100;handleHardwareBack()', ctx);
 check('优先级5: 主Tab单次返回不切页(等待双击)', state().screen === screenBefore);
+/* V10.19.3: 子页面(详情/编辑)与导航栈用例均属"需登录"场景 —— 显式置入登录用户。
+ * 旧用例默认 state.currentUser=null, 其"返回主Tab/智能回退vehicles"的期望其实是依赖了
+ * 当时 goBack 缺失的登录守卫(与"注册页返回泄漏"同一根因); 现在未登录会被结构性收口到
+ * 登录页, 故必须给出真实前置, 否则测的是"不可能存在的状态"。 */
+vm.runInContext("state.currentUser={id:'t1',name:'测试组长',phone:'13800000000',role:'admin',status:'active'}", ctx);
 setScreen('screen-detail');
 vm.runInContext("navHistory=[];state.screen='screen-detail';handleHardwareBack()", ctx);
 check('优先级6: 子页面返回主Tab', state().screen === 'screen-vehicles');
@@ -163,6 +168,8 @@ vm.runInContext("showScreen('screen-data')", ctx);
 check('进入主Tab清空栈', vm.runInContext('navHistory.length', ctx) === 0);
 vm.runInContext("state.screen='screen-detail';navHistory=[];goBack()", ctx);
 check('栈空时智能回退到vehicles', vm.runInContext('state.screen', ctx) === 'screen-vehicles');
+// V10.19.3: 归还"未登录"前置(此前临时置入的登录用户), 避免影响后续用例
+vm.runInContext("state.currentUser=null", ctx);
 
 // ---------- 汇总 ----------
 console.log('\n' + '='.repeat(52));

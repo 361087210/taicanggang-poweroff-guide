@@ -424,8 +424,20 @@ function isLeader(){return state.currentUser&&state.currentUser.role==='admin';}
 function canEdit(){return isLeader();}
 
 function updateMyInfo(){
-  if(!state.currentUser)return;
-  const card=document.querySelector('#screen-my .user-card');
+  const _card=document.querySelector('#screen-my .user-card');
+  if(!state.currentUser){
+    /* R3 V10.19.3: 未登录时必须清空身份卡 —— 旧版此处直接 return, 于是 demo.html 里
+     * 硬编码占位("组长")会一直留在页面上, 让用户误以为"已登入组长账号"(返回泄漏 bug 的
+     * 观感来源)。这里统一改写为中性占位, 不展示任何具体身份。 */
+    if(_card){
+      const _a=_card.querySelector('.user-avatar'),_n=_card.querySelector('.user-name'),_r=_card.querySelector('.user-role');
+      if(_a)_a.textContent='-';
+      if(_n)_n.textContent='未登录';
+      if(_r)_r.textContent='';
+    }
+    return;
+  }
+  const card=_card;
   if(card){
     const avatar=card.querySelector('.user-avatar');
     const name=card.querySelector('.user-name');

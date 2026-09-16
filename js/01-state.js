@@ -95,6 +95,13 @@ function _activateScreen(id){
 const MAIN_TAB_SCREENS=['screen-vehicles','screen-data','screen-my'];
 const LOGIN_FAMILY_SCREENS=['screen-login','screen-register','screen-forgot'];
 function showScreen(id){
+  // R4 V10.19.3 纵深防御: 已登录用户不得进入登录族页面(注册/登录/忘记密码)。
+  // 为什么: 注册页在"已登录"状态下本就不该可达; 此处统一收口, 防将来别处再把它暴露
+  // 给已登录用户。不破坏正常流程——退出登录是"先清 currentUser(02-auth.js doLogout)
+  // 再 showScreen('screen-login')", 故不会命中本守卫。
+  if(state.currentUser&&LOGIN_FAMILY_SCREENS.includes(id)){
+    id='screen-vehicles';
+  }
   if(state.screen&&state.screen!==id){
     // V10.12: 散点push/去重/限深 → 交给navPush()统一封装(含登录族过滤)
     navPush(state.screen);
@@ -144,6 +151,13 @@ function goBack(){
   // 时直接回主Tab, 绝不让_activateScreen收到不存在的id导致返回键卡死
   if(!document.getElementById(target)){
     target='screen-vehicles';
+  }
+  /* R2 V10.19.3 结构性不变量: **无登录用户时, 任何返回路径都不得落到应用内页面**。
+   * 根因回顾: 旧版空栈兜底固定回 screen-vehicles(主界面), 于是"注册页按返回"会把未登录
+   * 用户送回主界面(并看到硬编码的占位身份)。此处统一收口, 兼顾"栈内残留已登录页"的脏栈
+   * 场景(即使将来新增登录族页面, 也不会再复现同类问题)。已登录用户不受影响。 */
+  if(!state.currentUser&&!LOGIN_FAMILY_SCREENS.includes(target)){
+    target='screen-login';
   }
   _activateScreen(target);
 }
