@@ -171,6 +171,22 @@ node scripts/validate_web_assets.js
 9. **★ 动 git 前先查 `.git/index.lock`**（2026-09-16 定位到的"幽灵故障"共同根因）：残留锁会让**所有"写索引"的命令静默失败** —— `checkout` / `read-tree` / `reset --hard` / `commit` 都会**报错但状态不变**，表现正是本会话反复出现的"命令报成功但状态没变"（如 `reset --hard` 后工作树/索引仍停在旧树）。处置：`ls .git/index.lock`；存在且确认**无 git 在跑** → **删除后再操作**。
 10. **手写 `refs/heads/<带斜杠的名字>` 前必须先建父目录**：`refs/heads/release/`、`refs/heads/feat/` 不存在时，`[IO.File]::WriteAllText` 会**抛异常且可能被静默吞掉** → 分支 ref 落不了盘、HEAD 指向不存在的 ref（曾导致 `feat-f0b` 被错落到另一分支的 tip）。处置：先 `New-Item -ItemType Directory -Force` 建父目录；**含 `/` 的分支名在本环境不可靠**，优先用**扁平名**（远端可用 refspec 映射成带斜杠的名字）。
 
+### 6.0 门禁**接线 / 健壮性修复**（`security-sensitive`：`scripts/check_*.js`，**由 team-lead 审 diff 后放行**）
+**问题（自查发现并上报，team-lead 独立核验一致）**：门禁**从未真正执行** ——
+- `ci.yml` 里 `check_two_end_sync.js` **只出现在 `fetch-depth` 的注释**里，**没有任何 step 执行它**；
+- `test:all` 里接入的是 `test:two-end-gate`（**变异测试**，在 `os.tmpdir()` 造临时仓库跑 M0–M8），**不会**对真实仓库/真实 tag 跑门禁。
+⇒ **"CI 绿"证明不了门禁生效**（本会话"假绿灯"家族）。
+**另一潜在缺口**：`actions/checkout` 若为 **detached HEAD**，`--abbrev-ref HEAD` = `'HEAD'` ≠ `main` ⇒ **降级 WARN ⇒ exit 0**，门禁**永不 FAIL 且无人察觉**。
+
+**本次修复（**只动两处语义 + 一处打印，判定逻辑一字未动，不放宽任何判定**）**：
+1. **ref 解析**：`--ref` → **`GITHUB_REF_NAME`**（Actions 注入）→ 本地 `git rev-parse --abbrev-ref HEAD` → `'HEAD'`。
+   `ref` **仅用于"是否 main"**这一个判断；diff/版本一律仍取 `HEAD` 与 `TAG`。⇒ push 到 main 即使 detached 也正确判定；PR(`123/merge`)/tag push 仍按设计 **WARN**。
+2. **确定性哨兵输出**：`PASS` → `[两端错配门禁] PASS ref=… version=… tag=… sharedChanged=…`（WARN 降级显式标注 `(WARN 降级: …)`）；`SKIP` → `[两端错配门禁] SKIP ref=… reason=…`。
+   ⇒ 日志里"**跑过且通过**"与"**没跑/被跳过**"**可分辨**（这正是本次踩的坑）。为让 PASS 哨兵也能带 `version`，仅把"版本读取"提前到空变更判断之前（**不改判定**）。
+3. **`ci.yml` 增设独立 step**（`两端错配门禁`，`run: npm run check:two-end`）+ **`test:all` 亦纳入 `check:two-end`**：**退出码直接传播**，**不写** `|| true` / `continue-on-error` / `|| echo`。
+
+**副作用（须知）**：修复后 **CI 更严** —— push 到 `main` 若真有"共享代码已改但未升版本/未打 tag"，CI 会**真的红**（这是目的）。
+
 ### 6. 「两端错配」防复发门禁（分支 `feat-two-end-gate`，已实现）
 
 > ⚠️ **落地时机（必须先读）**：本门禁**必须随一次发布一并合入，否则 `main` 会恒红**。

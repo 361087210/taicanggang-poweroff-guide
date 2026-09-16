@@ -115,6 +115,19 @@ function readState(repo) {
 }
 
 function finish(result, code, args) {
+  /* ★★ 确定性"哨兵"输出(硬要求, 缺它则"CI 绿"无法分辨):
+   *   PASS / SKIP 也要**明确打印**一行 —— 否则"跑过但通过"与"根本没跑/被跳过"在日志里长得一样,
+   *   正是本会话踩过的"假绿灯"坑。WARN 降级(PASS 但 level=WARN)会**显式标注**, 不与真 PASS 混淆。
+   *   (FAIL 路径已由 emitWarning/emitError 打印 ::error:: 与详情。) */
+  if (code === EXIT_PASS) {
+    console.log('[两端错配门禁] PASS ref=' + (result.ref || '-') +
+      ' version=' + (result.mainVer || '-') +
+      ' tag=' + (result.tag || '-') +
+      ' sharedChanged=' + ((result.changedFiles || []).length) +
+      (result.level === 'WARN' ? ' (WARN 降级: ' + (result.reason || '') + ')' : ''));
+  } else if (code === EXIT_SKIP) {
+    console.log('[两端错配门禁] SKIP ref=' + (result.ref || '-') + ' reason=' + (result.reason || ''));
+  }
   if (args.json) console.log('__RESULT__' + JSON.stringify(result));
   process.exit(code);
 }
@@ -130,8 +143,19 @@ function main() {
   }
 
   /* 当前 ref(非 main 一律降级 WARN) */
+  /* ref 解析(健壮性修复, team-lead 审 diff 后放行):
+   *   `--ref` → `GITHUB_REF_NAME`(Actions 注入) → `git rev-parse --abbrev-ref HEAD` → 'HEAD'
+   * 为什么要 GITHUB_REF_NAME: Actions 的 checkout 可能是 **detached HEAD**(此时
+   *   `--abbrev-ref HEAD` = 'HEAD'), 会让"push 到 main"被**误降级**成 WARN ⇒ 门禁静默失效。
+   *   push main → 'main'(做完整校验, 且即使 detached 也用 HEAD 取 diff —— **ref 只用于"是否 main"**);
+   *   PR → '123/merge' ⇒ WARN(按设计降级); tag push → tag 名 ⇒ WARN(按设计)。
+   * ★ 注意: 本修复只改"ref 怎么来", **判定逻辑一字未动**, 不放宽任何一处。 */
   let ref = args.ref;
-  if (!ref) { try { ref = git(repo, ['rev-parse', '--abbrev-ref', 'HEAD']); } catch (e) { ref = 'HEAD'; } }
+  if (!ref) {
+    const envRef = process.env.GITHUB_REF_NAME;
+    if (envRef) ref = String(envRef);
+    else { try { ref = git(repo, ['rev-parse', '--abbrev-ref', 'HEAD']); } catch (e) { ref = 'HEAD'; } }
+  }
   result.ref = ref;
 
   /* 语义化最新 TAG */
@@ -162,15 +186,16 @@ function main() {
   } catch (e) { changed = []; }
   result.changedFiles = changed;
 
-  if (changed.length === 0) {
-    result.reason = 'no_shared_code_change_since_' + tag;
-    finish(result, EXIT_PASS, args);
-  }
-
+  /* 版本先读(仅为让 PASS 哨兵也能打印 version=当前值; 判定逻辑不变) */
   const mainVer = readVersion(repo, 'HEAD');
   const tagVer = readVersion(repo, tag);
   result.mainVer = mainVer;
   result.tagVer = tagVer;
+
+  if (changed.length === 0) {
+    result.reason = 'no_shared_code_change_since_' + tag;
+    finish(result, EXIT_PASS, args);
+  }
 
   if (!mainVer || !tagVer) {
     result.level = 'WARN';
