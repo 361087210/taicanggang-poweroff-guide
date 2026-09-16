@@ -11,6 +11,13 @@
  *   3) **最致命**: 飞书 Bitable 新增了 4 个 AI 承载字段, 但流水线从来**没写**它们
  *      -> 表建好了、列全是空的, 闭环实际是断的。且飞书**写不存在的字段不报错、
  *      静默丢弃**, 所以必须"回写前校验字段存在, 缺失即点名报错"。
+ *   4) **第 4 起事故(本测试 H 段的存在理由)**: 脚本写好了, 但**没有任何 workflow
+ *      在调用它** —— `.github/workflows/ai-feedback.yml` 从未合并进 `main`
+ *      (原型提交 718d0ce 停留在 release/10.19.3, 非 main 祖先)。而 GitHub Actions
+ *      的 `schedule` 触发器**仅对默认分支生效**, 故"每 30 分钟分析反馈"从未真正跑过。
+ *      更隐蔽的是: 历史 workflow 挂的 `AI_REQUIRE_LLM=1` 在脚本被重写(b5daaaf)后
+ *      已成**死配置** —— 制造了"防静默降级已生效"的假象。
+ *      => 光断言"脚本自身正确"不足以防复发; 必须断言"workflow 真的存在且真的接通"。
  *
  * 断言:
  *   A. 脚本不含裸 `await fetch(`(改用 https.request)
@@ -20,6 +27,10 @@
  *   E. 主流程接线顺序: 取字段 -> 校验 -> 置「分析中」-> 置「已修复」+ 回写 4 字段 -> 通知
  *   F. 跨文件一致性: 与 js/10-feedback.js 的 FEEDBACK_STATUS / FEEDBACK_AI_FIELDS 不漂移
  *   G. CI 接线门禁: 本测试必须在 package.json 且并入 test:all(否则被 test:ci-coverage 拦)
+ *   H. **workflow 真接线(反事故 4)**: `.github/workflows/ai-feedback.yml` 存在、
+ *      含脚本路径 / workflow_dispatch / schedule + cron、permissions 最小、
+ *      Secret 边界不含 KEYSTORE_/APPLE_、workflow 引用的 secrets.* ⊆ 脚本 process.env
+ *      期望集合(防"挂了脚本不读的 Secret"假接线)、且不含已失效的 AI_REQUIRE_LLM。
  *
  * 运行: node tests/test_process_feedback_wiring.js
  * 要求: 先红后绿——F0-c 落地前 A/B/C/D 应失败(红), 落地后全绿。
@@ -233,6 +244,83 @@ check('G2 test:all 含 test:process-feedback',
   String((PKG.scripts && PKG.scripts['test:all']) || '').indexOf('test:process-feedback') >= 0);
 check('G3 test:process-feedback 指向本文件',
   String((PKG.scripts && PKG.scripts['test:process-feedback']) || '').indexOf('test_process_feedback_wiring.js') >= 0);
+
+/* ============================================================
+ * H. workflow 真接线(反事故 4) —— 脚本再正确, 没人调用它也是断的
+ * ------------------------------------------------------------
+ * 事故: ai-feedback.yml 从未合并进 main(schedule 仅默认分支生效) → 定时任务从未跑过。
+ * 本段是**防复发保险**: 断言 workflow 文件存在且真的接通脚本, 而不是靠人记得。
+ * ============================================================ */
+section('H. workflow 真接线(.github/workflows/ai-feedback.yml)');
+const WF_PATH = '.github/workflows/ai-feedback.yml';
+let wf = '';
+try { wf = src(WF_PATH); } catch (e) { /* H1 会红, 后续断言按空串处理 */ }
+
+check('H1 workflow 文件存在于 .github/workflows/ai-feedback.yml', wf.length > 0, '读取失败或为空');
+check('H2 workflow 真的调用 scripts/process_feedback.js',
+  wf.indexOf('scripts/process_feedback.js') >= 0);
+check('H3 含 workflow_dispatch(可手动触发验证, 否则接线无法人工核验)',
+  /^\s*workflow_dispatch\s*:/m.test(wf));
+check('H4 含 schedule 触发器(定时作业本体)', /^\s*schedule\s*:/m.test(wf));
+check('H5 含 cron 表达式', /cron\s*:\s*['"][^'"]+['"]/.test(wf));
+
+/* Secret 边界(设计文档 §6 三作业 Secret 切分)—— 硬红线, 子串级零容忍 */
+check('H6 不含 KEYSTORE(签名密钥边界)', wf.indexOf('KEYSTORE') < 0);
+check('H7 不含 APPLE(签名密钥边界)', wf.indexOf('APPLE') < 0);
+
+/* H8(反回归, 本段核心): workflow 引用的每个 secrets.X 都必须是脚本**真读**的变量。
+ * 否则就是"假接线"—— Secret 挂了, 脚本根本不读, 静默为空。 */
+(function () {
+  // 从脚本源码解析 process.env.<NAME> 期望集合(单一真源 = 脚本本身, 不硬编码)
+  const envNames = new Set();
+  const re = /process\.env\.([A-Z_][A-Z0-9_]*)/g;
+  let m;
+  while ((m = re.exec(script)) !== null) envNames.add(m[1]);
+
+  // workflow 实际引用的 secrets.*
+  const referenced = new Set();
+  const reS = /secrets\.([A-Za-z_][A-Za-z0-9_]*)/g;
+  while ((m = reS.exec(wf)) !== null) referenced.add(m[1]);
+
+  check('H8a 能从脚本解析出 process.env 期望集合(解析器自检)',
+    envNames.size >= 4, 'parsed=' + Array.from(envNames).join(','));
+  check('H8b 能从 workflow 解析出 secrets.* 引用(解析器自检)',
+    referenced.size >= 4, 'parsed=' + Array.from(referenced).join(','));
+
+  // 反回归: 引用集合 ⊆ 脚本期望集合 —— 防"挂了脚本不读的 Secret"
+  const orphan = Array.from(referenced).filter((s) => !envNames.has(s));
+  check('H8c workflow 引用的 secrets.* 全部在脚本 process.env 期望集合内(防假接线)',
+    orphan.length === 0, '脚本不读却挂了: ' + orphan.join(','));
+})();
+
+/* H9: 反向 —— 脚本的**必需** env 必须都被 workflow 喂到(缺一个作业即废) */
+(function () {
+  // 必需集合的依据(非拍脑袋):
+  //   FEISHU_APP_ID / FEISHU_APP_SECRET —— 脚本 main() 的 `if (!APP_ID || !APP_SECRET) exit 0` 守卫;
+  //   DEEPSEEK_API_KEY —— workflow "必需 Secret 存在性前置检查" step 的 fail-fast 判据。
+  const REQUIRED_ENV = ['FEISHU_APP_ID', 'FEISHU_APP_SECRET', 'DEEPSEEK_API_KEY'];
+  const notFed = REQUIRED_ENV.filter((n) => wf.indexOf('secrets.' + n) < 0);
+  check('H9 脚本必需 env(FEISHU_APP_ID/APP_SECRET/DEEPSEEK_API_KEY)均被 workflow 喂到',
+    notFed.length === 0, '未喂: ' + notFed.join(','));
+})();
+
+/* H10: permissions 最小化 —— 只读代码, 不回写仓库 */
+check('H10a permissions 含 contents: read', /contents\s*:\s*read/.test(wf));
+check('H10b permissions **不含** contents: write(本作业不提交任何东西)',
+  !/contents\s*:\s*write/.test(wf));
+
+/* H11(反回归): 不得再挂已失效的 AI_REQUIRE_LLM —— 脚本 b5daaaf 重写后不再读它,
+ * 挂了只会制造"防静默降级已生效"的假象。断言它不作为 env 键出现。 */
+check('H11 workflow 不含 AI_REQUIRE_LLM 作为 env 键(该开关已被脚本移除, 挂=死配置)',
+  !/^\s*AI_REQUIRE_LLM\s*:/m.test(wf));
+
+/* H12: workflow 里写的入口文件在磁盘上真实存在(路径漂移即红) */
+(function () {
+  const m = wf.match(/node\s+(scripts\/[\w./-]+\.js)/);
+  const entry = m ? m[1] : '';
+  check('H12 workflow 调用的脚本路径在磁盘上存在(防路径漂移)',
+    !!entry && fs.existsSync(path.join(ROOT, entry)), 'entry=' + (entry || '(未解析到)'));
+})();
 
 console.log('\n==============================================================');
 console.log('F0-c AI 流水线接线 + AI 承载字段回写 测试汇总: ' + pass + ' passed, ' + fail + ' failed');
