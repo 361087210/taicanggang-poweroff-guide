@@ -47,6 +47,7 @@
 - `921fddc` 提交组A（加密能力自检 + 迁移失败两因区分）
 - `db21274` F0-a（反馈「APP版本」字段）
 - ＋ **发版工具链修复**（`scripts/sync_release_both_roots.py` Feishu 目录名 + `scripts/migrate_drive_to_bitable.js` 的 `syncVersion` 改为从 `version.json` 读，见 §1.4）—— 与本次同一提交，**发布集必须含它**，否则发版时飞书目录名仍停在 `v10.17.1`。
+- ＋ **未登录导航守卫修复**（R1 返回键补登录族分支 / R2 `goBack` 无用户不落应用内页 / R3 用户卡去"组长"硬编码 / R4 已登录禁入登录族；见 §1.5）—— 同一提交，属**用户可见**的"注册页返回泄漏"缺陷，随 10.19.3 发。
 - **不要包含** `718d0ce` / `2ff1964`（F0-c）——F0-c 运行期依赖飞书「状态」选项（未补），带了会红。
 
 **B. cherry-pick 到 main 的冲突与解决**
@@ -95,6 +96,14 @@ node scripts/validate_web_assets.js
   - 在 `:120` 用作 `syncVersion: APP_VERSION` → **把陈旧版本号写进每条迁移记录**（`syncVersion` 参与同步仲裁）→ 一旦运行即污染整批数据。
   - **修法**：改为模块级 `JSON.parse(fs.readFileSync(path.join(REPO,'version.json')))` 读取。✅ 已在本轮修复。
 - **教训**：CHANGELOG 里这些脚本一直被列入"发版版本号同步清单"，但**从 10.17.1 起被漏更**（清单靠人工，漏了就静默漂移）。→ 建议把"脚本内版本常量"也纳入门禁（与 §1.1 的"改 js 必 bump"同源问题）。
+
+### 1.5 注册页"返回泄漏"—— 定性 **display-only**，已修（R1+R2+R3+R4）
+- **现象**（用户报）：注册界面按返回（App 硬件返回键 / 网页浏览器返回，同一 handler）后自动进入"组长账号已登录"的界面；两端均可复现。
+- **定性（关键）**：**仅界面渲染，不具组长能力**。该路径 `state.currentUser===null` → `isLeader()/canEdit()` 均 false（`js/02-auth.js`）→ 成员管理菜单/FAB 隐藏、组长逻辑不触发。片中"组长"二字来自 `demo.html` **硬编码占位**（原 `:394-395`）+ `updateMyInfo()` 在无用户时**直接 return** 未清空。
+- **根因**：R1 `js/08-main.js` `handleHardwareBack()` **缺 `screen-register`/`screen-forgot` 分支** → 落 `goBack()`；R2 `js/01-state.js` `goBack()` **无登录守卫**且空栈兜底固定回 `screen-vehicles`（真正根因是"兜底兜到了需登录页"）；R3 硬编码占位；R4 `showScreen()` 未拦"已登录进登录族"。
+- **修复不变量**（R2 核心）：**任何导航路径，在 `state.currentUser` 为空时都不得落在应用内页面**（统一收口，兼顾脏栈；已登录用户行为不变）。
+- **回归防线**：新增 `tests/test_nav_login_guard.js`（jsdom+真实函数提取；**先红后绿**：修复前 11 项红、其中 B1 实测落 `screen-vehicles`、B7 实测 `name=组长/role=组长` 精确复现原 bug）。
+- **附带发现**：`tests/test_v57_logic.js`(2.4–2.8) 与 `tests/test_v53_runtime.js`(优先级6/R4) **曾把旧的"未登录也回主界面"行为写成断言** —— 说明该缺陷不仅存在于代码，也被测试固化；已补真实前置（置入登录用户），并注明原因。
 
 ## P1 — 数据一致性（工程师 429 中断，未完成）
 

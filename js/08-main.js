@@ -29,6 +29,13 @@ function handleHardwareBack(){
   // V5.7修复: 旧版判断state.screen==='login'永不成立(实际值为'screen-login',带前缀),
   // 导致登录页按返回键错误地走goBack弹栈,跳回注册/忘记密码页而非退出确认
   if(state.screen==='screen-login'){doubleBackExit();return;}
+  // 4.5 V10.19.3 修复(注册页"返回泄漏"): 登录族其余页面(注册/忘记密码) → 直接回登录页。
+  // 根因回顾: 旧版无此分支 → 落到 goBack() → 空栈兜底回主界面, 未登录用户被送回应用内
+  // 页面, 且「我的」页残留硬编码"组长"占位 → 观感为"自动进入组长已登录界面"。
+  // 登录族页面不入导航栈(见 01-state.js navPush), 故这里显式回登录页而非弹栈。
+  if(state.screen==='screen-register'||state.screen==='screen-forgot'){
+    showScreen('screen-login');return;
+  }
   // 5. 主Tab页面 → 双击退出
   if(['screen-vehicles','screen-data','screen-my'].includes(state.screen)){
     doubleBackExit();return;

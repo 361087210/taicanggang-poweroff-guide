@@ -389,10 +389,12 @@ window.addEventListener('load', function() {
 <!-- User card -->
 <div class="user-card bg-gradient-to-r from-blue-700 to-blue-600 rounded-2xl p-5 text-white">
 <div class="flex items-center gap-3">
-<div class="user-avatar w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">组</div>
+<!-- R3 V10.19.3: 原占位硬编码"组长" → 未登录时被误读为"已登入组长账号"(返回泄漏 bug 的观感来源)。
+     改为中性占位, 且不展示任何具体身份; 登录后由 updateMyInfo() 填充真实姓名/角色。 -->
+<div class="user-avatar w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">-</div>
 <div>
-<div class="user-name font-bold text-base">组长</div>
-<div class="user-role text-white/60 text-xs mt-0.5">组长</div>
+<div class="user-name font-bold text-base">未登录</div>
+<div class="user-role text-white/60 text-xs mt-0.5"></div>
 </div>
 </div>
 </div>
