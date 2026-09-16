@@ -87,7 +87,15 @@ const referencedVids = [...new Set([...vehicleSrc.matchAll(/vehicle_videos\/([^'
 check('C1 直链映射表数量=46(全部真实资产)', assetKeys.length === 46);
 check('C2 视频引用数=47(46官方直链+1待补直链)', referencedVids.length === 47);
 /* P1 数据一致性: 长安深蓝(G318)_v2.mp4 为组长新上传、尚未配 Release 直链,
- * 由 audit_media_consistency.js C2 告警追踪; 此处断言"仅该视频缺直链"。 */
+ * 由 audit_media_consistency.js C2 告警追踪; 此处断言"仅该视频缺直链"。
+ *
+ * C3 曾红根因(2026-09-17 排查, 未放宽任何断言):
+ *   此前 missing 有 2 项 = ["长安深蓝(G318)_v2.mp4", "奇瑞??途JETOUR_T2_I_DM.mp4"]。
+ *   第二项是**假缺失**: jie 字在生成产物 vehicles_data.js 中被 U+FFFD 吞字
+ *   (奇瑞捷途 -> 奇瑞??途), 与 js/00-bootstrap.js 的 MEDIA_DIRECT_ASSETS 正确
+ *   字形比对失败。A 任务在 gen_vehicles_data.js 生成期校正该损坏后, 产物恢复
+ *   "奇瑞捷途JETOUR_T2_I_DM.mp4", missing 仅剩长安深蓝(G318)_v2.mp4, C3 自发转绿。
+ *   结论: 这是**数据源编码损坏**引发的假失败, 非断言过严——故保持断言原样。 */
 check('C3 引用覆盖(仅长安深蓝(G318)_v2.mp4 待补直链)', (() => {
   const missing = referencedVids.filter(k => !assetKeys.includes(k));
   return missing.length === 1 && missing[0] === '长安深蓝(G318)_v2.mp4';
