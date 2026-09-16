@@ -111,7 +111,16 @@ function main() {
   } else {
     try {
       const mirror = JSON.parse(fs.readFileSync(mirrorPath, 'utf8'));
-      const mv = Array.isArray(mirror.vehicles) ? mirror.vehicles : [];
+      let mv = Array.isArray(mirror.vehicles) ? mirror.vehicles : [];
+      // 镜像侧已知编码损坏归一: 复用生成器(gen_vehicles_data.js)的 KNOWN_CORRUPTIONS
+      // 校正表。否则"已校正的 vehicles_data.js" 会与本就损坏的飞书镜像 C5 假漂移
+      // (真实案例: 奇瑞捷途JETOUR 视频名)。归一后两侧 apples-to-apples, C5 仅报真实漂移。
+      try {
+        const gen = require('./gen_vehicles_data.js');
+        if (typeof gen.correctVehicle === 'function') mv = mv.map(gen.correctVehicle);
+      } catch (e) {
+        warns.push('C5 未能加载编码校正表(gen_vehicles_data.js), 按原始镜像对账: ' + e.message);
+      }
       if (vehicles.length !== mv.length) {
         fails.push(`C5 车型数量漂移: vehicles_data.js=${vehicles.length} web-data=${mv.length}`);
       }
