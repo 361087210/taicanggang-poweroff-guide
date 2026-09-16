@@ -43,6 +43,41 @@ try {
   check('A3a 巡检运行通过(exit 0)', false, (e.stderr || e.stdout || e.message || '').toString().slice(0, 300));
 }
 
+section('A4 防复发: 区分"声明未上传(WARN)"与"声称为已上传但丢失(FAIL)"');
+// 在真实 manifest 副本上追加两个探针照片, 隔离验证 C2 判定分支:
+//   - 探针A: 设了 sha256 但本地无文件 → "声称为已上传但丢失", 必须 FAIL
+//   - 探针B: sha256/size/qiniuKey 皆空 → "声明未上传", 应降级为 WARN(不可 FAIL)
+// 仅向 manifest.vehicles 追加, 不改动 vehicles_data.js, 故 C1/C5 数量对账不受影响。
+try {
+  const realManifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs', 'vehicle_media_manifest.json'), 'utf8'));
+  const probe = JSON.parse(JSON.stringify(realManifest));
+  const target = (probe.vehicles && probe.vehicles[0]) || { id: 9999, photos: [] };
+  if (!probe.vehicles) probe.vehicles = [target];
+  const probeMissing = 'PROBE_declared_uploaded_missing_' + Date.now() + '.jpeg';
+  const probeNotUp = 'PROBE_declared_not_uploaded_' + Date.now() + '.jpeg';
+  target.photos = target.photos || [];
+  target.photos.push({ fileName: probeMissing, sha256: 'a'.repeat(64), size: 100, mime: 'image/jpeg', qiniuKey: '' });
+  target.photos.push({ fileName: probeNotUp, sha256: '', size: 0, mime: 'image/jpeg', qiniuKey: '' });
+  const tmp = path.join(require('os').tmpdir(), 'probe_manifest_v1027_' + process.pid + '.json');
+  fs.writeFileSync(tmp, JSON.stringify(probe, null, 2));
+  let out = '';
+  let exitOk = true;
+  try {
+    execFileSync(process.execPath, ['scripts/audit_media_consistency.js', '--manifest', tmp], { cwd: ROOT, stdio: 'pipe' });
+  } catch (e) {
+    exitOk = false;
+    out = (e.stdout || '').toString() + (e.stderr || '').toString();
+  }
+  // 探针A 应触发 FAIL(声称为已上传但文件丢失)——防未来有人把真损坏也一并降级
+  check('A4a 探针A(声称为已上传但丢失)应 FAIL', !exitOk && /\[FAIL\][^\n]*PROBE_declared_uploaded_missing/.test(out), out.slice(0, 400));
+  // 探针B 绝不可被判 FAIL(应 WARN, 文件待补)——守住"声明未上传≠损坏"的降级边界
+  check('A4b 探针B(声明未上传)不应被判 FAIL', !/\[FAIL\][^\n]*PROBE_declared_not_uploaded/.test(out), out.slice(0, 400));
+  check('A4c 探针B(声明未上传)应出现 WARN', /\[WARN\][^\n]*PROBE_declared_not_uploaded/.test(out), out.slice(0, 400));
+  fs.unlinkSync(tmp);
+} catch (e) {
+  check('A4 防复发探针执行未抛异常', false, e.message);
+}
+
 console.log('\n==============================================================');
 console.log('巡检脚本测试汇总: ' + pass + ' passed, ' + fail + ' failed');
 if (failures.length) { console.log('失败项: ' + failures.join(' / ')); process.exit(1); }

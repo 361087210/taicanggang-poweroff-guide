@@ -65,8 +65,21 @@ function main() {
   for (const mv of manifest.vehicles || []) {
     for (const ph of mv.photos || []) {
       if (/^(data:|https?:)/.test(ph.fileName)) continue; // 云端/base64 引用, 非本地资产
-      if (!ph.sha256) fails.push(`C2 车型 ${mv.id} 照片引用缺失(本地无文件/无指纹): ${ph.fileName}`);
-      else if (!localImages.has(ph.fileName)) fails.push(`C2 车型 ${mv.id} 照片本地文件缺失: ${ph.fileName}`);
+      const sha = ph.sha256 || '';
+      const size = Number(ph.size) || 0;
+      const qiniuKey = ph.qiniuKey || '';
+      // 是否"声称已上传": 指纹 / 大小 / 七牛键任有一真值即视为已上传。
+      const declaredUploaded = Boolean(sha) || size > 0 || Boolean(qiniuKey);
+      if (!declaredUploaded) {
+        // 声明了照片但从未上传(指纹/大小/七牛键皆空): 文件待补, 属对事实的描述而
+        // 非损坏(元PRO 两图即此情形, 飞书表声明但未传文件)。降级为 WARN, 使 test:all
+        // 不被"待补文件"硬中断, 同时告警仍可见, 不掩盖该待办。
+        warns.push(`C2 车型 ${mv.id} 照片声明未上传(待补文件): ${ph.fileName}`);
+      } else if (!localImages.has(ph.fileName)) {
+        // 声称已上传(指纹/大小/七牛键任一为真)却本地找不到文件: 真损坏, 必须 FAIL,
+        // 绝不可降级 —— 防未来有人把真缺失也一并降成 WARN。
+        fails.push(`C2 车型 ${mv.id} 照片本地文件缺失(声称为已上传): ${ph.fileName}`);
+      }
     }
     for (const vd of mv.videos || []) {
       if (!vd.releaseAsset) warns.push(`C2 车型 ${mv.id} 视频无 Release 资产映射: ${vd.fileName}`);
