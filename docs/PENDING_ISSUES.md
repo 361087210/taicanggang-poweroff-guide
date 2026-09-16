@@ -103,7 +103,8 @@ node scripts/validate_web_assets.js
 - **根因**：R1 `js/08-main.js` `handleHardwareBack()` **缺 `screen-register`/`screen-forgot` 分支** → 落 `goBack()`；R2 `js/01-state.js` `goBack()` **无登录守卫**且空栈兜底固定回 `screen-vehicles`（真正根因是"兜底兜到了需登录页"）；R3 硬编码占位；R4 `showScreen()` 未拦"已登录进登录族"。
 - **修复不变量**（R2 核心）：**任何导航路径，在 `state.currentUser` 为空时都不得落在应用内页面**（统一收口，兼顾脏栈；已登录用户行为不变）。
 - **回归防线**：新增 `tests/test_nav_login_guard.js`（jsdom+真实函数提取；**先红后绿**：修复前 11 项红、其中 B1 实测落 `screen-vehicles`、B7 实测 `name=组长/role=组长` 精确复现原 bug）。
-- **附带发现**：`tests/test_v57_logic.js`(2.4–2.8) 与 `tests/test_v53_runtime.js`(优先级6/R4) **曾把旧的"未登录也回主界面"行为写成断言** —— 说明该缺陷不仅存在于代码，也被测试固化；已补真实前置（置入登录用户），并注明原因。
+- **⚠️ 附带发现（要记住的教训）：缺陷被测试钉住了。** `tests/test_v57_logic.js`(2.4–2.8) 与 `tests/test_v53_runtime.js`(优先级6/R4) **用"未登录"前置却断言"回到主界面/vehicles"** —— 它们之所以长期通过，**正是因为当时缺了登录守卫**（= 本次泄漏的同一根因）。即：**旧测试把 bug 行为固化成断言**，修好代码的同时必须改这些前置，否则"修了反而全红"。已补真实前置（显式置入登录用户、用后归还 `null`）并注明原因，语义不变。
+  → **方法论**：当修复让一批旧测试变红时，先判断它们测的是"正确行为"还是"被固化的缺陷行为"，**不要把断言改回去迁就代码**。
 
 ## P1 — 数据一致性（工程师 429 中断，未完成）
 
@@ -125,6 +126,17 @@ node scripts/validate_web_assets.js
 - 多维度真机模拟测试（两台手机 + 真实飞书云端场景）尚未执行。Android/iOS 构建已打通（见下"已完成"）。
 
 ---
+
+## 环境纪律（本环境 `.git` 不可信）—— 每条都是踩出来的
+1. **任何"会移动分支指针"的操作都不可信**：`commit` / `merge` / `reset` / `checkout -B` 均实测出现"**命令报成功但 ref 未落盘**"。最近一例：`git fetch` 明确打印 `047aa9a..ea4258a  main -> origin/main`，而紧接着的 `git show-ref` 里 `origin/main` **仍是 `047aa9a`**（remote-tracking ref 更新同样会丢）。
+2. **一律"三重核验"，绝不相信命令成功回显**：① 操作后**手动落盘 ref**（`printf '%s\n' "$NEW" > .git/refs/heads/<branch>`）；② `git show-ref` 复核本地；③ **`git ls-remote`（服务端权威）复核远端**。
+3. **不能用 `git rev-parse HEAD` 判定"新提交是否落盘"**：坏 ref 下 `HEAD` 与 ref 同源、会自洽地指向旧提交 → 误报 "OK"。新 sha 应取自 **`git commit` 的输出**，或 `git rev-parse <显式短 sha>`。
+4. **手写 ref 必须用 `git rev-parse` 取完整 40 位、且 LF-only**（CRLF 会让 git 报 `bad ref …?`）；`packed-refs` 同样 LF-only。**切勿**把 `refs/remotes/origin/main` 写成**本地** main 的 sha —— 那会让 `git push` 报 `Everything up-to-date` 的**静默 no-op**（安全提交实际没推送）。
+5. **`checkout`/`reset` 后复核工作树**：本环境出现过整目录被丢（`.github/`、`docs/`、`tests/` 一次消失 72 项）；修复：`git checkout -- .`。
+6. **最小可用"重放+推送"解法（team-lead 已验证）**：
+   `git checkout -B main <远端 tip>` → `git cherry-pick <我们的提交>` → **手动写 `.git/refs/heads/main`（LF）** → `git show-ref` 复核 → `git ls-remote` 复核远端 → `git push origin main`（**必须 PAT**：`GITHUB_TOKEN` 不触发下游 Deploy Pages）。
+7. 本环境 `fetch`/`push` 会间歇 **502**；`git ls-remote` 可作轻量网络探测。
+8. **推论**：远端 main 会被 cron（`chore: 自动同步数据`）持续推进 —— 任何"重放到 main"的计划都要**基于当时的远端 tip**，且用 `ls-remote` 复核，不能假设 tip 不变。
 
 ## 已完成（2026-09-15 本轮）
 
