@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-16T09:57:32.946Z",
+  "generatedAt": "2026-09-16T14:43:46.569Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -2017,12 +2017,12 @@
       ],
       "videos": [
         {
-          "fileName": "奇瑞捷途JETOUR_T2_I_DM.mp4",
+          "fileName": "奇瑞��途JETOUR_T2_I_DM.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": "tcgv_8a31a3eac5.mp4"
+          "releaseAsset": ""
         }
       ]
     },
