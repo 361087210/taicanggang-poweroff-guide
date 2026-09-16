@@ -97,12 +97,31 @@ for (const wf of wfFiles) {
 const entryScripts = [...new Set(wfEntries.filter(e => e.script).map(e => e.script))];
 const reachable = new Set();
 const stack = [...entryScripts];
+
+// run_all_tests.js 是 test:all 的新执行器: 它持有 test:all 的子套件闭包(TEST_SUITES),
+// 取代原先 test:all 字符串里的 `npm run` 串联。覆盖门禁必须沿 runner 导出的清单展开
+// 闭包, 否则改完 test:all 后子套件会全部"不可达"而误报。
+// 仅在命令确为 `node scripts/run_all_tests.js` 时走此特殊分支, 其余脚本仍按 refsOf 原逻辑展开。
+let runnerSuites = [];
+try {
+  runnerSuites = (require('./run_all_tests.js').TEST_SUITES) || [];
+} catch (e) {
+  runnerSuites = [];
+}
+
 while (stack.length) {
   const s = stack.pop();
   if (reachable.has(s)) continue;
   reachable.add(s);
-  const r = refsOf(scripts[s]);
-  r.scripts.forEach(x => { if (scripts[x] && !reachable.has(x)) stack.push(x); });
+  const cmd = String(scripts[s] || '').trim();
+  let subScripts;
+  if (/^node\s+scripts\/run_all_tests\.js/.test(cmd)) {
+    // 沿 runner 导出的子套件清单展开闭包
+    subScripts = runnerSuites.slice();
+  } else {
+    subScripts = refsOf(scripts[s]).scripts;
+  }
+  subScripts.forEach(x => { if (scripts[x] && !reachable.has(x)) stack.push(x); });
 }
 
 // 覆盖到的测试文件
