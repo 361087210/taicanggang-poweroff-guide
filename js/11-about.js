@@ -8,6 +8,19 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.19.3',
+    date: '2026-09-16',
+    highlight: '诊断加固版: 先自检再升级 + 注册页返回泄漏修复',
+    features: [
+      '新增(诊断): 「关于」页「运行环境自检」显示加密能力 可用/不可用(实证探测, 不靠「能登录」间接判断)',
+      '修复(诊断): 安全升级失败不再静默 —— ①设备不支持→换较新手机/联系组长 ②回传失败→检查网络+重试上传',
+      '修复(导航): 未登录时任何返回路径都不进应用内页面(注册页按返回不再落主界面); 用户卡去掉硬编码占位',
+      '修复: 反馈「APP版本」字段不再恒为 Vunknown',
+      '修复(工具链): 飞书发版目录名/迁移 syncVersion 改从 version.json 读取(不再写死 10.17.1)',
+      '含 10.19.2 全部内容(linkKey 惰性迁移 + 网页端登录提示)'
+    ]
+  },
+  {
     version: 'V10.19.2',
     date: '2026-09-15',
     highlight: '网页端登录修复版: 修「App能用/网页端报密码错误」的 P0 迁移缺口',
@@ -484,7 +497,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.19.2'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.19.3'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
