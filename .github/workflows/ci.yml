@@ -59,13 +59,22 @@ jobs:
       - name: 全量回归测试(npm run test:all)
         run: npm run test:all
 
-      # ★ 两端错配门禁 —— **独立 step**(而非只藏在 test:all 里): 让它在日志里**自证"跑过"**。
-      #   硬要求: **退出码必须传播** —— 故**不写** `|| true` / `continue-on-error` / `|| echo`;
-      #   门禁 PASS/SKIP 都会打印确定性哨兵行(`[两端错配门禁] PASS ...` / `SKIP ...`),
-      #   因此"通过"与"没跑/被跳过"在日志里**可分辨**。
-      #   前置: 上面的 checkout 已设 `fetch-depth: 0`(否则拿不到 tag → 恒 SKIP = 形同不存在)。
+      # ★ 两端错配门禁 —— 独立 step, 且把"绿"变成**被强制的不变量**(而非只打印一行):
+      #   ① 退出码直接传播(**不写** `|| true` / `continue-on-error` / `|| echo`);
+      #   ② **`set -o pipefail` 必需** —— 否则 `tee` 会吞掉门禁的非零退出码(又一次"红变绿");
+      #   ③ 仅当 `GITHUB_REF_NAME = main` 时断言哨兵行确实是 `PASS ref=main` 且**不含**降级标注;
+      #      非 main 分支(PR/tag push)按设计降级, **不得**因此变红。
+      #   ④ 前置: 上面的 checkout 已设 `fetch-depth: 0`(否则拿不到 tag → SKIP)。
       - name: 两端错配门禁(共享代码变更必须伴随版本升号 + 打标签)
-        run: npm run check:two-end
+        run: |
+          set -o pipefail
+          npm run check:two-end 2>&1 | tee "$RUNNER_TEMP/gate.log"
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            grep -q '\[两端错配门禁\] PASS ref=main ' "$RUNNER_TEMP/gate.log" \
+              || { echo "::error::门禁未产出 'PASS ref=main' 哨兵 —— 可能被跳过/降级, 视为失败"; exit 1; }
+            ! grep -q 'WARN 降级' "$RUNNER_TEMP/gate.log" \
+              || { echo "::error::门禁在 main 上降级为 WARN —— 判定未生效"; exit 1; }
+          fi
 
       # 防漏串门禁: 任何测试文件未被 CI 触达即 FAIL, 防止"新增套件忘了接链"重演
       - name: CI 覆盖率门禁(测试资产必须全部被触达)
