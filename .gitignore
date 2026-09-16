@@ -38,3 +38,7 @@ web-data/debug_structure.json
 # 导致每跑一次测试就产生无意义 diff, 淹没有意义的代码改动。
 # 入库移除 + 忽略规则双管齐下; 由 tests/test_v1019_repo_hygiene.js 守卫。
 tests/*_results.json
+
+# === TEMP: 卫生门禁变异测试 ===
+tests/*_probe_mutation.json
+*.hygiene-mutation
