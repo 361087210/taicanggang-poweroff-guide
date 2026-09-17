@@ -50,6 +50,9 @@ const KNOWN_CORRUPTIONS = [
   { broken: '2.\uFFFD\uFFFD\uFFFD认断电无误', fixed: '2.确认断电无误',      note: '吉利极氪 keyContainer[1] (残留 3×efbfbd)' },
   { broken: '奇瑞\uFFFD\uFFFD途JETOUR',      fixed: '奇瑞捷途JETOUR',      note: '奇瑞捷途JETOUR(T2 I-DM) videoPaths[0]' },
   { broken: '10号\uFFFD\uFFFD手',           fixed: '10号扳手',           note: '比亚迪海豹SEAL-5-DM-I steps[2]' },
+  { broken: '驶车���，拉', fixed: '驶车门，拉', note: 'id=33 vehicle.steps[0]' },
+  { broken: '车键���', fixed: '车键。', note: 'id=51 vehicle.steps[1]' },
+  { broken: '，机���钥匙', fixed: '，机械钥匙', note: 'id=68 vehicle.steps[1]' },
 ];
 
 /** 对单个字符串应用校正表(纯函数, 无匹配则原样返回) */
