@@ -11,6 +11,7 @@
     {
       "id": 1788748623886,
       "name": "185****4454",
+      "linkKey": "ae436692ba6fec03da8aedb172e4697b0c046cb55f4095f7c18f8feae7427fc3",
       "role": "user",
       "status": "active",
       "created": "2026/9/7"
@@ -31,7 +32,7 @@
       "created": "2026/9/7"
     }
   ],
-  "timestamp": "2026-09-16T14:43:46.480Z",
+  "timestamp": "2026-09-16T23:51:32.294Z",
   "sanitized": true,
   "fieldAllowlist": [
     "id",
