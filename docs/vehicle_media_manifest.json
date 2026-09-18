@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-17T23:37:14.429Z",
+  "generatedAt": "2026-09-18T01:31:30.949Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -1369,7 +1369,7 @@
     },
     {
       "id": 46,
-      "display": "江��江淮皮卡(T6)",
+      "display": "江淮江淮皮卡(T6)",
       "photos": [
         {
           "fileName": "image92.jpeg",
