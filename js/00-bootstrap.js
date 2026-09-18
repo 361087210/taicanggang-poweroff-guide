@@ -1402,6 +1402,7 @@ const MEDIA_DIRECT_ASSETS={
   '长城好猫_好猫.mp4':'tcgv_83b045688d.mp4',
   '长安皮卡_HUNTER_猎手_燃油版_混动版.mp4':'tcgv_ec0bb6fa76_2.mp4',
   '零跑零跑_零跑B10.mp4':'tcgv_e6e7f70cf0.mp4'
+  '长安深蓝(G318)_v2.mp4':'tcgv_ac4b41ffc4.mp4',
 };
 
 /**
