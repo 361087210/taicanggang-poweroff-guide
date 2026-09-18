@@ -128,16 +128,25 @@ async function feishuFindFolder(token, parentToken, name){
 }
 
 async function feishuDownloadTo(token, fileToken, destPath){
-  const meta = await _req('GET', `${FEISHU_HOST}/open-apis/drive/v1/files/${fileToken}/download`, { Authorization: 'Bearer ' + token });
-  // 飞书下载返回 {code,data:{url}} 信封 → 抓真实文件; 部分环境直接返回字节
-  if(meta && meta.data && meta.data.url){
-    const res = await fetch(meta.data.url);
-    if(!res.ok) throw new Error('下载飞书文件失败 HTTP ' + res.status);
-    const buf = Buffer.from(await res.arrayBuffer());
+  // 下载接口对媒体文件直接返回二进制流(MP4 头 ftyp), 不能走 _req 的 res.json();
+  // 仅当 Content-Type 为 JSON 信封({code,data:{url}})时才二次抓取真实文件
+  const res = await fetch(`${FEISHU_HOST}/open-apis/drive/v1/files/${fileToken}/download`, {
+    headers: { Authorization: 'Bearer ' + token },
+  });
+  if(!res.ok) throw new Error('下载飞书文件失败 HTTP ' + res.status);
+  const contentType = (res.headers.get('content-type') || '').toLowerCase();
+  if(contentType.includes('json')){
+    const meta = await res.json();
+    if(!(meta && meta.data && meta.data.url)){
+      throw new Error('飞书下载返回未知 JSON: ' + JSON.stringify(meta).slice(0, 120));
+    }
+    const res2 = await fetch(meta.data.url);
+    if(!res2.ok) throw new Error('下载飞书文件失败 HTTP ' + res2.status);
+    const buf = Buffer.from(await res2.arrayBuffer());
     fs.writeFileSync(destPath, buf);
     return buf.length;
   }
-  const buf = Buffer.from(JSON.stringify(meta));
+  const buf = Buffer.from(await res.arrayBuffer());
   fs.writeFileSync(destPath, buf);
   return buf.length;
 }
@@ -170,8 +179,14 @@ async function main(){
   const videoFiles = files.filter(f => f.type === 'file' && VIDEO_EXT.test(f.name));
   console.log(`[sync-videos] 飞书 vehicle_videos 共 ${videoFiles.length} 个视频`);
 
-  // ③ 检测缺失
-  const missing = detectMissingVideos(videoFiles.map(f => f.name), assetMap);
+  // ③ 检测缺失(同名去重: 飞书同目录存在重名条目时, 重复处理会生成 _2 冗余资产与重复映射键)
+  const seenKeys = new Set();
+  const missing = [];
+  for(const m of detectMissingVideos(videoFiles.map(f => f.name), assetMap)){
+    if(seenKeys.has(m.key)) continue;
+    seenKeys.add(m.key);
+    missing.push(m);
+  }
   if(!missing.length){ console.log('[sync-videos] 无缺直链视频, 零副作用结束'); return; }
   console.log(`[sync-videos] 检出 ${missing.length} 个缺直链视频:`);
   missing.forEach(m => console.log(`  - ${m.file} (key=${m.key})`));
