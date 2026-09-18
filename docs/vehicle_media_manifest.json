@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-18T15:52:37.911Z",
+  "generatedAt": "2026-09-18T16:12:11.417Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -593,7 +593,7 @@
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": ""
+          "releaseAsset": "tcgv_ac4b41ffc4.mp4"
         }
       ]
     },
