@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-21T01:21:33.769Z",
+  "generatedAt": "2026-09-21T06:46:55.586Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -177,12 +177,12 @@
       ],
       "videos": [
         {
-          "fileName": "比亚迪��豹_海豹DM_I.mp4",
+          "fileName": "比亚迪海豹_海豹DM_I.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": ""
+          "releaseAsset": "tcgv_3cbf27c326.mp4"
         }
       ]
     },
@@ -911,7 +911,7 @@
     },
     {
       "id": 32,
-      "display": "上汽名爵(赛博斯特)",
+      "display": "上汽名爵(赛��斯特)",
       "photos": [
         {
           "fileName": "image55.jpeg",
