@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-21T06:46:55.586Z",
+  "generatedAt": "2026-09-21T13:38:24.793Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -911,7 +911,7 @@
     },
     {
       "id": 32,
-      "display": "上汽名爵(赛��斯特)",
+      "display": "上汽名爵(赛博斯特)",
       "photos": [
         {
           "fileName": "image55.jpeg",
