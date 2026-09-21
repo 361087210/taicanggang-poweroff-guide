@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-18T16:12:11.417Z",
+  "generatedAt": "2026-09-21T01:21:33.769Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -177,12 +177,12 @@
       ],
       "videos": [
         {
-          "fileName": "比亚迪海豹_海豹DM_I.mp4",
+          "fileName": "比亚迪��豹_海豹DM_I.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": "tcgv_3cbf27c326.mp4"
+          "releaseAsset": ""
         }
       ]
     },
@@ -2564,6 +2564,55 @@
         }
       ],
       "videos": []
+    },
+    {
+      "id": 83,
+      "display": "吉利GOME（几何）E2",
+      "photos": [
+        {
+          "fileName": "吉利GOMEE2_p1_5526d031.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "吉利GOMEE2_p2_96501117.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 84,
+      "display": "比亚迪海豹SEAL",
+      "photos": [
+        {
+          "fileName": "比亚迪海豹SEAL_p1_bb8a0063.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪海豹SEAL_p2_27fd50ec.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪海豹SEAL_p3_a992a0eb.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
     }
   ],
   "assets": {
@@ -3868,8 +3917,8 @@
     }
   },
   "stats": {
-    "vehicleCount": 82,
-    "photoCount": 203,
+    "vehicleCount": 84,
+    "photoCount": 208,
     "videoCount": 63,
     "totalBytes": 14306928
   }

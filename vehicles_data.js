@@ -1,4 +1,4 @@
-// 飞书云端同步于 2026-09-16T05:54:28.025Z
+// 飞书云端同步于 2026-09-21T01:10:32.681Z
 window.VEHICLES = [
   {
     "id": 1,
@@ -191,7 +191,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪海豹_海豹DM_I.mp4"
+      "vehicle_videos/比亚迪��豹_海豹DM_I.mp4"
     ]
   },
   {
@@ -1145,7 +1145,7 @@ window.VEHICLES = [
     "powerType": "混动",
     "position": "前机盖电池负极",
     "steps": [
-      "1.打开主驾驶车门，拉动前机盖开关打开���机盖，取出车钥匙。",
+      "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
       "2.关闭车门，短按钥匙锁车键。",
       "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
       "4.关闭前机盖，再次拉动车门确保关闭。"
@@ -2515,12 +2515,21 @@ window.VEHICLES = [
       "1.车辆钥匙数量及绑扎检查完。",
       "2.确认断电无误后放置于车内中控台。"
     ],
-    "remarks": "",
+    "remarks": "不收卡片不收机械钥匙",
     "photos": 2,
     "photoPaths": [
       "vehicle_images/image157.png",
       "vehicle_images/image158.png"
     ],
+    "photoSections": [
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "",
+      ""
+    ],
+    "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
       "vehicle_videos/零跑零跑_零跑B10.mp4"
@@ -2661,7 +2670,7 @@ window.VEHICLES = [
       "确保电源车窗全部关闭，遥控钥匙锁车",
       "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
       "拔掉负极线束，套上珍珠套管避免接触",
-      "关闭前机盖，断电结束"
+      "关闭前机盖，断电结���"
     ],
     "keyFrame": [
       "1.所有车辆钥匙数量，绑扎及框架检查完。",
@@ -2915,6 +2924,90 @@ window.VEHICLES = [
       "vehicle_images/user_v82_p2_e65bf52f.jpeg",
       "vehicle_images/user_v82_p3_10480634.jpeg"
     ],
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 83,
+    "brandId": "geely",
+    "brand": "吉利",
+    "series": "GOME",
+    "config": "标准",
+    "display": "吉利GOME（几何）E2",
+    "size": "",
+    "powerType": "请选择",
+    "position": "无需断电",
+    "steps": [
+      "1.打开车门，确保四个车窗关闭，取出车钥匙。",
+      "2.关闭车门，短按钥匙锁车键。"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "",
+    "photos": 2,
+    "photoPaths": [
+      "vehicle_images/吉利GOMEE2_p1_5526d031.jpeg",
+      "vehicle_images/吉利GOMEE2_p2_96501117.jpeg"
+    ],
+    "photoSections": [
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "车头",
+      "车尾"
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 84,
+    "brandId": "byd",
+    "brand": "比亚迪",
+    "series": "海豹",
+    "config": "标准",
+    "display": "比亚迪海豹SEAL",
+    "size": "",
+    "powerType": "请选择",
+    "position": "无需断电",
+    "steps": [
+      "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
+      "2.关闭车门，确保车窗关闭，短按钥匙锁车键。",
+      "4.再次拉动车门确保关闭。"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "放干燥剂",
+    "photos": 3,
+    "photoPaths": [
+      "vehicle_images/比亚迪海豹SEAL_p1_bb8a0063.jpeg",
+      "vehicle_images/比亚迪海豹SEAL_p2_27fd50ec.jpeg",
+      "vehicle_images/比亚迪海豹SEAL_p3_a992a0eb.jpeg"
+    ],
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "车头",
+      "车头",
+      "车尾"
+    ],
+    "keyPhotoRemark": "",
     "videos": 0,
     "videoPaths": []
   }

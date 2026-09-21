@@ -3,7 +3,7 @@ V001,比亚迪,海豚,低配,比亚迪海豚DOLPHIN(低配),纯电,副驾驶底�
 V002,比亚迪,海豚,EV,比亚迪海豚EV,纯电,后排座椅腿托下方,3,image1.jpeg;image2.jpeg;image4.jpeg,0,0,,无视频引用,放干燥剂
 V003,比亚迪,海鸥,低配,比亚迪海鸥(低配),纯电,主驾驶座椅下面,3,image5.jpeg;image6.jpeg;image7.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
 V004,比亚迪,海鸥,高配(天窗),比亚迪海鸥(高配(天窗)),纯电,后排座椅腿托下方,3,image8.jpeg;image9.jpeg;image4.jpeg,0,1,比亚迪海鸥_高配_天窗_.mp4,本地缺失-需云端补录,放干燥剂
-V005,比亚迪,海豹,标准,比亚迪海豹SEAL-DM-I,混动,后备箱左侧储物网兜盖板内,3,image10.jpeg;image11.jpeg;image12.jpeg,0,1,比亚迪海豹_海豹DM_I.mp4,本地缺失-需云端补录,放干燥剂
+V005,比亚迪,海豹,标准,比亚迪海豹SEAL-DM-I,混动,后备箱左侧储物网兜盖板内,3,image10.jpeg;image11.jpeg;image12.jpeg,0,1,比亚迪��豹_海豹DM_I.mp4,本地缺失-需云端补录,放干燥剂
 V006,比亚迪,海豹,海豹EV,比亚迪海豹(海豹EV),纯电,后排腿托下方,3,image13.jpeg;image14.jpeg;image4.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
 V007,比亚迪,海狮,海狮,比亚迪海狮,纯电,主驾驶底部前端,0,,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
 V008,比亚迪,鲨鱼皮卡（SHARK）,鲨鱼皮卡（SHARK）,比亚迪鲨鱼皮卡（SHARK）,混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
@@ -69,7 +69,7 @@ V067,奇瑞,东南SOUEAST,S06DM,奇瑞东南SOUEAST(S06DM),混动,后备箱电�
 V068,奇瑞,东南SOUEAST,S07,奇瑞东南SOUEAST(S07),混动,前机盖电池负极,3,image148.jpeg;image149.jpeg;image150.jpeg,0,1,奇瑞东南SOUEAST_S07.mp4,本地缺失-需云端补录,
 V069,奇瑞,东南SOUEAST,S08DM,奇瑞东南SOUEAST(S08DM),混动,后备箱电池负极,3,image151.jpeg;image152.jpeg;image153.jpeg,0,1,奇瑞东南SOUEAST_S08DM.mp4,本地缺失-需云端补录,
 V070,奇瑞,东南SOUEAST,S09-AWD,奇瑞东南SOUEAST(S09-AWD),混动,前机盖电池负极,3,image154.jpeg;image155.jpeg;image156.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
-V071,零跑,零跑,标准,零跑Leapmotor-B10,纯电,前机盖电池负极,2,image157.png;image158.png,0,1,零跑零跑_零跑B10.mp4,本地缺失-需云端补录,
+V071,零跑,零跑,标准,零跑Leapmotor-B10,纯电,前机盖电池负极,2,image157.png;image158.png,0,1,零跑零跑_零跑B10.mp4,本地缺失-需云端补录,不收卡片不收机械钥匙
 V072,零跑,零跑,标准,零跑Leapmotor-C10,纯电,后备箱盖板下方,3,image157.png;image158.png;image159.png,0,1,通用断电视频.mp4,本地缺失-需云端补录,
 V073,广汽,AION（埃安）,标准,广汽埃安AION-V/AION-UT,纯电,前机盖电池负极,3,image160.jpeg;image161.jpeg;image162.jpeg,0,0,,无视频引用,
 V074,吉利,银河,PRO,吉利银河EX3PRO,燃油,前机盖,4,user_v74_p1_c0e6b738.jpeg;user_v74_p2_5277c320.jpeg;user_v74_p3_8f0cc021.jpeg;user_v74_p4_3c9b24ae.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全部关闭
@@ -81,3 +81,5 @@ V079,奇瑞,捷途JAECOO,EV,捷途IAECOO-5-EV,纯电,断电器,3,user_v79_p1_9a0
 V080,比亚迪,海豹,标准,比亚迪海豹SEAL-U DM-I,混动,无需断电,2,user_v80_p1_3c143a8e.jpeg;user_v80_p2_c5019a63.jpeg,0,0,,无视频引用,放干燥剂，确认钥匙数量，电源、车窗是否全部关闭
 V081,比亚迪,唐,标准,比亚迪唐ATTO2-DM-I,混动,无需断电,2,user_v81_p1_4ced59f3.jpeg;user_v81_p2_b953fe4e.jpeg,0,0,,无视频引用,放干燥剂，确认钥匙数量，电源、车窗是否全部关闭
 V082,比亚迪,海豹,标准,比亚迪海豹SEAL-5-DM-I,混动,后备箱左后方,3,user_v82_p1_f3ad96de.jpeg;user_v82_p2_e65bf52f.jpeg;user_v82_p3_10480634.jpeg,0,0,,无视频引用,放干燥剂，确认钥匙数量，电源、车窗是否全部关闭
+V083,吉利,GOME,标准,吉利GOME（几何）E2,请选择,无需断电,2,吉利GOMEE2_p1_5526d031.jpeg;吉利GOMEE2_p2_96501117.jpeg,2,0,,无视频引用,
+V084,比亚迪,海豹,标准,比亚迪海豹SEAL,请选择,无需断电,3,比亚迪海豹SEAL_p1_bb8a0063.jpeg;比亚迪海豹SEAL_p2_27fd50ec.jpeg;比亚迪海豹SEAL_p3_a992a0eb.jpeg,3,0,,无视频引用,放干燥剂
