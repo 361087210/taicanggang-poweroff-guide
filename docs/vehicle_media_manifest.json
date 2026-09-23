@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-21T13:38:24.793Z",
+  "generatedAt": "2026-09-23T00:49:48.132Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -517,27 +517,27 @@
     },
     {
       "id": 21,
-      "display": "长安深蓝(S7/S5)",
+      "display": "长安深蓝(S7/S5/S05)",
       "photos": [
-        {
-          "fileName": "image28.jpeg",
-          "sha256": "e14f658f125773cbcfc93f5fb96cd9edf1bcec44909f65102563ac3ce16c6b29",
-          "size": 34526,
-          "mime": "image/jpeg",
-          "qiniuKey": ""
-        },
-        {
-          "fileName": "image29.jpeg",
-          "sha256": "990e8a68e2f79f4d48fc86accee9394e6fb92cc2fce3063fa00a5eafedca5803",
-          "size": 36907,
-          "mime": "image/jpeg",
-          "qiniuKey": ""
-        },
         {
           "fileName": "image30.png",
           "sha256": "a44dc3d34f62c4e79b478cbe2cd685927204151cefd79c968b8d5cff474a7154",
           "size": 244002,
           "mime": "image/png",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "长安深蓝(S7_S5_S05)_p2_2b8b978c.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "长安深蓝(S7_S5_S05)_p3_36b96077.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
           "qiniuKey": ""
         }
       ],
@@ -2089,7 +2089,16 @@
           "qiniuKey": ""
         }
       ],
-      "videos": []
+      "videos": [
+        {
+          "fileName": "奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": "tcgv_e3af4b5357.mp4"
+        }
+      ]
     },
     {
       "id": 67,
@@ -2538,34 +2547,6 @@
       "videos": []
     },
     {
-      "id": 82,
-      "display": "比亚迪海豹SEAL-5-DM-I",
-      "photos": [
-        {
-          "fileName": "user_v82_p1_f3ad96de.jpeg",
-          "sha256": "3f2f2204385346aecab0b2190d03308c4a7537bf58a78e6e83d613c9e420ed95",
-          "size": 61595,
-          "mime": "image/jpeg",
-          "qiniuKey": ""
-        },
-        {
-          "fileName": "user_v82_p2_e65bf52f.jpeg",
-          "sha256": "c2e087768a91344a7444dae7dc26d0efad2d21742c3634c9f36e53dd688ebcad",
-          "size": 61945,
-          "mime": "image/jpeg",
-          "qiniuKey": ""
-        },
-        {
-          "fileName": "user_v82_p3_10480634.jpeg",
-          "sha256": "19ba7e6de8f695a53733b1d3acc2f47bf8281d5e3c3e6ee1c434066c22e4b9f3",
-          "size": 59100,
-          "mime": "image/jpeg",
-          "qiniuKey": ""
-        }
-      ],
-      "videos": []
-    },
-    {
       "id": 83,
       "display": "吉利GOME（几何）E2",
       "photos": [
@@ -2606,6 +2587,90 @@
         },
         {
           "fileName": "比亚迪海豹SEAL_p3_a992a0eb.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 85,
+      "display": "吉利豪越OKAVANGO",
+      "photos": [
+        {
+          "fileName": "吉利豪越OKAVANGO_p1_5fbee0c1.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "吉利豪越OKAVANGO_p2_36848bf5.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "吉利豪越OKAVANGO_p3_8d0bcab1.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 86,
+      "display": "比亚迪海豹SEAL-5-DM-I",
+      "photos": [
+        {
+          "fileName": "比亚迪海豹SEAL-5-DM-I_p1_ea6965ff.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪海豹SEAL-5-DM-I_p2_26a2e279.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪海豹SEAL-5-DM-I_p3_5247e384.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 87,
+      "display": "长安UNI-K-AWD",
+      "photos": [
+        {
+          "fileName": "长安UNI-K-AWD_p1_e3abc03a.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "长安UNI-K-AWD_p2_47cbb920.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "长安UNI-K-AWD_p3_206dba9f.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
@@ -2803,20 +2868,6 @@
       "releaseAsset": "",
       "vehicleIds": [
         20
-      ]
-    },
-    "e14f658f125773cbcfc93f5fb96cd9edf1bcec44909f65102563ac3ce16c6b29": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        21
-      ]
-    },
-    "990e8a68e2f79f4d48fc86accee9394e6fb92cc2fce3063fa00a5eafedca5803": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        21
       ]
     },
     "a44dc3d34f62c4e79b478cbe2cd685927204151cefd79c968b8d5cff474a7154": {
@@ -3893,33 +3944,12 @@
       "vehicleIds": [
         81
       ]
-    },
-    "3f2f2204385346aecab0b2190d03308c4a7537bf58a78e6e83d613c9e420ed95": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        82
-      ]
-    },
-    "c2e087768a91344a7444dae7dc26d0efad2d21742c3634c9f36e53dd688ebcad": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        82
-      ]
-    },
-    "19ba7e6de8f695a53733b1d3acc2f47bf8281d5e3c3e6ee1c434066c22e4b9f3": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        82
-      ]
     }
   },
   "stats": {
-    "vehicleCount": 84,
-    "photoCount": 208,
-    "videoCount": 63,
-    "totalBytes": 14306928
+    "vehicleCount": 86,
+    "photoCount": 214,
+    "videoCount": 64,
+    "totalBytes": 14052855
   }
 }

@@ -19,7 +19,7 @@ V017,比亚迪,元,元PLUS,比亚迪元(元PLUS),纯电,副驾驶底部,3,image2
 V018,比亚迪,汉,汉,比亚迪汉,混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
 V019,比亚迪,驱逐舰05（KING）,驱逐舰05（KING）,比亚迪驱逐舰05（KING）,混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
 V020,比亚迪,腾势,方程豹B5,比亚迪腾势(方程豹B5),混动,副驾驶底部,3,image26.jpeg;image27.jpeg;image3.jpeg,0,1,比亚迪腾势_方程豹B5.mp4,本地缺失-需云端补录,放干燥剂
-V021,长安,深蓝,S7/S5,长安深蓝(S7/S5),混动,屏幕下电,3,image28.jpeg;image29.jpeg;image30.png,0,1,长安深蓝_S7_S5.mp4,本地缺失-需云端补录,
+V021,长安,深蓝,S7/S5,长安深蓝(S7/S5/S05),混动,屏幕下电,3,image30.png;长安深蓝(S7_S5_S05)_p2_2b8b978c.jpeg;长安深蓝(S7_S5_S05)_p3_36b96077.jpeg,2,1,长安深蓝_S7_S5.mp4,本地缺失-需云端补录,屏幕下电，不拔电池负极
 V022,长安,深蓝,G318,长安深蓝(G318),混动,后备箱右下方,3,image31.jpeg;image32.jpeg;image33.jpeg,0,2,长安深蓝_G318.mp4;长安深蓝(G318)_v2.mp4,本地缺失-需云端补录,
 V023,长安,悦翔,CS15/CS35MAX/CS75/CS55PLUS(2025款),悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款)),混动,前机盖电池负极,3,image34.jpeg;image35.jpeg;image36.jpeg,0,1,长安悦翔_CS15_CS35MAX_CS75_CS55PLUS_2025款_.mp4,本地缺失-需云端补录,
 V024,长安,启源,CS55PLUS(2026款),长安启源(CS55PLUS(2026款)),混动,后备箱右下方,3,image37.jpeg;image38.jpeg;image39.jpeg,0,1,长安启源_CS55PLUS_2026款_.mp4,本地缺失-需云端补录,
@@ -64,7 +64,7 @@ V062,奇瑞,捷途JETOUR,DASHENG,奇瑞捷途JETOUR(DASHENG),混动,前机盖电
 V063,奇瑞,捷途JETOUR,T1 I-DM,奇瑞捷途JETOUR(T1 I-DM),混动,后备箱电池负极,3,image136.jpeg;image137.jpeg;image138.jpeg,0,1,奇瑞捷途JETOUR_T1_I_DM.mp4,本地缺失-需云端补录,
 V064,奇瑞,捷途JETOUR,T2 I-DM,奇瑞捷途JETOUR(T2 I-DM),混动,后备箱电池负极,3,image139.jpeg;image140.jpeg;image141.jpeg,0,1,奇瑞捷途JETOUR_T2_I_DM.mp4,本地缺失-需云端补录,
 V065,奇瑞,捷途JETOUR,T2 XWD,奇瑞捷途JETOUR(T2 XWD),混动,前机盖电池负极,3,image139.jpeg;image142.jpeg;image141.jpeg,0,1,奇瑞捷途JETOUR_T2_XWD.mp4,本地缺失-需云端补录,
-V066,奇瑞,捷途JETOUR,G700-GAIA,奇瑞捷途JETOUR(G700-GAIA),混动,后备箱右后方,3,image143.jpeg;image144.jpeg;image73.jpeg,0,0,,无视频引用,
+V066,奇瑞,捷途JETOUR,G700-GAIA,奇瑞捷途JETOUR(G700-GAIA),混动,后备箱右后方,3,image143.jpeg;image144.jpeg;image73.jpeg,0,1,奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4,本地缺失-需云端补录,
 V067,奇瑞,东南SOUEAST,S06DM,奇瑞东南SOUEAST(S06DM),混动,后备箱电池负极,3,image145.jpeg;image146.jpeg;image147.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
 V068,奇瑞,东南SOUEAST,S07,奇瑞东南SOUEAST(S07),混动,前机盖电池负极,3,image148.jpeg;image149.jpeg;image150.jpeg,0,1,奇瑞东南SOUEAST_S07.mp4,本地缺失-需云端补录,
 V069,奇瑞,东南SOUEAST,S08DM,奇瑞东南SOUEAST(S08DM),混动,后备箱电池负极,3,image151.jpeg;image152.jpeg;image153.jpeg,0,1,奇瑞东南SOUEAST_S08DM.mp4,本地缺失-需云端补录,
@@ -80,6 +80,8 @@ V078,奇瑞,欧萌达,标准,欧萌达OMODA-C7-PHEV,混动,断电器,2,user_v78_
 V079,奇瑞,捷途JAECOO,EV,捷途IAECOO-5-EV,纯电,断电器,3,user_v79_p1_9a0ecd12.jpeg;user_v79_p2_ae188ee5.jpeg;user_v79_p3_99711ddf.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全部关闭
 V080,比亚迪,海豹,标准,比亚迪海豹SEAL-U DM-I,混动,无需断电,2,user_v80_p1_3c143a8e.jpeg;user_v80_p2_c5019a63.jpeg,0,0,,无视频引用,放干燥剂，确认钥匙数量，电源、车窗是否全部关闭
 V081,比亚迪,唐,标准,比亚迪唐ATTO2-DM-I,混动,无需断电,2,user_v81_p1_4ced59f3.jpeg;user_v81_p2_b953fe4e.jpeg,0,0,,无视频引用,放干燥剂，确认钥匙数量，电源、车窗是否全部关闭
-V082,比亚迪,海豹,标准,比亚迪海豹SEAL-5-DM-I,混动,后备箱左后方,3,user_v82_p1_f3ad96de.jpeg;user_v82_p2_e65bf52f.jpeg;user_v82_p3_10480634.jpeg,0,0,,无视频引用,放干燥剂，确认钥匙数量，电源、车窗是否全部关闭
 V083,吉利,GOME,标准,吉利GOME（几何）E2,请选择,无需断电,2,吉利GOMEE2_p1_5526d031.jpeg;吉利GOMEE2_p2_96501117.jpeg,2,0,,无视频引用,
 V084,比亚迪,海豹,标准,比亚迪海豹SEAL,请选择,无需断电,3,比亚迪海豹SEAL_p1_bb8a0063.jpeg;比亚迪海豹SEAL_p2_27fd50ec.jpeg;比亚迪海豹SEAL_p3_a992a0eb.jpeg,3,0,,无视频引用,放干燥剂
+V085,吉利,豪越OKAVANGO,标准,吉利豪越OKAVANGO,请选择,前机盖,3,吉利豪越OKAVANGO_p1_5fbee0c1.jpeg;吉利豪越OKAVANGO_p2_36848bf5.jpeg;吉利豪越OKAVANGO_p3_8d0bcab1.jpeg,3,0,,无视频引用,前机盖断电
+V086,比亚迪,海豹,DM-i,比亚迪海豹SEAL-5-DM-I,请选择,后备箱左侧储物网兜盖板内,3,比亚迪海豹SEAL-5-DM-I_p1_ea6965ff.jpeg;比亚迪海豹SEAL-5-DM-I_p2_26a2e279.jpeg;比亚迪海豹SEAL-5-DM-I_p3_5247e384.jpeg,3,0,,无视频引用,放干燥剂，后备箱断电
+V087,长安,UNI-,请选择配置,长安UNI-K-AWD,燃油,前机盖,3,长安UNI-K-AWD_p1_e3abc03a.jpeg;长安UNI-K-AWD_p2_47cbb920.jpeg;长安UNI-K-AWD_p3_206dba9f.jpeg,3,0,,无视频引用,前机盖断电
