@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-23T00:49:48.132Z",
+  "generatedAt": "2026-09-23T05:30:18.167Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -705,6 +705,14 @@
           "mime": "video/mp4",
           "qiniuKey": "",
           "releaseAsset": "tcgv_24411bae03.mp4"
+        },
+        {
+          "fileName": "长安启源(EADO_PLUS)_v2_4ffd5489.mp4",
+          "sha256": "",
+          "size": 0,
+          "mime": "video/mp4",
+          "qiniuKey": "",
+          "releaseAsset": ""
         }
       ]
     },
@@ -747,7 +755,7 @@
     },
     {
       "id": 27,
-      "display": "长安UNI-(UNI-T)",
+      "display": "长安UNI-T",
       "photos": [
         {
           "fileName": "image45.jpeg",
@@ -777,7 +785,7 @@
     },
     {
       "id": 28,
-      "display": "长安UNI-(UNI-V)",
+      "display": "长安UNI-V",
       "photos": [
         {
           "fileName": "image45.jpeg",
@@ -2678,6 +2686,132 @@
         }
       ],
       "videos": []
+    },
+    {
+      "id": 88,
+      "display": "比亚迪SEALION海狮06",
+      "photos": [
+        {
+          "fileName": "比亚迪SEALION海狮06_p1_85c9d7e8.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪SEALION海狮06_p2_5b727539.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 89,
+      "display": "比亚迪腾势DENZA-Z9GT-FLASHe3",
+      "photos": [
+        {
+          "fileName": "比亚迪腾势DENZA-Z9GT-FLASHe3_p1_3a90fb56.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪腾势DENZA-Z9GT-FLASHe3_p2_ed120c8e.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪腾势DENZA-Z9GT-FLASHe3_p3_5c58eb95.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪腾势DENZA-Z9GT-FLASHe3_p4_ee06d8df.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪腾势DENZA-Z9GT-FLASHe3_p5_9ada07e9.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 90,
+      "display": "长城炮（皮卡）4x4",
+      "photos": [
+        {
+          "fileName": "长城炮（皮卡）4x4_p1_75e12a5e.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "长城炮（皮卡）4x4_p2_9948b5f9.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 91,
+      "display": "比亚迪元YUAN-UP-DM-I",
+      "photos": [
+        {
+          "fileName": "比亚迪元YUAN-UP-DM-I_p1_fd9fe6f8.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 92,
+      "display": "北京BAIC-BJ30e",
+      "photos": [
+        {
+          "fileName": "北京BAIC-BJ30e_p1_e2bf9e07.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "北京BAIC-BJ30e_p2_ee1a013a.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "北京BAIC-BJ30e_p3_27e2da3d.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
     }
   ],
   "assets": {
@@ -3947,9 +4081,9 @@
     }
   },
   "stats": {
-    "vehicleCount": 86,
-    "photoCount": 214,
-    "videoCount": 64,
+    "vehicleCount": 91,
+    "photoCount": 227,
+    "videoCount": 65,
     "totalBytes": 14052855
   }
 }
