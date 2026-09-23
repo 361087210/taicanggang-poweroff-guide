@@ -1404,6 +1404,7 @@ const MEDIA_DIRECT_ASSETS={
   '零跑零跑_零跑B10.mp4':'tcgv_e6e7f70cf0.mp4'
   '长安深蓝(G318)_v2.mp4':'tcgv_ac4b41ffc4.mp4',
   '奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4':'tcgv_e3af4b5357.mp4',
+  '长安启源(EADO_PLUS)_v2_4ffd5489.mp4':'tcgv_ad959cdfbe.mp4',
 };
 
 /**
