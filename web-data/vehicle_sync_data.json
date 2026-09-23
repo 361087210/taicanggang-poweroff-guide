@@ -1,8 +1,8 @@
 {
   "version": "v10.19.3",
-  "timestamp": "2026-09-21T01:10:32.681Z",
+  "timestamp": "2026-09-23T00:45:22.118Z",
   "uploadedBy": "组长",
-  "vehicleCount": 84,
+  "vehicleCount": 86,
   "vehicles": [
     {
       "id": 1,
@@ -58,7 +58,7 @@
         "4.关闭后排车门，再次拉动车门确保关闭。"
       ],
       "keyFrame": [
-        "1.所有车辆钥���数量，绑扎及框架检查完。",
+        "1.所有车辆钥匙数量，绑扎及框架检查完。",
         "2.确认断电无误后放到铅封袋内封好袋口。",
         "3.放入钥匙盒关好，封好铅封。"
       ],
@@ -263,6 +263,9 @@
       "remarks": "放干燥剂",
       "photos": 0,
       "photoPaths": [],
+      "photoSections": [],
+      "photoLabels": [],
+      "keyPhotoRemark": "",
       "videos": 1,
       "videoPaths": [
         "vehicle_videos/通用断电视频.mp4"
@@ -709,12 +712,14 @@
       "brand": "长安",
       "series": "深蓝",
       "config": "S7/S5",
-      "display": "长安深蓝(S7/S5)",
+      "display": "长安深蓝(S7/S5/S05)",
       "size": "",
       "powerType": "混动",
       "position": "屏幕下电",
       "steps": [
-        "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
+        "打开主驾驶车门，确认全部车窗关闭，取出车钥匙",
+        "2.关闭车门，确保车窗关闭，短按钥匙锁车键。",
+        "4.再次拉动车门确保关闭。"
       ],
       "keyFrame": [
         "1.所有车辆钥匙数量，绑扎及框架检查完。",
@@ -724,13 +729,24 @@
         "1.车辆钥匙数量及绑扎检查完。",
         "2.确认断电无误后放置于车内中控台。"
       ],
-      "remarks": "",
+      "remarks": "屏幕下电，不拔电池负极",
       "photos": 3,
       "photoPaths": [
-        "vehicle_images/image28.jpeg",
-        "vehicle_images/image29.jpeg",
-        "vehicle_images/image30.png"
+        "vehicle_images/image30.png",
+        "vehicle_images/长安深蓝(S7_S5_S05)_p2_2b8b978c.jpeg",
+        "vehicle_images/长安深蓝(S7_S5_S05)_p3_36b96077.jpeg"
       ],
+      "photoSections": [
+        "exterior",
+        "exterior",
+        "exterior"
+      ],
+      "photoLabels": [
+        "",
+        "车头",
+        "车尾"
+      ],
+      "keyPhotoRemark": "",
       "videos": 1,
       "videoPaths": [
         "vehicle_videos/长安深蓝_S7_S5.mp4"
@@ -1302,7 +1318,7 @@
       ],
       "keyFrame": [
         "1.所有车辆钥匙数量，绑扎及框架检查完。",
-        "2.确认断电无误后放到铅封袋���封好袋口。",
+        "2.确认断电无误后放到铅封袋内封好袋口。",
         "3.放入钥匙盒关好，封好铅封。"
       ],
       "keyContainer": [
@@ -2348,7 +2364,21 @@
         "vehicle_images/image144.jpeg",
         "vehicle_images/image73.jpeg"
       ],
-      "videos": 0
+      "photoSections": [
+        "exterior",
+        "exterior",
+        "exterior"
+      ],
+      "photoLabels": [
+        "",
+        "",
+        ""
+      ],
+      "keyPhotoRemark": "",
+      "videos": 1,
+      "videoPaths": [
+        "vehicle_videos/奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4"
+      ]
     },
     {
       "id": 67,
@@ -2552,7 +2582,7 @@
       "steps": [
         "1.打开车门，确保四个车窗关闭，取出车钥匙。",
         "2.先长按后备箱键打开后备箱，然后卡片钥匙放到主驾驶后视镜钥匙感应区锁车门。",
-        "3.用10号扳手逆时针松动电池负极线束夹，拔掉���极线束夹并套上珍珠套管避免接触。",
+        "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
         "4.关闭后备箱，再次拉动车门确保关闭。"
       ],
       "keyFrame": [
@@ -2748,7 +2778,7 @@
         "关闭前机盖，断电结束"
       ],
       "keyFrame": [
-        "1.所有车辆钥匙数量，绑扎及框架检查完。",
+        "1.所有车辆钥匙数量，��扎及框架检查完。",
         "2.确认断电无误后放到铅封袋内封好袋口。",
         "3.放入钥匙盒关好，封好铅封。"
       ],
@@ -2896,42 +2926,6 @@
       "videoPaths": []
     },
     {
-      "id": 82,
-      "brandId": "byd",
-      "brand": "比亚迪",
-      "series": "海豹",
-      "config": "标准",
-      "display": "比亚迪海豹SEAL-5-DM-I",
-      "size": "",
-      "powerType": "混动",
-      "position": "后备箱左后方",
-      "steps": [
-        "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
-        "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。",
-        "3.遥控钥匙打开后备箱，10号扳手逆时针旋转拧松电池负极螺丝",
-        "4.拔掉负极线束，套上珍珠套管避免接触",
-        "5.关闭后备箱，断电结束"
-      ],
-      "keyFrame": [
-        "1.所有车辆钥匙数量，绑扎及框架检查完。",
-        "2.确认断电无误后放到铅封袋内封好袋口。",
-        "3.放入钥匙盒关好，封好铅封。"
-      ],
-      "keyContainer": [
-        "1.车辆钥匙数量及绑扎检查完。",
-        "2.确认断电无误后放置于车内中控台。"
-      ],
-      "remarks": "放干燥剂，确认钥匙数量，电源、车窗是否全部关闭",
-      "photos": 3,
-      "photoPaths": [
-        "vehicle_images/user_v82_p1_f3ad96de.jpeg",
-        "vehicle_images/user_v82_p2_e65bf52f.jpeg",
-        "vehicle_images/user_v82_p3_10480634.jpeg"
-      ],
-      "videos": 0,
-      "videoPaths": []
-    },
-    {
       "id": 83,
       "brandId": "geely",
       "brand": "吉利",
@@ -3010,6 +3004,144 @@
         "车头",
         "车头",
         "车尾"
+      ],
+      "keyPhotoRemark": "",
+      "videos": 0,
+      "videoPaths": []
+    },
+    {
+      "id": 85,
+      "brandId": "geely",
+      "brand": "吉利",
+      "series": "豪越OKAVANGO",
+      "config": "标准",
+      "display": "吉利豪越OKAVANGO",
+      "size": "",
+      "powerType": "请选择",
+      "position": "前机盖",
+      "steps": [
+        "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
+        "确保电源车窗全部关闭，遥控钥匙锁车",
+        "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
+        "拔掉负极线束，套上珍珠套管避免接触",
+        "关闭前机盖，断电结束"
+      ],
+      "keyFrame": [
+        "1.所有车辆钥匙数量，绑扎及框架检查完。",
+        "2.确认断电无误后放到铅封袋内封好袋口。",
+        "3.放入钥匙盒关好，封好铅封。"
+      ],
+      "keyContainer": [
+        "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+      ],
+      "remarks": "前机盖断电",
+      "photos": 3,
+      "photoPaths": [
+        "vehicle_images/吉利豪越OKAVANGO_p1_5fbee0c1.jpeg",
+        "vehicle_images/吉利豪越OKAVANGO_p2_36848bf5.jpeg",
+        "vehicle_images/吉利豪越OKAVANGO_p3_8d0bcab1.jpeg"
+      ],
+      "photoSections": [
+        "exterior",
+        "exterior",
+        "position"
+      ],
+      "photoLabels": [
+        "车尾",
+        "尾标",
+        "断电位置"
+      ],
+      "keyPhotoRemark": "",
+      "videos": 0,
+      "videoPaths": []
+    },
+    {
+      "id": 86,
+      "brandId": "byd",
+      "brand": "比亚迪",
+      "series": "海豹",
+      "config": "DM-i",
+      "display": "比亚迪海豹SEAL-5-DM-I",
+      "size": "",
+      "powerType": "请选择",
+      "position": "后备箱左侧储物网兜盖板内",
+      "steps": [
+        "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
+        "确保电源车窗全部关闭，遥控钥匙锁车",
+        "3.遥控钥匙打开后备箱，10号扳手逆时针旋转拧松电池负极螺丝",
+        "4.拔掉负极线束，套上珍珠套管避免接触",
+        "5.关闭后备箱，断电结束"
+      ],
+      "keyFrame": [
+        "1.所有车辆钥匙数量，绑扎及框架检查完。",
+        "2.确认断电无误后放到铅封袋内封好袋口。",
+        "3.放入钥匙盒关好，封好铅封。"
+      ],
+      "keyContainer": [
+        "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+      ],
+      "remarks": "放干燥剂，后备箱断电",
+      "photos": 3,
+      "photoPaths": [
+        "vehicle_images/比亚迪海豹SEAL-5-DM-I_p1_ea6965ff.jpeg",
+        "vehicle_images/比亚迪海豹SEAL-5-DM-I_p2_26a2e279.jpeg",
+        "vehicle_images/比亚迪海豹SEAL-5-DM-I_p3_5247e384.jpeg"
+      ],
+      "photoSections": [
+        "exterior",
+        "exterior",
+        "position"
+      ],
+      "photoLabels": [
+        "车头",
+        "车尾",
+        "断电位置"
+      ],
+      "keyPhotoRemark": "",
+      "videos": 0,
+      "videoPaths": []
+    },
+    {
+      "id": 87,
+      "brandId": "changan",
+      "brand": "长安",
+      "series": "UNI-",
+      "config": "请选择配置",
+      "display": "长安UNI-K-AWD",
+      "size": "",
+      "powerType": "燃油",
+      "position": "前机盖",
+      "steps": [
+        "取出车钥匙，打开前机盖",
+        "确保电源车窗全部关闭，遥控钥匙锁车",
+        "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
+        "拔掉负极线束，套上珍珠套管避免接触",
+        "关闭前机盖，断电结束"
+      ],
+      "keyFrame": [
+        "1.所有车辆钥匙数量，绑扎及框架检查完。",
+        "2.确认断电无误后放到铅封袋内封好袋口。",
+        "3.放入钥匙盒关好，封好铅封。"
+      ],
+      "keyContainer": [
+        "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+      ],
+      "remarks": "前机盖断电",
+      "photos": 3,
+      "photoPaths": [
+        "vehicle_images/长安UNI-K-AWD_p1_e3abc03a.jpeg",
+        "vehicle_images/长安UNI-K-AWD_p2_47cbb920.jpeg",
+        "vehicle_images/长安UNI-K-AWD_p3_206dba9f.jpeg"
+      ],
+      "photoSections": [
+        "exterior",
+        "exterior",
+        "position"
+      ],
+      "photoLabels": [
+        "车尾",
+        "车头",
+        "断电位置"
       ],
       "keyPhotoRemark": "",
       "videos": 0,
