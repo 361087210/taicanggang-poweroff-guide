@@ -23,10 +23,10 @@ V021,长安,深蓝,S7/S5,长安深蓝(S7/S5/S05),混动,屏幕下电,3,image30.p
 V022,长安,深蓝,G318,长安深蓝(G318),混动,后备箱右下方,3,image31.jpeg;image32.jpeg;image33.jpeg,0,2,长安深蓝_G318.mp4;长安深蓝(G318)_v2.mp4,本地缺失-需云端补录,
 V023,长安,悦翔,CS15/CS35MAX/CS75/CS55PLUS(2025款),悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款)),混动,前机盖电池负极,3,image34.jpeg;image35.jpeg;image36.jpeg,0,1,长安悦翔_CS15_CS35MAX_CS75_CS55PLUS_2025款_.mp4,本地缺失-需云端补录,
 V024,长安,启源,CS55PLUS(2026款),长安启源(CS55PLUS(2026款)),混动,后备箱右下方,3,image37.jpeg;image38.jpeg;image39.jpeg,0,1,长安启源_CS55PLUS_2026款_.mp4,本地缺失-需云端补录,
-V025,长安,启源,EADO PLUS,长安启源(EADO PLUS),混动,后备箱左下方,3,image40.jpeg;image41.jpeg;image42.jpeg,0,1,长安启源_EADO_PLUS.mp4,本地缺失-需云端补录,
+V025,长安,启源,EADO PLUS,长安启源(EADO PLUS),混动,后备箱左下方,3,image40.jpeg;image41.jpeg;image42.jpeg,0,2,长安启源_EADO_PLUS.mp4;长安启源(EADO_PLUS)_v2_4ffd5489.mp4,本地缺失-需云端补录,
 V026,长安,糯米,糯米,长安糯米,混动,前机盖电池负极,3,image43.jpeg;image44.jpeg;image36.jpeg,0,1,长安糯米_糯米.mp4,本地缺失-需云端补录,
-V027,长安,UNI-,UNI-T,长安UNI-(UNI-T),混动,前机盖电池负极,2,image45.jpeg;image46.jpeg,0,1,长安UNI__UNI_T.mp4,本地缺失-需云端补录,
-V028,长安,UNI-,UNI-V,长安UNI-(UNI-V),混动,前机盖电池负极,2,image45.jpeg;image46.jpeg,0,1,长安UNI__UNI_T.mp4,本地缺失-需云端补录,
+V027,长安,UNI-,标准,长安UNI-T,混动,前机盖电池负极,2,image45.jpeg;image46.jpeg,0,1,长安UNI__UNI_T.mp4,本地缺失-需云端补录,
+V028,长安,UNI-,标准,长安UNI-V,混动,前机盖电池负极,2,image45.jpeg;image46.jpeg,0,1,长安UNI__UNI_T.mp4,本地缺失-需云端补录,
 V029,长安,长安之星,小货车,长安长安之星(小货车),混动,主驾驶座位下方,2,image47.jpeg;image48.jpeg,0,1,长安长安之星_小货车.mp4,本地缺失-需云端补录,
 V030,长安,皮卡,HUNTER（猎手）燃油版/混动版,长安皮卡(HUNTER（猎手）燃油版/混动版),混动,前机盖电池负极,3,image49.jpeg;image50.jpeg;image51.jpeg,0,1,长安皮卡_HUNTER_猎手_燃油版_混动版.mp4,本地缺失-需云端补录,
 V031,上汽,名爵,ZS/HS/EHS(PHEV),上汽名爵(ZS/HS/EHS(PHEV)),混动,断电器熄灭后自动断电,3,image52.jpeg;image53.jpeg;image54.jpeg,0,1,上汽名爵_ZS_HS_EHS_PHEV_.mp4,本地缺失-需云端补录,
@@ -85,3 +85,8 @@ V084,比亚迪,海豹,标准,比亚迪海豹SEAL,请选择,无需断电,3,比亚
 V085,吉利,豪越OKAVANGO,标准,吉利豪越OKAVANGO,请选择,前机盖,3,吉利豪越OKAVANGO_p1_5fbee0c1.jpeg;吉利豪越OKAVANGO_p2_36848bf5.jpeg;吉利豪越OKAVANGO_p3_8d0bcab1.jpeg,3,0,,无视频引用,前机盖断电
 V086,比亚迪,海豹,DM-i,比亚迪海豹SEAL-5-DM-I,请选择,后备箱左侧储物网兜盖板内,3,比亚迪海豹SEAL-5-DM-I_p1_ea6965ff.jpeg;比亚迪海豹SEAL-5-DM-I_p2_26a2e279.jpeg;比亚迪海豹SEAL-5-DM-I_p3_5247e384.jpeg,3,0,,无视频引用,放干燥剂，后备箱断电
 V087,长安,UNI-,请选择配置,长安UNI-K-AWD,燃油,前机盖,3,长安UNI-K-AWD_p1_e3abc03a.jpeg;长安UNI-K-AWD_p2_47cbb920.jpeg;长安UNI-K-AWD_p3_206dba9f.jpeg,3,0,,无视频引用,前机盖断电
+V088,比亚迪,海狮,请选择配置,比亚迪SEALION海狮06,请选择,无需断电,2,比亚迪SEALION海狮06_p1_85c9d7e8.jpeg;比亚迪SEALION海狮06_p2_5b727539.jpeg,2,0,,无视频引用,放干燥剂
+V089,比亚迪,腾势,请选择配置,比亚迪腾势DENZA-Z9GT-FLASHe3,请选择,无需断电,5,比亚迪腾势DENZA-Z9GT-FLASHe3_p1_3a90fb56.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p2_ed120c8e.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p3_5c58eb95.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p4_ee06d8df.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p5_9ada07e9.jpeg,5,0,,无视频引用,放干燥剂，遥控锁车
+V090,长城,长城炮POER,请选择配置,长城炮（皮卡）4x4,燃油,前机盖,2,长城炮（皮卡）4x4_p1_75e12a5e.jpeg;长城炮（皮卡）4x4_p2_9948b5f9.jpeg,2,0,,无视频引用,前机盖断电
+V091,比亚迪,元,DM-i,比亚迪元YUAN-UP-DM-I,混动,无需断电,1,比亚迪元YUAN-UP-DM-I_p1_fd9fe6f8.jpeg,1,0,,无视频引用,放干燥剂，遥控锁车
+V092,北京(BAIC),北京BJ,请选择配置,北京BAIC-BJ30e,请选择,后备箱,3,北京BAIC-BJ30e_p1_e2bf9e07.jpeg;北京BAIC-BJ30e_p2_ee1a013a.jpeg;北京BAIC-BJ30e_p3_27e2da3d.jpeg,3,0,,无视频引用,后备箱断电

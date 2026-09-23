@@ -1,4 +1,4 @@
-// 飞书云端同步于 2026-09-23T00:45:22.118Z
+// 飞书云端同步于 2026-09-23T05:22:51.892Z
 window.VEHICLES = [
   {
     "id": 1,
@@ -519,7 +519,7 @@ window.VEHICLES = [
     ],
     "keyContainer": [
       "1.车辆钥匙数量及绑扎检查完。",
-      "2.确认断电无误后放置于车内中控台。"
+      "2.确认断电无误后��置于车内中控台。"
     ],
     "remarks": "放干燥剂",
     "photos": 1,
@@ -892,9 +892,21 @@ window.VEHICLES = [
       "vehicle_images/image41.jpeg",
       "vehicle_images/image42.jpeg"
     ],
-    "videos": 1,
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "",
+      "",
+      ""
+    ],
+    "keyPhotoRemark": "",
+    "videos": 2,
     "videoPaths": [
-      "vehicle_videos/长安启源_EADO_PLUS.mp4"
+      "vehicle_videos/长安启源_EADO_PLUS.mp4",
+      "vehicle_videos/长安启源(EADO_PLUS)_v2_4ffd5489.mp4"
     ]
   },
   {
@@ -939,8 +951,8 @@ window.VEHICLES = [
     "brandId": "changan",
     "brand": "长安",
     "series": "UNI-",
-    "config": "UNI-T",
-    "display": "长安UNI-(UNI-T)",
+    "config": "标准",
+    "display": "长安UNI-T",
     "size": "",
     "powerType": "混动",
     "position": "前机盖电池负极",
@@ -965,6 +977,15 @@ window.VEHICLES = [
       "vehicle_images/image45.jpeg",
       "vehicle_images/image46.jpeg"
     ],
+    "photoSections": [
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "",
+      ""
+    ],
+    "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
       "vehicle_videos/长安UNI__UNI_T.mp4"
@@ -975,8 +996,8 @@ window.VEHICLES = [
     "brandId": "changan",
     "brand": "长安",
     "series": "UNI-",
-    "config": "UNI-V",
-    "display": "长安UNI-(UNI-V)",
+    "config": "标准",
+    "display": "长安UNI-V",
     "size": "",
     "powerType": "混动",
     "position": "前机盖电池负极",
@@ -1001,6 +1022,15 @@ window.VEHICLES = [
       "vehicle_images/image45.jpeg",
       "vehicle_images/image46.jpeg"
     ],
+    "photoSections": [
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "车头",
+      ""
+    ],
+    "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
       "vehicle_videos/长安UNI__UNI_T.mp4"
@@ -1133,7 +1163,7 @@ window.VEHICLES = [
     "keyFrame": [
       "1.所有车辆钥匙数量，绑扎及框架检查完。",
       "2.确认断电无误后放到铅封袋内封好袋口。",
-      "3.放入钥匙盒关好，封好铅封。"
+      "3.放入钥匙盒关好，封好��封。"
     ],
     "keyContainer": [
       "1.车辆钥匙数量及绑扎检查完。",
@@ -2088,7 +2118,7 @@ window.VEHICLES = [
     ],
     "keyFrame": [
       "1.所有车辆钥匙数量，绑扎及框架检查完。",
-      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "2.确认断电无误后放到铅封袋内���好袋口。",
       "3.放入钥匙盒关好，封好铅封。"
     ],
     "keyContainer": [
@@ -2774,7 +2804,7 @@ window.VEHICLES = [
       "关闭前机盖，断电结束"
     ],
     "keyFrame": [
-      "1.所有车辆钥匙数量，��扎及框架检查完。",
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
       "2.确认断电无误后放到铅封袋内封好袋口。",
       "3.放入钥匙盒关好，封好铅封。"
     ],
@@ -2839,7 +2869,7 @@ window.VEHICLES = [
       "确保电源车窗全部关闭，遥控钥匙锁车"
     ],
     "keyFrame": [
-      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "1.所有车辆钥��数量，绑扎及框架检查完。",
       "2.确认断电无误后放到铅封袋内封好袋口。",
       "3.放入钥匙盒关好，封好铅封。"
     ],
@@ -3128,6 +3158,221 @@ window.VEHICLES = [
       "vehicle_images/长安UNI-K-AWD_p1_e3abc03a.jpeg",
       "vehicle_images/长安UNI-K-AWD_p2_47cbb920.jpeg",
       "vehicle_images/长安UNI-K-AWD_p3_206dba9f.jpeg"
+    ],
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "position"
+    ],
+    "photoLabels": [
+      "车尾",
+      "车头",
+      "断电位置"
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 88,
+    "brandId": "byd",
+    "brand": "比亚迪",
+    "series": "海狮",
+    "config": "请选择配置",
+    "display": "比亚迪SEALION海狮06",
+    "size": "",
+    "powerType": "请选择",
+    "position": "无需断电",
+    "steps": [
+      "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
+      "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "放干燥剂",
+    "photos": 2,
+    "photoPaths": [
+      "vehicle_images/比亚迪SEALION海狮06_p1_85c9d7e8.jpeg",
+      "vehicle_images/比亚迪SEALION海狮06_p2_5b727539.jpeg"
+    ],
+    "photoSections": [
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "尾标",
+      "车尾"
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 89,
+    "brandId": "byd",
+    "brand": "比亚迪",
+    "series": "腾势",
+    "config": "请选择配置",
+    "display": "比亚迪腾势DENZA-Z9GT-FLASHe3",
+    "size": "",
+    "powerType": "请选择",
+    "position": "无需断电",
+    "steps": [
+      "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
+      "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "放干燥剂，遥控锁车",
+    "photos": 5,
+    "photoPaths": [
+      "vehicle_images/比亚迪腾势DENZA-Z9GT-FLASHe3_p1_3a90fb56.jpeg",
+      "vehicle_images/比亚迪腾势DENZA-Z9GT-FLASHe3_p2_ed120c8e.jpeg",
+      "vehicle_images/比亚迪腾势DENZA-Z9GT-FLASHe3_p3_5c58eb95.jpeg",
+      "vehicle_images/比亚迪腾势DENZA-Z9GT-FLASHe3_p4_ee06d8df.jpeg",
+      "vehicle_images/比亚迪腾势DENZA-Z9GT-FLASHe3_p5_9ada07e9.jpeg"
+    ],
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "exterior",
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 90,
+    "brandId": "gwm",
+    "brand": "长城",
+    "series": "长城炮POER",
+    "config": "请选择配置",
+    "display": "长城炮（皮卡）4x4",
+    "size": "",
+    "powerType": "燃油",
+    "position": "前机盖",
+    "steps": [
+      "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
+      "确保电源车窗全部关闭，遥控钥匙锁车",
+      "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
+      "拔掉负极线束，套上珍珠套管避免接触",
+      "关闭前机盖，断电结束"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "前机盖断电",
+    "photos": 2,
+    "photoPaths": [
+      "vehicle_images/长城炮（皮卡）4x4_p1_75e12a5e.jpeg",
+      "vehicle_images/长城炮（皮卡）4x4_p2_9948b5f9.jpeg"
+    ],
+    "photoSections": [
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "",
+      ""
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 91,
+    "brandId": "byd",
+    "brand": "比亚迪",
+    "series": "元",
+    "config": "DM-i",
+    "display": "比亚迪元YUAN-UP-DM-I",
+    "size": "",
+    "powerType": "混动",
+    "position": "无需断电",
+    "steps": [
+      "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
+      "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "放干燥剂，遥控锁车",
+    "photos": 1,
+    "photoPaths": [
+      "vehicle_images/比亚迪元YUAN-UP-DM-I_p1_fd9fe6f8.jpeg"
+    ],
+    "photoSections": [
+      "exterior"
+    ],
+    "photoLabels": [
+      ""
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 92,
+    "brandId": "custom",
+    "brand": "北京(BAIC)",
+    "series": "北京BJ",
+    "config": "请选择配置",
+    "display": "北京BAIC-BJ30e",
+    "size": "",
+    "powerType": "请选择",
+    "position": "后备箱",
+    "steps": [
+      "1.打开车门，确保四个车窗关闭，取出车钥匙。",
+      "2.关闭车门，机械钥匙锁住车门。",
+      "3.遥控钥匙打开后备箱，10号扳手逆时针旋转拧松电池负极螺丝",
+      "4.拔掉负极线束，套上珍珠套管避免接触",
+      "5.关闭后备箱，断电结束"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "后备箱断电",
+    "photos": 3,
+    "photoPaths": [
+      "vehicle_images/北京BAIC-BJ30e_p1_e2bf9e07.jpeg",
+      "vehicle_images/北京BAIC-BJ30e_p2_ee1a013a.jpeg",
+      "vehicle_images/北京BAIC-BJ30e_p3_27e2da3d.jpeg"
     ],
     "photoSections": [
       "exterior",
