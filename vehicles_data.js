@@ -1,4 +1,4 @@
-// 飞书云端同步于 2026-09-27T03:46:45.434Z
+// 飞书云端同步于 2026-09-27T06:47:37.217Z
 window.VEHICLES = [
   {
     "id": 1,
@@ -51,7 +51,7 @@ window.VEHICLES = [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
       "2.打开副驾驶和右后车门，副驾驶座椅调到最前方，关闭副驾驶车门，短按钥匙锁车键。",
       "3.进入右后排，副驾驶底部电池用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
-      "4.关闭后排车门，再次拉动车门确保关闭。"
+      "4.关闭后排车门，再次��动车门确保关闭。"
     ],
     "keyFrame": [
       "1.所有车辆钥匙数量，绑扎及框架检查完。",
@@ -795,7 +795,7 @@ window.VEHICLES = [
     "display": "悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款))",
     "size": "",
     "powerType": "混动",
-    "position": "��机盖电池负极",
+    "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
       "2.关闭车门，短按钥匙锁车键。",
@@ -1313,7 +1313,7 @@ window.VEHICLES = [
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
       "2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。",
-      "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
+      "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管��免接触。",
       "4.关闭后备箱，再次拉动车门确保关闭。"
     ],
     "keyFrame": [
@@ -1422,7 +1422,7 @@ window.VEHICLES = [
     "position": "屏幕下电",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
-      "2.短按钥匙锁车键锁住车门，再次拉动车��确保关闭。"
+      "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。"
     ],
     "keyFrame": [
       "1.所有车辆钥匙数量，绑扎及框架检查完。",
@@ -1704,7 +1704,7 @@ window.VEHICLES = [
     "id": 47,
     "brandId": "geely",
     "brand": "吉利",
-    "series": "极氪",
+    "series": "极���",
     "config": "极氪001/X/7X",
     "display": "吉利极氪(极氪001/X/7X)",
     "size": "",
@@ -2036,7 +2036,7 @@ window.VEHICLES = [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
       "2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。",
       "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
-      "4.关闭后备箱，再次拉动车门确保关闭。"
+      "4.关闭后备箱，再次拉动车门��保关闭。"
     ],
     "keyFrame": [
       "1.所有车辆钥匙数量，绑扎及框架检查完。",
@@ -2523,7 +2523,7 @@ window.VEHICLES = [
     "powerType": "混动",
     "position": "后备箱电池负极",
     "steps": [
-      "1.���开车门，确保四个车窗关闭，取出车钥匙。",
+      "1.打开车门，确保四个车窗关闭，取出车钥匙。",
       "2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。",
       "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
       "4.关闭后备箱，再次拉动车门确保关闭。"
@@ -2877,7 +2877,7 @@ window.VEHICLES = [
       "1.车辆钥匙数量及绑扎检查完。",
       "2.确认断电无误后放置于车内中控台。"
     ],
-    "remarks": "确认钥匙数量，电源、车窗是否全���关闭",
+    "remarks": "确认钥匙数量，电源、车窗是否全部关闭",
     "photos": 2,
     "photoPaths": [
       "vehicle_images/user_v78_p1_ae188ee5.jpeg",
@@ -3032,11 +3032,12 @@ window.VEHICLES = [
     "display": "比亚迪海豹SEAL",
     "size": "",
     "powerType": "请选择",
-    "position": "无需断电",
+    "position": "后排座椅腿托下方",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
-      "2.关闭车门，确保车窗关闭，短按钥匙锁车键。",
-      "4.再次拉动车门确保关闭。"
+      "2.副驾驶座位往前调整，打开后排车门，短按钥匙锁车键。",
+      "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
+      "4.关闭后排车门，再次拉动车门确保关闭。"
     ],
     "keyFrame": [
       "1.所有车辆钥匙数量，绑扎及框架检查完。",
@@ -3047,21 +3048,24 @@ window.VEHICLES = [
       "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
     ],
     "remarks": "放干燥剂",
-    "photos": 3,
+    "photos": 4,
     "photoPaths": [
       "vehicle_images/比亚迪海豹SEAL_p1_bb8a0063.jpeg",
       "vehicle_images/比亚迪海豹SEAL_p2_27fd50ec.jpeg",
-      "vehicle_images/比亚迪海豹SEAL_p3_a992a0eb.jpeg"
+      "vehicle_images/比亚迪海豹SEAL_p3_a992a0eb.jpeg",
+      "vehicle_images/比亚迪海豹SEAL_p4_dba5cf97.jpeg"
     ],
     "photoSections": [
       "exterior",
       "exterior",
-      "exterior"
+      "exterior",
+      "position"
     ],
     "photoLabels": [
       "车头",
       "车头",
-      "车尾"
+      "车尾",
+      "断电位置"
     ],
     "keyPhotoRemark": "",
     "videos": 0,
@@ -3305,7 +3309,7 @@ window.VEHICLES = [
     "powerType": "燃油",
     "position": "前机盖",
     "steps": [
-      "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
+      "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥��。",
       "确保电源车窗全部关闭，遥控钥匙锁车",
       "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
       "拔掉负极线束，套上珍珠套管避免接触",
@@ -3641,6 +3645,186 @@ window.VEHICLES = [
     "photoLabels": [
       "车尾",
       "车头",
+      "断电位置"
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 98,
+    "brandId": "geely",
+    "brand": "吉利",
+    "series": "STARRAY",
+    "config": "请选择配置",
+    "display": "吉利STARRAY-EM-i",
+    "size": "",
+    "powerType": "混动",
+    "position": "无需断电",
+    "steps": [
+      "1.打开车门，确保四个车窗关闭，取出车钥匙。",
+      "确保电源车窗全部关闭，遥控钥匙锁车"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "",
+    "photos": 3,
+    "photoPaths": [
+      "vehicle_images/吉利STARRAY-EM-i_p1_b24e574e.jpeg",
+      "vehicle_images/吉利STARRAY-EM-i_p2_ebc44ad5.jpeg",
+      "vehicle_images/吉利STARRAY-EM-i_p3_acd7133.jpeg"
+    ],
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "尾标",
+      "车头",
+      "车尾"
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 99,
+    "brandId": "byd",
+    "brand": "比亚迪",
+    "series": "灰鲸鲨MAKO",
+    "config": "标准",
+    "display": "比亚迪皮卡灰鲸鲨MAKO",
+    "size": "",
+    "powerType": "插混",
+    "position": "副驾驶底部",
+    "steps": [
+      "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
+      "2.副驾驶座位往前调整，打开后排车门，短按钥匙锁车键。",
+      "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
+      "4.关闭后排车门，再次拉动车门确保关闭。"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "放干燥剂",
+    "photos": 2,
+    "photoPaths": [
+      "vehicle_images/比亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
+      "vehicle_images/比亚迪皮卡灰鲸鲨MAKO_p2_dba5cf97.jpeg"
+    ],
+    "photoSections": [
+      "exterior",
+      "position"
+    ],
+    "photoLabels": [
+      "车尾",
+      "断电位置"
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 100,
+    "brandId": "custom",
+    "brand": "北汽(BAIC)",
+    "series": "极狐ARCFOX",
+    "config": "请选择配置",
+    "display": "北汽-极狐ARCFOX-T1",
+    "size": "",
+    "powerType": "混动",
+    "position": "屏幕下电",
+    "steps": [
+      "1.打开车门，确保四个车窗关闭，取出车钥匙。",
+      "确保电源车窗全部关闭，遥控钥匙锁车"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "屏幕下电",
+    "photos": 5,
+    "photoPaths": [
+      "vehicle_images/北汽-极狐ARCFOX-T1_p1_ad644948.jpeg",
+      "vehicle_images/北汽-极狐ARCFOX-T1_p2_339ba39b.jpeg",
+      "vehicle_images/北汽-极狐ARCFOX-T1_p3_c82181fe.jpeg",
+      "vehicle_images/北汽-极狐ARCFOX-T1_p4_ac6b1397.jpeg",
+      "vehicle_images/北汽-极狐ARCFOX-T1_p5_5c705a82.jpeg"
+    ],
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "exterior",
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
+  },
+  {
+    "id": 101,
+    "brandId": "leapmotor",
+    "brand": "零跑",
+    "series": "零跑",
+    "config": "请选择配置",
+    "display": "零跑B03X",
+    "size": "",
+    "powerType": "纯电",
+    "position": "前机盖",
+    "steps": [
+      "取出车钥匙，打开前机盖",
+      "确保电源车窗全部关闭，遥控钥匙锁车",
+      "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
+      "拔掉负极线束，套上珍珠套管避免接触",
+      "关闭前机盖，断电结束"
+    ],
+    "keyFrame": [
+      "1.所有车辆钥匙数量，绑扎及框架检查完。",
+      "2.确认断电无误后放到铅封袋内封好袋口。",
+      "3.放入钥匙盒关好，封好铅封。"
+    ],
+    "keyContainer": [
+      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+    ],
+    "remarks": "前机盖断电",
+    "photos": 3,
+    "photoPaths": [
+      "vehicle_images/零跑B03X_p1_b5432b8c.jpeg",
+      "vehicle_images/零跑B03X_p2_b7262caa.jpeg",
+      "vehicle_images/零跑B03X_p3_fe0645e1.jpeg"
+    ],
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "position"
+    ],
+    "photoLabels": [
+      "车头",
+      "车尾",
       "断电位置"
     ],
     "keyPhotoRemark": "",

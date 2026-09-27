@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-27T05:34:28.196Z",
+  "generatedAt": "2026-09-27T10:46:22.828Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -2599,6 +2599,13 @@
           "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪海豹SEAL_p4_dba5cf97.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
         }
       ],
       "videos": []
@@ -2966,6 +2973,125 @@
         },
         {
           "fileName": "比亚迪ATTO-3-EVO_p3_9f93e56c.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 98,
+      "display": "吉利STARRAY-EM-i",
+      "photos": [
+        {
+          "fileName": "吉利STARRAY-EM-i_p1_b24e574e.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "吉利STARRAY-EM-i_p2_ebc44ad5.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "吉利STARRAY-EM-i_p3_acd7133.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 99,
+      "display": "比亚迪皮卡灰鲸鲨MAKO",
+      "photos": [
+        {
+          "fileName": "比亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪皮卡灰鲸鲨MAKO_p2_dba5cf97.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 100,
+      "display": "北汽-极狐ARCFOX-T1",
+      "photos": [
+        {
+          "fileName": "北汽-极狐ARCFOX-T1_p1_ad644948.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "北汽-极狐ARCFOX-T1_p2_339ba39b.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "北汽-极狐ARCFOX-T1_p3_c82181fe.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "北汽-极狐ARCFOX-T1_p4_ac6b1397.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "北汽-极狐ARCFOX-T1_p5_5c705a82.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 101,
+      "display": "零跑B03X",
+      "photos": [
+        {
+          "fileName": "零跑B03X_p1_b5432b8c.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "零跑B03X_p2_b7262caa.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "零跑B03X_p3_fe0645e1.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
@@ -4228,8 +4354,8 @@
     }
   },
   "stats": {
-    "vehicleCount": 96,
-    "photoCount": 245,
+    "vehicleCount": 100,
+    "photoCount": 259,
     "videoCount": 65,
     "totalBytes": 13969120
   }
