@@ -14,14 +14,14 @@ V012,比亚迪,唐,唐L-EV（天神之眼）,比亚迪唐(唐L-EV（天神之眼
 V013,比亚迪,唐,唐EV（欧标）,比亚迪唐(唐EV（欧标）),纯电,前机盖电池负极,1,image20.png,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
 V014,比亚迪,唐,标准,比亚迪唐ATTO-8,纯电,无需断电,2,image21.jpeg;image22.jpeg,0,1,比亚迪唐_ATTO8.mp4,本地缺失-需云端补录,放干燥剂
 V015,比亚迪,元,元UP,比亚迪元(元UP),纯电,后排坐椅腿托下方,1,image4.jpeg,0,1,比亚迪元_元UP.mp4,本地缺失-需云端补录,放干燥剂
-V016,比亚迪,元,元PRO,比亚迪元(元PRO),纯电,前机盖电池负极,2,比亚迪元(元PRO)_p1_f17d44b3.jpeg;比亚迪元(元PRO)_p2_93102652.jpeg,2,0,,无视频引用,放干燥剂
+V016,比亚迪,元,标准,比亚迪元YUAN-PRO-EV,纯电,前机盖电池负极,2,比亚迪元(元PRO)_p1_f17d44b3.jpeg;比亚迪元(元PRO)_p2_93102652.jpeg,2,0,,无视频引用,放干燥剂
 V017,比亚迪,元,元PLUS,比亚迪元(元PLUS),纯电,副驾驶底部,3,image24.jpeg;image25.jpeg;image3.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
 V018,比亚迪,汉,汉,比亚迪汉,混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
 V019,比亚迪,驱逐舰05（KING）,驱逐舰05（KING）,比亚迪驱逐舰05（KING）,混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
 V020,比亚迪,腾势,方程豹B5,比亚迪腾势(方程豹B5),混动,副驾驶底部,3,image26.jpeg;image27.jpeg;image3.jpeg,0,1,比亚迪腾势_方程豹B5.mp4,本地缺失-需云端补录,放干燥剂
 V021,长安,深蓝,S7/S5,长安深蓝(S7/S5/S05),混动,屏幕下电,3,image30.png;长安深蓝(S7_S5_S05)_p2_2b8b978c.jpeg;长安深蓝(S7_S5_S05)_p3_36b96077.jpeg,2,1,长安深蓝_S7_S5.mp4,本地缺失-需云端补录,屏幕下电，不拔电池负极
 V022,长安,深蓝,G318,长安深蓝(G318),混动,后备箱右下方,3,image31.jpeg;image32.jpeg;image33.jpeg,0,2,长安深蓝_G318.mp4;长安深蓝(G318)_v2.mp4,本地缺失-需云端补录,
-V023,长安,悦翔,CS15/CS35MAX/CS75/CS55PLUS(2025款),悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款)),混动,前机盖电池负极,3,image34.jpeg;image35.jpeg;image36.jpeg,0,1,长安悦翔_CS15_CS35MAX_CS75_CS55PLUS_2025款_.mp4,本地缺失-需云端补录,
+V023,长安,悦翔,CS15/CS35MAX/CS75/CS55PLUS(2025款),悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款)),混动,��机盖电池负极,3,image34.jpeg;image35.jpeg;image36.jpeg,0,1,长安悦翔_CS15_CS35MAX_CS75_CS55PLUS_2025款_.mp4,本地缺失-需云端补录,
 V024,长安,启源,CS55PLUS(2026款),长安启源(CS55PLUS(2026款)),混动,后备箱右下方,3,image37.jpeg;image38.jpeg;image39.jpeg,0,1,长安启源_CS55PLUS_2026款_.mp4,本地缺失-需云端补录,
 V025,长安,启源,EADO PLUS,长安启源(EADO PLUS),混动,后备箱左下方,3,image40.jpeg;image41.jpeg;image42.jpeg,0,2,长安启源_EADO_PLUS.mp4;长安启源(EADO_PLUS)_v2_4ffd5489.mp4,本地缺失-需云端补录,
 V026,长安,糯米,糯米,长安糯米,混动,前机盖电池负极,3,image43.jpeg;image44.jpeg;image36.jpeg,0,1,长安糯米_糯米.mp4,本地缺失-需云端补录,
@@ -29,7 +29,7 @@ V027,长安,UNI-,标准,长安UNI-T,混动,前机盖电池负极,2,image45.jpeg;
 V028,长安,UNI-,标准,长安UNI-V,混动,前机盖电池负极,2,image45.jpeg;image46.jpeg,0,1,长安UNI__UNI_T.mp4,本地缺失-需云端补录,
 V029,长安,长安之星,小货车,长安长安之星(小货车),混动,主驾驶座位下方,2,image47.jpeg;image48.jpeg,0,1,长安长安之星_小货车.mp4,本地缺失-需云端补录,
 V030,长安,皮卡,HUNTER（猎手）燃油版/混动版,长安皮卡(HUNTER（猎手）燃油版/混动版),混动,前机盖电池负极,3,image49.jpeg;image50.jpeg;image51.jpeg,0,1,长安皮卡_HUNTER_猎手_燃油版_混动版.mp4,本地缺失-需云端补录,
-V031,上汽,名爵,ZS/HS/EHS(PHEV),上汽名爵(ZS/HS/EHS(PHEV)),混动,断电器熄灭后自动断电,3,image52.jpeg;image53.jpeg;image54.jpeg,0,1,上汽名爵_ZS_HS_EHS_PHEV_.mp4,本地缺失-需云端补录,
+V031,上汽,名爵,ZS/HS/EHS(PHEV),上汽名爵(ZS/HS/EHS(PHEV)),混动,断电器熄灭后自动断电,3,image52.jpeg;image53.jpeg;image54.jpeg,0,1,上汽名爵_ZS_HS_EHS_PHEV_.mp4,本地缺失-需云端补录,EHS-PHEV机械钥匙锁车
 V032,上汽,名爵,赛博斯特,上汽名爵(赛博斯特),混动,前机盖电池负极,2,image55.jpeg;image56.jpeg,0,1,上汽名爵_赛博斯特.mp4,本地缺失-需云端补录,备注：机盖打开方式：拉动前保险杠左前盖板内的拉线
 V033,上汽,大通,大通货车,上汽大通(大通货车),混动,前机盖电池负极,2,image58.jpeg;image59.jpeg,0,1,上汽大通_大通货车.mp4,本地缺失-需云端补录,
 V034,长城,哈佛,H6,长城哈佛(H6),混动,后备箱盖板下方,3,image60.jpeg;image61.jpeg;image62.jpeg,0,1,长城哈佛_H6.mp4,本地缺失-需云端补录,放干燥剂
@@ -39,7 +39,7 @@ V037,东风,风度,帕拉丁（PALADIN）,东风风度(帕拉丁（PALADIN）),�
 V038,东风,风神,风神HUGEMHD500T/MAGEMHD500T,东风风神(风神HUGEMHD500T/MAGEMHD500T),混动,后备箱右后方,3,image71.jpeg;image72.jpeg;image73.jpeg,0,1,东风风神_风神HUGEMHD500T_MAGEMHD500T.mp4,本地缺失-需云端补录,
 V039,东风,VIGO,VIGO（纳米06海外版）/纳米06国内版,东风VIGO(VIGO（纳米06海外版）/纳米06国内版),混动,屏幕下电,2,image74.jpeg;image75.jpeg,0,1,东风VIGO_VIGO_纳米06海外版__纳米06国内版.mp4,本地缺失-需云端补录,
 V040,东风,VIGO,纳米01,东风VIGO(纳米01),混动,屏幕下电,2,image76.jpeg;image77.jpeg,0,0,,无视频引用,
-V041,东风,VIGO,BOX,东风VIGO(BOX),混动,屏幕下电,2,image78.jpeg;image79.jpeg,0,0,,无视频引用,
+V041,东风,VIGO,BOX,东风VIGO(BOX),混动,屏幕下电,2,东风VIGO(BOX)_p1_3a9f1170.jpeg;东风VIGO(BOX)_p2_605d5d3c.jpeg,2,0,,无视频引用,
 V042,东风,锐棋（RICH）,RICH6,东风锐棋（RICH）(RICH6),混动,前机盖电池负极,3,image80.jpeg;image81.jpeg;image82.jpeg,0,1,东风锐棋_RICH__RICH6.mp4,本地缺失-需云端补录,
 V043,东风,小康,MPVC37,东风小康(MPVC37),混动,主驾驶座位下方,3,image83.jpeg;image84.jpeg;image85.jpeg,0,1,东风小康_MPVC37.mp4,本地缺失-需云端补录,
 V044,江淮,E-JS1/4,E-JS1/4,江淮E-JS1/4,混动,前机盖电池负极,3,image86.jpeg;image87.jpeg;image88.jpeg,0,1,江淮E_JS1_4_E_JS1_4.mp4,本地缺失-需云端补录,
@@ -52,7 +52,7 @@ V050,吉利,银河,EX5（银河E5）,吉利银河(EX5（银河E5）),纯电,屏�
 V051,吉利,银河,EX2（银河E2）,吉利银河(EX2（银河E2）),纯电,前机盖,3,image105.jpeg;image106.jpeg;image107.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
 V052,吉利,领克,领克02,吉利领克(领克02),混动,屏幕下电,2,image108.jpeg;image109.jpeg,0,1,吉利领克_领克02.mp4,本地缺失-需云端补录,
 V053,吉利,领克,领克08,吉利领克(领克08),混动,屏幕下电,3,image110.jpeg;image111.jpeg;image109.jpeg,0,0,,无视频引用,
-V054,奇瑞,欧萌达,标准,奇瑞欧萌达OMODA5,混动,后备箱盖板下方,3,image112.jpeg;image113.jpeg;image114.png,0,1,奇瑞欧萌达_欧萌达5.mp4,本地缺失-需云端补录,
+V054,奇瑞,欧萌达,标准,奇瑞欧萌达OMODA-5,混动,后备箱盖板下方,3,image112.jpeg;image113.jpeg;image114.png,0,1,奇瑞欧萌达_欧萌达5.mp4,本地缺失-需云端补录,
 V055,奇瑞,瑞虎,瑞虎7PRO,奇瑞瑞虎(瑞虎7PRO),混动,前机盖,2,image115.jpeg;image116.jpeg,0,1,奇瑞瑞虎_瑞虎7PRO.mp4,本地缺失-需云端补录,
 V056,奇瑞,瑞虎,瑞虎7 CSH/PLUGIN HYBRID,奇瑞瑞虎(瑞虎7 CSH/PLUGIN HYBRID),混动,后备箱泡沫板底部,3,image117.jpeg;image118.jpeg;image119.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,
 V057,奇瑞,瑞虎,瑞虎8 CSH,奇瑞瑞虎(瑞虎8 CSH),混动,后备箱电池负极,3,image120.jpeg;image121.jpeg;image122.jpeg,0,1,奇瑞瑞虎_瑞虎8_CSH.mp4,本地缺失-需云端补录,
@@ -76,7 +76,7 @@ V074,吉利,银河,PRO,吉利银河EX3PRO,燃油,前机盖,4,user_v74_p1_c0e6b73
 V075,长安,悦翔,PLUS,长安悦翔ALSVINPLUS,燃油,前机盖,2,user_v75_p1_f4341164.jpeg;user_v75_p2_907837b9.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全部关闭
 V076,奇瑞,欧萌达,标准,奇瑞欧萌达(OMODA)C7,燃油,前机盖,3,user_v76_p1_ae65b237.jpeg;user_v76_p2_1b3457ba.jpeg;user_v76_p3_805c73a.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全部关闭
 V077,奇瑞,捷途JAECOO,标准,奇瑞捷途JAECOO5,燃油,前机盖,3,user_v77_p1_42b4272f.jpeg;user_v77_p2_5e548764.jpeg;user_v77_p3_5fc5891e.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全部关闭
-V078,奇瑞,欧萌达,标准,欧萌达OMODA-C7-PHEV,混动,断电器,2,user_v78_p1_ae188ee5.jpeg;user_v78_p2_200ce149.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全部关闭
+V078,奇瑞,欧萌达,标准,欧萌达OMODA-C7-PHEV,混动,断电器,2,user_v78_p1_ae188ee5.jpeg;user_v78_p2_200ce149.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全���关闭
 V079,奇瑞,捷途JAECOO,EV,捷途IAECOO-5-EV,纯电,断电器,3,user_v79_p1_9a0ecd12.jpeg;user_v79_p2_ae188ee5.jpeg;user_v79_p3_99711ddf.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全部关闭
 V080,比亚迪,海豹,标准,比亚迪海豹SEAL-U DM-I,混动,无需断电,2,user_v80_p1_3c143a8e.jpeg;user_v80_p2_c5019a63.jpeg,0,0,,无视频引用,放干燥剂，确认钥匙数量，电源、车窗是否全部关闭
 V081,比亚迪,唐,标准,比亚迪唐ATTO2-DM-I,混动,无需断电,2,user_v81_p1_4ced59f3.jpeg;user_v81_p2_b953fe4e.jpeg,0,0,,无视频引用,放干燥剂，确认钥匙数量，电源、车窗是否全部关闭
@@ -89,4 +89,9 @@ V088,比亚迪,海狮,请选择配置,比亚迪SEALION海狮06,请选择,无需�
 V089,比亚迪,腾势,请选择配置,比亚迪腾势DENZA-Z9GT-FLASHe3,请选择,无需断电,5,比亚迪腾势DENZA-Z9GT-FLASHe3_p1_3a90fb56.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p2_ed120c8e.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p3_5c58eb95.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p4_ee06d8df.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p5_9ada07e9.jpeg,5,0,,无视频引用,放干燥剂，遥控锁车
 V090,长城,长城炮POER,请选择配置,长城炮（皮卡）4x4,燃油,前机盖,2,长城炮（皮卡）4x4_p1_75e12a5e.jpeg;长城炮（皮卡）4x4_p2_9948b5f9.jpeg,2,0,,无视频引用,前机盖断电
 V091,比亚迪,元,DM-i,比亚迪元YUAN-UP-DM-I,混动,无需断电,1,比亚迪元YUAN-UP-DM-I_p1_fd9fe6f8.jpeg,1,0,,无视频引用,放干燥剂，遥控锁车
-V092,北京(BAIC),北京BJ,请选择配置,北京BAIC-BJ30e,请选择,后备箱,3,北京BAIC-BJ30e_p1_e2bf9e07.jpeg;北京BAIC-BJ30e_p2_ee1a013a.jpeg;北京BAIC-BJ30e_p3_27e2da3d.jpeg,3,0,,无视频引用,后备箱断电
+V092,北汽BAIC,北京BJ,请选择配置,北汽BAIC-BJ30e,请选择,后备箱,3,北京BAIC-BJ30e_p1_e2bf9e07.jpeg;北京BAIC-BJ30e_p2_ee1a013a.jpeg;北京BAIC-BJ30e_p3_27e2da3d.jpeg,3,0,,无视频引用,后备箱断电
+V093,奇瑞,欧萌达,请选择配置,奇瑞OMODA欧萌达C5-HEV,请选择,断电器熄灭后自动断电,5,奇瑞OMODA欧萌达C5-HEV_p1_1be3a864.jpeg;奇瑞OMODA欧萌达C5-HEV_p2_249cba48.jpeg;奇瑞OMODA欧萌达C5-HEV_p3_9859b4fa.jpeg;奇瑞OMODA欧萌达C5-HEV_p4_df248724.jpeg;奇瑞OMODA欧萌达C5-HEV_p5_8d0bcab1.jpeg,5,0,,无视频引用,HEV断电器断电
+V094,奇瑞,欧萌达,标准,奇瑞OMODA欧萌达C5,燃油,前机盖,4,奇瑞OMODA欧萌达C5_p1_1be3a864.jpeg;奇瑞OMODA欧萌达C5_p2_9859b4fa.jpeg;奇瑞OMODA欧萌达C5_p3_ec0e7275.jpeg;奇瑞OMODA欧萌达C5_p4_27e2da3d.jpeg,4,0,,无视频引用,车窗电源关闭
+V095,长城,JOLION,标准,长城初恋JOLION,燃油,前机盖,3,长城初恋JOLION_p1_c975ac03.jpeg;长城初恋JOLION_p2_12f97fb1.jpeg;长城初恋JOLION_p3_9abb5075.jpeg,3,0,,无视频引用,
+V096,比亚迪,海狮,请选择配置,比亚迪海狮SEALION-7-4.5s-AWD,请选择,无需断电,3,比亚迪海狮SEALLION7-4_p1_87686476.jpeg;比亚迪海狮SEALLION7-4_p2_9a2a8485.jpeg;比亚迪海狮SEALLION7-4_p3_129f032f.jpeg,3,0,,无视频引用,放干燥剂
+V097,比亚迪,ATTO,请选择配置,比亚迪ATTO-3-EVO,纯电,无需断电,3,比亚迪ATTO-3-EVO_p1_962acf4c.jpeg;比亚迪ATTO-3-EVO_p2_753c03a.jpeg;比亚迪ATTO-3-EVO_p3_9f93e56c.jpeg,3,0,,无视频引用,放干燥剂
