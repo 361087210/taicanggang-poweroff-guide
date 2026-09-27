@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-25T15:50:12.553Z",
+  "generatedAt": "2026-09-27T05:34:28.196Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -410,7 +410,7 @@
     },
     {
       "id": 16,
-      "display": "比亚迪元(元PRO)",
+      "display": "比亚迪元YUAN-PRO-EV",
       "photos": [
         {
           "fileName": "比亚迪元(元PRO)_p1_f17d44b3.jpeg",
@@ -1211,16 +1211,16 @@
       "display": "东风VIGO(BOX)",
       "photos": [
         {
-          "fileName": "image78.jpeg",
-          "sha256": "2cd821f90f34c16cfbf78742c97ef9931e034f4763f5701b6aaf2487cad09495",
-          "size": 39034,
+          "fileName": "东风VIGO(BOX)_p1_3a9f1170.jpeg",
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
         {
-          "fileName": "image79.jpeg",
-          "sha256": "506a1a747ae30e3b7b578a6e48606178bbace5b399426bc2a080a847f53d5dbe",
-          "size": 44701,
+          "fileName": "东风VIGO(BOX)_p2_605d5d3c.jpeg",
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -1643,7 +1643,7 @@
     },
     {
       "id": 54,
-      "display": "奇瑞欧萌达OMODA5",
+      "display": "奇瑞欧萌达OMODA-5",
       "photos": [
         {
           "fileName": "image112.jpeg",
@@ -2787,7 +2787,7 @@
     },
     {
       "id": 92,
-      "display": "北京BAIC-BJ30e",
+      "display": "北汽BAIC-BJ30e",
       "photos": [
         {
           "fileName": "北京BAIC-BJ30e_p1_e2bf9e07.jpeg",
@@ -2805,6 +2805,167 @@
         },
         {
           "fileName": "北京BAIC-BJ30e_p3_27e2da3d.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 93,
+      "display": "奇瑞OMODA欧萌达C5-HEV",
+      "photos": [
+        {
+          "fileName": "奇瑞OMODA欧萌达C5-HEV_p1_1be3a864.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "奇瑞OMODA欧萌达C5-HEV_p2_249cba48.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "奇瑞OMODA欧萌达C5-HEV_p3_9859b4fa.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "奇瑞OMODA欧萌达C5-HEV_p4_df248724.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "奇瑞OMODA欧萌达C5-HEV_p5_8d0bcab1.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 94,
+      "display": "奇瑞OMODA欧萌达C5",
+      "photos": [
+        {
+          "fileName": "奇瑞OMODA欧萌达C5_p1_1be3a864.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "奇瑞OMODA欧萌达C5_p2_9859b4fa.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "奇瑞OMODA欧萌达C5_p3_ec0e7275.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "奇瑞OMODA欧萌达C5_p4_27e2da3d.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 95,
+      "display": "长城初恋JOLION",
+      "photos": [
+        {
+          "fileName": "长城初恋JOLION_p1_c975ac03.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "长城初恋JOLION_p2_12f97fb1.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "长城初恋JOLION_p3_9abb5075.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 96,
+      "display": "比亚迪海狮SEALION-7-4.5s-AWD",
+      "photos": [
+        {
+          "fileName": "比亚迪海狮SEALLION7-4_p1_87686476.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪海狮SEALLION7-4_p2_9a2a8485.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪海狮SEALLION7-4_p3_129f032f.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        }
+      ],
+      "videos": []
+    },
+    {
+      "id": 97,
+      "display": "比亚迪ATTO-3-EVO",
+      "photos": [
+        {
+          "fileName": "比亚迪ATTO-3-EVO_p1_962acf4c.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪ATTO-3-EVO_p2_753c03a.jpeg",
+          "sha256": "",
+          "size": 0,
+          "mime": "image/jpeg",
+          "qiniuKey": ""
+        },
+        {
+          "fileName": "比亚迪ATTO-3-EVO_p3_9f93e56c.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
@@ -3335,20 +3496,6 @@
       "releaseAsset": "",
       "vehicleIds": [
         40
-      ]
-    },
-    "2cd821f90f34c16cfbf78742c97ef9931e034f4763f5701b6aaf2487cad09495": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        41
-      ]
-    },
-    "506a1a747ae30e3b7b578a6e48606178bbace5b399426bc2a080a847f53d5dbe": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        41
       ]
     },
     "6ebefbb9f991f33f8d94727b25111b2b6274603d50486c7cf1227697756708b3": {
@@ -4081,9 +4228,9 @@
     }
   },
   "stats": {
-    "vehicleCount": 91,
-    "photoCount": 227,
+    "vehicleCount": 96,
+    "photoCount": 245,
     "videoCount": 65,
-    "totalBytes": 14052855
+    "totalBytes": 13969120
   }
 }
