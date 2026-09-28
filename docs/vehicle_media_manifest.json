@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-27T10:46:22.828Z",
+  "generatedAt": "2026-09-28T01:03:36.708Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -845,7 +845,7 @@
     },
     {
       "id": 30,
-      "display": "长安皮卡(HUNTER（猎手）燃油版/混动版)",
+      "display": "长安皮卡(HUNTER（猎���）燃油版/混动版)",
       "photos": [
         {
           "fileName": "image49.jpeg",
@@ -2696,7 +2696,7 @@
     },
     {
       "id": 88,
-      "display": "比亚迪SEALION海狮06",
+      "display": "��亚迪SEALION海狮06",
       "photos": [
         {
           "fileName": "比亚迪SEALION海狮06_p1_85c9d7e8.jpeg",
