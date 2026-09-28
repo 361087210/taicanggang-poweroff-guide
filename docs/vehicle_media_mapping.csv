@@ -28,8 +28,8 @@ V026,长安,糯米,糯米,长安糯米,混动,前机盖电池负极,3,image43.jp
 V027,长安,UNI-,标准,长安UNI-T,混动,前机盖电池负极,2,image45.jpeg;image46.jpeg,0,1,长安UNI__UNI_T.mp4,本地缺失-需云端补录,
 V028,长安,UNI-,标准,长安UNI-V,混动,前机盖电池负极,2,image45.jpeg;image46.jpeg,0,1,长安UNI__UNI_T.mp4,本地缺失-需云端补录,
 V029,长安,长安之星,小货车,长安长安之星(小货车),混动,主驾驶座位下方,2,image47.jpeg;image48.jpeg,0,1,长安长安之星_小货车.mp4,本地缺失-需云端补录,
-V030,长安,皮卡,HUNTER（猎手）燃油版/混动版,长安皮卡(HUNTER（猎���）燃油版/混动版),混动,前机盖电池负极,3,image49.jpeg;image50.jpeg;image51.jpeg,0,1,长安皮卡_HUNTER_猎手_燃油版_混动版.mp4,本地缺失-需云端补录,
-V031,上汽,名爵,ZS/HS/EHS(PHEV),上汽名爵(ZS/HS/EHS(PHEV)),混动,断电器熄灭后自动断电,3,image52.jpeg;image53.jpeg;image54.jpeg,0,1,上汽名爵_ZS_HS_EHS_PHEV_.mp4,本地缺失-需云端补录,EHS-PHEV机械钥匙锁车
+V030,长安,皮卡,HUNTER（猎手）燃油版/混动版,长安皮卡(HUNTER（猎手）燃油版/混动版),混动,前机盖电池负极,3,image49.jpeg;image50.jpeg;image51.jpeg,0,1,长安皮卡_HUNTER_猎手_燃油版_混动版.mp4,本地缺失-需云端补录,
+V031,上汽,名爵,ZS/HS/EHS(PHEV),上汽名爵(ZS/HS/EHS(PHEV)),混动,断电器���灭后自动断电,3,image52.jpeg;image53.jpeg;image54.jpeg,0,1,上汽名爵_ZS_HS_EHS_PHEV_.mp4,本地缺失-需云端补录,EHS-PHEV机械钥匙锁车
 V032,上汽,名爵,赛博斯特,上汽名爵(赛博斯特),混动,前机盖电池负极,2,image55.jpeg;image56.jpeg,0,1,上汽名爵_赛博斯特.mp4,本地缺失-需云端补录,备注：机盖打开方式：拉动前保险杠左前盖板内的拉线
 V033,上汽,大通,大通货车,上汽大通(大通货车),混动,前机盖电池负极,2,image58.jpeg;image59.jpeg,0,1,上汽大通_大通货车.mp4,本地缺失-需云端补录,
 V034,长城,哈佛,H6,长城哈佛(H6),混动,后备箱盖板下方,3,image60.jpeg;image61.jpeg;image62.jpeg,0,1,长城哈佛_H6.mp4,本地缺失-需云端补录,放干燥剂
@@ -78,14 +78,14 @@ V076,奇瑞,欧萌达,标准,奇瑞欧萌达(OMODA)C7,燃油,前机盖,3,user_v7
 V077,奇瑞,捷途JAECOO,标准,奇瑞捷途JAECOO5,燃油,前机盖,3,user_v77_p1_42b4272f.jpeg;user_v77_p2_5e548764.jpeg;user_v77_p3_5fc5891e.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全部关闭
 V078,奇瑞,欧萌达,标准,欧萌达OMODA-C7-PHEV,混动,断电器,2,user_v78_p1_ae188ee5.jpeg;user_v78_p2_200ce149.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全部关闭
 V079,奇瑞,捷途JAECOO,EV,捷途IAECOO-5-EV,纯电,断电器,3,user_v79_p1_9a0ecd12.jpeg;user_v79_p2_ae188ee5.jpeg;user_v79_p3_99711ddf.jpeg,0,0,,无视频引用,确认钥匙数量，电源、车窗是否全部关闭
-V080,比亚迪,海豹,标准,比亚迪海豹SEAL-U DM-I,混动,无需断电,2,user_v80_p1_3c143a8e.jpeg;user_v80_p2_c5019a63.jpeg,0,0,,无视频引用,放干燥剂，确认钥匙数量，电源、车窗是否全部关闭
+V080,比亚迪,海豹,标准,比亚迪海豹SEAL-U DM-I,混动,无需断电,2,user_v80_p1_3c143a8e.jpeg;user_v80_p2_c5019a63.jpeg,0,0,,无视频引用,放干燥剂��确认钥匙数量，电源、车窗是否全部关闭
 V081,比亚迪,唐,标准,比亚迪唐ATTO2-DM-I,混动,无需断电,2,user_v81_p1_4ced59f3.jpeg;user_v81_p2_b953fe4e.jpeg,0,0,,无视频引用,放干燥剂，确认钥匙数量，电源、车窗是否全部关闭
 V083,吉利,GOME,标准,吉利GOME（几何）E2,请选择,无需断电,2,吉利GOMEE2_p1_5526d031.jpeg;吉利GOMEE2_p2_96501117.jpeg,2,0,,无视频引用,
 V084,比亚迪,海豹,标准,比亚迪海豹SEAL,请选择,后排座椅腿托下方,4,比亚迪海豹SEAL_p1_bb8a0063.jpeg;比亚迪海豹SEAL_p2_27fd50ec.jpeg;比亚迪海豹SEAL_p3_a992a0eb.jpeg;比亚迪海豹SEAL_p4_dba5cf97.jpeg,4,0,,无视频引用,放干燥剂
 V085,吉利,豪越OKAVANGO,标准,吉利豪越OKAVANGO,请选择,前机盖,3,吉利豪越OKAVANGO_p1_5fbee0c1.jpeg;吉利豪越OKAVANGO_p2_36848bf5.jpeg;吉利豪越OKAVANGO_p3_8d0bcab1.jpeg,3,0,,无视频引用,前机盖断电
 V086,比亚迪,海豹,DM-i,比亚迪海豹SEAL-5-DM-I,请选择,后备箱左侧储物网兜盖板内,3,比亚迪海豹SEAL-5-DM-I_p1_ea6965ff.jpeg;比亚迪海豹SEAL-5-DM-I_p2_26a2e279.jpeg;比亚迪海豹SEAL-5-DM-I_p3_5247e384.jpeg,3,0,,无视频引用,放干燥剂，后备箱断电
 V087,长安,UNI-,请选择配置,长安UNI-K-AWD,燃油,前机盖,3,长安UNI-K-AWD_p1_e3abc03a.jpeg;长安UNI-K-AWD_p2_47cbb920.jpeg;长安UNI-K-AWD_p3_206dba9f.jpeg,3,0,,无视频引用,前机盖断电
-V088,比亚迪,海狮,请选择配置,��亚迪SEALION海狮06,请选择,无需断电,2,比亚迪SEALION海狮06_p1_85c9d7e8.jpeg;比亚迪SEALION海狮06_p2_5b727539.jpeg,2,0,,无视频引用,放干燥剂
+V088,比亚迪,海狮,请选择配置,比亚迪SEALION海狮06,请选择,无需断电,2,比亚迪SEALION海狮06_p1_85c9d7e8.jpeg;比亚迪SEALION海狮06_p2_5b727539.jpeg,2,0,,无视频引用,放干燥剂
 V089,比亚迪,腾势,请选择配置,比亚迪腾势DENZA-Z9GT-FLASHe3,请选择,无需断电,5,比亚迪腾势DENZA-Z9GT-FLASHe3_p1_3a90fb56.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p2_ed120c8e.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p3_5c58eb95.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p4_ee06d8df.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p5_9ada07e9.jpeg,5,0,,无视频引用,放干燥剂，遥控锁车
 V090,长城,长城炮POER,请选择配置,长城炮（皮卡）4x4,燃油,前机盖,2,长城炮（皮卡）4x4_p1_75e12a5e.jpeg;长城炮（皮卡）4x4_p2_9948b5f9.jpeg,2,0,,无视频引用,前机盖断电
 V091,比亚迪,元,DM-i,比亚迪元YUAN-UP-DM-I,混动,无需断电,1,比亚迪元YUAN-UP-DM-I_p1_fd9fe6f8.jpeg,1,0,,无视频引用,放干燥剂，遥控锁车
