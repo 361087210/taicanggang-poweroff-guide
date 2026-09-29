@@ -141,7 +141,7 @@
       "record_id": "recvvgd6CdvZyV"
     }
   ],
-  "timestamp": "2026-09-29T00:59:37.546Z",
+  "timestamp": "2026-09-29T06:47:04.627Z",
   "sanitized": true,
   "fieldAllowlist": [
     "反馈ID",
@@ -164,6 +164,7 @@
     "角色",
     "设备信息",
     "门禁结果",
-    "问题截图"
+    "问题截图",
+    "技术��档链接"
   ]
 }
