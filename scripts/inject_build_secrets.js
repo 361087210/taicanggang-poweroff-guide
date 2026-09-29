@@ -14,6 +14,9 @@
  * 可选:
  *   FEISHU_STRICT=0      - 缺env变量时仅警告不抛错(本地预览用)
  *   DEMO_HTML_PATH       - demo.html 路径(默认: <scriptDir>/../demo.html)
+ *   TCG_REGISTER_TOKEN   - 网页登记通道写库令牌(建议 fine-grained,
+ *                          Scope=仅 tcg-registration-inbox/contents:write);
+ *                          注入为 __BUILD_SECRETS__.registerTokenEnc(可选, 缺则网页注册提示未配置)
  */
 'use strict';
 const fs = require('fs');
@@ -61,16 +64,22 @@ function stripInjected(html){
   return html.replace(re, '\n');
 }
 
-function buildInjectScriptBlock(appId, appSecret, folderToken){
+function buildInjectScriptBlock(appId, appSecret, folderToken, registerToken){
   // 不写入源码到磁盘:直接把注入块放到 </head> 之前
   // V11.3: appSecret 不再明文落盘, 改为 xnorEnc 密文(Demo仅注入密文, 明文字符串从未写入demo.html)
   const appSecretEnc = xnorEnc(appSecret, SECRET_XOR_KEY);
-  const inner =
+  const registerTokenEnc = registerToken ? xnorEnc(registerToken, SECRET_XOR_KEY) : '';
+  let inner =
     "  <script>\n" +
     "    window.__BUILD_SECRETS__ = {\n" +
     "      appId: '" + escJsStr(appId) + "',\n" +
     "      appSecretEnc: '" + escJsStr(appSecretEnc) + "',\n" +
-    "      folderToken: '" + escJsStr(folderToken) + "'\n" +
+    "      folderToken: '" + escJsStr(folderToken) + "'\n";
+  if (registerTokenEnc) {
+    // 网页登记通道写库令牌(Scope 仅限收集箱仓库, 可选)
+    inner += "    ,registerTokenEnc: '" + escJsStr(registerTokenEnc) + "'\n";
+  }
+  inner +=
     "    };\n" +
     "    Object.defineProperty(window, '__BUILD_SECRETS_CONSUMED__', { configurable: false, writable: false, value: false });\n" +
     "  </script>\n";
@@ -91,6 +100,7 @@ function main(){
   const appId = readEnv('FEISHU_APP_ID');
   const appSecret = readEnv('FEISHU_APP_SECRET');
   const folderToken = readEnv('FEISHU_FOLDER_TOKEN');
+  const registerToken = readEnv('TCG_REGISTER_TOKEN'); // 网页登记通道令牌(可选)
 
   const missing = [];
   if (!appId) missing.push('FEISHU_APP_ID');
@@ -121,7 +131,7 @@ function main(){
 
   // 注入新的脚本标签(插入到 </head> 之前)
   const block = (appId && appSecret && folderToken)
-    ? buildInjectScriptBlock(appId, appSecret, folderToken)
+    ? buildInjectScriptBlock(appId, appSecret, folderToken, registerToken)
     : ('\n' + INJECT_MARK_BEGIN + '\n  <!-- 注入禁用: 未检测到完整FEISHU_*环境变量(已严格模式会拦截构建) -->\n  ' + INJECT_MARK_END + '\n');
 
   if (!/<\/head>/i.test(html)) fail('demo.html 中找不到 </head> 标签,无法注入');

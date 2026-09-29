@@ -43,6 +43,18 @@
     WEB_MIRROR_BASE: 'web-data/',
 
     /* ---------- 飞书群通知(组长拒绝注册时推送) ---------- */
-    DEFAULT_CHAT_ID: 'oc_1b25c691971c61de0b7773e49cb42796'
+    DEFAULT_CHAT_ID: 'oc_1b25c691971c61de0b7773e49cb42796',
+
+    /* ---------- 网页端自助注册登记通道(V10.17.0 复投 / Issue2) ----------
+     * 网页版为只读镜像, 无法直连飞书(无后端+CORS不可达); 注册申请统一投递到
+     * 专用收集箱仓库 tcg-registration-inbox 的 registrations/ 目录,
+     * 其 relay.yml(每5分钟)把 pending_reg_<phone>.json 转投飞书「注册申请/」,
+     * 组长安卓端既有 60 秒轮询审批链路零改动即可看到申请。
+     * 写库令牌: 不入源码, 经构建期注入 window.__BUILD_SECRETS__.registerTokenEnc
+     * (scripts/inject_build_secrets.js 从 CI Secret TCG_REGISTER_TOKEN 注入,
+     *  建议用仅含本收集箱仓库 contents:write 的 fine-grained PAT)。 */
+    REGISTER_REPO: '361087210/tcg-registration-inbox',
+    REGISTER_BRANCH: 'main',
+    REGISTER_DIR: 'registrations'
   };
 })();
