@@ -1,0 +1,16 @@
+{
+  "appId": "<你的飞书自建应用 App ID，形如 cli_xxxxxxxxxxxx>",
+  "folderToken": "<云盘根目录 token：即「APP数据备份」文件夹的 folder_token>",
+  "dataFolderName": "APP数据备份",
+  "dataSubFolders": [
+    "同步数据",
+    "注册申请",
+    "审批结果",
+    "备份文件",
+    "偏好设置"
+  ],
+  "bitableAppToken": "<你的多维表格 app_token（车辆表/用户表/反馈表同属此文档，三表共享）>",
+  "bitableFeedbackTableId": "<反馈表 table_id（需要新建/复用一张表，默认 tblPB0AnsTS9puqw）>",
+  "approvalCode": "",
+  "chatId": "<通知群 chat_id（发版/拒绝/反馈通知发送目标群）>"
+}

@@ -1,0 +1,16 @@
+{
+  "appId": "cli_a965abcba6fadbd3",
+  "folderToken": "KTfSfY7GplYTofd4WoNc6W3Qnwc",
+  "dataFolderName": "APP数据备份",
+  "dataSubFolders": [
+    "同步数据",
+    "注册申请",
+    "审批结果",
+    "备份文件",
+    "偏好设置"
+  ],
+  "bitableAppToken": "Gn4db7il9a27QrsOtVbclSE3nnf",
+  "bitableFeedbackTableId": "tblPB0AnsTS9puqw",
+  "approvalCode": "",
+  "chatId": "oc_1b25c691971c61de0b7773e49cb42796"
+}
