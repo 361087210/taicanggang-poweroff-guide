@@ -263,17 +263,86 @@ function _install(){
     showToast('网页版不支持重置密码,请在安卓APP「我的→账号安全」中修改');
   };
   /* ============================================================
-   * ④d 网页端自助注册 —— V10.19.3 改为「引导语」(原 GitHub 登记通道已下线)
+   * ④d 网页端自助注册 —— 经收集箱仓库转投飞书 (Issue2 复投)
    * ============================================================
-   * 变更原因:
-   *   ① 原方案的 GitHub 登记令牌可从公开源码解出, 且 scope 含 repo/workflow,
-   *      即将吊销; 吊销后网页端上行注册**必然失败**。
-   *   ② 网页端定位本就是「仅组员只读」, 新增成员应由组长在 App 端完成。
-   * 正解: 网页端不再提供注册入口, 直接给出明确指引。
-   *       安卓端 doRegister(js/02-auth.js)不受影响, 仍走飞书直连注册链。
+   * 架构: 网页端为只读镜像, 无后端且飞书 API 被 CORS 拦截, 无法直连飞书;
+   *       故申请投递到专用收集箱库 tcg-registration-inbox/registrations/,
+   *       该库 relay.yml 每5分钟把 pending_reg_<phone>.json 转投飞书
+   *       「APP数据备份/注册申请/」, 组长安卓端既有审批链路零改动。
+   * 与原生 doRegister(js/02-auth.js) 同款校验链: 姓名+11位手机号+限流+
+   *   密码≥6含数字字母+两次一致+查重; 并派生 linkKey(审批后镜像可登录)。
+   * 写库令牌: 构建期注入 __BUILD_SECRETS__.registerTokenEnc(Scope 仅限分类箱
+   *   仓库 contents:write), 不入源码; 未注入时优雅降级为引导语, 不崩溃。
    * ============================================================ */
+  /* Unicode 安全 base64(btoa 对中文姓名会崩), 用于 GitHub Contents 上传 */
+  function _utf8B64(str){
+    try{return btoa(unescape(encodeURIComponent(str)));}catch(e){return '';}
+  }
+  let _REGISTER_TOKEN=''; // 收集箱写库令牌(构建期注入,闭包持有)
+  (function(){
+    try{
+      const bs=window.__BUILD_SECRETS__||{};
+      if(bs.registerTokenEnc&&typeof _decryptBuildSecret==='function'){
+        _REGISTER_TOKEN=_decryptBuildSecret(bs.registerTokenEnc);
+      }else if(bs.registerToken){
+        _REGISTER_TOKEN=bs.registerToken;
+      }
+    }catch(e){_REGISTER_TOKEN='';}
+  })();
+
   window.doRegister=async function(){
-    showToast('网页版不支持注册, 请联系组长在手机 App 端添加成员');
+    const cfg=window.TCG_CONFIG||{};
+    const name=document.getElementById('reg-name').value.trim();
+    const phone=document.getElementById('reg-phone').value.trim();
+    const pass=document.getElementById('reg-pass').value.trim();
+    const pass2=document.getElementById('reg-pass2').value.trim();
+    if(!name||!phone||!pass){showToast('请填写完整信息');return;}
+    if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
+    if(!_REGISTER_TOKEN){showToast('网页登记通道未配置, 请联系组长在手机 App 端添加成员');return;}
+    const regKey='tcg_reg_lock';
+    try{
+      const regLock=JSON.parse(localStorage.getItem(regKey)||'[]');
+      const now=Date.now();
+      const recent=regLock.filter(t=>now-t<60*60*1000);
+      if(recent.length>=3){showToast('注册过于频繁,请1小时后再试');return;}
+      if(pass.length<6){showToast('密码至少6位');return;}
+      if(!/(?=.*\d)(?=.*[a-zA-Z])/.test(pass)){showToast('密码须包含数字和字母');return;}
+      if(pass!==pass2){showToast('两次密码不一致');return;}
+      if(USERS.find(u=>u.phone===phone)){showToast('该手机号已注册');return;}
+      const salt=genSalt();
+      const hashedPass=await hashPassword(pass, salt);
+      /* P0 脱敏: 派生 linkKey, 审批通过后镜像即可用于网页登录 */
+      const linkKey=await deriveLinkKey(phone, pass);
+      const newUser={id:Date.now(),name,phone,password:hashedPass,role:'user',status:'pending',created:new Date().toLocaleDateString()};
+      if(linkKey)newUser.linkKey=linkKey;
+      const pendingData={type:'pending_registration',source:'web-mirror',appVersion:'v'+(window.APP_VERSION||''),user:newUser,timestamp:new Date().toISOString()};
+      /* 投递到收集箱仓库: pending_reg_<phone>.json 同名覆盖即可(更新无需 sha) */
+      const repo=cfg.REGISTER_REPO||'361087210/tcg-registration-inbox';
+      const dir=cfg.REGISTER_DIR||'registrations';
+      const branch=cfg.REGISTER_BRANCH||'main';
+      const _p=dir+'/pending_reg_'+phone+'.json';
+      const res=await fetch('https://api.github.com/repos/'+repo+'/contents/'+_p,{
+        method:'PUT',
+        headers:{'Authorization':'Bearer '+_REGISTER_TOKEN,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+        body:JSON.stringify({message:'web register: pending_reg_'+phone,content:_utf8B64(JSON.stringify(pendingData,null,2)),branch:branch})
+      });
+      if(!res.ok){
+        const err=await res.json().catch(()=>null);
+        throw new Error((err&&(err.message||err.msg))||('HTTP '+res.status));
+      }
+      localStorage.setItem(regKey,JSON.stringify((JSON.parse(localStorage.getItem(regKey)||'[]').concat([Date.now()]))));
+      showToast('注册申请已提交，请等待组长审核后登录');
+      let el=document.getElementById('reg-name');
+      if(el)el.value=''; el=document.getElementById('reg-phone'); if(el)el.value='';
+      el=document.getElementById('reg-pass'); if(el)el.value='';
+      el=document.getElementById('reg-pass2'); if(el)el.value='';
+      const fs=document.getElementById('screen-register');
+      if((typeof showScreen==='function')&&fs){showScreen('screen-login');}
+      if(typeof navReset==='function')navReset();
+    }catch(err){
+      console.error('[web-register] 提交失败:',err&&err.message);
+      showToast('提交失败('+(err&&err.message||'网络错误')+')，请稍后重试');
+    }
   };
 
   /* ============================================================
