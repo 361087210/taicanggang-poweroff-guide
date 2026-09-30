@@ -543,7 +543,7 @@
       "config": "标准",
       "display": "比亚迪元YUAN-PRO-EV",
       "size": "",
-      "powerType": "纯电",
+      "powerType": "纯���",
       "position": "前机盖电池负极",
       "steps": [
         "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
@@ -1459,7 +1459,7 @@
       "powerType": "混动",
       "position": "屏幕下电",
       "steps": [
-        "1.短按主驾驶车门把手通电，确保四个车窗关���，取出车钥匙。",
+        "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
         "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。"
       ],
       "keyFrame": [
@@ -1815,7 +1815,7 @@
       "brandId": "geely",
       "brand": "吉利",
       "series": "银河",
-      "config": "EX5（银河E5）",
+      "config": "EX5（��河E5）",
       "display": "吉利银河(EX5（银河E5）)",
       "size": "",
       "powerType": "纯电",
