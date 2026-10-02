@@ -44,8 +44,8 @@ const http = require('http');
 const FEISHU_API = 'https://open.feishu.cn/open-apis';
 const APP_ID = process.env.FEISHU_APP_ID || '';
 const APP_SECRET = process.env.FEISHU_APP_SECRET || '';
-const BASE_APP_TOKEN = process.env.FEISHU_BASE_APP_TOKEN || 'Gn4db7il9a27QrsOtVbclSE3nnf';
-const FEEDBACK_TABLE_ID = process.env.FEISHU_FEEDBACK_TABLE_ID || 'tblPB0AnsTS9puqw';
+const BASE_APP_TOKEN = process.env.FEISHU_BASE_APP_TOKEN || 'Rv29b7CMAaKXj3sH2RBcRS5rnWb';
+const FEEDBACK_TABLE_ID = process.env.FEISHU_FEEDBACK_TABLE_ID || 'tblxq32PwxKuUXOg';
 const CHAT_ID = process.env.FEISHU_FEEDBACK_CHAT_ID || '';
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || '';
 // 分析产出回写时附带的技术文档/已部署版本链接

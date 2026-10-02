@@ -160,7 +160,7 @@ npm test
 
 ```
 飞书云盘
-├── 项目产物文件夹 (WdXUfZPkClI1audQxIYc90XRnWc)
+├── 项目产物文件夹 (CeT0fYNgalU4fQdW9etcJLJGn1b)
 │   ├── 开发文档 / APK / 代码备份 / version.json
 │   └── vehicle_videos/ (教学视频, 组长可上传)
 └── APP数据备份/ (自动创建, 与产物物理隔离)
@@ -209,5 +209,5 @@ Apache-2.0
 ## 仓库
 
 - GitHub: https://github.com/361087210/taicanggang-poweroff-guide
-- 飞书云盘(产物): https://feishu.cn/drive/folder/WdXUfZPkClI1audQxIYc90XRnWc
+- 飞书云盘(产物): https://feishu.cn/drive/folder/CeT0fYNgalU4fQdW9etcJLJGn1b
 - 飞书云盘(用户数据): APP数据备份/ 子文件夹（应用自动创建）

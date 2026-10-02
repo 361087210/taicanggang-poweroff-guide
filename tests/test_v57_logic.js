@@ -102,7 +102,7 @@ setTimeout(async () => {
   console.log('='.repeat(62));
   check('1.1 demo.html 无JS语法错误(内联脚本已执行)', typeof G('goBack') === 'function');
   check('1.2 APP_VERSION 为语义化三段版本', /^\d+\.\d+\.\d+$/.test(String(G('APP_VERSION'))), String(G('APP_VERSION')));
-  check('1.3 DEFAULT_FEISHU_CONFIG 内置公开字段', G('DEFAULT_FEISHU_CONFIG.appId') === 'cli_aa0ce4fd91f85be8');
+  check('1.3 DEFAULT_FEISHU_CONFIG 内置公开字段', G('DEFAULT_FEISHU_CONFIG.appId') === 'cli_aa315800e5f8dd14');
   // V10.12 安全基线升级: 源码不再硬编码appSecret(XOR key+hex解密函数一同移除,
   // 改为构建期注入window.__BUILD_SECRETS__, 首次getFeishuCfg读取后立即delete)。
   // 安全断言改为: DEFAULT_FEISHU_CONFIG.appSecret 未声明或为空; _fsDec/_FS_XOR_KEY 全局不存在
@@ -277,7 +277,7 @@ setTimeout(async () => {
     check('6.3 config.xml 版本与version.json双一致',
       cfgXml.includes(`version="${versionJson.version}"`) && cfgXml.includes(`android-versionCode="${versionJson.versionCode}"`));
     check('6.4 version.json feishuConfig 与APP内置一致',
-      versionJson.feishuConfig && versionJson.feishuConfig.appId === 'cli_aa0ce4fd91f85be8'
+      versionJson.feishuConfig && versionJson.feishuConfig.appId === 'cli_aa315800e5f8dd14'
       && Array.isArray(versionJson.feishuConfig.dataSubFolders) && versionJson.feishuConfig.dataSubFolders.length === 5);
 
     console.log();

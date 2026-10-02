@@ -7,9 +7,9 @@ V5.7 飞书真实链路集成测试 (Task 5: 云端目录重构验证)
 import json, os, sys, urllib.request, urllib.error
 
 # V5.7.1 安全规范: Secret 不落库, 从环境变量读取 (见 tests/README.md)
-APP_ID = "cli_aa0ce4fd91f85be8"
+APP_ID = "cli_aa315800e5f8dd14"
 APP_SECRET = os.environ.get("TCG_FEISHU_APP_SECRET", "")
-ROOT = "WdXUfZPkClI1audQxIYc90XRnWc"  # 与 APP 内置一致
+ROOT = "CeT0fYNgalU4fQdW9etcJLJGn1b"  # 与 APP 内置一致
 
 if not APP_SECRET:
     print("[环境缺失] 请先设置环境变量 TCG_FEISHU_APP_SECRET (飞书应用Secret)")

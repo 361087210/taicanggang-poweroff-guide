@@ -21,7 +21,7 @@ from sync_release_to_feishu import (
 # 传进名为 `v10.17.1` 的飞书目录(旧根+新根), 目录名长期停留旧版本且反复覆盖同一目录。
 # 勿再写死版本号。
 OLD_ROOT = "WdXUfZPkClI1audQxIYc90XRnWc"
-NEW_ROOT = "nodcnGA95g93RhIUSdCeTkhKlQc"
+NEW_ROOT = "CeT0fYNgalU4fQdW9etcJLJGn1b"
 
 
 def sync_to_root(token, root_token, assets_dir, label):

@@ -177,7 +177,7 @@ function makeSandbox(role /* 'admin'|'user'|null */, opts) {
   sandbox.DEFAULT_FEISHU_CONFIG = {
     appId: 'cli_DEFAULT_PUBLIC_OPENID',
     appSecret: '', // 默认不提供(公开版本)
-    folder: 'nodcnGA95g93RhIUSdCeTkhKlQc', // version.json 公开 folderToken
+    folder: 'CeT0fYNgalU4fQdW9etcJLJGn1b', // version.json 公开 folderToken
     dataFolder: 'APP数据备份',
     syncSub: '同步数据',
     pendingSub: '注册申请',

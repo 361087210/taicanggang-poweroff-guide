@@ -150,7 +150,7 @@
 
 ### 🟡 问题 4（低风险，备案）：测试内硬编码内部标识符
 
-`tests/test_v57_cross_network.js:30` 硬编码了飞书 `appId: 'cli_aa0ce4fd91f85be8'` 与 `folderToken: 'nodcnGA95g93RhIUSdCeTkhKlQc'`。
+`tests/test_v57_cross_network.js:30` 硬编码了飞书 `appId: 'cli_aa315800e5f8dd14'` 与 `folderToken: 'CeT0fYNgalU4fQdW9etcJLJGn1b'`。
 **非密钥**（appId/目录 token 属标识符，Secret 走环境变量），且该测试本就跳过不执行。仅备案，供你判断是否要从测试里抽走。
 
 ---
