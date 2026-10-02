@@ -57,6 +57,8 @@ const KNOWN_CORRUPTIONS = [
   { broken: '车门\uFFFD\uFFFD\uFFFD短按', fixed: '车门，短按', note: 'id=24 长安启源(CS55PLUS(2026款)) steps[1] (残留 3×efbfbd, 参照 id=58 完好句)' },
   { broken: '再次\uFFFD\uFFFD动车门', fixed: '再次拉动车门', note: 'id=58 奇瑞艾瑞泽(艾瑞泽5PRO) steps[3] (残留 2×efbfbd, 参照 id=59 完好句)' },
   { broken: '关\uFFFD\uFFFD\uFFFD车门', fixed: '关闭车门', note: 'id=59 奇瑞皮卡(RELY R8) steps[1] (残留 3×efbfbd, 参照 id=58 完好句)' },
+  { broken: '猎\uFFFD\uFFFD\uFFFD）', fixed: '猎手）', note: 'id=30 长安皮卡(HUNTER) display (残留 3×efbfbd, 参照视频名 猎手)' },
+  { broken: '逆时\uFFFD\uFFFD\uFFFD松动', fixed: '逆时针松动', note: 'id=64 奇瑞捷途JETOUR(T2 I-DM) steps[2] (残留 3×efbfbd, 参照其它车型同句式)' },
 ];
 
 /** 对单个字符串应用校正表(纯函数, 无匹配则原样返回) */
