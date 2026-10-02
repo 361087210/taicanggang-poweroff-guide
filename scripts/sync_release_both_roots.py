@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-V10.15.9 发版产物双根同步
-在 sync_release_to_feishu.py 的基础上,同时上传到旧根目录
-(组长安卓端一直在旧根看发版产物,新根也同步方便后续统一)
+发版产物同步到飞书应用云盘根
+在 sync_release_to_feishu.py 的基础上, 上传到应用云盘根目录
 """
-import os, sys, json, time
+import os, sys
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts"))
@@ -16,52 +15,41 @@ from sync_release_to_feishu import (
 )
 
 # 注: APP_VERSION 由 sync_release_to_feishu 从项目根 version.json 动态读取(单一真源)。
-# 历史缺陷: 本文件曾自带 `APP_VERSION = "10.17.1"` 覆盖它 —— 而本脚本由
-# sync-release-feishu.yml(workflow_run) 在**每次发版后**执行, 于是每次发版都把产物
-# 传进名为 `v10.17.1` 的飞书目录(旧根+新根), 目录名长期停留旧版本且反复覆盖同一目录。
 # 勿再写死版本号。
-OLD_ROOT = "WdXUfZPkClI1audQxIYc90XRnWc"
-NEW_ROOT = "CeT0fYNgalU4fQdW9etcJLJGn1b"
+ROOT = "CeT0fYNgalU4fQdW9etcJLJGn1b"
 
 
-def sync_to_root(token, root_token, assets_dir, label):
+def sync_to_root(token, root_token, assets_dir):
     print(f"\n{'='*50}")
-    print(f"  同步到 {label} ({root_token[:12]}...)")
+    print(f"  同步到 应用云盘根 ({root_token[:12]}...)")
     print(f"{'='*50}")
-    try:
-        app_folder = get_or_create_folder(token, root_token, DATA_FOLDER_NAME)
-        rel_folder = get_or_create_folder(token, app_folder, RELEASE_FOLDER_NAME)
-        ver_folder = get_or_create_folder(token, rel_folder, f"v{APP_VERSION}")
-        print(f"  目标: {DATA_FOLDER_NAME}/{RELEASE_FOLDER_NAME}/v{APP_VERSION}/")
+    app_folder = get_or_create_folder(token, root_token, DATA_FOLDER_NAME)
+    rel_folder = get_or_create_folder(token, app_folder, RELEASE_FOLDER_NAME)
+    ver_folder = get_or_create_folder(token, rel_folder, f"v{APP_VERSION}")
+    print(f"  目标: {DATA_FOLDER_NAME}/{RELEASE_FOLDER_NAME}/v{APP_VERSION}/")
 
-        import os
-        files = sorted(f for f in os.listdir(assets_dir)
-                       if os.path.isfile(os.path.join(assets_dir, f)) and not f.startswith("."))
+    files = sorted(f for f in os.listdir(assets_dir)
+                   if os.path.isfile(os.path.join(assets_dir, f)) and not f.startswith("."))
 
-        results = []
-        for name in files:
-            path = os.path.join(assets_dir, name)
-            deleted = delete_if_exists(token, ver_folder, name)
-            d = upload_file(token, ver_folder, path)
-            results.append((name, os.path.getsize(path), d.get("file_token", "")))
-            print(f"  [OK] {'覆盖' if deleted else '新增'} {name} ({os.path.getsize(path):,} B)")
+    results = []
+    for name in files:
+        path = os.path.join(assets_dir, name)
+        deleted = delete_if_exists(token, ver_folder, name)
+        d = upload_file(token, ver_folder, path)
+        results.append((name, os.path.getsize(path), d.get("file_token", "")))
+        print(f"  [OK] {'覆盖' if deleted else '新增'} {name} ({os.path.getsize(path):,} B)")
 
-        # 终验
-        final = list_children(token, ver_folder)
-        ok = True
-        for name, _, _ in results:
-            if final.get(name) and final[name].get("type") == "file":
-                print(f"    ✓ {name}")
-            else:
-                ok = False
-                print(f"    ✗ {name} 缺失!")
-        print(f"  {'完成 ✔' if ok else '存在缺失 ✗'} 共 {len(results)} 个产物")
-        return ok
-    except Exception as e:
-        print(f"  [跳过] {label} 不可达: {e}")
-        print(f"  [指引] 若该目录仍在使用, 请把新应用添加为它的可编辑协作者后重试;")
-        print(f"         若该目录已废弃, 可将本脚本 OLD_ROOT 移除, 同步将不再告警。")
-        return False
+    # 终验
+    final = list_children(token, ver_folder)
+    ok = True
+    for name, _, _ in results:
+        if final.get(name) and final[name].get("type") == "file":
+            print(f"    ✓ {name}")
+        else:
+            ok = False
+            print(f"    ✗ {name} 缺失!")
+    print(f"  {'完成 ✔' if ok else '存在缺失 ✗'} 共 {len(results)} 个产物")
+    return ok
 
 
 def main():
@@ -74,8 +62,6 @@ def main():
     APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "")
     if not APP_ID or not APP_SECRET:
         # 从APK注入块读取
-        demo_html = os.path.join(PROJECT_ROOT, "..", "apk_extract", "assets", "www", "demo.html")
-        # 兼容: 也试一下 /data/user/work 下的APK提取目录
         for cand in [
             "/data/user/work/apk_extract/assets/www/demo.html",
         ]:
@@ -101,18 +87,12 @@ def main():
     print(f"飞书认证成功 · 版本 v{APP_VERSION}")
     print(f"产物目录: {assets_dir}")
 
-    all_ok = True
-    old_ok = sync_to_root(token, OLD_ROOT, assets_dir, "旧根(组长端缓存)")
-    new_ok = sync_to_root(token, NEW_ROOT, assets_dir, "新根(应用云盘根)")
-    # 旧根降级为尽力而为: 不可达(如 1061004 未授权)只告警, 不阻断新根同步与退出码
-    if not old_ok:
-        print("  ⚠️ 旧根未完成(仅告警), 请按上方指引处理; 新根结果不受影响。")
-    all_ok = new_ok
+    ok = sync_to_root(token, ROOT, assets_dir)
 
     print(f"\n{'='*50}")
-    print(f"  双根同步{'全部完成 ✅' if all_ok else '存在缺失 ⚠️'}")
+    print(f"  同步{'完成 ✅' if ok else '存在缺失 ⚠️'}")
     print(f"{'='*50}")
-    sys.exit(0 if all_ok else 1)
+    sys.exit(0 if ok else 1)
 
 
 if __name__ == "__main__":
