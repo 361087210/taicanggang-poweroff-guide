@@ -426,6 +426,103 @@ function feishuFailToast(reason){
   showToast('飞书云端源不可用('+reason+'),已尝试其他来源');
 }
 
+/* ===========================================================
+ * 飞书API频控与弹性层(V10.19.5, 限流99991400根治)
+ * 根因: 图片/视频加载突发并发, 请求无最小间隔、无退避、无缓存,
+ *       直接撞飞书QPS限流(99991400 request trigger frequency limit)。
+ * 方案: ①全局最小间隔150ms+并发上限3(门控, 同步/异步调用方通用)
+ *       ②限流码99991400~99991404指数退避+抖动重试(仅幂等GET/HEAD)
+ *       ③目录列表30s缓存(见feishuListFiles的opts.cache) ④token缓存(见05-sync)
+ * =========================================================== */
+const _FEISHU_RATE_LIMIT_CODES={99991400:1,99991401:1,99991402:1,99991403:1,99991404:1};
+const _feishuGate={lastAt:0,inflight:0,maxInflight:3,waiters:[]};
+const _feishuListCache={};
+/** 飞书请求门控-进入: 最小间隔150ms + 并发上限3; 与feishuGateExit成对 */
+async function feishuGateEnter(){
+  const wait=Math.max(0,_feishuGate.lastAt+150-Date.now());
+  if(wait>0)await new Promise(r=>setTimeout(r,wait));
+  _feishuGate.lastAt=Date.now();
+  if(_feishuGate.inflight>=_feishuGate.maxInflight){
+    await new Promise(r=>_feishuGate.waiters.push(r));
+  }
+  _feishuGate.inflight++;
+}
+/** 飞书请求门控-释放 */
+function feishuGateExit(){
+  _feishuGate.inflight--;
+  const w=_feishuGate.waiters.shift();
+  if(w)w();
+}
+/** 指数退避+随机抖动(防雷同重试雪崩): 400ms→800ms→1600ms(+0~50%抖动) */
+function _feishuBackoff(attempt){
+  const base=400*Math.pow(2,attempt);
+  return base+Math.floor(Math.random()*(base/2));
+}
+
+/**
+ * V10.19.5: 飞书文件下载统一入口(图片/视频) — 门控+限流退避
+ * 根因: 06-media.js 图片/视频下载此前走裸 sendRequest/fetch, 完全绕过
+ *       httpFetch 的门控与退避, 突发并发直接撞飞书QPS限流(99991400)。
+ * 语义: 与 httpFetch 同门控(150ms最小间隔+并发上限3); 下载为幂等GET,
+ *       失败(含限流码99991400~99991404)统一指数退避重试预算3次;
+ *       重试耗尽后抛出, 由调用方 try/catch 优雅降级(与feishuFailToast链路一致)。
+ * @param {string} url - 飞书下载端点URL(https://open.feishu.cn/.../download)
+ * @param {string} token - tenant_access_token
+ * @param {string} [mimeType] - 原生HTTP插件路径的Blob MIME(默认application/octet-stream)
+ * @param {number} [timeoutSec] - 请求超时秒数(默认60; 原生插件单位秒, fetch路径换算毫秒)
+ * @returns {Promise<Blob>} 下载内容Blob; 重试耗尽后抛错
+ */
+async function feishuDownloadFile(url,token,mimeType,timeoutSec){
+  const maxAttempts=3;
+  for(let attempt=0;attempt<maxAttempts;attempt++){
+    await feishuGateEnter();
+    try{
+      let blob;
+      if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
+        blob=await new Promise((resolve,reject)=>{
+          window.cordova.plugin.http.sendRequest(
+            url,
+            {method:'GET',headers:{Authorization:'Bearer '+token},responseType:'blob',timeout:timeoutSec||60},
+            res=>resolve(asBlob(res.data,mimeType||'application/octet-stream')),
+            err=>{
+              const e=new Error(String(err&&err.error||'飞书下载失败'));
+              // 原生插件错误对象无统一code字段: 尽力从error文本/status提取限流码
+              const m=String(err&&err.error||'').match(/999914\d\d/);
+              e.code=m?Number(m[0]):(err&&err.status);
+              reject(e);
+            });
+        });
+      }else{
+        const controller=new AbortController();
+        const timer=setTimeout(()=>controller.abort(),(timeoutSec||60)*1000);
+        try{
+          const r=await fetch(url,{headers:{Authorization:'Bearer '+token},signal:controller.signal});
+          const ct=(r.headers.get('content-type')||'').toLowerCase();
+          if(!r.ok||ct.indexOf('json')>=0){
+            // 飞书错误响应(含限流)为JSON体: 解析出code供退避重试识别
+            const text=await r.text();
+            let j=null;try{j=JSON.parse(text);}catch(e){}
+            const e=new Error('飞书下载失败: '+(j&&j.msg||('HTTP '+r.status)));
+            e.code=(j&&typeof j.code==='number')?j.code:r.status;
+            throw e;
+          }
+          blob=await r.blob();
+        }finally{clearTimeout(timer);}
+      }
+      return blob;
+    }catch(e){
+      if(attempt<maxAttempts-1){
+        console.warn('[飞书]下载退避重试'+(attempt+1)+'/'+maxAttempts+':',e.code||'',e.message||e);
+        await new Promise(r=>setTimeout(r,_feishuBackoff(attempt)));
+      }else{
+        throw e;
+      }
+    }finally{
+      feishuGateExit();
+    }
+  }
+}
+
 /**
  * 统一HTTP请求适配层 - V5.3核心修复
  *
@@ -435,15 +532,49 @@ function feishuFailToast(reason){
  * cordova-plugin-advanced-http在原生层发起请求,天然绕过WebView CORS限制。
  *
  * 策略: APP环境优先走原生HTTP插件;浏览器/插件未就绪时回退fetch(保留网页预览能力)
+ * V10.19.5: 飞书URL统一过门控(150ms最小间隔+并发上限); GET/HEAD遇限流码
+ *           99991400~99991404做指数退避重试(预算3次, 耗尽后返回响应由调用方
+ *           按code!=0优雅降级); 网络错误同样退避重试。非幂等POST不重试(避免放大负载)。
  *
  * @param {string} url - 请求地址
- * @param {Object} opts - {method,headers,body} body支持字符串/普通对象;文件上传请用httpUploadFile
+ * @param {Object} opts - {method,headers,body,timeout} body支持字符串/普通对象;文件上传请用httpUploadFile
  * @returns {Promise<Object|string>} 解析后的JSON对象或原始文本
  */
 async function httpFetch(url,opts){
   opts=opts||{};
   const method=(opts.method||'GET').toUpperCase();
   const headers=opts.headers||{};
+  const isFeishu=/open\.feishu\.cn/.test(url);
+  const retryable=isFeishu&&(method==='GET'||method==='HEAD');
+  const maxAttempts=retryable?3:1;
+  for(let attempt=0;attempt<maxAttempts;attempt++){
+    if(isFeishu)await feishuGateEnter();
+    try{
+      const res=await _httpSendOnce(url,opts,method,headers);
+      if(retryable&&res&&typeof res==='object'&&_FEISHU_RATE_LIMIT_CODES[res.code]){
+        if(attempt<maxAttempts-1){
+          console.warn('[飞书]限流退避重试'+(attempt+1)+'/'+maxAttempts+':',res.code,res.msg||'');
+          await new Promise(r=>setTimeout(r,_feishuBackoff(attempt)));
+          continue;
+        }
+        return res; // 重试预算耗尽: 返回限流响应, 调用方按code!=0优雅降级
+      }
+      return res;
+    }catch(e){
+      if(retryable&&attempt<maxAttempts-1){
+        console.warn('[飞书]请求失败退避重试'+(attempt+1)+'/'+maxAttempts+':',e.message||e);
+        await new Promise(r=>setTimeout(r,_feishuBackoff(attempt)));
+      }else{
+        throw e;
+      }
+    }finally{
+      if(isFeishu)feishuGateExit();
+    }
+  }
+}
+
+/** 单次HTTP传输(门控与重试之外的原始请求) */
+async function _httpSendOnce(url,opts,method,headers){
   // APP环境且插件就绪: 走原生HTTP
   if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
     const http=window.cordova.plugin.http;
@@ -479,6 +610,7 @@ async function httpFetch(url,opts){
   // V5.7.1修复: 普通对象body必须JSON序列化——旧版直接把对象交给fetch,
   // 实际发出"[object Object]"被飞书400拒绝(原生插件路径正常,浏览器/WebView
   // 降级路径全挂)。这是"真机上偶发飞书认证失败"的根因之一。
+  // V10.19.5: 增加默认30s超时(AbortController), 防止挂起请求长期占住门控槽位
   let body=opts.body;
   const isFormData=typeof FormData!=='undefined'&&body instanceof FormData;
   const isBlob=typeof Blob!=='undefined'&&body instanceof Blob;
@@ -489,9 +621,15 @@ async function httpFetch(url,opts){
     }
     body=JSON.stringify(body);
   }
-  const res=await fetch(url,{method,headers:finalHeaders,body});
-  const text=await res.text();
-  try{return JSON.parse(text);}catch(e){return text;}
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),opts.timeout||30000);
+  try{
+    const res=await fetch(url,{method,headers:finalHeaders,body,signal:controller.signal});
+    const text=await res.text();
+    try{return JSON.parse(text);}catch(e){return text;}
+  }finally{
+    clearTimeout(timer);
+  }
 }
 
 /**
@@ -1216,6 +1354,11 @@ function cacheSizeText(bytes){
  * @returns {Promise<Array|null>} 全量文件数组; 任一页请求失败返回null(由调用方兜底)
  */
 async function feishuListFiles(token,folderToken){
+  // V10.19.5: 目录列表30s缓存——图片/视频加载反复列目录是高QPS元凶之一,
+  //           缓存折叠重复请求后剩余QPS压力大幅下降(限流99991400治理一环)
+  const cacheKey='fl:'+folderToken;
+  const cached=_feishuListCache[cacheKey];
+  if(cached&&Date.now()-cached.at<30000)return cached.files;
   const all=[];
   let pageToken='';
   for(let page=0;page<50;page++){ // 上限50页(约1万项)防御异常翻页死循环
@@ -1230,6 +1373,7 @@ async function feishuListFiles(token,folderToken){
     pageToken=d.next_page_token||'';
     if(!d.has_more||!pageToken)break;
   }
+  _feishuListCache[cacheKey]={at:Date.now(),files:all};
   return all;
 }
 
@@ -1307,7 +1451,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.19.4';
+const APP_VERSION='10.19.5';
 // V10.16.4 安全加固: 空闲超时(30分钟无操作自动登出)
 const IDLE_TIMEOUT=30*60*1000;
 let _lastActivity=Date.now();

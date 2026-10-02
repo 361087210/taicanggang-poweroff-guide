@@ -202,7 +202,9 @@ function createLocalStorage() {
  */
 const DEMO_BLOCKS = [
   'DEFAULT_FEISHU_CONFIG', '_INJECTED_SECRETS_CACHE', 'getFeishuCfg', 'feishuCfgReady',
-  'httpFetch', 'httpUploadFile',
+  // V10.19.5 限流治理块: httpFetch/feishuListFiles/feishuDownloadFile 依赖, 必须先于它们注入
+  '_FEISHU_RATE_LIMIT_CODES', '_feishuGate', '_feishuListCache', 'feishuGateEnter', 'feishuGateExit', '_feishuBackoff',
+  '_httpSendOnce', 'httpFetch', 'httpUploadFile',
   'FEISHU_UPLOAD_ALL_LIMIT', 'FEISHU_MULTIPART_THRESHOLD', 'FEISHU_MULTIPART_MAX',
   '_feishuUploadLastTs', '_feishuQpsGate', '_adler32', '_sanitizeFeishuFileName',
   '_uploadPartOnce', 'httpUploadFileMultipart', 'httpUploadFileSmart',

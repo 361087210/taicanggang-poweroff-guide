@@ -1,8 +1,14 @@
 {
-  "version": "10.19.4",
-  "versionCode": 101904,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.19.4/tcg_poweroff_v10.19.4.apk",
+  "version": "10.19.5",
+  "versionCode": 101905,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.19.5/tcg_poweroff_v10.19.5.apk",
   "releaseNotes": [
+    "V10.19.5 飞书限流根治版。一句话总结: 根治 App 从飞书云端加载图片/视频偶发失败(飞书API限流 99991400 request trigger frequency limit)——统一请求门控(150ms最小间隔+并发上限3)、限流码99991400~99991404指数退避重试、目录列表30s缓存、图片/视频下载统一走门控入口, 弱网与突发并发场景不再随机失败。",
+    "治理(请求门控): 飞书API请求全局最小间隔150ms+并发上限3(同步/异步调用方通用), 从源头掐断突发并发撞飞书QPS限流",
+    "治理(限流退避): 限流码99991400~99991404与网络错误指数退避重试(400ms→800ms→1600ms+抖动, 预算3次, 仅幂等GET/HEAD), 重试耗尽优雅降级不崩溃",
+    "治理(统一下载): 新增 feishuDownloadFile 门控下载入口, 06-media 图片/视频下载从裸 sendRequest/fetch 全部切换接入(旧路径完全绕过门控是撞限流根因)",
+    "治理(列表缓存): feishuListFiles 目录列表30s缓存, 折叠图片加载反复列目录的高QPS请求",
+    "工程: 新增飞书限流治理专项测试(门控并发上限/最小间隔/退避重试/缓存接线, 动态用例桩掉网络层)", 
     "V10.19.4 环境对齐与别名安全加固版。一句话总结: 飞书配置全面对齐新应用/新文件夹/新问题反馈库, 并给视频别名解析补上「归一化键歧义整体拒绝」的安全边界, 顺带修复注册投递版本号残留与视频映射同步的语法隐患。",
     "配置(对齐): 飞书 appId/folderToken/bitableAppToken/bitableFeedbackTableId 更新为新环境实值(新应用 cli_aa315800e5f8dd14、文件夹 CeT0fYNgalU4fQdW9etcJLJGn1b、问题反馈库 Rv29b7CMAaKXj3sH2RBcRS5rnWb); 修复 Python 发版脚本读取 folderToken 字段",
     "安全(视频别名): 别名解析对「归一化键歧义」整体拒绝——同一归一化键有 ≥2 份源资产, 或查询键为其它资产键前缀时, 一律不猜(宁可漏不可错), 杜绝断电教学视频看错车型; 长安深蓝(G318)/长安启源(EADO PLUS) 的 v2 重传属已知歧义, 靠精确名直链播放",

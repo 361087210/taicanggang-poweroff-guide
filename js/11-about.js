@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.19.5',
+    date: '2026-10-03',
+    highlight: '飞书限流根治版: 请求门控+退避重试+列表缓存, 云端图片/视频加载不再随机失败',
+    features: [
+      '治理(请求门控): 飞书API全局最小间隔150ms+并发上限3, 掐断突发并发撞QPS限流(99991400)',
+      '治理(限流退避): 限流码99991400~99991404与网络错误指数退避重试(仅幂等GET/HEAD, 预算3次), 耗尽优雅降级不崩溃',
+      '治理(统一下载): 新增 feishuDownloadFile 门控下载入口, 图片/视频下载全部切换接入(旧裸请求完全绕过门控是根因)',
+      '治理(列表缓存): 目录列表30s缓存, 折叠图片加载反复列目录的高QPS请求',
+      '工程: 新增限流治理专项测试(门控/退避/缓存接线, 动态用例桩掉网络层)'
+    ]
+  },
+  {
     version: 'V10.19.4',
     date: '2026-10-02',
     highlight: '环境对齐与别名安全加固版: 飞书新环境配置 + 视频别名歧义拒绝',
@@ -507,7 +519,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.19.4'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.19.5'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
