@@ -315,7 +315,7 @@ function _install(){
       const linkKey=await deriveLinkKey(phone, pass);
       const newUser={id:Date.now(),name,phone,password:hashedPass,role:'user',status:'pending',created:new Date().toLocaleDateString()};
       if(linkKey)newUser.linkKey=linkKey;
-      const pendingData={type:'pending_registration',source:'web-mirror',appVersion:'v'+(window.APP_VERSION||''),user:newUser,timestamp:new Date().toISOString()};
+      const pendingData={type:'pending_registration',source:'web-mirror',appVersion:'v'+(APP_VERSION||''),user:newUser,timestamp:new Date().toISOString()};
       /* 投递到收集箱仓库: pending_reg_<phone>.json 同名覆盖即可(更新无需 sha) */
       const repo=cfg.REGISTER_REPO||'361087210/tcg-registration-inbox';
       const dir=cfg.REGISTER_DIR||'registrations';

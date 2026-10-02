@@ -144,8 +144,8 @@ AI_FIELDS.forEach((v, i) => {
     /['"]修复PR链接['"]\s*:\s*['"]{2}/.test(script));
   check("C6 「门禁结果」写入值为空字符串(本批无门禁跑)",
     /['"]门禁结果['"]\s*:\s*['"]{2}/.test(script));
-  check('C7 「尝试次数」写入首次尝试值 1(§4 F5 幂等键, 上限 N=2)',
-    /['"]尝试次数['"]\s*:\s*1\b/.test(script));
+  check('C7 「尝试次数」写入首次尝试值 1(§4 F5 幂等键, 上限 N=2; 表内文本字段写字符串)',
+    /['"]尝试次数['"]\s*:\s*['"]1['"]/.test(script));
   check('C8 定义 MAX_ATTEMPTS = 2(幂等上限常量, 不散落字面量)',
     /const\s+MAX_ATTEMPTS\s*=\s*2\b/.test(script));
   check('C9 「AI定位报告」写入内容非空(取 AI 分析产出, 非占位空串)',

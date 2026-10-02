@@ -1307,7 +1307,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.19.3';
+const APP_VERSION='10.19.4';
 // V10.16.4 安全加固: 空闲超时(30分钟无操作自动登出)
 const IDLE_TIMEOUT=30*60*1000;
 let _lastActivity=Date.now();
@@ -1401,7 +1401,7 @@ const MEDIA_DIRECT_ASSETS={
   '长城哈佛_H6.mp4':'tcgv_eb64e09d2f.mp4',
   '长城好猫_好猫.mp4':'tcgv_83b045688d.mp4',
   '长安皮卡_HUNTER_猎手_燃油版_混动版.mp4':'tcgv_ec0bb6fa76_2.mp4',
-  '零跑零跑_零跑B10.mp4':'tcgv_e6e7f70cf0.mp4'
+  '零跑零跑_零跑B10.mp4':'tcgv_e6e7f70cf0.mp4',
   '长安深蓝(G318)_v2.mp4':'tcgv_ac4b41ffc4.mp4',
   '奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4':'tcgv_e3af4b5357.mp4',
   '长安启源(EADO_PLUS)_v2_4ffd5489.mp4':'tcgv_ad959cdfbe.mp4',
@@ -1445,12 +1445,32 @@ function _normMediaKey(name){
     .toLowerCase();
 }
 
-/** V10.19.0: 归一化键 → 资产名 索引(模块加载时一次性构建,运行时零开销) */
+/** V10.19.0: 归一化键歧义集合(≥2 份源资产, 或为其它键前缀), 别名解析整体拒绝: 宁可漏不可错 */
+const MEDIA_ALIAS_REJECTED=(function(){
+  const rej=Object.create(null);
+  const seen=Object.create(null);
+  const keys=[];
+  Object.keys(MEDIA_DIRECT_ASSETS).forEach(function(k){
+    const nk=_normMediaKey(k);
+    if(!nk)return;
+    keys.push(nk);
+    if(seen[nk])rej[nk]=true;               // 同归一化键第二份资产 → 歧义
+    seen[nk]=true;
+  });
+  Object.keys(seen).forEach(function(q){
+    if(rej[q])return;
+    // 与全量前缀扫描同规则: 精确或前缀命中数 ≠ 1 → 歧义, 拒绝
+    if(keys.filter(function(k){return k===q||k.indexOf(q+'_')===0;}).length!==1)rej[q]=true;
+  });
+  return rej;
+})();
+
+/** V10.19.0: 归一化键 → 资产名 索引(歧义键已剔除, 精确命中绝不含糊) */
 const MEDIA_ALIAS_INDEX=(function(){
   const idx=Object.create(null);
   Object.keys(MEDIA_DIRECT_ASSETS).forEach(function(k){
     const nk=_normMediaKey(k);
-    if(nk&&!idx[nk])idx[nk]=MEDIA_DIRECT_ASSETS[k]; // 先到先得:同键不互相覆盖
+    if(nk&&!MEDIA_ALIAS_REJECTED[nk]&&!idx[nk])idx[nk]=MEDIA_DIRECT_ASSETS[k];
   });
   return idx;
 })();
@@ -1499,6 +1519,8 @@ function mediaDirectUrlAlias(fileName,canonicalName){
   }
   // 归一化精确命中 → 退化为唯一前缀命中(安全边界见 _mediaAliasByPrefix)
   const nk=_normMediaKey(fileName);
+  if(!nk)return null;
+  if(MEDIA_ALIAS_REJECTED[nk])return null; // 归一化键碰撞: 任一份都不猜, 宁可漏不可错
   const asset=MEDIA_ALIAS_INDEX[nk]||_mediaAliasByPrefix(nk);
   return asset?`${MEDIA_RELEASE_BASE}/${asset}`:null;
 }

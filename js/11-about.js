@@ -8,6 +8,16 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.19.4',
+    date: '2026-10-02',
+    highlight: '环境对齐与别名安全加固版: 飞书新环境配置 + 视频别名歧义拒绝',
+    features: [
+      '配置(对齐): 飞书 appId/folderToken/bitableAppToken/bitableFeedbackTableId 更新为新环境实值(新应用/文件夹/问题反馈库); 修复 Python 发版脚本读取 folderToken 字段',
+      '安全(视频别名): 别名解析对「归一化键歧义」整体拒绝(≥2 份源资产或为其它键前缀一律不猜, 宁可漏不可错); 长安深蓝(G318)/长安启源(EADO PLUS) v2 重传属已知歧义, 靠精确名直链播放',
+      '修复: 注册投递 appVersion 残留全局版本引用(恒取 undefined)改回 APP_VERSION; 视频映射同步脚本补逗号防语法断裂; 钥匙盒文案 U+FFFD 残留消除'
+    ]
+  },
+  {
     version: 'V10.19.3',
     date: '2026-09-16',
     highlight: '诊断加固版: 先自检再升级 + 注册页返回泄漏修复',
@@ -497,7 +507,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.19.3'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.19.4'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
