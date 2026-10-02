@@ -335,7 +335,7 @@ function sanitizeFeedback(raw){
 async function buildFromFeishu(opt){
   const appId = process.env.FEISHU_APP_ID;
   const appSecret = process.env.FEISHU_APP_SECRET;
-  const folderToken = process.env.FEISHU_FOLDER_TOKEN || 'nodcnGA95g93RhIUSdCeTkhKlQc';
+  const folderToken = process.env.FEISHU_FOLDER_TOKEN || 'CeT0fYNgalU4fQdW9etcJLJGn1b';
   if(!appId || !appSecret) throw new Error('飞书模式需要环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET');
   const token = await feishuTenantToken(appId, appSecret);
   const vehicle = await feishuDownloadJson(token, folderToken, 'vehicle_sync_data.json') || { vehicles: [], timestamp: new Date().toISOString(), version: 'feishu', vehicleCount: 0 };

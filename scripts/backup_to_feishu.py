@@ -9,7 +9,7 @@ V10.14.0 全量数据备份到飞书云文档(同步脚本)
 用法:
     export FEISHU_APP_ID=cli_xxx
     export FEISHU_APP_SECRET=xxx
-    export FEISHU_FOLDER_TOKEN=nodcnGA95g93RhIUSdCeTkhKlQc  # 可选,默认读 version.json.feishuConfig.folder
+    export FEISHU_FOLDER_TOKEN=CeT0fYNgalU4fQdW9etcJLJGn1b  # 可选,默认读 version.json.feishuConfig.folderToken
     python scripts/backup_to_feishu.py
 """
 import os, sys, json, time, hashlib, glob
@@ -30,14 +30,14 @@ if os.path.exists(VERSION_FILE):
             v = json.load(f)
         APP_VERSION = v.get("version", APP_VERSION)
         fc = v.get("feishuConfig") or {}
-        APP_FOLDER_DEFAULT = fc.get("folder", APP_FOLDER_DEFAULT)
+        APP_FOLDER_DEFAULT = fc.get("folderToken", fc.get("folder", APP_FOLDER_DEFAULT))
     except Exception as _e:
         print(f"[WARN] version.json 读取失败: {_e},使用回退默认值")
 
 # 秘钥/凭据全部走环境变量; folder_token 非秘钥可以用 version.json 的公开值兜底
 APP_ID = os.environ.get("FEISHU_APP_ID", "")
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "")
-FOLDER_TOKEN = os.environ.get("FEISHU_FOLDER_TOKEN", "") or APP_FOLDER_DEFAULT or "nodcnGA95g93RhIUSdCeTkhKlQc"
+FOLDER_TOKEN = os.environ.get("FEISHU_FOLDER_TOKEN", "") or APP_FOLDER_DEFAULT or "CeT0fYNgalU4fQdW9etcJLJGn1b"
 
 # 飞书云文档目录结构(与 00-bootstrap.js DEFAULT_FEISHU_CONFIG 完全对齐,01-sync.js/05-sync.js 同步子路径一致)
 DATA_FOLDER_NAME = "APP数据备份"

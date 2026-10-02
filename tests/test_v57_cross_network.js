@@ -27,7 +27,7 @@ function makePhone(name) {
       const PHONE_SECRET = process.env.TCG_FEISHU_APP_SECRET || '';
       if (PHONE_SECRET) {
         Object.defineProperty(w, '__BUILD_SECRETS__', { configurable: true, writable: true,
-          value: { appId: 'cli_aa0ce4fd91f85be8', appSecret: PHONE_SECRET, folderToken: 'nodcnGA95g93RhIUSdCeTkhKlQc' } });
+          value: { appId: 'cli_aa315800e5f8dd14', appSecret: PHONE_SECRET, folderToken: 'CeT0fYNgalU4fQdW9etcJLJGn1b' } });
       }
       Object.defineProperty(w, 'localStorage', { configurable: true,
         getItem: k => (k in store ? store[k] : null),
@@ -127,14 +127,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     console.log('  本套件需真实飞书 App Secret: export TCG_FEISHU_APP_SECRET=<你的Secret>');
     process.exit(0);
   }
-  const cfg = { app_id: 'cli_aa0ce4fd91f85be8', app_secret: APP_SECRET };
+  const cfg = { app_id: 'cli_aa315800e5f8dd14', app_secret: APP_SECRET };
   const tokRes = await (await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
     method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(cfg) })).json();
   const token = tokRes.tenant_access_token;
   check('2.1 云端token获取', !!token);
 
   // 定位注册申请子文件夹
-  const rootLs = await (await fetch('https://open.feishu.cn/open-apis/drive/v1/files?folder_token=nodcnGA95g93RhIUSdCeTkhKlQc&page_size=200', {headers:{Authorization:`Bearer ${token}`}})).json();
+  const rootLs = await (await fetch('https://open.feishu.cn/open-apis/drive/v1/files?folder_token=CeT0fYNgalU4fQdW9etcJLJGn1b&page_size=200', {headers:{Authorization:`Bearer ${token}`}})).json();
   const dataRoot = (rootLs.data.files||[]).find(f=>f.name==='APP数据备份');
   const dataLs = await (await fetch(`https://open.feishu.cn/open-apis/drive/v1/files?folder_token=${dataRoot.token}&page_size=200`, {headers:{Authorization:`Bearer ${token}`}})).json();
   const regFolder = (dataLs.data.files||[]).find(f=>f.name==='注册申请');

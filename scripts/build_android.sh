@@ -13,7 +13,7 @@
 #   # (可选) 构建期注入飞书秘钥,组员安装即同步
 #   export FEISHU_APP_ID='cli_xxxxxxxxxxxx'
 #   export FEISHU_APP_SECRET='xxxxxxxxxxxxxxxxxxxxxxxx'
-#   export FEISHU_FOLDER_TOKEN='nodcnGA95g93RhIUSdCeTkhKlQc'
+#   export FEISHU_FOLDER_TOKEN='CeT0fYNgalU4fQdW9etcJLJGn1b'
 #   bash scripts/build_android.sh
 #
 #   # 方式2: GitHub Actions 调用(secrets → env vars)

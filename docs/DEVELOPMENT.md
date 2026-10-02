@@ -29,7 +29,7 @@ zipalign -v 4 ...       # 对齐
 ## 三、飞书集成配置
 
 ### 3.1 凭证配置（已内置）
-- **App ID**: `cli_aa0ce4fd91f85be8`
+- **App ID**: `cli_aa315800e5f8dd14`
 - **App Secret**: `<通过 GitHub Secrets 注入，勿明文写入仓库>`
 - **云文档文件夹 Token**: `<通过 GitHub Secrets 注入，勿明文写入仓库>`
 

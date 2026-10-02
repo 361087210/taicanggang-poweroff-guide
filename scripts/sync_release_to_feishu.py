@@ -9,7 +9,7 @@ V10.14.0 发版产物同步到飞书云空间(发版工具链)
 【用法】
     export FEISHU_APP_ID=cli_xxx
     export FEISHU_APP_SECRET=xxx
-    export FEISHU_FOLDER_TOKEN=nodcnGA95g93RhIUSdCeTkhKlQc   # 可选,默认读 version.json.feishuConfig.folder
+    export FEISHU_FOLDER_TOKEN=CeT0fYNgalU4fQdW9etcJLJGn1b   # 可选,默认读 version.json.feishuConfig.folderToken
     python scripts/sync_release_to_feishu.py [产物目录]       # 默认 release/
 【设计对齐】
   - 目录列举端点用 GET /drive/v1/files?folder_token= (APP端 feishu-api.js 生产验证形态;
@@ -34,13 +34,13 @@ if os.path.exists(VERSION_FILE):
         with open(VERSION_FILE, "r", encoding="utf-8") as f:
             v = json.load(f)
         APP_VERSION = v.get("version", APP_VERSION)
-        APP_FOLDER_DEFAULT = (v.get("feishuConfig") or {}).get("folder", "")
+        APP_FOLDER_DEFAULT = (v.get("feishuConfig") or {}).get("folderToken", "") or (v.get("feishuConfig") or {}).get("folder", "")
     except Exception as e:
         print(f"[WARN] version.json 读取失败: {e}")
 
 APP_ID = os.environ.get("FEISHU_APP_ID", "")
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "")
-FOLDER_TOKEN = os.environ.get("FEISHU_FOLDER_TOKEN", "") or APP_FOLDER_DEFAULT or "nodcnGA95g93RhIUSdCeTkhKlQc"
+FOLDER_TOKEN = os.environ.get("FEISHU_FOLDER_TOKEN", "") or APP_FOLDER_DEFAULT or "CeT0fYNgalU4fQdW9etcJLJGn1b"
 
 DATA_FOLDER_NAME = "APP数据备份"       # 与 00-bootstrap.js DEFAULT_FEISHU_CONFIG.dataFolder 对齐
 RELEASE_FOLDER_NAME = "发版产物"

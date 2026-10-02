@@ -20,12 +20,12 @@
   'use strict';
   window.TCG_CONFIG = {
     /* ---------- 飞书(公开字段, 非机密) ---------- */
-    FEISHU_APP_ID: 'cli_aa0ce4fd91f85be8',
-    FEISHU_FOLDER_TOKEN: 'nodcnGA95g93RhIUSdCeTkhKlQc',
+    FEISHU_APP_ID: 'cli_aa315800e5f8dd14',
+    FEISHU_FOLDER_TOKEN: 'CeT0fYNgalU4fQdW9etcJLJGn1b',
 
     /* ---------- 多维表格(bitable) ---------- */
-    BASE_APP_TOKEN: 'Gn4db7il9a27QrsOtVbclSE3nnf',
-    FEEDBACK_TABLE_ID: 'tblPB0AnsTS9puqw',
+    BASE_APP_TOKEN: 'Rv29b7CMAaKXj3sH2RBcRS5rnWb',
+    FEEDBACK_TABLE_ID: 'tblxq32PwxKuUXOg',
 
     /* ---------- GitHub(仓库 / 分支) ----------
      * V10.19.3: 网页注册登记库(GITHUB_REGISTER_REPO)已随"网页端自助注册"下线一并移除。 */

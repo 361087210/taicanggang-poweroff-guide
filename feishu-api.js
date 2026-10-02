@@ -15,7 +15,7 @@ const FeishuAPI = (function() {
   const DEFAULTS = {
     appId: '',
     appSecret: '',
-    folderToken: 'nodcnGA95g93RhIUSdCeTkhKlQc',      // 云文档根文件夹(V10.13: 新App根目录)
+    folderToken: 'CeT0fYNgalU4fQdW9etcJLJGn1b',      // 云文档根文件夹(当前有效: 太仓港车辆断电指导)
     dataFolderName: 'APP数据备份',                      // 数据备份子文件夹
     bitableAppToken: '',                                // 多维表格 AppToken（可选）
     approvalCode: '',                                   // 审批定义 Code（可选）

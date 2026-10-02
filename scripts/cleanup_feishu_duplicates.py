@@ -9,7 +9,7 @@
     本脚本扫描根目录,按文件名分组,每组仅保留最新一份,删除其余旧档。
 
 用法:
-    export FEISHU_APP_ID=cli_aa0ce4fd91f85be8
+    export FEISHU_APP_ID=cli_aa315800e5f8dd14
     export FEISHU_APP_SECRET=<secret>
     # 预览模式(只报告不删除, 强烈建议先跑一遍):
     python scripts/cleanup_feishu_duplicates.py --dry-run
@@ -26,7 +26,7 @@ import os, sys, time, argparse, requests
 
 APP_ID = os.environ.get("FEISHU_APP_ID", "")
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "")
-ROOT_FOLDER = "WdXUfZPkClI1audQxIYc90XRnWc"   # 项目根目录(与APP内置一致)
+ROOT_FOLDER = "CeT0fYNgalU4fQdW9etcJLJGn1b"   # 项目根目录(与APP内置一致)
 
 FEISHU_API = "https://open.feishu.cn/open-apis"
 TOKEN_URL = f"{FEISHU_API}/auth/v3/tenant_access_token/internal"

@@ -3,7 +3,7 @@
 """
 飞书端同步脚本 (github和飞书双端同步) — V10.4.0 起版本无关化
 用法:
-    export FEISHU_APP_ID=cli_aa0ce4fd91f85be8
+    export FEISHU_APP_ID=cli_aa315800e5f8dd14
     export FEISHU_APP_SECRET=<secret>
     python scripts/sync_feishu.py [--apk <apk_path>]
 
@@ -22,7 +22,7 @@ import os, sys, json, time, argparse, requests
 
 APP_ID = os.environ.get("FEISHU_APP_ID", "")
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "")
-ROOT_FOLDER = "WdXUfZPkClI1audQxIYc90XRnWc"   # 项目根目录(与APP内置一致)
+ROOT_FOLDER = "CeT0fYNgalU4fQdW9etcJLJGn1b"   # 项目根目录(与APP内置一致)
 
 FEISHU_API = "https://open.feishu.cn/open-apis"
 TOKEN_URL = f"{FEISHU_API}/auth/v3/tenant_access_token/internal"

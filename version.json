@@ -30,8 +30,8 @@
   "forceUpdate": false,
   "minVersion": "5.3.0",
   "feishuConfig": {
-    "appId": "cli_aa0ce4fd91f85be8",
-    "folderToken": "nodcnGA95g93RhIUSdCeTkhKlQc",
+    "appId": "cli_aa315800e5f8dd14",
+    "folderToken": "CeT0fYNgalU4fQdW9etcJLJGn1b",
     "dataFolderName": "APP数据备份",
     "dataSubFolders": [
       "同步数据",
@@ -40,8 +40,8 @@
       "备份文件",
       "偏好设置"
     ],
-    "bitableAppToken": "Gn4db7il9a27QrsOtVbclSE3nnf",
-    "bitableFeedbackTableId": "tblPB0AnsTS9puqw",
+    "bitableAppToken": "Rv29b7CMAaKXj3sH2RBcRS5rnWb",
+    "bitableFeedbackTableId": "tblxq32PwxKuUXOg",
     "approvalCode": "",
     "chatId": "oc_1b25c691971c61de0b7773e49cb42796"
   }

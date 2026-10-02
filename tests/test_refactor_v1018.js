@@ -20,7 +20,7 @@ check('F1a 00-config.js 存在', exists('js/00-config.js'));
 const cfg = src('js/00-config.js');
 check('F1b 定义 LINK_SALT=tcg-link-2026(替换旧 WEB_SYNC_SALT)', cfg.includes("LINK_SALT: 'tcg-link-2026'"));
 check('F1c 定义 GITHUB_REPO', cfg.includes("GITHUB_REPO: '361087210/taicanggang-poweroff-guide'"));
-check('F1d 定义 BASE_APP_TOKEN', cfg.includes('Gn4db7il9a27QrsOtVbclSE3nnf'));
+check('F1d 定义 BASE_APP_TOKEN', cfg.includes('Rv29b7CMAaKXj3sH2RBcRS5rnWb'));
 check('F1e 定义 DEFAULT_CHAT_ID', cfg.includes('oc_1b25c691971c61de0b7773e49cb42796'));
 check('F1f 不含密钥明文', !/s35nEpUBk8KtxN3Kwl2AEgUNnwXQHABb|ghp_/.test(cfg)); /* noqa:secret */
 
