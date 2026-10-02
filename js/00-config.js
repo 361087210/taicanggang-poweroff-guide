@@ -43,7 +43,7 @@
     WEB_MIRROR_BASE: 'web-data/',
 
     /* ---------- 飞书群通知(组长拒绝注册时推送) ---------- */
-    DEFAULT_CHAT_ID: 'oc_1b25c691971c61de0b7773e49cb42796',
+    DEFAULT_CHAT_ID: 'oc_5f7c4e8becbfeb487b0eb107ede3f5fb',
 
     /* ---------- 网页端自助注册登记通道(V10.17.0 复投 / Issue2) ----------
      * 网页版为只读镜像, 无法直连飞书(无后端+CORS不可达); 注册申请统一投递到
