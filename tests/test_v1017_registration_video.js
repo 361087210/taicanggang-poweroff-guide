@@ -85,15 +85,15 @@ const assetsMatch = bootstrapJs.match(/const MEDIA_DIRECT_ASSETS=\{([\s\S]*?)\};
 const assetKeys = assetsMatch ? [...assetsMatch[1].matchAll(/'([^']+)':/g)].map(x => x[1]) : [];
 const vehicleSrc = src('vehicles_data.js');
 const referencedVids = [...new Set([...vehicleSrc.matchAll(/vehicle_videos\/([^'"]+)/g)].map(x => x[1]))];
-check('C1 直链映射表数量=49(46被引用+3组长新上传待接入)', assetKeys.length === 49);
-check('C2 视频引用数=47(46官方直链+1待补直链)', referencedVids.length === 47);
+check('C1 直链映射表数量=49(全部引用全覆盖)', assetKeys.length === 49);
+check('C2 视频引用数=49(49全部官方直链)', referencedVids.length === 49);
 /* P1 数据一致性(2026-10-02 更新): 组长新上传 长安深蓝(G318)_v2.mp4 等 3 个视频已配
- * Release 直链(见 MEDIA_DIRECT_ASSETS), 但多维表格车辆数据仍引用旧 user_v 命名
- * user_v22_v2_7a155908.mp4(无直链 → 网页端该路视频走"待补充"诚实空态)。
- * 数据侧接入新名后, 本断言与 test_video_playback_v1019.js 的 S1b/S1d 清单应同步清空。 */
-check('C3 引用覆盖(仅旧user_v遗留 user_v22_v2_7a155908.mp4 待接入)', (() => {
+ * Release 直链(见 MEDIA_DIRECT_ASSETS), 且多维表格车辆数据已接入新名
+ * (旧 user_v 命名 user_v22_v2_7a155908.mp4 已替换为直链资产名)。
+ * 若未来出现新的旧命名遗留, 本断言与 test_video_playback_v1019.js 的 S1b/S1d 清单应同步处理。 */
+check('C3 引用覆盖(全部引用均有直链, 无待接入遗留)', (() => {
   const missing = referencedVids.filter(k => !assetKeys.includes(k));
-  return missing.length === 1 && missing[0] === 'user_v22_v2_7a155908.mp4';
+  return missing.length === 0;
 })());
 check('C4 资产值无重复(每个tcgv_仅对应一个车型,无张冠李戴)', (() => {
   const vals = assetsMatch ? [...assetsMatch[1].matchAll(/:'([^']+)'/g)].map(x => x[1]) : [];

@@ -54,6 +54,9 @@ const KNOWN_CORRUPTIONS = [
   { broken: '车键���', fixed: '车键。', note: 'id=51 vehicle.steps[1]' },
   { broken: '，机���钥匙', fixed: '，机械钥匙', note: 'id=68 vehicle.steps[1]' },
   { broken: '钥匙盒\uFFFD\uFFFD好', fixed: '钥匙盒关好', note: 'id=58 keyFrame[2] (残留 2×efbfbd)' },
+  { broken: '车门\uFFFD\uFFFD\uFFFD短按', fixed: '车门，短按', note: 'id=24 长安启源(CS55PLUS(2026款)) steps[1] (残留 3×efbfbd, 参照 id=58 完好句)' },
+  { broken: '再次\uFFFD\uFFFD动车门', fixed: '再次拉动车门', note: 'id=58 奇瑞艾瑞泽(艾瑞泽5PRO) steps[3] (残留 2×efbfbd, 参照 id=59 完好句)' },
+  { broken: '关\uFFFD\uFFFD\uFFFD车门', fixed: '关闭车门', note: 'id=59 奇瑞皮卡(RELY R8) steps[1] (残留 3×efbfbd, 参照 id=58 完好句)' },
 ];
 
 /** 对单个字符串应用校正表(纯函数, 无匹配则原样返回) */
