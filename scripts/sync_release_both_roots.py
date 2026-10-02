@@ -59,7 +59,7 @@ def sync_to_root(token, root_token, assets_dir, label):
         return ok
     except Exception as e:
         print(f"  [跳过] {label} 不可达: {e}")
-        print(f"  [指引] 若该目录仍在使用, 请把新应用 {APP_ID} 添加为它的可编辑协作者后重试;")
+        print(f"  [指引] 若该目录仍在使用, 请把新应用添加为它的可编辑协作者后重试;")
         print(f"         若该目录已废弃, 可将本脚本 OLD_ROOT 移除, 同步将不再告警。")
         return False
 
