@@ -53,6 +53,7 @@ const KNOWN_CORRUPTIONS = [
   { broken: '驶车���，拉', fixed: '驶车门，拉', note: 'id=33 vehicle.steps[0]' },
   { broken: '车键���', fixed: '车键。', note: 'id=51 vehicle.steps[1]' },
   { broken: '，机���钥匙', fixed: '，机械钥匙', note: 'id=68 vehicle.steps[1]' },
+  { broken: '钥匙盒\uFFFD\uFFFD好', fixed: '钥匙盒关好', note: 'id=58 keyFrame[2] (残留 2×efbfbd)' },
 ];
 
 /** 对单个字符串应用校正表(纯函数, 无匹配则原样返回) */

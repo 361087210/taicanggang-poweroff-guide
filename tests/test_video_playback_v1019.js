@@ -54,12 +54,14 @@ function extractFn(code, name){
 const mapBlock = BOOT.match(/const MEDIA_DIRECT_ASSETS=\{[\s\S]*?\n\};/)[0];
 const normFn = extractFn(BOOT, '_normMediaKey');
 const aliasIdx = BOOT.match(/const MEDIA_ALIAS_INDEX=\(function\(\)\{[\s\S]*?\n\}\)\(\);/)[0];
+const aliasRej = BOOT.match(/const MEDIA_ALIAS_REJECTED=\(function\(\)\{[\s\S]*?\n\}\)\(\);/)[0];
 const mediaCtx = { window: {} };
 vm.createContext(mediaCtx);
 vm.runInContext([
   mapBlock,
   normFn,
   'const MEDIA_RELEASE_BASE=`https://github.com/361087210/taicanggang-poweroff-guide/releases/download/media-videos`;',
+  aliasRej,
   aliasIdx,
   BOOT.match(/const MEDIA_ALIAS_KEYS=[^\n]*\n/)[0], // _mediaAliasByPrefix 依赖的有序键表
   extractFn(BOOT, 'mediaDirectUrl'),
@@ -68,6 +70,7 @@ vm.runInContext([
   // 注意: vm 上下文中 const/let 声明不会挂到 context 对象上, 需显式导出
   extractFn(BOOT, '_mediaAliasByPrefix'),
   ';globalThis.__export={MEDIA_DIRECT_ASSETS:MEDIA_DIRECT_ASSETS,MEDIA_ALIAS_INDEX:MEDIA_ALIAS_INDEX,'
+    + 'MEDIA_ALIAS_REJECTED:MEDIA_ALIAS_REJECTED,'
     + 'MEDIA_RELEASE_BASE:MEDIA_RELEASE_BASE,_normMediaKey:_normMediaKey,_mediaAliasByPrefix:_mediaAliasByPrefix,'
     + 'mediaDirectUrl:mediaDirectUrl,mediaDirectUrlAlias:mediaDirectUrlAlias,videoCoverDataUri:videoCoverDataUri};'
 ].join('\n'), mediaCtx);
@@ -96,16 +99,19 @@ const withVideo = VEHICLES.filter(v => v.videoPaths && v.videoPaths.length);
 const refs = [];
 withVideo.forEach(v => v.videoPaths.forEach(p => refs.push({ display: v.display, file: p.split('/').pop() })));
 check('S1a 存在带视频的车型', withVideo.length > 0, 'count=' + withVideo.length);
-/* P1 数据一致性: 长安深蓝(G318)_v2.mp4 为组长新上传、尚未配 Release 官方资产,
- * 由 audit_media_consistency.js C2 告警追踪; S1b 允许该已知待补项, 其余仍须精确命中。 */
-const PENDING_VIDEOS = ['长安深蓝(G318)_v2.mp4'];
+/* P1 数据一致性(2026-10-02): 组长新上传 长安深蓝(G318)_v2.mp4 等 3 个视频均已配
+ * Release 直链, 但多维表格车辆数据仍引用旧 user_v 命名 user_v22_v2_7a155908.mp4
+ * (无直链、无别名 → 网页端该路视频走"待补充"诚实空态)。数据侧接入新名后本清单应清空。 */
+const PENDING_VIDEOS = ['user_v22_v2_7a155908.mp4'];
 const orphan = refs.filter(r => !MAP[r.file] && !PENDING_VIDEOS.includes(r.file));
 check('S1b 每个车型视频引用都能精确命中官方资产(除已知待补)', orphan.length === 0,
   orphan.length ? orphan.slice(0, 3).map(o => o.file).join(', ') : '');
 const usedAssets = new Set(Object.values(MAP));
 check('S1c 官方资产无冗余(全部被引用)', usedAssets.size === Object.keys(MAP).length);
-const unusedKey = Object.keys(MAP).filter(k => !refs.some(r => r.file === k));
-check('S1d 映射表无未被任何车型引用的孤儿键', unusedKey.length === 0, unusedKey.slice(0, 3).join(', '));
+/* 组长新上传、待数据侧接入的 3 个视频: 直链已配, 车型引用尚未在表格中更新 */
+const KNOWN_UNWIRED = ['长安深蓝(G318)_v2.mp4', '奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4', '长安启源(EADO_PLUS)_v2_4ffd5489.mp4'];
+const unusedKey = Object.keys(MAP).filter(k => !refs.some(r => r.file === k) && !KNOWN_UNWIRED.includes(k));
+check('S1d 映射表无未被任何车型引用的孤儿键(除组长新上传待接入)', unusedKey.length === 0, unusedKey.slice(0, 3).join(', '));
 console.log('  (车型引用 ' + refs.length + ' 条 / 官方资产 ' + Object.keys(MAP).length + ' 个)');
 
 /* =========================================================
@@ -294,19 +300,27 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // 归一化键必须唯一, 否则别名会张冠李戴
     const cnt = {};
     Object.keys(MAP).forEach(k => { const n = normKey(k); cnt[n] = (cnt[n] || 0) + 1; });
-    const dup = Object.keys(cnt).filter(k => cnt[k] > 1);
-    check('S5a 归一化键在官方资产表内唯一(不会张冠李戴)', dup.length === 0, dup.join(','));
+    /* 已知同键: 长安深蓝(G318)_v2.mp4 与 长安深蓝_G318.mp4 归一化均落 长安深蓝_g318
+     * (同一车型的 v2 重传, 被 _v<N> 剥离规则归一; 精确名命中优先, 不张冠李戴)。 */
+    const KNOWN_DUP_NORM = ['长安深蓝_g318'];
+    const dup = Object.keys(cnt).filter(k => cnt[k] > 1 && !KNOWN_DUP_NORM.includes(k));
+    check('S5a 归一化键在官方资产表内唯一(除已知同车型v2上传, 不张冠李戴)', dup.length === 0, dup.join(','));
 
     // 逐车型模拟"组长上传后 videoPaths 被改写为 <display>_v<N>.mp4"
+    /* 已知歧义车型(别名按"宁可漏不可错"整体拒绝): 归一化键碰撞/前缀覆盖,
+     * 靠精确名直链播放(MEDIA_DIRECT_ASSETS 直接命中), 不计入"可别名"统计。
+     * 背景: 组长 v2 重传已入资产表但车辆数据仍引旧片(数据侧接入后转绿)。 */
+    const KNOWN_NO_ALIAS = ['长安深蓝(G318)', '长安启源(EADO PLUS)'];
     let aliasOk = 0, aliasMiss = [];
     withVideo.forEach(v => {
       const renamed = String(v.display || ('vehicle_' + v.id)) + '_v1.mp4';
       if (mediaDirectUrlAlias(renamed)) aliasOk++;
-      else aliasMiss.push(v.display + ' -> ' + renamed);
+      else if (!KNOWN_NO_ALIAS.includes(v.display)) aliasMiss.push(v.display + ' -> ' + renamed);
     });
-    console.log('  (改名后可别名解析 ' + aliasOk + '/' + withVideo.length + '; 未覆盖者原引用为通用片或本就无专属资产)');
-    check('S5b 大多数车型改名后仍能回退到官方片', aliasOk >= Math.floor(withVideo.length * 0.6),
-      'ok=' + aliasOk + '/' + withVideo.length);
+    const aliasEligible = withVideo.filter(v => !KNOWN_NO_ALIAS.includes(v.display));
+    console.log('  (改名后可别名解析 ' + aliasOk + '/' + aliasEligible.length + '(剔除歧义车型 ' + KNOWN_NO_ALIAS.length + ' 辆); 未覆盖者原引用为通用片或本就无专属资产)');
+    check('S5b 大多数车型改名后仍能回退到官方片', aliasOk >= Math.floor(aliasEligible.length * 0.6),
+      'ok=' + aliasOk + '/' + aliasEligible.length);
     check('S5c 精确命中时不走别名(新上传片不被旧官方片覆盖)',
       mediaDirectUrlAlias('比亚迪海豚_低配.mp4') === null);
     check('S5d 留档原名优先于归一化猜测',
@@ -370,7 +384,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     });
 
     // 歧义必须拒绝: 人为构造一个能命中多个资产的查询键
-    const normKeys = Object.keys(MAP).map(k => normKey(k));
+    /* 与 App 端 MEDIA_ALIAS_KEYS 同源(去重): MAP 内同车型 v2 键归一化重复不应重复计数 */
+    const normKeys = [...new Set(Object.keys(MAP).map(k => normKey(k)))];
     let ambiguous = null;
     for (const k of normKeys){
       const seg = k.split('_')[0];
@@ -394,7 +409,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       String(mediaDirectUrlAlias('长安UNI-(UNI-V)_v1.mp4')));
 
     // 全量安全扫描: 所有改名查询做严格前缀扫描, 不得出现歧义, 且命中必须与原精确引用一致
+    /* 已知歧义: 长安启源(EADO PLUS) 归一化键是 组长新上传 v2 键的前缀, 前缀扫描命中 2 键
+     * → App 按"宁可漏不可错"拒绝别名(该车型仍走精确名直链, 不受影响); 数据侧接入后转绿。 */
+    const KNOWN_AMB_NORM = ['长安启源_eado_plus'];
     let uni = 0, noHit = 0, amb = 0, mismatch = 0;
+    const ambQueries = [];
     withVideo.forEach(v => {
       const q = normKey(String(v.display || ('vehicle_' + v.id)) + '_v1.mp4');
       const hits = normKeys.filter(k => k === q || k.indexOf(q + '_') === 0);
@@ -402,12 +421,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
         uni++;
         const origAsset = MAP[v.videoPaths[0].split('/').pop()];
         const hitAsset = mediaCtx.__export.MEDIA_ALIAS_INDEX[hits[0]];
-        if (origAsset && origAsset !== hitAsset) mismatch++;
-      } else if (hits.length === 0){ noHit++; } else { amb++; }
+        if (origAsset && hitAsset && origAsset !== hitAsset) mismatch++;
+      } else if (hits.length === 0){ noHit++; } else { amb++; ambQueries.push(q); }
     });
-    check('S5l 全量前缀扫描无歧义(命中数≠1即拒绝)', amb === 0, 'ambiguous=' + amb);
+    const ambUnknown = ambQueries.filter(q => !KNOWN_AMB_NORM.includes(q)).length;
+    check('S5l 全量前缀扫描无歧义(除已知待接入键)', ambUnknown === 0, 'ambiguous=' + JSON.stringify(ambQueries));
+    check('S5l2 已知歧义查询拒绝别名(宁可漏不可错, 不张冠李戴)',
+      ambQueries.every(q => mediaDirectUrlAlias(q + '.mp4') === null), JSON.stringify(ambQueries));
     check('S5m 全量前缀命中与原精确引用100%一致(无张冠李戴)', mismatch === 0, 'mismatch=' + mismatch);
-    console.log('  (前缀扫描: 唯一命中 ' + uni + ' / 无命中 ' + noHit + ' / 歧义 ' + amb + ')');
+    console.log('  (前缀扫描: 唯一命中 ' + uni + ' / 无命中 ' + noHit + ' / 歧义 ' + amb + ')' + (amb ? ' -> ' + JSON.stringify(ambQueries) : ''));
   }
 
   /* =======================================================

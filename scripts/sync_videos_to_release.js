@@ -228,8 +228,11 @@ async function main(){
     // 在 MEDIA_DIRECT_ASSETS 最后一个值后插入新行(定位到 `};` 前的最后一项)
     const insertAt = src.lastIndexOf('\n};');
     if(insertAt < 0) throw new Error('无法定位 MEDIA_DIRECT_ASSETS 结束位置');
+    // 若原最后一项无尾逗号, 先补逗号, 避免插入后对象字面量语法断裂
+    const head = src.slice(0, insertAt);
+    const headFixed = /,\s*$/.test(head) ? head : head + ',';
     const insertion = '\n  ' + newLines.map(n => n.line).join('\n  ');
-    const next = src.slice(0, insertAt) + insertion + src.slice(insertAt);
+    const next = headFixed + insertion + src.slice(insertAt);
     fs.writeFileSync(bootstrapPath, next, 'utf8');
     console.log(`[sync-videos] 已补 ${newLines.length} 条映射 → js/00-bootstrap.js`);
     console.log('[sync-videos] 提示: 请运行 node scripts/gen_media_mapping.js 重新生成 manifest 并提交');

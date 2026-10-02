@@ -1,8 +1,15 @@
 {
-  "version": "10.19.3",
-  "versionCode": 101903,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.19.3/tcg_poweroff_v10.19.3.apk",
+  "version": "10.19.4",
+  "versionCode": 101904,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.19.4/tcg_poweroff_v10.19.4.apk",
   "releaseNotes": [
+    "V10.19.4 环境对齐与别名安全加固版。一句话总结: 飞书配置全面对齐新应用/新文件夹/新问题反馈库, 并给视频别名解析补上「归一化键歧义整体拒绝」的安全边界, 顺带修复注册投递版本号残留与视频映射同步的语法隐患。",
+    "配置(对齐): 飞书 appId/folderToken/bitableAppToken/bitableFeedbackTableId 更新为新环境实值(新应用 cli_aa315800e5f8dd14、文件夹 CeT0fYNgalU4fQdW9etcJLJGn1b、问题反馈库 Rv29b7CMAaKXj3sH2RBcRS5rnWb); 修复 Python 发版脚本读取 folderToken 字段",
+    "安全(视频别名): 别名解析对「归一化键歧义」整体拒绝——同一归一化键有 ≥2 份源资产, 或查询键为其它资产键前缀时, 一律不猜(宁可漏不可错), 杜绝断电教学视频看错车型; 长安深蓝(G318)/长安启源(EADO PLUS) 的 v2 重传属已知歧义, 靠精确名直链播放",
+    "修复(注册投递): js/09-web-sync.js 残留 window.APP_VERSION(顶层 const 不挂 window, 恒取 undefined)改为 APP_VERSION, 注册审批投递的 appVersion 字段不再丢失",
+    "修复(同步脚本): sync_videos_to_release.js 插入新映射行时若原最后一项无尾逗号先补逗号, 避免对象字面量语法断裂",
+    "修复(编码): vehicles_data.js 校正表新增条目, 消除钥匙盒文案的 U+FFFD 替换符残留",
+    "工程: 视频播放专项测试新增 歧义拒绝/前缀歧义 断言, 全量 47 套件通过(飞书跨网络套件缺凭据时跳过)",
     "V10.19.3 诊断加固版。一句话总结: 在 10.19.2 登录修复之上, 新增「先自检、再升级」——本设备能否完成安全升级一眼可见, 失败时区分两种原因; 并修复注册页按返回进入主界面的观感泄漏(仅为显示层, 无权限提升)。",
     "新增(诊断): 「关于」页「运行环境自检」显示 安全升级所需加密能力: 可用/不可用 —— 实证探测 PBKDF2/crypto.subtle(不靠「能登录」间接判断, 因为密码哈希在能力缺失时会静默降级)",
     "修复(诊断): 安全升级失败不再静默 —— ①本设备不支持加密能力 → 换较新手机或联系组长(不提供重试) ②已生成连接键但回传云端失败 → 检查网络后重试(附重试上传入口)",
