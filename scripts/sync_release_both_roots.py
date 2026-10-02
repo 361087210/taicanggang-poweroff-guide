@@ -28,34 +28,40 @@ def sync_to_root(token, root_token, assets_dir, label):
     print(f"\n{'='*50}")
     print(f"  同步到 {label} ({root_token[:12]}...)")
     print(f"{'='*50}")
-    app_folder = get_or_create_folder(token, root_token, DATA_FOLDER_NAME)
-    rel_folder = get_or_create_folder(token, app_folder, RELEASE_FOLDER_NAME)
-    ver_folder = get_or_create_folder(token, rel_folder, f"v{APP_VERSION}")
-    print(f"  目标: {DATA_FOLDER_NAME}/{RELEASE_FOLDER_NAME}/v{APP_VERSION}/")
+    try:
+        app_folder = get_or_create_folder(token, root_token, DATA_FOLDER_NAME)
+        rel_folder = get_or_create_folder(token, app_folder, RELEASE_FOLDER_NAME)
+        ver_folder = get_or_create_folder(token, rel_folder, f"v{APP_VERSION}")
+        print(f"  目标: {DATA_FOLDER_NAME}/{RELEASE_FOLDER_NAME}/v{APP_VERSION}/")
 
-    import os
-    files = sorted(f for f in os.listdir(assets_dir)
-                   if os.path.isfile(os.path.join(assets_dir, f)) and not f.startswith("."))
+        import os
+        files = sorted(f for f in os.listdir(assets_dir)
+                       if os.path.isfile(os.path.join(assets_dir, f)) and not f.startswith("."))
 
-    results = []
-    for name in files:
-        path = os.path.join(assets_dir, name)
-        deleted = delete_if_exists(token, ver_folder, name)
-        d = upload_file(token, ver_folder, path)
-        results.append((name, os.path.getsize(path), d.get("file_token", "")))
-        print(f"  [OK] {'覆盖' if deleted else '新增'} {name} ({os.path.getsize(path):,} B)")
+        results = []
+        for name in files:
+            path = os.path.join(assets_dir, name)
+            deleted = delete_if_exists(token, ver_folder, name)
+            d = upload_file(token, ver_folder, path)
+            results.append((name, os.path.getsize(path), d.get("file_token", "")))
+            print(f"  [OK] {'覆盖' if deleted else '新增'} {name} ({os.path.getsize(path):,} B)")
 
-    # 终验
-    final = list_children(token, ver_folder)
-    ok = True
-    for name, _, _ in results:
-        if final.get(name) and final[name].get("type") == "file":
-            print(f"    ✓ {name}")
-        else:
-            ok = False
-            print(f"    ✗ {name} 缺失!")
-    print(f"  {'完成 ✔' if ok else '存在缺失 ✗'} 共 {len(results)} 个产物")
-    return ok
+        # 终验
+        final = list_children(token, ver_folder)
+        ok = True
+        for name, _, _ in results:
+            if final.get(name) and final[name].get("type") == "file":
+                print(f"    ✓ {name}")
+            else:
+                ok = False
+                print(f"    ✗ {name} 缺失!")
+        print(f"  {'完成 ✔' if ok else '存在缺失 ✗'} 共 {len(results)} 个产物")
+        return ok
+    except Exception as e:
+        print(f"  [跳过] {label} 不可达: {e}")
+        print(f"  [指引] 若该目录仍在使用, 请把新应用 {APP_ID} 添加为它的可编辑协作者后重试;")
+        print(f"         若该目录已废弃, 可将本脚本 OLD_ROOT 移除, 同步将不再告警。")
+        return False
 
 
 def main():
@@ -96,8 +102,12 @@ def main():
     print(f"产物目录: {assets_dir}")
 
     all_ok = True
-    all_ok &= sync_to_root(token, OLD_ROOT, assets_dir, "旧根(组长端缓存)")
-    all_ok &= sync_to_root(token, NEW_ROOT, assets_dir, "新根(应用云盘根)")
+    old_ok = sync_to_root(token, OLD_ROOT, assets_dir, "旧根(组长端缓存)")
+    new_ok = sync_to_root(token, NEW_ROOT, assets_dir, "新根(应用云盘根)")
+    # 旧根降级为尽力而为: 不可达(如 1061004 未授权)只告警, 不阻断新根同步与退出码
+    if not old_ok:
+        print("  ⚠️ 旧根未完成(仅告警), 请按上方指引处理; 新根结果不受影响。")
+    all_ok = new_ok
 
     print(f"\n{'='*50}")
     print(f"  双根同步{'全部完成 ✅' if all_ok else '存在缺失 ⚠️'}")
