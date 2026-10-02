@@ -200,18 +200,9 @@ async function _fetchFeishuImageBlobUrl(fileName){
   if(!imgFiles)return null;
   const target=imgFiles.find(f=>f.type==='file'&&f.name===fileName);
   if(!target)return null;
-  let blob;
-  if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
-    blob=await new Promise((resolve,reject)=>{
-      window.cordova.plugin.http.sendRequest(
-        `https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,
-        {method:'GET',headers:{Authorization:'Bearer '+token},responseType:'blob',timeout:60},
-        res=>resolve(asBlob(res.data,'image/jpeg')),err=>reject(new Error(String(err.error||'图片下载失败')))); // ArrayBuffer→Blob归一
-    });
-  }else{
-    const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}});
-    blob=await r.blob();
-  }
+  // V10.19.5: 统一门控下载(150ms最小间隔+并发上限3+限流99991400退避重试),
+  //           取代裸 sendRequest/fetch——旧路径突发并发直接撞飞书QPS限流
+  const blob=await feishuDownloadFile(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,token,'image/jpeg',60);
   if(!blob||blob.size<100)throw new Error('云端图片内容异常');
   const url=URL.createObjectURL(blob);
   const keys=Object.keys(_feishuImgCache);
@@ -643,17 +634,9 @@ async function playFromFeishuCloud(video,fileName,session){
       if(rootTarget){target=rootTarget;rootHit=true;}
     }
     const downloadBlob=async(fileToken)=>{
-      if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
-        return await new Promise((resolve,reject)=>{
-          window.cordova.plugin.http.sendRequest(
-            `https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`,
-            {method:'GET',headers:{Authorization:'Bearer '+token},responseType:'blob',timeout:120},
-            res=>resolve(asBlob(res.data,'video/mp4')),err=>reject(new Error(String(err.error||'分片下载失败'))) // V5.3.4: ArrayBuffer→Blob归一(根因4)
-          );
-        });
-      }
-      const r=await fetch(`https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`,{headers:{Authorization:'Bearer '+token}});
-      return await r.blob();
+      // V10.19.5: 统一门控下载(150ms最小间隔+并发上限3+限流退避), 取代裸sendRequest/fetch;
+      //           视频分片逐片下载时尤其需要门控——无节制并发是撞99991400的高发路径
+      return await feishuDownloadFile(`https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`,token,'video/mp4',120);
     };
     let blob;
     if(target){

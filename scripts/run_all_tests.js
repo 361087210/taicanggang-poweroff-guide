@@ -82,6 +82,7 @@ const TEST_SUITES = [
   'test:crypto-capability',
   'test:nav-guard',
   'test:vehicle-integrity',
+  'test:v10195',
   'test:cross'
 ];
 
