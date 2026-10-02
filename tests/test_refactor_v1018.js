@@ -21,7 +21,7 @@ const cfg = src('js/00-config.js');
 check('F1b 定义 LINK_SALT=tcg-link-2026(替换旧 WEB_SYNC_SALT)', cfg.includes("LINK_SALT: 'tcg-link-2026'"));
 check('F1c 定义 GITHUB_REPO', cfg.includes("GITHUB_REPO: '361087210/taicanggang-poweroff-guide'"));
 check('F1d 定义 BASE_APP_TOKEN', cfg.includes('Rv29b7CMAaKXj3sH2RBcRS5rnWb'));
-check('F1e 定义 DEFAULT_CHAT_ID', cfg.includes('oc_1b25c691971c61de0b7773e49cb42796'));
+check('F1e 定义 DEFAULT_CHAT_ID', cfg.includes('oc_5f7c4e8becbfeb487b0eb107ede3f5fb'));
 check('F1f 不含密钥明文', !/s35nEpUBk8KtxN3Kwl2AEgUNnwXQHABb|ghp_/.test(cfg)); /* noqa:secret */
 
 section('F2 配置读取改造(降级兜底)');
@@ -75,7 +75,7 @@ const vjC = String(vj.versionCode == null ? '' : vj.versionCode);
 function _vjToCode(v){ return String(v).split('.').map(function(p){ return p.padStart(2, '0'); }).join(''); }
 check('F8a version.json.version 为 x.y.z 三段纯数字', /^[0-9]+\.[0-9]+\.[0-9]+$/.test(vjV), vjV);
 check('F8b versionCode 与 version 编码一致(去点补零)', vjC === _vjToCode(vjV), 'version=' + vjV + ' versionCode=' + vjC);
-check('F8c chatId 写入 version.json', vj.feishuConfig && vj.feishuConfig.chatId === 'oc_1b25c691971c61de0b7773e49cb42796');
+check('F8c chatId 写入 version.json', vj.feishuConfig && vj.feishuConfig.chatId === 'oc_5f7c4e8becbfeb487b0eb107ede3f5fb');
 
 section('F9 动态执行验证(本地镜像脚本)');
 try {
