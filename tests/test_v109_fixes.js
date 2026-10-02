@@ -171,6 +171,7 @@ setTimeout(() => {
       `标签栏包含其他: ${tagsHtml.includes('其他(')}`);
 
     // B4: 切换到其他筛选,列表正确过滤(分级视图+展开其他品牌)
+    // 注: 内置数据已有 2 辆自定义品牌车(北汽BAIC-BJ30e/北汽-极狐ARCFOX-T1), 加测试车共 3 辆
     runInContext(`
       setViewMode('tree');
       state.expandedBrands.add('__other__');
@@ -179,12 +180,13 @@ setTimeout(() => {
     `);
     const filteredHtml = dom.window.document.getElementById('vehicle-list-container').innerHTML;
     const filteredCount = (filteredHtml.match(/onclick="openVehicleDetail/g) || []).length;
-    check('B4 品牌筛选: 其他筛选正确过滤',
-      filteredCount === 1 && filteredHtml.includes('测试自定义品牌车型'),
-      `其他筛选后${filteredCount}辆(预期1辆)`);
+    check('B4 品牌筛选: 其他筛选正确过滤(2内置+1测试车)',
+      filteredCount === 3 && filteredHtml.includes('测试自定义品牌车型'),
+      `其他筛选后${filteredCount}辆(预期3辆)`);
 
     // B5: 编辑车辆改品牌后,brandId同步更新,车辆移到正确分组
     // 先切回全部筛选,再改品牌,再展开新品牌分组验证
+    // 注: 内置 2 辆自定义品牌车仍在"其他品牌"组, 验证点=测试车离开其他组、进入目标品牌组
     const firstBrandId = runInContext('BRANDS[0].id');
     const firstBrandName = runInContext('BRANDS[0].name');
     runInContext(`
@@ -197,11 +199,18 @@ setTimeout(() => {
       renderVehicleList();
     `);
     const afterEditHtml = dom.window.document.getElementById('vehicle-list-container').innerHTML;
+    runInContext(`
+      state.expandedBrands.delete(BRANDS[0].id);
+      state.expandedBrands.add('__other__');
+      setBrandFilter('__other__');
+      renderVehicleList();
+    `);
+    const otherAfterEditHtml = dom.window.document.getElementById('vehicle-list-container').innerHTML;
     check('B5 编辑品牌后: 车辆移到正确品牌分组',
       afterEditHtml.includes(firstBrandName) &&
       afterEditHtml.includes('测试自定义品牌车型') &&
-      !afterEditHtml.includes('其他品牌'),
-      `车在${firstBrandName}组: ${afterEditHtml.includes('测试自定义品牌车型')}, 无其他品牌: ${!afterEditHtml.includes('其他品牌')}`);
+      !otherAfterEditHtml.includes('测试自定义品牌车型'),
+      `车在${firstBrandName}组: ${afterEditHtml.includes('测试自定义品牌车型')}, 测试车已离开其他组: ${!otherAfterEditHtml.includes('测试自定义品牌车型')}`);
 
     // B6: 导入备份函数存在且可调用
     const hasImportFn = runInContext('typeof triggerImportBackup === "function" && typeof handleImportBackup === "function"');
