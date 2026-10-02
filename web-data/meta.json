@@ -1,10 +1,10 @@
 {
-  "syncedAt": "2026-10-02T01:00:55.124Z",
-  "generatedAt": "2026-10-02T01:00:55.124Z",
+  "syncedAt": "2026-10-02T06:34:47.265Z",
+  "generatedAt": "2026-10-02T06:34:47.265Z",
   "source": "feishu",
-  "version": "v10.15.12",
+  "version": "v10.19.3",
   "counts": {
-    "vehicles": 82,
+    "vehicles": 100,
     "users": 10,
     "feedback": 0
   }
