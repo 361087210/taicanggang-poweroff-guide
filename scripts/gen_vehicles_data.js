@@ -59,6 +59,15 @@ const KNOWN_CORRUPTIONS = [
   { broken: '关\uFFFD\uFFFD\uFFFD车门', fixed: '关闭车门', note: 'id=59 奇瑞皮卡(RELY R8) steps[1] (残留 3×efbfbd, 参照 id=58 完好句)' },
   { broken: '猎\uFFFD\uFFFD\uFFFD）', fixed: '猎手）', note: 'id=30 长安皮卡(HUNTER) display (残留 3×efbfbd, 参照视频名 猎手)' },
   { broken: '逆时\uFFFD\uFFFD\uFFFD松动', fixed: '逆时针松动', note: 'id=64 奇瑞捷途JETOUR(T2 I-DM) steps[2] (残留 3×efbfbd, 参照其它车型同句式)' },
+  { broken: '绑扎检\uFFFD\uFFFD完',       fixed: '绑扎检查完',       note: 'id=15 比亚迪元(元UP) keyContainer[0] (残留 2×efbfbd, 参照同字段完好句)' },
+  { broken: '断电无\uFFFD\uFFFD\uFFFD后', fixed: '断电无误后',       note: 'id=21 长安深蓝(S7/S5/S05) keyContainer[1] (残留 3×efbfbd, 参照其它车型同句式)' },
+  { broken: '绑扎检查\uFFFD\uFFFD。',     fixed: '绑扎检查完。',     note: 'id=55 奇瑞瑞虎(瑞虎7PRO) keyContainer[0] (残留 2×efbfbd)' },
+  { broken: '绑扎及框\uFFFD\uFFFD检查完', fixed: '绑扎及框架检查完', note: 'id=57 奇瑞瑞虎(瑞虎8 CSH) keyFrame[0] (残留 2×efbfbd, 参照完好句)' },
+  { broken: '拔掉负\uFFFD\uFFFD线束',     fixed: '拔掉负极线束',     note: 'id=85 吉利豪越OKAVANGO steps[3] (残留 2×efbfbd, 参照其它车型同句式)' },
+  { broken: '锁住\uFFFD\uFFFD\uFFFD门',   fixed: '锁住车门',         note: 'id=91 比亚迪元YUAN-UP-DM-I steps[1] (残留 3×efbfbd, 参照校正表首条)' },
+  { broken: '所有车辆\uFFFD\uFFFD\uFFFD匙数量', fixed: '所有车辆钥匙数量', note: '镜像侧新损坏(残留 3×efbfbd, 参照产物完好句)' },
+  { broken: '遥控钥\uFFFD\uFFFD\uFFFD锁车',    fixed: '遥控钥匙锁车',     note: '镜像侧新损坏(残留 3×efbfbd, 参照产物完好句)' },
+  { broken: '铅封\uFFFD\uFFFD内',            fixed: '铅封袋内',         note: '镜像侧新损坏(残留 2×efbfbd, 参照产物完好句)' },
 ];
 
 /** 对单个字符串应用校正表(纯函数, 无匹配则原样返回) */
