@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-02T07:47:47.769Z",
+  "generatedAt": "2026-10-03T16:35:21.811Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -284,16 +284,7 @@
       "id": 11,
       "display": "比亚迪宋(宋PRO)",
       "photos": [],
-      "videos": [
-        {
-          "fileName": "通用断电视频.mp4",
-          "sha256": "",
-          "size": 0,
-          "mime": "video/mp4",
-          "qiniuKey": "",
-          "releaseAsset": "tcgv_b5fc668c92.mp4"
-        }
-      ]
+      "videos": []
     },
     {
       "id": 12,
@@ -334,7 +325,7 @@
     },
     {
       "id": 13,
-      "display": "比亚迪唐(唐EV（欧标）)",
+      "display": "���亚迪唐(唐EV（欧标）)",
       "photos": [
         {
           "fileName": "image20.png",
@@ -845,7 +836,7 @@
     },
     {
       "id": 30,
-      "display": "长安皮卡(HUNTER（猎手）燃油版/混动版)",
+      "display": "长安皮���(HUNTER（猎手）燃油版/混动版)",
       "photos": [
         {
           "fileName": "image49.jpeg",
@@ -4356,7 +4347,7 @@
   "stats": {
     "vehicleCount": 100,
     "photoCount": 259,
-    "videoCount": 65,
+    "videoCount": 64,
     "totalBytes": 13969120
   }
 }

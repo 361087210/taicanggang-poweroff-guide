@@ -1,4 +1,4 @@
-// 飞书云端同步于 2026-10-02T01:15:19.135Z
+// 飞书云端同步于 2026-10-03T14:59:10.879Z
 window.VEHICLES = [
   {
     "id": 1,
@@ -385,10 +385,11 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 0,
     "photoPaths": [],
-    "videos": 1,
-    "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
-    ]
+    "photoSections": [],
+    "photoLabels": [],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
   },
   {
     "id": 12,
@@ -433,7 +434,7 @@ window.VEHICLES = [
     "brand": "比亚迪",
     "series": "唐",
     "config": "唐EV（欧标）",
-    "display": "比亚迪唐(唐EV（欧标）)",
+    "display": "���亚迪唐(唐EV（欧标）)",
     "size": "",
     "powerType": "纯电",
     "position": "前机盖电池负极",
@@ -1077,7 +1078,7 @@ window.VEHICLES = [
     "brand": "长安",
     "series": "皮卡",
     "config": "HUNTER（猎手）燃油版/混动版",
-    "display": "长安皮卡(HUNTER（猎手）燃油版/混动版)",
+    "display": "长安皮���(HUNTER（猎手）燃油版/混动版)",
     "size": "",
     "powerType": "混动",
     "position": "前机盖电池负极",
@@ -1103,6 +1104,17 @@ window.VEHICLES = [
       "vehicle_images/image50.jpeg",
       "vehicle_images/image51.jpeg"
     ],
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "position"
+    ],
+    "photoLabels": [
+      "车头",
+      "车尾",
+      "断电位置"
+    ],
+    "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
       "vehicle_videos/长安皮卡_HUNTER_猎手_燃油版_混动版.mp4"
@@ -2082,7 +2094,7 @@ window.VEHICLES = [
     ],
     "keyContainer": [
       "1.车辆钥匙数量及绑扎检查完。",
-      "2.确认断电无误后放置于车内中控台。"
+      "2.确认��电无误后放置于车内中控台。"
     ],
     "remarks": "",
     "photos": 3,
@@ -2404,7 +2416,8 @@ window.VEHICLES = [
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
       "2.短按钥匙锁车键锁住车门，长按后备箱键打开后备箱。",
-      "4.关闭后备箱，再次拉动车门确保关闭。"
+      "2.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
+      "4.拔掉负极线束，套上珍珠套管避免接触"
     ],
     "keyFrame": [
       "1.所有车辆钥匙数量，绑扎及框架检查完。",
