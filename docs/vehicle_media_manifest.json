@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-03T16:35:21.811Z",
+  "generatedAt": "2026-10-03T19:27:05.135Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -325,7 +325,7 @@
     },
     {
       "id": 13,
-      "display": "���亚迪唐(唐EV（欧标）)",
+      "display": "比亚迪唐(唐EV（欧标）)",
       "photos": [
         {
           "fileName": "image20.png",
@@ -836,7 +836,7 @@
     },
     {
       "id": 30,
-      "display": "长安皮���(HUNTER（猎手）燃油版/混动版)",
+      "display": "长安皮卡(HUNTER（猎手）燃油版/混动版)",
       "photos": [
         {
           "fileName": "image49.jpeg",
