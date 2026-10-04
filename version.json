@@ -1,8 +1,13 @@
 {
-  "version": "10.19.5",
-  "versionCode": 101905,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.19.5/tcg_poweroff_v10.19.5.apk",
+  "version": "10.20.0",
+  "versionCode": 102000,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.20.0/tcg_poweroff_v10.20.0.apk",
   "releaseNotes": [
+    "V10.20.0 组长重置口令安全加固版。一句话总结: 组长重置组员密码不再写死固定口令 '123456', 改为每次生成 12 位高熵随机一次性口令, 仅弹窗展示一次, 彻底消除「全员同口令」的重大弱口令隐患。",
+    "安全(随机口令): 新增 generateRandomPassword 原语——crypto.getRandomValues(CSPRNG)取随机字节, 不可用时降级 Math.random(仍远优于固定口令); 拒绝采样消除取模偏差; 去歧义字符集(去除 0/O/o/1/l/I 等易混淆字符), 默认长度 12 位",
+    "安全(重置改写): resetMemberPass 改为「随机口令 + 哈希存储」——genSalt 加盐后经 PBKDF2 哈希落库, 同步刷新 pw_ts 与 linkKey(供组员端拉取仲裁), 明文口令绝不落盘/上云",
+    "安全(展示收敛): 新增 reset-pass 弹层, 新口令仅一次性展示并附复制按钮, 关闭即清空; toast/日志/云端回传均不含明文口令",
+    "工程(门禁): 新增 resetMemberPass 加固回归测试(test:v1035, 34 断言: 静态契约 + 随机性/字符集/CSPRNG 降级 + 重置全链路哈希非明文/pw_ts/linkKey + 安全边界), 并入 test:all 聚合与 CI 覆盖率门禁; 全量套件由 47 增至 48",
     "V10.19.5 飞书限流根治版。一句话总结: 根治 App 从飞书云端加载图片/视频偶发失败(飞书API限流 99991400 request trigger frequency limit)——统一请求门控(150ms最小间隔+并发上限3)、限流码99991400~99991404指数退避重试、目录列表30s缓存、图片/视频下载统一走门控入口, 弱网与突发并发场景不再随机失败。",
     "治理(请求门控): 飞书API请求全局最小间隔150ms+并发上限3(同步/异步调用方通用), 从源头掐断突发并发撞飞书QPS限流",
     "治理(限流退避): 限流码99991400~99991404与网络错误指数退避重试(400ms→800ms→1600ms+抖动, 预算3次, 仅幂等GET/HEAD), 重试耗尽优雅降级不崩溃",

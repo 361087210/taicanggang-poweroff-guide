@@ -307,20 +307,75 @@ async function resetMemberPass(id){
   if(u&&u.role==='admin'){showToast('不可重置组长账号密码');return;}
   if(u){
     // V5.4: 重置密码时哈希化存储; V10.15.11: 记录pw_ts供组员端拉取仲裁(新ts→采纳重置值)
+    // V10.20.0 安全加固: 不再写死 '123456', 改为 12 位随机一次性口令(仅弹窗展示一次)
+    const newPass = generateRandomPassword(12);
     const salt = genSalt();
-    u.password = await hashPassword('123456', salt);
+    u.password = await hashPassword(newPass, salt);
     u.pw_ts = Date.now();
-    // P0 脱敏: 重置密码后重算 linkKey(组员用重置密码登录网页端需匹配镜像)
-    const linkKey = await deriveLinkKey(u.phone, '123456');
+    // P0 脱敏: 重置密码后重算 linkKey(组员用重置密码登录网页端需匹配镜像) —— 与上面同一口令
+    const linkKey = await deriveLinkKey(u.phone, newPass);
     if(linkKey)u.linkKey=linkKey;
     saveUsers(USERS);
-    showToast(`已重置${u.name}的密码为123456`);
+    // V10.20.0: toast 不再回显口令明文, 避免口令滞留通知栏/日志
+    showToast(`已重置${u.name}的密码`);
+    // V10.20.0: 随机口令仅在此弹窗展示一次, 关闭后无法再次查看
+    showResetPasswordModal(u.name, newPass);
     // V10.15.11: 推送前fullMerge拉云端最新——防旧表覆盖其他成员新改的密码
     try{ await pullApprovedStatusFromFeishu(state.currentUser, true); }catch(e){}
     const u2=USERS.find(x=>x.phone===u.phone);
     if(u2&&u2.password!==u.password){u2.password=u.password;u2.pw_ts=u.pw_ts;saveUsers(USERS);}
     pushApprovedUsersToFeishu();
   }
+}
+
+/**
+ * 一次性口令展示弹层 —— V10.20.0 安全加固
+ * 组长重置组员密码后, 随机口令仅在此展示一次(不写 toast/不落日志)。
+ * 元素缺失时静默降级(测试沙箱/旧页面不含该 modal 不报错)。
+ * @param {string} name 组员姓名
+ * @param {string} password 一次性随机口令
+ */
+function showResetPasswordModal(name, password){
+  const val = document.getElementById('reset-pass-value');
+  const tip = document.getElementById('reset-pass-tip');
+  if(val) val.textContent = password;
+  if(tip) tip.textContent = `请立即将新密码告知 ${name}，关闭后无法再次查看。`;
+  if(typeof openModal === 'function') openModal('modal-reset-pass');
+}
+
+/**
+ * 复制一次性口令 —— V10.20.0
+ * 优先 Clipboard API, 不可用时降级 execCommand(旧浏览器/非 HTTPS 环境)。
+ */
+function copyResetPassword(){
+  const val = document.getElementById('reset-pass-value');
+  const text = val ? val.textContent : '';
+  if(!text || text === '-'){ showToast('暂无可复制的密码'); return; }
+  const done = ()=>{ showToast('密码已复制'); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>{ _fallbackCopy(text, done); });
+  }else{
+    _fallbackCopy(text, done);
+  }
+}
+function _fallbackCopy(text, done){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    done();
+  }catch(e){ showToast('复制失败，请手动记录'); }
+}
+
+/**
+ * 关闭一次性口令弹层 —— 关闭即清空文本(强化"仅显示一次"语义)
+ */
+function closeResetPasswordModal(){
+  const val = document.getElementById('reset-pass-value');
+  if(val) val.textContent = '-';
+  if(typeof closeModal === 'function') closeModal('modal-reset-pass');
 }
 
 // ===================== PASSWORD =====================

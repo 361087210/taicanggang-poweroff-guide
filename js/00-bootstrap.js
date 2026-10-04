@@ -82,6 +82,33 @@ function genSalt() {
   return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/**
+ * 随机一次性口令生成 —— V10.20.0 安全加固
+ * 场景: 组长重置组员密码, 不再写死 '123456', 改为每次生成高熵随机口令。
+ * 实现要点:
+ *  - crypto.getRandomValues(CSPRNG) 取随机字节; 不可用时降级 Math.random(仍远优于固定口令)
+ *  - 拒绝采样消除取模偏差(limit = floor(256/N)*N, 超出阈值丢弃重取)
+ *  - 去歧义字符集: 去除 0/O/o/1/l/I 等易混淆字符, 便于人工口述/转录
+ * @param {number} [length=12] 口令长度
+ * @returns {string} 随机口令
+ */
+function generateRandomPassword(length){
+  const LEN = length || 12;
+  const CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const N = CHARSET.length;
+  const LIMIT = Math.floor(256 / N) * N; // 拒绝采样阈值(消除取模偏差)
+  const out = [];
+  while(out.length < LEN){
+    const buf = new Uint8Array(LEN - out.length);
+    try{ crypto.getRandomValues(buf); }
+    catch(e){ for(let i=0;i<buf.length;i++) buf[i] = Math.floor(Math.random()*256); }
+    for(let i=0;i<buf.length && out.length<LEN;i++){
+      if(buf[i] < LIMIT) out.push(CHARSET[buf[i] % N]);
+    }
+  }
+  return out.join('');
+}
+
 async function verifyPassword(password, stored) {
   if (!stored) return false;
   const parts = stored.split('$');
@@ -1451,7 +1478,7 @@ function invalidateDataFolderCache(){
 }
 
 // ===================== APP VERSION & UPDATE =====================
-const APP_VERSION='10.19.5';
+const APP_VERSION='10.20.0';
 // V10.16.4 安全加固: 空闲超时(30分钟无操作自动登出)
 const IDLE_TIMEOUT=30*60*1000;
 let _lastActivity=Date.now();
@@ -1549,9 +1576,6 @@ const MEDIA_DIRECT_ASSETS={
   '长安深蓝(G318)_v2.mp4':'tcgv_ac4b41ffc4.mp4',
   '奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4':'tcgv_e3af4b5357.mp4',
   '长安启源(EADO_PLUS)_v2_4ffd5489.mp4':'tcgv_ad959cdfbe.mp4',
-  'user_v74_v1_bba4db96.mp4':'tcgv_7641611f88.mp4',
-  'user_v74_v1_2d41bb72.mp4':'tcgv_1edd4aca08.mp4',
-  'user_v22_v2_7a155908.mp4':'tcgv_ac4b41ffc4_2.mp4',
 };
 
 /**

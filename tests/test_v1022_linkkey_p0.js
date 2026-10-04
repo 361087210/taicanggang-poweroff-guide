@@ -147,7 +147,7 @@ check('L9a 安卓注册写入 linkKey', /deriveLinkKey\s*\(\s*phone\s*,\s*pass\s
 check('L9b 网页端 linkKey 派生仍在(登录重建路径; 网页注册已随 10.19.3 下线)', /deriveLinkKey\(String\(who\.phone\),String\(who\.password\)\)/.test(webSyncJs));
 check('L9c 安卓改密重算 linkKey', /deriveLinkKey\s*\(\s*state\.currentUser\.phone\s*,\s*n\s*\)/.test(cacheJs));
 check('L9d 组长加人写入 linkKey', /deriveLinkKey\s*\(\s*phone\s*,\s*pass\s*\)/.test(cacheJs));
-check('L9e 重置密码重算 linkKey(123456)', /deriveLinkKey\s*\(\s*u\.phone\s*,\s*'123456'\s*\)|deriveLinkKey\(u\.phone,'123456'\)/.test(cacheJs));
+check('L9e 重置密码用随机新口令重算 linkKey(不再写死 123456)', /const\s+newPass\s*=\s*generateRandomPassword\(\s*\d+\s*\)/.test(cacheJs) && /deriveLinkKey\s*\(\s*u\.phone\s*,\s*newPass\s*\)/.test(cacheJs) && !/deriveLinkKey\s*\(\s*u\.phone\s*,\s*'123456'\s*\)/.test(cacheJs));
 check('L9f pushApprovedUsersToFeishu 透传 linkKey', /linkKey\s*:\s*u\.linkKey/.test(syncJs));
 check('L9g syncPendingToFeishu 透传 linkKey', /linkKey\s*:\s*user\.linkKey/.test(syncJs));
 

@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.20.0',
+    date: '2026-10-04',
+    highlight: '组长重置口令安全加固版: 不再写死固定口令 123456, 改为 12 位随机一次性口令',
+    features: [
+      '安全(随机口令): 新增 generateRandomPassword 原语——CSPRNG(crypto.getRandomValues)取随机字节, 不可用时降级 Math.random; 拒绝采样消除取模偏差; 去歧义字符集(去除 0/O/o/1/l/I), 长度 12 位',
+      '安全(重置改写): resetMemberPass 改为随机口令+哈希存储(genSalt 加盐 PBKDF2), 同步刷新 pw_ts 与 linkKey 供组员端仲裁, 明文口令绝不落盘/上云',
+      '安全(展示收敛): 新增 reset-pass 弹层一次性展示新口令(附复制按钮), 关闭即清空; toast/日志/云端回传均不含明文',
+      '工程(门禁): 新增 resetMemberPass 加固回归测试(34 断言), 并入 test:all 与 CI 覆盖率门禁; 全量套件由 47 增至 48'
+    ]
+  },
+  {
     version: 'V10.19.5',
     date: '2026-10-03',
     highlight: '飞书限流根治版: 请求门控+退避重试+列表缓存, 云端图片/视频加载不再随机失败',
@@ -519,7 +530,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.19.5'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.20.0'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

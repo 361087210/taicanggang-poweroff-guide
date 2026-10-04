@@ -6,7 +6,7 @@
  * ============================================================
  * 问题背景:
  *   原 package.json 的 test:all 是一长串 `npm run test:X && npm run test:Y && ...`
- *   (共 47 个子套件)。`&&` 串联的致命缺陷: 任一子套件失败会让整条链硬中断,
+ *   (共 48 个子套件)。`&&` 串联的致命缺陷: 任一子套件失败会让整条链硬中断,
  *   后续十几个套件完全不执行, 使"test:all 全绿"这条验收线长期不可信(红灯被
  *   静默吞掉, 无人察觉)。
  *
@@ -31,7 +31,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
 /**
- * 子套件清单 —— 原 test:all 串联的 47 个套件(单一真源)。
+ * 子套件清单 —— 原 test:all 串联的 48 个套件(单一真源)。
  * 注意: 仅复刻原 test:all 引用的子脚本, 不增不减; 新增套件须同步加入此处
  * 并登记到 package.json 的对应 test:* 脚本(否则 check_ci_coverage 门禁会拦截)。
  */
@@ -83,6 +83,7 @@ const TEST_SUITES = [
   'test:nav-guard',
   'test:vehicle-integrity',
   'test:v10195',
+  'test:v1035',
   'test:cross'
 ];
 

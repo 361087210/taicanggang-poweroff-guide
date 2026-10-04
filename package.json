@@ -62,6 +62,7 @@
     "test:nav-guard": "node tests/test_nav_login_guard.js",
     "test:vehicle-integrity": "node tests/test_vehicle_data_integrity.js",
     "test:v10195": "node tests/test_v10195_feishu_rate_limit.js",
+    "test:v1035": "node tests/test_v1035_reset_member_pass.js",
     "test:two-end-gate": "node tests/test_v1034_two_end_gate.js",
     "check:two-end": "node scripts/check_two_end_sync.js",
     "audit:media": "node scripts/audit_media_consistency.js",

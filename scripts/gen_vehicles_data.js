@@ -68,6 +68,8 @@ const KNOWN_CORRUPTIONS = [
   { broken: '所有车辆\uFFFD\uFFFD\uFFFD匙数量', fixed: '所有车辆钥匙数量', note: '镜像侧新损坏(残留 3×efbfbd, 参照产物完好句)' },
   { broken: '遥控钥\uFFFD\uFFFD\uFFFD锁车',    fixed: '遥控钥匙锁车',     note: '镜像侧新损坏(残留 3×efbfbd, 参照产物完好句)' },
   { broken: '铅封\uFFFD\uFFFD内',            fixed: '铅封袋内',         note: '镜像侧新损坏(残留 2×efbfbd, 参照产物完好句)' },
+  { broken: '确\uFFFD\uFFFD断电无误',        fixed: '确认断电无误',     note: 'id=15 比亚迪元(元UP) keyContainer[1] (残留 2×efbfbd, 参照同字段完好句)' },
+  { broken: '确认断电\uFFFD\uFFFD误后',      fixed: '确认断电无误后',   note: 'id=100 北汽-极狐ARCFOX-T1 keyContainer[0] (残留 2×efbfbd, 参照其它车型同句式)' },
 ];
 
 /** 对单个字符串应用校正表(纯函数, 无匹配则原样返回) */
