@@ -1462,7 +1462,7 @@ window.VEHICLES = [
     "brand": "东风",
     "series": "VIGO",
     "config": "纳米01",
-    "display": "东风VIGO(纳米01)",
+    "display": "东风VIGO(���米01)",
     "size": "",
     "powerType": "混动",
     "position": "屏幕下电",
@@ -2731,7 +2731,7 @@ window.VEHICLES = [
     "config": "PRO",
     "display": "吉利银河EX3PRO",
     "size": "",
-    "powerType": "燃油",
+    "powerType": "燃���",
     "position": "前机盖",
     "steps": [
       "取出车钥匙，打开前机盖",
@@ -3555,7 +3555,7 @@ window.VEHICLES = [
       "2.确认断电无误后放到铅封袋内封好袋口。"
     ],
     "keyContainer": [
-      "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
+      "2.车辆进箱无需收钥���，确认断电无误后放置于车内中控台。"
     ],
     "remarks": "",
     "photos": 3,
