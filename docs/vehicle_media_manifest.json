@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-04T05:33:11.331Z",
+  "generatedAt": "2026-10-04T07:47:59.105Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -1178,7 +1178,7 @@
     },
     {
       "id": 40,
-      "display": "东风VIGO(���米01)",
+      "display": "东风VIGO(纳米01)",
       "photos": [
         {
           "fileName": "image76.jpeg",
