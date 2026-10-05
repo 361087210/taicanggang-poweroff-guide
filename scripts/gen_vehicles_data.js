@@ -76,6 +76,8 @@ const KNOWN_CORRUPTIONS = [
   { broken: '确认\uFFFD\uFFFD\uFFFD电无误后', fixed: '确认断电无误后', note: 'id=15 比亚迪元(元UP) keyContainer[1] (残留 3×efbfbd, 参照 94× 同句式)' },
   { broken: '确认断\uFFFD\uFFFD无误后',     fixed: '确认断电无误后', note: 'id=43 东风小康(MPVC37) keyFrame[1] (残留 2×efbfbd, 参照 94× 同句式)' },
   { broken: '封好铅封\uFFFD\uFFFD\uFFFD',   fixed: '封好铅封。',     note: 'id=92 北汽BAIC-BJ30e keyFrame[2] (残留 3×efbfbd, 参照 94× 同句式句尾句号)' },
+  // ↓ 2026-10-06 17:02 同步批次(第三次新增, 源表持续损坏)
+  { broken: '取出车\uFFFD\uFFFD\uFFFD匙',   fixed: '取出车钥匙',     note: 'id=80 比亚迪海豹SEAL-U DM-I steps[0] (残留 3×efbfbd, 参照 id=14 同句式)' },
 ];
 
 /** 对单个字符串应用校正表(纯函数, 无匹配则原样返回) */
