@@ -186,6 +186,78 @@ if (fs.existsSync(mirror)) {
   console.log('  [INFO] 未找到 web-data/vehicle_sync_data.json, 跳过镜像观测。');
 }
 
+/* ---------- I5 自动派生校正(V10.20.2) ----------
+ * 背景: 手工校正表追不上活源 —— 同一天两次同步, id=80 从 '取出车???匙'
+ * 变成 '取出??钥匙'(形态迁移), 已收录条目完全不匹配, 校正表永远差一轮。
+ * 自动派生把 U+FFFD 段当通配符, 在干净语料里求**唯一解**; 不唯一就不动。
+ * 本段锁定: ①纯函数行为(唯一/多解/无解/无损坏/上下文过短)
+ *          ②安全边界(不改入参、不改语料)
+ *          ③真数据集成(镜像跑一遍, 产物残留必须为 0)
+ */
+section('I5 自动派生校正: 唯一解才改, 有歧义就交人工');
+let genMod = null;
+try { genMod = require(GEN); } catch (e) { genMod = null; }
+check('I5a 生成器导出自动派生纯函数(deriveFix/collectCleanCorpus/brokenToRegExp/autoCorrectVehicles)',
+  !!genMod && typeof genMod.deriveFix === 'function' &&
+  typeof genMod.collectCleanCorpus === 'function' &&
+  typeof genMod.brokenToRegExp === 'function' &&
+  typeof genMod.autoCorrectVehicles === 'function');
+
+if (genMod) {
+  const F = '\uFFFD';
+  const corpus = new Set([
+    '2.确认断电无误后放置于车内中控台。',
+    '1.所有车辆钥匙数量，绑扎及框架检查完。'
+  ]);
+  const snapCorpus = [...corpus];
+  const snapSize = corpus.size;
+
+  check('I5b 唯一解 -> 返回修复串',
+    genMod.deriveFix('2.' + F + F + '认断电无误后放置于车内中控台。', corpus) === '2.确认断电无误后放置于车内中控台。');
+  check('I5c 无候选 -> 返回 null(不猜)',
+    genMod.deriveFix('3.完全不存在的句子' + F + F + '尾巴。', corpus) === null);
+  // 歧义: 造两条都能匹配同一模式的干净串
+  const ambCorpus = new Set(['确认断电无误后A。', '确认断电无误后B。']);
+  check('I5d 多解(歧义) -> 返回 null, 绝不二选一',
+    genMod.deriveFix('确认断电无误后' + F + '。', ambCorpus) === null);
+  check('I5e 不含 U+FFFD -> 返回 null(不碰正常文本)',
+    genMod.deriveFix('2.确认断电无误后放置于车内中控台。', corpus) === null);
+  check('I5f 字面上下文 < 4 字 -> 拒绝(模式过宽, 防误改)',
+    genMod.deriveFix(F + F + 'ab', new Set(['xyab', 'zzab'])) === null);
+  check('I5g 纯函数: 不改动传入语料(不改入参)',
+    corpus.size === snapSize && snapCorpus.every((s, i) => s === [...corpus][i]));
+
+  // '正常句。' 出现两次 -> 验证去重; '坏句??。' 含替换符 -> 验证被排除
+  const cc = genMod.collectCleanCorpus([
+    { id: 1, steps: ['正常句。', '坏句' + F + '。'] },
+    { id: 2, steps: ['正常句。', '另一句。', '第三句。'] }
+  ]);
+  check('I5h collectCleanCorpus 去重且排除含 U+FFFD 的串',
+    cc instanceof Set && cc.has('正常句。') && cc.has('另一句。') && cc.has('第三句。') &&
+    !cc.has('坏句' + F + '。') && cc.size === 3, 'size=' + (cc instanceof Set ? cc.size : 'not-a-set'));
+
+  const ac = genMod.autoCorrectVehicles(
+    [{ id: 1, steps: ['1.所有车辆钥匙数量，绑扎及框架检查完。', '2.' + F + F + '认断电无误后放置于车内中控台。'] }],
+    corpus);
+  check('I5i autoCorrectVehicles 应用唯一解并返回明细',
+    ac && ac.applied.length === 1 && ac.applied[0].to === '2.确认断电无误后放置于车内中控台。' &&
+    ac.vehicles[0].steps[1] === '2.确认断电无误后放置于车内中控台。');
+  check('I5j autoCorrectVehicles 对无解项记入 unresolved 且不改写原文',
+    ac && ac.unresolved.length === 0);
+
+  const ac2 = genMod.autoCorrectVehicles([{ id: 1, steps: ['孤句' + F + F + '无副本。'] }], corpus);
+  check('I5k 无解保留原文 + 进 unresolved(交人工收录)',
+    ac2.vehicles[0].steps[0] === '孤句' + F + F + '无副本。' && ac2.unresolved.length === 1 && ac2.applied.length === 0);
+}
+
+check('I5l loadMirrorVehicles 内已串联"手工表 -> 自动派生"两级',
+  /d\.vehicles\s*=\s*d\.vehicles\.map\(correctVehicle\)/.test(gen) &&
+  /autoCorrectVehicles\(d\.vehicles/.test(gen));
+check('I5m 自动派生结果写入 __corruption 便于审计(auto/unresolved 计数)',
+  /auto:\s*auto\.applied\.length/.test(gen) && /unresolved:\s*auto\.unresolved\.length/.test(gen));
+check('I5n 未解决的损坏仍会 [WARN](不静默放行)',
+  /auto\.unresolved\.length\)\s*\{[\s\S]{0,200}\[WARN\]/.test(gen));
+
 /* ---------- 汇总 ---------- */
 console.log('\n' + '='.repeat(60));
 console.log('车辆数据编码完整性测试汇总: ' + pass + ' passed, ' + fail + ' failed');

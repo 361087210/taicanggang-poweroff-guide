@@ -108,14 +108,129 @@ function correctVehicle(v) {
 /** 统计一个字符串中的 U+FFFD 个数 */
 function countRepl(s) { return (String(s).match(/\uFFFD/g) || []).length; }
 
+/* ===================== 自动派生校正(V10.20.2) =====================
+ * 为什么需要(实证, 不是拍脑袋):
+ *   飞书源表是"活"的 —— cron 每 15 分钟同步一次, 每次都可能产出**新的**损坏,
+ *   而且**损坏位置会迁移**。同一天内的两次同步:
+ *     第 1 批: id=80 '取出车???匙'  第 2 批: id=80 '取出??钥匙'(形态不同)
+ *   已收录的手工条目对后一批**完全不匹配**, 校正表因此只能永远差一轮。
+ *
+ * 做法: 把损坏串的 U+FFFD 连续段当通配符, 在**本仓干净语料**里求唯一解。
+ *   - 为什么是"宽松"段长(1..n+1)而不是等长: 双重编码下 FFFD 个数 ≠ 原字符数,
+ *     等长通配实测 0/3 命中, 宽松通配 3/3 命中(见 _probe_autoderive.js)。
+ *   - 为什么敢自动改: 库内同句式常有 N× 完好副本, "唯一解"等价于人工判定。
+ *     回放历史 30 条人工条目: 复现 29 条, **0 条纠错**, 剩下 1 条是真正有歧义的。
+ *
+ * 安全边界(宁可不改, 不可改错):
+ *   ① 必须**唯一命中**; 0 命中 / 多解一律不动
+ *   ② 损坏串的**字面上下文 ≥ 4 字**, 否则模式太宽泛, 拒绝
+ *   ③ 每条自动修复都打印 from → to, CI 日志可审计
+ *   ④ 未解决的损坏照旧 WARN, 交人工收录
+ * 手工表 KNOWN_CORRUPTIONS 仍在**前面**优先执行, 自动派生只补它没兜住的。
+ */
+const FFFD = '\uFFFD';
+const _reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** 损坏串 -> 通配正则(纯函数): U+FFFD 连续段(长度 n) 展开为 [\s\S]{1,n+1} */
+function brokenToRegExp(s) {
+  const str = String(s == null ? '' : s);
+  let out = '', i = 0, literal = 0;
+  while (i < str.length) {
+    if (str[i] === FFFD) {
+      let n = 0;
+      while (i < str.length && str[i] === FFFD) { n++; i++; }
+      out += '[\\s\\S]{1,' + (n + 1) + '}';
+    } else {
+      let p = i;
+      while (p < str.length && str[p] !== FFFD) p++;
+      out += _reEsc(str.slice(i, p));
+      literal += p - i;
+      i = p;
+    }
+  }
+  return { re: new RegExp('^' + out + '$'), literal: literal };
+}
+
+/** 收集干净语料: 车辆记录里所有**不含** U+FFFD 的字符串(去重, 保持插入序) */
+function collectCleanCorpus(vehicles) {
+  const out = new Set();
+  const push = x => { if (typeof x === 'string' && !x.includes(FFFD)) out.add(x); };
+  const walk = v => {
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (v && typeof v === 'object') { Object.keys(v).forEach(k => walk(v[k])); return; }
+    push(v);
+  };
+  walk(vehicles || []);
+  return out;
+}
+
+/**
+ * 尝试自动派生修复(纯函数, 不改入参)
+ * @param {string} str  含 U+FFFD 的损坏串
+ * @param {Set<string>|Iterable<string>} corpus 干净语料
+ * @returns {string|null} 唯一解返回修复串; 无解/多解/上下文过短一律 null
+ */
+function deriveFix(str, corpus) {
+  const s = String(str == null ? '' : str);
+  if (!s.includes(FFFD)) return null;
+  const { re, literal } = brokenToRegExp(s);
+  if (literal < 4) return null; // 字面上下文太短, 模式过宽, 拒绝猜测
+  let hit = null, n = 0;
+  for (const c of corpus || []) {
+    if (re.test(c)) { n++; if (n > 1) return null; hit = c; }
+  }
+  return n === 1 ? hit : null;
+}
+
+/**
+ * 对车辆数组施加自动派生校正(先建语料, 再逐个求解)
+ * @returns {{applied:Array, unresolved:Array}} applied/unresolved 均含 {path, from, to}
+ */
+function autoCorrectVehicles(vehicles, corpusIn) {
+  const corpus = corpusIn || collectCleanCorpus(vehicles);
+  const applied = [], unresolved = [];
+  const walk = (node, path) => {
+    if (Array.isArray(node)) return node.map((x, i) => walk(x, path + '[' + i + ']'));
+    if (node && typeof node === 'object') {
+      const o = {};
+      for (const k of Object.keys(node)) o[k] = walk(node[k], path ? path + '.' + k : k);
+      return o;
+    }
+    if (typeof node === 'string' && node.includes(FFFD)) {
+      const fixed = deriveFix(node, corpus);
+      if (fixed) { applied.push({ path: path, from: node, to: fixed }); return fixed; }
+      unresolved.push({ path: path, from: node, to: null });
+      return node;
+    }
+    return node;
+  };
+  const out = (vehicles || []).map((v, i) => walk(v, '[' + i + ']'));
+  return { vehicles: out, applied: applied, unresolved: unresolved };
+}
+
 /** 读 web-data 镜像的 vehicles 数组, 并施加已知编码损坏校正 */
 function loadMirrorVehicles() {
   const d = JSON.parse(fs.readFileSync(MIRROR, 'utf8'));
   if (!d || !Array.isArray(d.vehicles)) throw new Error('web-data/vehicle_sync_data.json 缺少 vehicles 数组');
   const rawCount = JSON.stringify(d.vehicles).match(/\uFFFD/g) || [];
+  // ① 手工校正表优先(override)
   d.vehicles = d.vehicles.map(correctVehicle);
+  // ② 自动派生补齐: 语料取自**校正后**的干净字段(含手工表的成果)
+  const auto = autoCorrectVehicles(d.vehicles, collectCleanCorpus(d.vehicles));
+  d.vehicles = auto.vehicles;
+  auto.applied.forEach(a => console.log(`[自动派生] ${a.path}: ${JSON.stringify(a.from)} -> ${JSON.stringify(a.to)}`));
   const afterCount = JSON.stringify(d.vehicles).match(/\uFFFD/g) || [];
-  d.__corruption = { raw: rawCount.length, corrected: rawCount.length - afterCount.length, residual: afterCount.length };
+  d.__corruption = {
+    raw: rawCount.length,
+    corrected: rawCount.length - afterCount.length,
+    residual: afterCount.length,
+    auto: auto.applied.length,
+    unresolved: auto.unresolved.length
+  };
+  if (auto.unresolved.length) {
+    console.error(`[WARN] ${auto.unresolved.length} 处损坏自动派生无唯一解(未修改): ` +
+      auto.unresolved.slice(0, 5).map(u => u.path + ' ' + JSON.stringify(u.from)).join('; '));
+  }
   return d;
 }
 
@@ -238,4 +353,7 @@ function main() {
 // 仅在被直接执行时运行; 被 require(如 audit_media_consistency.js 复用校正表)时不产生写文件副作用
 if (require.main === module) main();
 
-module.exports = { KNOWN_CORRUPTIONS, applyCorrections, correctVehicle, countRepl, loadMirrorVehicles };
+module.exports = {
+  KNOWN_CORRUPTIONS, applyCorrections, correctVehicle, countRepl, loadMirrorVehicles,
+  brokenToRegExp, collectCleanCorpus, deriveFix, autoCorrectVehicles
+};
