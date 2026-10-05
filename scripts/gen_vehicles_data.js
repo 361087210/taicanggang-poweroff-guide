@@ -70,6 +70,8 @@ const KNOWN_CORRUPTIONS = [
   { broken: '铅封\uFFFD\uFFFD内',            fixed: '铅封袋内',         note: '镜像侧新损坏(残留 2×efbfbd, 参照产物完好句)' },
   { broken: '确\uFFFD\uFFFD断电无误',        fixed: '确认断电无误',     note: 'id=15 比亚迪元(元UP) keyContainer[1] (残留 2×efbfbd, 参照同字段完好句)' },
   { broken: '确认断电\uFFFD\uFFFD误后',      fixed: '确认断电无误后',   note: 'id=100 北汽-极狐ARCFOX-T1 keyContainer[0] (残留 2×efbfbd, 参照其它车型同句式)' },
+  { broken: '通电，\uFFFD\uFFFD保四个车窗关闭', fixed: '通电，确保四个车窗关闭', note: 'id=14 比亚迪唐ATTO-8 steps[0] (残留 2×efbfbd, 参照同句式「确保」)' },
+  { broken: '奇瑞艾瑞泽_艾\uFFFD\uFFFD\uFFFD泽5PRO.mp4', fixed: '奇瑞艾瑞泽_艾瑞泽5PRO.mp4', note: 'id=58 奇瑞艾瑞泽(艾瑞泽5PRO) videoPaths[0] (残留 3×efbfbd, 参照 display 名)' },
 ];
 
 /** 对单个字符串应用校正表(纯函数, 无匹配则原样返回) */

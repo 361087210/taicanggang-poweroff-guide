@@ -11,7 +11,7 @@
  *   后续(V10.20.0 全量门禁)又发现 2 处同类残留, 均已补入校正表:
  *     ⑤ id=15 比亚迪元(元UP) keyContainer       "确??断电无误"   -> "确认断电无误"
  *     ⑥ id=100 北汽-极狐ARCFOX-T1 keyContainer  "确认断电??误后" -> "确认断电无误后"
- *   当前状态: 校正表共 23 条, 产物 vehicles_data.js 残留 U+FFFD = 0。
+ *   当前状态: 校正表共 25 条, 产物 vehicles_data.js 残留 U+FFFD = 0。
  *
  *   为什么本套件存在:
  *   损坏源头不可逆(双重编码), 只能按上下文人工确定正确字符。故修复落在
@@ -171,8 +171,16 @@ if (fs.existsSync(mirror)) {
     console.log('  [INFO] 镜像 web-data/vehicle_sync_data.json 已无 U+FFFD——');
     console.log('         说明飞书表已修正, 可考虑清理 gen_vehicles_data.js 的 KNOWN_CORRUPTIONS(需保留至确认稳定)。');
   } else {
-    console.log('  [INFO] 镜像 web-data/vehicle_sync_data.json 仍有 ' + mc + ' 个 U+FFFD(飞书表内容侧, 待用户手工修正)。');
-    console.log('         生成器校正表已兜住这 4 处; 若出现校正表未收录的新损坏, 生成器会 [WARN] 提示。');
+    // 处数按"受影响车型记录条数"实时统计, 避免硬编码数字随校正表扩充而失真
+    const sites = (() => {
+      try {
+        const d = JSON.parse(fs.readFileSync(mirror, 'utf8'));
+        return (d.vehicles || []).filter(v => countUFFFD(JSON.stringify(v)) > 0).length;
+      } catch (e) { return -1; }
+    })();
+    console.log('  [INFO] 镜像 web-data/vehicle_sync_data.json 仍有 ' + mc + ' 个 U+FFFD'
+      + (sites >= 0 ? '(分布在 ' + sites + ' 条车型记录)' : '') + '(飞书表内容侧, 待用户手工修正)。');
+    console.log('         生成器校正表已兜住这些损坏(产物残留 0); 若出现未收录的新损坏, 生成器会 [WARN] 提示。');
   }
 } else {
   console.log('  [INFO] 未找到 web-data/vehicle_sync_data.json, 跳过镜像观测。');
