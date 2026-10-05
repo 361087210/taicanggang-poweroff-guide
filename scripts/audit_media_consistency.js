@@ -157,6 +157,20 @@ function main() {
     }
   }
 
+  // ---- C6 零条熔断(P0 防复发): manifest 车型数为 0 = 同步链被清空, 禁止放行 ----
+  // 兜底第 3 道: 前两道(sync_web_data 写盘前 / gen_vehicles_data 覆盖前)若被绕过,
+  // 这里仍要在 CI 可见处报红。可达链路: audit fail -> tests/test_v1027_audit.js A3a
+  // -> test:audit -> test:all -> ci.yml 红, 无需额外接线。
+  //
+  // ★ 有意不加 --force 逃生口(与前两道不对称, 这是刻意的):
+  //   前两道的 --force 是给"飞书侧确实已清空、人工确认要同步清零"留的操作口子;
+  //   而审计层的职责是如实报告"0 车 = 异常", 若同一个开关能一并绕过最后一道,
+  //   纵深防御就退化了。若将来真需合法清零, 正确做法是同时修正 manifest 并留痕,
+  //   而不是给审计加静音开关。
+  if (!manifest.stats || manifest.stats.vehicleCount === 0) {
+    fails.push('C6 零条熔断: manifest 车型数为 0, 疑似同步链被清空(禁止放行)');
+  }
+
   // ---- 汇总 ----
   warns.forEach(w => console.warn('[WARN] ' + w));
   if (fails.length) {

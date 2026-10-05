@@ -158,6 +158,17 @@ function main() {
     console.error('[WARN] 需人工从飞书表上下文确定正确字符后追加到 KNOWN_CORRUPTIONS, 并请用户在飞书表手工修正。');
   }
 
+  // P0 零条熔断: 镜像 0 车但本地已有数据 -> 绝不覆盖(防 82 车被静默清库)。
+  // 语义对齐 js/09-web-sync.js:319 的运行时侧守卫 —— 生成链此前漏了这一道。
+  // 必须 process.exit(非零) 而非"跳过写入后退出 0": sync-web-data.yml 无 continue-on-error,
+  // 非零退出会让后续 git push 步骤被跳过, 从而根本不产生坏提交; 若只跳过写入,
+  // 第 1 步已写好的 0 车镜像仍会被提交, 而 vehicles_data.js 仍是 82 -> 更隐蔽的坏状态。
+  // 合法场景(飞书侧真的清空)需人工 --force 放行, 沿用 :158 既有约定。
+  if (mirrorVehicles.length === 0 && existing.length > 0 && !process.argv.includes('--force')) {
+    console.error(`[gen_vehicles_data] 拒绝覆盖: 镜像 0 车但本地已有 ${existing.length} 车(疑似飞书凭证有效却取不到 vehicle_sync_data.json)`);
+    process.exit(1);
+  }
+
   if (CHECK) {
     const drifts = diff(existing, mirrorVehicles);
     if (drifts.length) {

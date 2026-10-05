@@ -464,6 +464,20 @@ async function main(){
     return;
   }
 
+  // P0 零条熔断: 即将写入 0 车镜像, 但已有产物 >0 -> 拒绝写盘并非零退出。
+  // 拦在最上游(故障源头): 飞书凭证有效却取不到 vehicle_sync_data.json 时,
+  // :341 会静默降级为 {vehicles:[]}; 若不拦, 下游 gen_vehicles_data 会把
+  // vehicles_data.js 一起清成 0 并推上 main, 而 cron 不跑测试、
+  // deploy-pages.yml 独立触发且不看 CI 结果 -> 坏数据先上线。
+  // 保留原镜像不覆盖; 合法场景(飞书侧真的清空)需人工 --force 放行。
+  const prevMirror = readJsonSafe(path.join(opt.out, 'vehicle_sync_data.json'));
+  const prevCount = (prevMirror && Array.isArray(prevMirror.vehicles)) ? prevMirror.vehicles.length : 0;
+  if ((vehicle.vehicles || []).length === 0 && prevCount > 0 && !process.argv.includes('--force')) {
+    console.error(`[mirror] 拒绝写入: 新镜像 0 车但已有产物 ${prevCount} 车(疑似飞书目录里取不到 vehicle_sync_data.json)`);
+    console.error('[mirror] 已保留原镜像不覆盖; 确认飞书侧真的清空后加 --force 放行。');
+    process.exit(1);
+  }
+
   mkdirp(opt.out);
   writeJson(opt.out, 'vehicle_sync_data.json', vehicle);
   writeJson(opt.out, 'approved_users.web.json', approvedWeb);

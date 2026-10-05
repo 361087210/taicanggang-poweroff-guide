@@ -84,6 +84,7 @@ const TEST_SUITES = [
   'test:vehicle-integrity',
   'test:v10195',
   'test:v1035',
+  'test:zero-guard',
   'test:cross'
 ];
 
