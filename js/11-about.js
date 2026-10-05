@@ -8,6 +8,16 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.20.1',
+    date: '2026-10-06',
+    features: [
+      '照片空态改为「诚实空态」: 删除灰图占位, 详情格/缩略图直接写明「照片缺失·云端与本地均无此文件」, 不再让人误以为还在加载',
+      '查看器大图区分两种缺失: 登记了但取不到(联系组长补传) / 车型本就没登记(需重新拍摄上传)',
+      'web-data 镜像改为按 modified_time 取同名最新副本, 并加写入前回滚熔断(新车数少于旧车数即拒绝覆盖), 防止网页端倒回 82 车',
+      '编码校正表 30 → 35 条, 兜住本轮同步批次新增的 5 处 U+FFFD 损坏'
+    ]
+  },
+  {
     version: 'V10.20.0',
     date: '2026-10-04',
     highlight: '组长重置口令安全加固版: 不再写死固定口令 123456, 改为 12 位随机一次性口令',
@@ -530,7 +540,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.20.0'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.20.1'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

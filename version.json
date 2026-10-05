@@ -1,6 +1,6 @@
 {
-  "version": "10.20.0",
-  "versionCode": 102000,
+  "version": "10.20.1",
+  "versionCode": 102001,
   "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.20.0/tcg_poweroff_v10.20.0.apk",
   "releaseNotes": [
     "V10.20.0 组长重置口令安全加固版。一句话总结: 组长重置组员密码不再写死固定口令 '123456', 改为每次生成 12 位高熵随机一次性口令, 仅弹窗展示一次, 彻底消除「全员同口令」的重大弱口令隐患。",
