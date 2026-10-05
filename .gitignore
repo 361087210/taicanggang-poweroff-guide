@@ -42,3 +42,12 @@ tests/*_results.json
 # === TEMP: 卫生门禁变异测试 ===
 tests/*_probe_mutation.json
 *.hygiene-mutation
+
+# ===== V10.20.1: 测试临时工作目录 =====
+# test_refactor_v1018 / test_v1022_linkkey_p0 / test_v1025_manifest /
+# test_v1011_feedback_sync 会在仓库根写下 _verify_* / _a29_* 临时目录,
+# 跑完自行删除。但在 CI/沙箱里一旦清理被中断(如批量删除被策略拦截),
+# 这些目录就会以 ?? 出现在 git status 里, 污染改动区、有误提交风险。
+# 忽略规则只是兜底; 测试自身的 finally 清理仍为主路径。
+/_verify_*/
+/_a29_*/

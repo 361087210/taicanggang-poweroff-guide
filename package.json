@@ -66,6 +66,7 @@
     "test:two-end-gate": "node tests/test_v1034_two_end_gate.js",
     "test:zero-guard": "node tests/test_v1035_zero_guard.js",
     "test:photo-sync": "node tests/test_v1036_photo_sync.js",
+    "test:honest-empty": "node tests/test_v1037_honest_empty_state.js",
     "check:two-end": "node scripts/check_two_end_sync.js",
     "audit:media": "node scripts/audit_media_consistency.js",
     "sync:photos": "node scripts/sync_photos_to_repo.js",

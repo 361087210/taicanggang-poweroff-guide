@@ -7,11 +7,76 @@
  * =========================================================== */
 function imgLoadError(img){
   img.onerror=null;
-  // V5.3: 先从飞书云端回退拉取,未命中再显示占位图
+  // V5.3: 先从飞书云端回退拉取; V10.20.1: 都没命中则**明确告知文件缺失**(诚实空态)
   const fn=(img.getAttribute('src')||'').split('/').pop();
   imgFromFeishuCloud(img,fn).then(ok=>{
-    if(!ok)img.src=_imgPlaceholder();
+    if(!ok)showPhotoMissing(img);
   });
+}
+
+/**
+ * 【诚实空态】详情页照片格子: 文件真的缺失时替换整个格子, 而不是塞一张灰图。
+ * 为什么要替换整格: 只换 img.src 的话, 格子仍是可点击的、右下角仍挂着
+ * "前脸照片"标签, 视觉上像一个"照片将要出现"的位置 —— 用户无法判断是文件没了
+ * 还是网络慢。实测 22 个车型 / 65 张属于"云端与本地都没有", 必须说清楚。
+ */
+function showPhotoMissing(img){
+  const tile=img&&img.parentElement;
+  if(!tile)return;
+  tile.removeAttribute('onclick');
+  tile.onclick=null;
+  tile.style.cursor='default';
+  tile.className='aspect-square rounded-xl overflow-hidden relative bg-gray-100 border border-dashed border-gray-300 flex flex-col items-center justify-center text-center px-1';
+  tile.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" style="width:26px;height:26px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 3l18 18"/></svg>'+
+    '<div style="font-size:12px;font-weight:600;color:#6b7280;margin-top:4px">照片缺失</div>'+
+    '<div style="font-size:10px;color:#9ca3af;line-height:1.3;margin-top:2px">云端与本地<br>均无此文件</div>';
+}
+
+/**
+ * 【诚实空态】列表卡片缩略图(64x48): 与详情格同理, 不塞灰图。
+ * 缩略图极小, 文案压到「缺失」两字 + 一个划掉的相框图标。
+ */
+function showThumbMissing(img){
+  const box=img&&img.parentElement;
+  if(!box)return;
+  box.classList.remove('overflow-hidden');
+  box.classList.add('border','border-dashed','border-gray-300','flex','items-center','justify-center');
+  box.innerHTML='<div class="flex flex-col items-center justify-center leading-none">'+
+    '<svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.8" style="width:15px;height:15px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 3l18 18"/></svg>'+
+    '<span style="font-size:9px;color:#9ca3af;margin-top:2px">缺失</span></div>';
+}
+
+/** XML 文本转义(占位图内联 SVG 用, 防止车名里的 & < > 破坏 SVG) */
+function _xmlEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/**
+ * 【诚实空态】照片缺失占位(查看器大图用)。
+ * V10.20.1: 旧版画的是"带车名的照片相框"装饰图, 看起来像一张"待加载的照片",
+ * 用户无法判断是**文件真的不存在**还是网络慢。现改为明确写出缺失事实。
+ *
+ * 两种缺失必须区分文案(处理方式完全不同):
+ *  - reason='missing' 登记了文件名, 但云端与本地都取不到 → 联系组长补传
+ *  - reason='never'   该车型压根没登记过这张 → 需要重新拍摄并上传
+ * @param {object} vehicle 车辆对象
+ * @param {string} label   部位标签
+ * @param {string} reason  'missing' | 'never'
+ */
+function _photoViewerMissingSvg(vehicle,label,reason){
+  const title=reason==='never'?'该车型暂未上传照片':'照片文件缺失';
+  const hint=reason==='never'?'车型数据中未登记此照片':'云端与本地均无此文件, 请联系组长补传';
+  // 注意: 只在这里转义一次。name 若先 _xmlEsc 再拼进 sub 二次转义,
+  // "&" 会变成 "&amp;amp;", 车名里的 < > 会显示成字面量 &lt;。
+  const name=(vehicle&&vehicle.display)?vehicle.display:'';
+  const sub=_xmlEsc([name,label].filter(Boolean).join(' · '));
+  return 'data:image/svg+xml;utf8,'+encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">'+
+    '<rect width="400" height="300" fill="#1a1a2e"/>'+
+    '<g fill="none" stroke="#4b5563" stroke-width="2" stroke-linecap="round">'+
+    '<rect x="152" y="92" width="96" height="72" rx="8"/><path d="M152 92l96 72M248 92l-96 72"/></g>'+
+    '<text x="200" y="196" text-anchor="middle" fill="#d1d5db" font-size="17" font-family="sans-serif">'+title+'</text>'+
+    '<text x="200" y="222" text-anchor="middle" fill="#6b7280" font-size="12" font-family="sans-serif">'+hint+'</text>'+
+    (sub?'<text x="200" y="244" text-anchor="middle" fill="#4b5563" font-size="12" font-family="sans-serif">'+sub+'</text>':'')+
+    '</svg>');
 }
 
 function openPhotoViewer(index){
@@ -28,16 +93,17 @@ function openPhotoViewer(index){
       const fn=(v.photoPaths[index]||'').split('/').pop();
       _tryHdUpgrade(img,fn);
     };
-    // 运行时加载失败兜底: 先试飞书云端回退,再显示带车名的占位图而非破图图标
+    // 运行时加载失败兜底: 先试飞书云端回退, 仍失败则明确告知"文件缺失"
     img.onerror=()=>{
       img.onerror=null;
       const fn=(v.photoPaths[index]||'').split('/').pop();
       imgFromFeishuCloud(img,fn).then(ok=>{
-        if(!ok)img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#1a1a2e"/><text x="200" y="150" text-anchor="middle" fill="#666" font-size="20" font-family="sans-serif">${v?v.display:''} - ${labels[index]||'照片'}</text><rect x="50" y="50" width="300" height="200" fill="none" stroke="#444" stroke-width="2" rx="10"/><circle cx="120" cy="120" r="15" fill="#333"/><path d="M50 250 L150 150 L250 200 L350 100 L350 250 Z" fill="#222"/></svg>`);
+        if(!ok)img.src=_photoViewerMissingSvg(v,labels[index],'missing');
       });
     };
   }else{
-    img.src='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#1a1a2e"/><text x="200" y="150" text-anchor="middle" fill="#666" font-size="20" font-family="sans-serif">${v?v.display:''} - ${labels[index]||'照片'}</text><rect x="50" y="50" width="300" height="200" fill="none" stroke="#444" stroke-width="2" rx="10"/><circle cx="120" cy="120" r="15" fill="#333"/><path d="M50 250 L150 150 L250 200 L350 100 L350 250 Z" fill="#222"/></svg>`);
+    // 该车型根本没登记这一张(与"登记了但文件丢了"是两回事, 文案必须区分)
+    img.src=_photoViewerMissingSvg(v,labels[index],'never');
   }
   _pvReset();
   _pvBindGestures();
@@ -561,10 +627,11 @@ let _feishuVideoCache={name:null,url:null};
  */
 let _feishuImgCache={}; // fileName -> objectURL
 
-/** 通用"照片暂缺"占位图 */
-function _imgPlaceholder(){
-  return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect width="200" height="150" fill="#f3f4f6"/><text x="100" y="80" text-anchor="middle" fill="#9ca3af" font-size="14" font-family="sans-serif">照片暂缺</text></svg>');
-}
+/* V10.20.1: 已删除 _imgPlaceholder()(通用"照片暂缺"灰图)。
+ * 删除理由: 灰图无法区分"文件真的没了"和"网络慢/正在加载", 而这批照片
+ * (22 个车型 / 65 张)实测是云端与本地都没有 —— 用灰图等于骗用户。
+ * 现统一走 showPhotoMissing()(详情格)与 showThumbMissing()(列表缩略图)。
+ * 若将来有人想加回灰图, 请先改测试 tests/test_v1037_honest_empty_state.js。 */
 
 /**
  * 从飞书云端拉取单张照片并注入img元素
@@ -588,12 +655,12 @@ async function imgFromFeishuCloud(img,fileName){
   }
 }
 
-/** 列表缩略图加载失败: 先试飞书云端,未命中再显示占位 */
+/** 列表缩略图加载失败: 先试飞书云端,未命中则显示"缺失"(诚实空态, 不再塞灰图) */
 function thumbImgError(img){
   img.onerror=null;
   const fn=(img.getAttribute('src')||'').split('/').pop();
   imgFromFeishuCloud(img,fn).then(ok=>{
-    if(!ok)img.src=_imgPlaceholder();
+    if(!ok)showThumbMissing(img);
   });
 }
 
