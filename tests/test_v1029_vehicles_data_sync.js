@@ -80,6 +80,42 @@ const rCheck = runNode(['scripts/gen_vehicles_data.js', '--check']);
 if (rCheck.status === 0) check('S3a gen_vehicles_data.js --check 通过(vehicles_data 与 web-data 一致)', true);
 else check('S3a gen_vehicles_data.js --check 通过(vehicles_data 与 web-data 一致)', false, rCheck.all.slice(0, 300));
 
+/* ---------- S4 正文漂移必须被检出(2026-10-06 真实事故回归) ----------
+ * 事故: 生成器 diff() 只比"车辆数 + display 名 + 视频名集合", 不比正文。
+ *   于是只改 steps/keyFrame/keyContainer 的差异被判为"无变化、跳过写入",
+ *   编码损坏校正表加了却永远落不进 vehicles_data.js —— 产物长期残留 U+FFFD,
+ *   要等别的漂移顺带触发才落地。
+ * 本组用变异法钉死: 只改正文一个字, --check 必须转红并报"车型内容漂移"。 */
+section('S4 正文漂移检出(变异法, 防"摘要相同就跳过"回归)');
+check('S4a 生成器实现稳定序列化 stableJSON', /function\s+stableJSON/.test(genJs));
+check('S4b diff() 内使用 stableJSON 做逐车全字段比对', /stableJSON\(e\)\s*!==\s*stableJSON\(m\)/.test(genJs));
+check('S4c 漂移明细含"车型内容漂移"字样(便于定位)', /车型内容漂移/.test(genJs));
+
+const VDATA = path.join(ROOT, 'vehicles_data.js');
+const origVdata = fs.readFileSync(VDATA, 'utf8');
+// 只改正文: 把第一处"确认断电无误后"改一个字(不新增 U+FFFD, 纯内容差异)
+const NEEDLE = '确认断电无误后';
+const at = origVdata.indexOf(NEEDLE);
+if (at < 0) {
+  check('S4d 变异基线: vehicles_data.js 存在可作变异锚点的正文', false, '未找到 ' + NEEDLE);
+} else {
+  const mutated = origVdata.slice(0, at) + '确认断电容错后' + origVdata.slice(at + NEEDLE.length);
+  let red = false, why = '';
+  try {
+    fs.writeFileSync(VDATA, mutated, 'utf8');
+    const r = runNode(['scripts/gen_vehicles_data.js', '--check']);
+    red = (r.status !== 0);
+    why = r.all.slice(0, 200);
+  } finally {
+    fs.writeFileSync(VDATA, origVdata, 'utf8');   // 必须还原, 否则污染后续套件
+  }
+  check('S4d 仅正文一字之差 → --check 必须转红(不是"无变化")', red, red ? '' : '仍判为通过: ' + why);
+  check('S4e 转红原因明确指向内容漂移', /内容漂移/.test(why), why.slice(0, 120));
+  // 还原校验: 还原后必须重新转绿, 否则说明变异副作用未清干净
+  const rBack = runNode(['scripts/gen_vehicles_data.js', '--check']);
+  check('S4f 变异还原后 --check 重新转绿(无残留污染)', rBack.status === 0, rBack.all.slice(0, 200));
+}
+
 console.log('\n==============================================================');
 console.log('vehicles_data 对账测试汇总: ' + pass + ' passed, ' + fail + ' failed');
 if (failures.length) { console.log('失败项: ' + failures.join(' / ')); process.exit(1); }

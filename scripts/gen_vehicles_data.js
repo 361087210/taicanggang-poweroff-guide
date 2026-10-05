@@ -72,6 +72,10 @@ const KNOWN_CORRUPTIONS = [
   { broken: '确认断电\uFFFD\uFFFD误后',      fixed: '确认断电无误后',   note: 'id=100 北汽-极狐ARCFOX-T1 keyContainer[0] (残留 2×efbfbd, 参照其它车型同句式)' },
   { broken: '通电，\uFFFD\uFFFD保四个车窗关闭', fixed: '通电，确保四个车窗关闭', note: 'id=14 比亚迪唐ATTO-8 steps[0] (残留 2×efbfbd, 参照同句式「确保」)' },
   { broken: '奇瑞艾瑞泽_艾\uFFFD\uFFFD\uFFFD泽5PRO.mp4', fixed: '奇瑞艾瑞泽_艾瑞泽5PRO.mp4', note: 'id=58 奇瑞艾瑞泽(艾瑞泽5PRO) videoPaths[0] (残留 3×efbfbd, 参照 display 名)' },
+  // ↓ 2026-10-06 新同步批次带来: 飞书源表持续产出新损坏的实证(校正表只能兜症状)
+  { broken: '确认\uFFFD\uFFFD\uFFFD电无误后', fixed: '确认断电无误后', note: 'id=15 比亚迪元(元UP) keyContainer[1] (残留 3×efbfbd, 参照 94× 同句式)' },
+  { broken: '确认断\uFFFD\uFFFD无误后',     fixed: '确认断电无误后', note: 'id=43 东风小康(MPVC37) keyFrame[1] (残留 2×efbfbd, 参照 94× 同句式)' },
+  { broken: '封好铅封\uFFFD\uFFFD\uFFFD',   fixed: '封好铅封。',     note: 'id=92 北汽BAIC-BJ30e keyFrame[2] (残留 3×efbfbd, 参照 94× 同句式句尾句号)' },
 ];
 
 /** 对单个字符串应用校正表(纯函数, 无匹配则原样返回) */
@@ -118,9 +122,36 @@ function extractExistingVehicles() {
   try { return new Function('return (' + src.slice(s, e + 1) + ')')(); } catch (err) { return null; }
 }
 
+/** 稳定序列化(忽略键序): 用于逐车全字段内容比对 */
+function stableJSON(v) {
+  return JSON.stringify(v, (k, val) => {
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      return Object.keys(val).sort().reduce((o, k2) => { o[k2] = val[k2]; return o; }, {});
+    }
+    return val;
+  });
+}
+
 /** 归一化对比(忽略键序): 返回漂移明细数组 */
 function diff(vehicles, mirrorVehicles) {
   const drifts = [];
+
+  // 全字段内容比对(2026-10-06 补):
+  //   此前只比"车辆数 + display 名 + 视频名集合", 导致**纯文本字段**的差异被判为"无变化"。
+  //   后果: 编码损坏校正(改的是 steps/keyFrame/keyContainer 正文)永远写不进产物,
+  //   要等别的漂移顺带触发才落地 —— vehicles_data.js 因此长期残留 U+FFFD。
+  //   幂等的正确语义是"内容相同才跳过", 不是"摘要相同就跳过"。
+  const existingById = {};
+  (vehicles || []).forEach(v => { if (v && v.id != null) existingById[v.id] = v; });
+  const contentDrifts = [];
+  for (const m of mirrorVehicles) {
+    const e = existingById[m.id];
+    if (!e) { contentDrifts.push('id=' + m.id + '(仅 web-data)'); continue; }
+    if (stableJSON(e) !== stableJSON(m)) contentDrifts.push('id=' + m.id);
+  }
+  if (contentDrifts.length) {
+    drifts.push(`车型内容漂移 ${contentDrifts.length} 车: ${contentDrifts.slice(0, 8).join(', ')}${contentDrifts.length > 8 ? ' …' : ''}`);
+  }
   if (vehicles.length !== mirrorVehicles.length) {
     drifts.push(`车型数量漂移: vehicles_data.js=${vehicles.length} web-data=${mirrorVehicles.length}`);
   }
