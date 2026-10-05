@@ -65,8 +65,10 @@
     "test:v1035": "node tests/test_v1035_reset_member_pass.js",
     "test:two-end-gate": "node tests/test_v1034_two_end_gate.js",
     "test:zero-guard": "node tests/test_v1035_zero_guard.js",
+    "test:photo-sync": "node tests/test_v1036_photo_sync.js",
     "check:two-end": "node scripts/check_two_end_sync.js",
     "audit:media": "node scripts/audit_media_consistency.js",
+    "sync:photos": "node scripts/sync_photos_to_repo.js",
     "sync:web": "node scripts/sync_web_data.js --out web-data",
     "scan:secrets": "node scripts/secret-scan.js",
     "test:ci-coverage": "node scripts/check_ci_coverage.js"

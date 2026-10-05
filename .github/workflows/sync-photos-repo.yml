@@ -1,0 +1,47 @@
+name: Sync Photos to Repo
+
+on:
+  schedule:
+    # 每天 1 次(UTC 02:30), 与视频同步(02:00)错开 30 分钟, 避免争抢飞书 5 QPS
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Sync photos from Feishu to vehicle_images/
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+          # 可选: Release media-photos 异地归档。缺省则只回仓库, 不失败
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # --limit 60: 单次上限, 控飞书 QPS 与 job 时长; 剩余次日继续(幂等)
+        run: node scripts/sync_photos_to_repo.js --limit 60
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add vehicle_images docs/photo_sync_report.json
+          if git diff --cached --quiet; then
+            echo "无新照片, 跳过提交"
+          else
+            git commit -m "chore: 回流飞书车辆照片到 vehicle_images/ (media-photos)"
+            git push
+          fi
