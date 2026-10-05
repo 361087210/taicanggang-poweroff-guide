@@ -28,7 +28,9 @@
 
 - 新增专项测试 `tests/test_v1035_reset_member_pass.js`：**34 条断言**全覆盖（静态防回退 16 条 + 运行时行为 15 条 + 安全边界 3 条），已登记进 `TEST_SUITES` 并接入 CI 覆盖校验。
 - 清理视频直链映射表 `MEDIA_DIRECT_ASSETS` 中 3 个无任何车型引用的死键（`user_v74_v1_bba4db96.mp4` / `user_v74_v1_2d41bb72.mp4` / `user_v22_v2_7a155908.mp4`），映射表 52 → 49 条，与「全部引用全覆盖」断言对齐。
-- `scripts/gen_vehicles_data.js` 校正表新增 2 条（`id=15 比亚迪元(元UP)`、`id=100 北汽-极狐ARCFOX-T1` 的 `keyContainer` 句），重生成 `vehicles_data.js` 后消除镜像侧残留的 4 个 U+FFFD，`vehicles_data.js` 现为 0 个替换字符。
+- `scripts/gen_vehicles_data.js` 校正表新增 **5 条**（`id=14 比亚迪唐ATTO-8` `steps`、`id=58 奇瑞艾瑞泽(艾瑞泽5PRO)` `videoPaths`、`id=15 比亚迪元(元UP)` / `id=43 东风小康(MPVC37)` / `id=92 北汽BAIC-BJ30e` 的 `keyFrame`/`keyContainer` 句），重生成后 `vehicles_data.js` 残留 U+FFFD = 0。
+- 修复生成器幂等缺陷：`diff()` 原先只比「车辆数 / display 名 / 视频名集合」，**正文不参与比对** → 编码校正（改的全是正文）被判"无变化"而**永远写不进产物**。现补 `stableJSON()` 逐车全字段比对，幂等语义改为"内容相同才跳过"；新增 S4 变异法回归断言（改一字必须转红、还原必须转绿）。
+- 新增/补强 `test:registration` C3、`test:video` S1d–S1f：映射表键数与车型引用严格一致（49 = 49），并锁定两条结构约束（末项必须是带尾逗号的真实键值行；注释内不得出现对象终止符字面量，否则会被非贪婪解析正则截断）。
 - 版本升号 10.19.5 → 10.20.0（七源对齐：`config.xml` / `version.json` / `release/version.json` / `js/00-bootstrap.js` / `sw.js` / `demo.html` / `js/11-about.js` 版本历史与兜底字面量）。
 
 ## 升级指引

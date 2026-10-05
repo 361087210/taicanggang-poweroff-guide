@@ -99,10 +99,11 @@ const withVideo = VEHICLES.filter(v => v.videoPaths && v.videoPaths.length);
 const refs = [];
 withVideo.forEach(v => v.videoPaths.forEach(p => refs.push({ display: v.display, file: p.split('/').pop() })));
 check('S1a 存在带视频的车型', withVideo.length > 0, 'count=' + withVideo.length);
-/* P1 数据一致性(2026-10-02): 组长新上传 长安深蓝(G318)_v2.mp4 等 3 个视频均已配
- * Release 直链, 但多维表格车辆数据仍引用旧 user_v 命名 user_v22_v2_7a155908.mp4
- * (无直链、无别名 → 网页端该路视频走"待补充"诚实空态)。数据侧接入新名后本清单应清空。 */
-const PENDING_VIDEOS = ['user_v22_v2_7a155908.mp4'];
+/* v10.20.0: 清单已清空 —— 三个 user_v* legacy 死键已从 MEDIA_DIRECT_ASSETS 移除,
+ * vehicles_data.js 已全部接入新 naming(直链资产名), 故不再需要"待补"豁免。
+ * 保留豁免会让它变成永久盲区: 任何漏做的接入都会被静默放过。
+ * 若将来确有"直链已配、表格未接入"的新视频, 应连同上面对应的 KNOWN_UNWIRED 一并登记。 */
+const PENDING_VIDEOS = [];
 const orphan = refs.filter(r => !MAP[r.file] && !PENDING_VIDEOS.includes(r.file));
 check('S1b 每个车型视频引用都能精确命中官方资产(除已知待补)', orphan.length === 0,
   orphan.length ? orphan.slice(0, 3).map(o => o.file).join(', ') : '');
@@ -113,6 +114,24 @@ const KNOWN_UNWIRED = ['长安深蓝(G318)_v2.mp4', '奇瑞捷途JETOUR(G700-GAI
 const unusedKey = Object.keys(MAP).filter(k => !refs.some(r => r.file === k) && !KNOWN_UNWIRED.includes(k));
 check('S1d 映射表无未被任何车型引用的孤儿键(除组长新上传待接入)', unusedKey.length === 0, unusedKey.slice(0, 3).join(', '));
 console.log('  (车型引用 ' + refs.length + ' 条 / 官方资产 ' + Object.keys(MAP).length + ' 个)');
+
+/* S1e/S1f —— v10.20.0 追加: 映射表"可被 Machine 安全改写"的两条结构约束。
+ * 事故 1: 清理死键时把注释放到对象末尾, 而视频同步脚本按"最后一行 + 右花括号 +
+ *         分号"定位并在其后插入新映射 -> 逗号会被插到注释后面, 新映射被注释掉。
+ * 事故 2: 注释里写了"换行 + 右花括号 + 分号"的字面组合, 被多处非贪婪解析正则提前
+ *         命中 -> 对象被截断, 键数从 49 悄悄变 48, CRC1/C3 双双转红且极难定位。 */
+const bootstrapSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', '00-bootstrap.js'), 'utf8');
+const mapBlockEnd = bootstrapSrc.lastIndexOf('\n};');
+const mapTail = mapBlockEnd > 0 ? bootstrapSrc.slice(0, mapBlockEnd).split('\n').pop().trim() : '';
+check('S1e 映射表最后一项是带尾逗号的真实键值行(注释不得结尾)',
+  /^'[^']+'\s*:\s*'[^']+',$/.test(mapTail), '实际末行: ' + JSON.stringify(mapTail));
+// 同一表被不同严格度的正则解读必须得到相同键数(注释内含终止符会在此暴露)
+const KEYS_LOOSE = 'const MEDIA_DIRECT_ASSETS={';
+const li = bootstrapSrc.indexOf(KEYS_LOOSE);
+const looseBlock = li >= 0 ? bootstrapSrc.slice(li, bootstrapSrc.indexOf('};', li)) : '';
+const looseKeys = [...looseBlock.matchAll(/'([^']+)':/g)].map(x => x[1]).length;
+check('S1f 宽松/严格正则解读映射表得到相同键数(防注释内终止符截断)',
+  looseKeys === Object.keys(MAP).length, `宽松=${looseKeys} 严格=${Object.keys(MAP).length}`);
 
 /* =========================================================
  * S2 封面: 未播放态必须有可见封面, 不得黑屏 (Bug③.1)

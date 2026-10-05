@@ -1575,10 +1575,17 @@ const MEDIA_DIRECT_ASSETS={
   '零跑零跑_零跑B10.mp4':'tcgv_e6e7f70cf0.mp4',
   '长安深蓝(G318)_v2.mp4':'tcgv_ac4b41ffc4.mp4',
   '奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4':'tcgv_e3af4b5357.mp4',
+  // user_v* legacy 死键已于 v10.20.0 移除(见 docs/RELEASE_V10.20.0.md):
+  //   user_v74_v1_bba4db96.mp4 / user_v74_v1_2d41bb72.mp4 / user_v22_v2_7a155908.mp4
+  // 三者均已被引擎中的直链资产名取代, 保留会让 test:video S1d(孤儿键) 与
+  // test:registration C1(键数=49) 长期双红。映射表 52 -> 49 条, 与「全部引用全覆盖」对齐。
+  // ⚠️ 两条维护约束(违反都会静默损坏本表):
+  //   ① 对象最后一项必须是"带尾逗号的真实键值行" —— 视频同步脚本按"最后一个
+  //      换行 + 右花括号 + 分号"定位并在其后追加新映射, 末尾若是注释行会把逗号
+  //      插到注释后面, 新映射随之被注释掉。
+  //   ② 注释内禁止出现"右花括号紧跟分号"的字面组合 —— 多处解析器用非贪婪正则
+  //      截取本对象, 一旦在注释里提前命中就会把表截断(键数悄悄变少)。
   '长安启源(EADO_PLUS)_v2_4ffd5489.mp4':'tcgv_ad959cdfbe.mp4',
-  'user_v74_v1_bba4db96.mp4':'tcgv_7641611f88.mp4',
-  'user_v74_v1_2d41bb72.mp4':'tcgv_1edd4aca08.mp4',
-  'user_v22_v2_7a155908.mp4':'tcgv_ac4b41ffc4_2.mp4',
 };
 
 /**
