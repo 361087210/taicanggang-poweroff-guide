@@ -145,6 +145,51 @@ if (fs.existsSync(IMAGES_DIR)) {
   console.log('  [INFO] 未找到 vehicle_images/, 跳过观测');
 }
 
+/* ---------- S7 隐私红线: 只回流"被车型引用"的照片(2026-10-06 实战事故回归) ----------
+ * 事故: 飞书 vehicle_images/ 是 App 端**通用上传落点**, 实测 201 张里混有与车型
+ *   无关的私人废片(运输拖车框架编号照 / 碎屏手机照 / 手机换屏订单截图 / 晚霞风景照)
+ *   以及 6 组"内容字节完全相同"的重复转存。
+ *   初版脚本按"云盘有、仓库无"无脑回流 → cron 会把这些私人照片自动提交到
+ *   **公开的 GitHub Pages 仓库**, 造成隐私泄露, 也使仓库体积无意义膨胀。
+ * 防御: 默认以 vehicles_data.js 的 photoPaths 为白名单; 无白名单则拒绝执行;
+ *   取消白名单需显式 --all 并打印警告; workflow 禁止调用 --all。 */
+section('S7 隐私红线: 白名单回流(防私人废片进公开仓库)');
+check('S7a 存在按引用过滤的纯函数 selectReferencedMissingPhotos',
+  !!m && typeof m.selectReferencedMissingPhotos === 'function');
+check('S7b 存在 photoPaths 解析函数 loadReferencedPhotoNames',
+  !!m && typeof m.loadReferencedPhotoNames === 'function');
+check('S7c main() 默认走白名单分支(非 detectMissingPhotos)', /selectReferencedMissingPhotos\(\[\.\.\.referenced\]/.test(src));
+check('S7d 取不到白名单时拒绝执行(而非退化为全量)', /无法确定"哪些照片被车型引用"; 拒绝在无白名单情况下回流/.test(src));
+check('S7e 取消白名单需显式 --all', /--all/.test(src) && /allMode/.test(src));
+
+if (m) {
+  const referenced = ['车型A_p1_aaa.jpeg', '车型B_p2_bbb.jpeg'];
+  const cloud = ['车型A_p1_aaa.jpeg', '车型B_p2_bbb.jpeg', 'user_v74_p1_db73e1c3.jpeg', '碎屏手机.jpeg', '晚霞.jpeg'];
+  const local = ['车型A_p1_aaa.jpeg'];
+  const got = m.selectReferencedMissingPhotos(referenced, cloud, local);
+  check('S7f 只返回"被引用+云盘有+本地无"的文件',
+    JSON.stringify(got) === JSON.stringify(['车型B_p2_bbb.jpeg']), JSON.stringify(got));
+  check('S7g 未被任何车型引用的云盘文件一律不回流(私人废片防线)',
+    !got.includes('user_v74_p1_db73e1c3.jpeg') && !got.includes('碎屏手机.jpeg') && !got.includes('晚霞.jpeg'));
+  check('S7h 云盘也没有的不进候选(省飞书 QPS, 不反复 404)',
+    m.selectReferencedMissingPhotos(['不存在的车_p1_x.jpeg'], cloud, []).length === 0);
+  check('S7i 本地已有即便被引用也不重复回流(幂等)',
+    m.selectReferencedMissingPhotos(referenced, cloud, cloud).length === 0);
+  check('S7j 结果去重(引用了两次同一张只回流一次)',
+    m.selectReferencedMissingPhotos(['a.jpeg', 'a.jpeg'], ['a.jpeg'], []).length === 1);
+  check('S7k loadReferencedPhotoNames 能从真实 vehicles_data.js 解析出非空白名单',
+    (() => {
+      try {
+        const s = fs.readFileSync(path.join(ROOT, 'vehicles_data.js'), 'utf8');
+        const set = m.loadReferencedPhotoNames(s);
+        return set && set.size > 0 && m.loadReferencedPhotoNames('garbage') === null;
+      } catch (e) { return false; }
+    })());
+}
+check('S7l workflow 不带 --all(公开仓库不得全量回流)',
+  fs.existsSync(WF) && !/sync_photos_to_repo\.js[^\n]*--all/.test(fs.readFileSync(WF, 'utf8')));
+check('S7m workflow 注释里记录了禁用 --all 的理由', /严禁加 --all/.test(fs.readFileSync(WF, 'utf8')));
+
 /* ---------- 汇总 ---------- */
 console.log('\n' + '='.repeat(60));
 console.log('照片回流测试汇总: ' + pass + ' passed, ' + fail + ' failed');

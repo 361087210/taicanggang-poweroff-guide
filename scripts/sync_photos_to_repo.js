@@ -13,8 +13,9 @@
  * 五阶段:
  *   ① 定位飞书 APP数据备份/vehicle_images/ (回退: 根目录 vehicle_images)
  *   ② 列出全部图片(.jpeg/.jpg/.png/.webp/.gif)
- *   ③ 检测缺失: 本地 vehicle_images/ 无同名文件 → 需回流
- *      (同名视为已有, 保证幂等: 重复执行零副作用)
+ *   ③ 检测待回流: **只取被 vehicles_data.js 的 photoPaths 引用、云盘有、本地无**的文件
+ *      —— 飞书该目录是 App 端通用上传落点, 混有私人废片与内容重复件(实测 201 张
+ *      里 6 组重复); 不按引用过滤会让 cron 把私人照片提交进公开仓库。
  *   ④ 下载 → SHA-256 → 写入 vehicle_images/<原名>
  *   ⑤ 归档: 上传到 GitHub Release media-photos tag; 写 docs/photo_sync_report.json
  *      (含 feishuToken + sha256, 即"索引清单", 供后续迁对象存储/对账复用)
@@ -24,6 +25,7 @@
  *   node scripts/sync_photos_to_repo.js --dry-run    # 只报告不下载不写盘
  *   node scripts/sync_photos_to_repo.js --no-release # 只回仓库, 不传 Release
  *   node scripts/sync_photos_to_repo.js --limit 20   # 单次最多处理 N 张(控 QPS/时长)
+ *   node scripts/sync_photos_to_repo.js --all        # ⚠️ 关闭引用过滤(人工排查用, 严禁进 cron)
  *
  * 凭据(零硬编码, 全走 env/secrets):
  *   FEISHU_APP_ID / FEISHU_APP_SECRET / FEISHU_FOLDER_TOKEN
@@ -54,7 +56,7 @@ function filterImageFiles(files) {
   return (files || []).filter(f => f && f.type === 'file' && IMG_EXT.test(f.name || ''));
 }
 
-/** 检测缺失: 在飞书有、本地没有的图片名(按名字精确比对, 同名即视为已回流) */
+/** 检测"云盘有、本地无"的图片名(仅按名字比对, 不做引用过滤; 供 --all 兜底模式使用) */
 function detectMissingPhotos(feishuNames, localNames) {
   const local = new Set(localNames || []);
   const seen = new Set();
@@ -65,6 +67,47 @@ function detectMissingPhotos(feishuNames, localNames) {
     missing.push(n);
   }
   return missing;
+}
+
+/**
+ * 【默认·唯一安全模式】只回流"被车型引用 + 云盘确实有 + 本地没有"的照片。
+ *
+ * 为什么必须按引用过滤(2026-10-06 实战教训):
+ *   飞书 vehicle_images/ 是 App 端的**通用上传落点**, 里面混着与车型无关的私人废片
+ *   (运输拖车框架编号照、碎屏手机照、手机换屏订单截图、晚霞风景照…), 还有大量
+ *   同一内容重复转存(实测 201 张里 6 组重复)。若按"云盘有仓库无"无脑回流, cron 会
+ *   把这些私人照片自动提交到**公开的 GitHub Pages 仓库**, 造成隐私泄露。
+ *   而 vehicles_data.js 的 photoPaths 是"哪些照片属于哪个车型"的唯一权威表达,
+ *   不在其中的文件对产品毫无价值 —— 因此以它为准。
+ */
+function selectReferencedMissingPhotos(referencedNames, cloudNames, localNames) {
+  const cloud = new Set(cloudNames || []);
+  const local = new Set(localNames || []);
+  const out = [];
+  for (const n of referencedNames || []) {
+    if (cloud.has(n) && !local.has(n)) out.push(n);   // 云盘没有的连试都不用试(省 QPS)
+  }
+  return Array.from(new Set(out));
+}
+
+/** 从 vehicles_data.js 提取全部车型引用的照片文件名(权威清单) */
+function loadReferencedPhotoNames(src) {
+  const m = String(src || '').match(/(?:const\s+VEHICLES\s*=|window\.VEHICLES\s*=)/);
+  if (!m) return null;
+  const s = String(src).indexOf('[', m.index);
+  const e = String(src).lastIndexOf(']');
+  if (s < 0 || e <= s) return null;
+  let arr;
+  try { arr = new Function('return (' + String(src).slice(s, e + 1) + ')')(); } catch (err) { return null; }
+  if (!Array.isArray(arr)) return null;
+  const set = new Set();
+  for (const v of arr) {
+    for (const p of (v && v.photoPaths) || []) {
+      const n = String(p).split('/').pop();
+      if (n && IMG_EXT.test(n)) set.add(n);
+    }
+  }
+  return set;
 }
 
 /** 计算缓冲区 SHA-256(索引清单用, 后续迁对象存储可做内容寻址去重) */
@@ -167,6 +210,7 @@ function ensureRelease(ghToken) {
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const noRelease = process.argv.includes('--no-release');
+  const allMode = process.argv.includes('--all');
   const limitArg = process.argv.indexOf('--limit');
   const limit = limitArg >= 0 ? parseInt(process.argv[limitArg + 1], 10) : 0;
 
@@ -196,8 +240,32 @@ async function main() {
   const files = filterImageFiles(await feishuListFiles(token, photosFolder.token));
   console.log(`[sync-photos] 飞书 vehicle_images/ 共 ${files.length} 个图片`);
 
-  // ③ 检测缺失
-  let missing = detectMissingPhotos(files.map(f => f.name), localNames);
+  // ③ 检测待回流: 默认**只回流被车型引用的**(防私人废片被 cron 提交到公开仓库)
+  const cloudNames = files.map(f => f.name);
+  let missing;
+  if (allMode) {
+    console.warn('[sync-photos] ⚠️ --all: 已关闭"仅被引用"过滤, 会把云盘里所有本地没有的图片(含私人废片/重复件)拉进公开仓库。');
+    console.warn('[sync-photos] ⚠️ 该模式仅供人工排查使用, 严禁接进 cron。');
+    missing = detectMissingPhotos(cloudNames, localNames);
+  } else {
+    const refPath = path.join(ROOT, 'vehicles_data.js');
+    if (!fs.existsSync(refPath)) {
+      console.error('[sync-photos] 找不到 vehicles_data.js, 无法确定"哪些照片被车型引用"; 拒绝在无白名单情况下回流。');
+      console.error('[sync-photos] 如确需全量拉取(不建议), 显式加 --all。');
+      process.exit(1);
+    }
+    const referenced = loadReferencedPhotoNames(fs.readFileSync(refPath, 'utf8'));
+    if (!referenced) {
+      console.error('[sync-photos] 无法从 vehicles_data.js 解析 photoPaths; 拒绝在无白名单情况下回流。');
+      process.exit(1);
+    }
+    missing = selectReferencedMissingPhotos([...referenced], cloudNames, localNames);
+    const cloudOnly = detectMissingPhotos(cloudNames, localNames).length;
+    console.log(`[sync-photos] 车型引用照片 ${referenced.size} 个 / 其中云盘有且本地缺 ${missing.length} 个`);
+    if (cloudOnly > missing.length) {
+      console.log(`[sync-photos] 另跳过 ${cloudOnly - missing.length} 个"云盘有但无任何车型引用"的文件(私人废片/重复件, 不进公开仓库)。`);
+    }
+  }
   if (limit > 0 && missing.length > limit) {
     console.log(`[sync-photos] --limit ${limit}: 仅处理前 ${limit} 张(剩余下次 cron 继续)`);
     missing = missing.slice(0, limit);
@@ -270,4 +338,8 @@ if (require.main === module) {
   main().catch(e => { console.error('[sync-photos] 失败:', e && e.message); process.exit(1); });
 }
 
-module.exports = { filterImageFiles, detectMissingPhotos, sha256Of, mergeReport, IMG_EXT, MIN_BYTES, MEDIA_TAG };
+module.exports = {
+  filterImageFiles, detectMissingPhotos, sha256Of, mergeReport, IMG_EXT, MIN_BYTES, MEDIA_TAG,
+  // 默认安全路径(按车型引用过滤) —— 新增, 供测试与后续复用
+  selectReferencedMissingPhotos, loadReferencedPhotoNames,
+};

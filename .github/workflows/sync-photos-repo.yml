@@ -32,6 +32,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # --limit 60: 单次上限, 控飞书 QPS 与 job 时长; 剩余次日继续(幂等)
+        # 严禁加 --all: 该模式会关闭"仅被车型引用"过滤, 把飞书目录里的私人废片与
+        # 重复件一并提交进这个**公开**仓库。默认模式只回流 photoPaths 里出现过的文件。
         run: node scripts/sync_photos_to_repo.js --limit 60
 
       - name: Commit & push if changed
