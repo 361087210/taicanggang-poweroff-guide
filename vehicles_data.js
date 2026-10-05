@@ -791,7 +791,7 @@ window.VEHICLES = [
     "id": 23,
     "brandId": "changan",
     "brand": "长安",
-    "series": "���翔",
+    "series": "悦翔",
     "config": "CS15/CS35MAX/CS75/CS55PLUS(2025款)",
     "display": "悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款))",
     "size": "",
@@ -2163,7 +2163,7 @@ window.VEHICLES = [
     "keyFrame": [
       "1.所有车辆钥匙数量，绑扎及框架检查完。",
       "2.确认断电无误后放到铅封袋内封好袋口。",
-      "3.放入钥匙盒关好，封好铅封��"
+      "3.放入钥匙盒关好，封好铅封。"
     ],
     "keyContainer": [
       "1.车辆钥匙数量及绑扎检查完。",

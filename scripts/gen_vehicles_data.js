@@ -78,6 +78,13 @@ const KNOWN_CORRUPTIONS = [
   { broken: '封好铅封\uFFFD\uFFFD\uFFFD',   fixed: '封好铅封。',     note: 'id=92 北汽BAIC-BJ30e keyFrame[2] (残留 3×efbfbd, 参照 94× 同句式句尾句号)' },
   // ↓ 2026-10-06 17:02 同步批次(第三次新增, 源表持续损坏)
   { broken: '取出车\uFFFD\uFFFD\uFFFD匙',   fixed: '取出车钥匙',     note: 'id=80 比亚迪海豹SEAL-U DM-I steps[0] (残留 3×efbfbd, 参照 id=14 同句式)' },
+  // ↓ 2026-10-06 22:04 同步批次(第四次新增, 镜像刷新后又坏 3 处)
+  { broken: '所\uFFFD\uFFFD\uFFFD车辆钥匙数量', fixed: '所有车辆钥匙数量', note: 'id=45 江淮江淮皮卡(T8PRO) keyFrame[0] (残留 3×efbfbd, 参照 5× "1.所有车辆钥匙数量，绑扎及框架检查完。")' },
+  { broken: '\uFFFD\uFFFD\uFFFD闭后备箱',       fixed: '关闭后备箱',       note: 'id=69 奇瑞东南SOUEAST(S08DM) steps[3] (残留 3×efbfbd, 参照 2× "4.关闭后备箱，再次拉动车门确保关闭。")' },
+  { broken: '车辆进箱无\uFFFD\uFFFD\uFFFD收钥匙', fixed: '车辆进箱无需收钥匙', note: 'id=98 吉利STARRAY-EM-i keyContainer[0] (残留 3×efbfbd, 参照 11× "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。")' },
+  // ↓ 2026-10-06 22:2x 同步批次(第五次新增, 源表仍在持续损坏 —— 见下方 I4 提示)
+  { broken: '\uFFFD\uFFFD\uFFFD翔',           fixed: '悦翔',           note: 'id=23 长安 series 字段(残留 3×efbfbd, 同记录 display 完好为 "悦翔(CS15/...)")' },
+  { broken: '封好铅封\uFFFD\uFFFD',           fixed: '封好铅封。',     note: 'id=59 奇瑞皮卡(RELY（瑞麟）R8) keyFrame[2] (残留 2×efbfbd, 句尾句号缺失; 与 id=92 的 3×efbfbd 是两种形态)' },
 ];
 
 /** 对单个字符串应用校正表(纯函数, 无匹配则原样返回) */
