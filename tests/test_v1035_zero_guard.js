@@ -309,6 +309,77 @@ section('S8 ★变异自证: 摘掉守卫后红灯必须消失(证明红灯由�
   }
 }
 
+/* ================================================================== */
+/* S9 ★守卫4: 车型数回退熔断(2026-10-06 补)
+ * 事故: 飞书 APP数据备份/同步数据/ 里同名 vehicle_sync_data.json 有两份且内容不同
+ *   (副本1: 98,347B / 100 车 / 2026-10-03; 副本2: 77,765B / 82 车 / 2026-09-06)。
+ *   feishuFindFile 原按 API 返回顺序取第一份 → 取错就让线上 100 车静默回退到 82 车,
+ *   而"0 条熔断"阈值是 0, 拦不住 82。故补"不得回退"这一道。 */
+const manyVehicles = n => Array.from({ length: n }, (_, i) =>
+  Object.assign({}, ONE_VEHICLE, { id: i + 1, display: '测试车型' + (i + 1) }));
+section('S9 ★守卫4: 新镜像 82 车 < 已有产物 100 车 → exit≠0 且拒绝写入、原产物未被覆盖');
+{
+  const f = fixtureSync(manyVehicles(100), manyVehicles(82));
+  const outFile = path.join(f.out, 'vehicle_sync_data.json');
+  const before = fs.readFileSync(outFile, 'utf8');
+  const r = runNode(path.join(ROOT, 'scripts', 'sync_web_data.js'), ['--source-dir', f.src, '--out', f.out]);
+  const after = fs.readFileSync(outFile, 'utf8');
+  check('S9a exit≠0(回退熔断生效)', r.status !== 0 && r.status !== null, 'status=' + r.status + ' out=' + r.all.slice(0, 400));
+  check('S9b 输出含「拒绝写入」且指出 82 < 100', /拒绝写入/.test(r.all) && /82\s*车\s*<\s*已有产物\s*100\s*车/.test(r.all), r.all.slice(0, 400));
+  check('S9c 提示指向"同名重复文件"这一真实诱因', /同名重复的 vehicle_sync_data\.json/.test(r.all), r.all.slice(0, 400));
+  check('S9d 已有产物未被覆盖(仍为 100 车)', before === after, 'len ' + before.length + ' -> ' + after.length);
+}
+section('S10 守卫4 反向: --force 放行 + 反假阳性(增车/平量不得误拦)');
+{
+  const f = fixtureSync(manyVehicles(100), manyVehicles(82));
+  const r = runNode(path.join(ROOT, 'scripts', 'sync_web_data.js'), ['--source-dir', f.src, '--out', f.out, '--force']);
+  check('S10a --force 时 exit=0(组长确实下架车型的合法路径)', r.status === 0, 'status=' + r.status + ' out=' + r.all.slice(0, 400));
+  const wrote = JSON.parse(fs.readFileSync(path.join(f.out, 'vehicle_sync_data.json'), 'utf8'));
+  check('S10b --force 确实写了盘(0 车), 证明 S9 的"未覆盖"是守卫拦的', Array.isArray(wrote.vehicles) && wrote.vehicles.length === 82, JSON.stringify(wrote).slice(0, 120));
+}
+{
+  const f = fixtureSync(manyVehicles(100), manyVehicles(100));
+  const r = runNode(path.join(ROOT, 'scripts', 'sync_web_data.js'), ['--source-dir', f.src, '--out', f.out]);
+  check('S10c ★反假阳性: 平量(100→100) exit=0', r.status === 0, 'status=' + r.status + ' out=' + r.all.slice(0, 400));
+}
+{
+  const f = fixtureSync(manyVehicles(100), manyVehicles(101));
+  const r = runNode(path.join(ROOT, 'scripts', 'sync_web_data.js'), ['--source-dir', f.src, '--out', f.out]);
+  check('S10d ★反假阳性: 增车(100→101) exit=0, 且产物已更新为 101(不得卡死正常同步)', r.status === 0 &&
+    JSON.parse(fs.readFileSync(path.join(f.out, 'vehicle_sync_data.json'), 'utf8')).vehicles.length === 101, 'status=' + r.status + ' out=' + r.all.slice(0, 400));
+}
+
+/* ================================================================== */
+/* S11 ★同名取最新: feishuFindFile 必须按 modified_time 取最大者, 而非 API 返回顺序
+ *  这是治因的一道 —— 即便云端同时存在 100 车与 82 车两份同名文件, 也必须稳定拿到新的。 */
+section('S11 ★同名多份取最新(治因: 稳定拿到 100 车那份)');
+const syncSrcNow = fs.readFileSync(path.join(ROOT, 'scripts', 'sync_web_data.js'), 'utf8');
+check('S11a 静态: 存在 pickNewestByName 且 feishuFindFile 内使用它',
+  /function\s+pickNewestByName/.test(syncSrcNow) && /const hit = pickNewestByName\(cands\)/.test(syncSrcNow));
+// 判定前先剥掉块注释与行注释 —— 否则"注释里提到旧写法"会造成假红(本断言实际踩过一次)
+const syncCodeOnly = syncSrcNow.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+check('S11b 静态: 已不存在按返回顺序取首份的 hit = f; break;(剥注释后判定)',
+  !/hit\s*=\s*f;\s*break;/.test(syncCodeOnly));
+{
+  let fn = null;
+  try { fn = require(path.join(ROOT, 'scripts', 'sync_web_data.js')).pickNewestByName; } catch (e) { fn = null; }
+  check('S11c 模块可 require 且导出 pickNewestByName(require 不触发 main)', typeof fn === 'function');
+  if (typeof fn === 'function') {
+    const oldCopy = { name: 'vehicle_sync_data.json', token: 'OLD', modified_time: 1790694110 };   // 2026-09-29(82 车那份)
+    const newCopy = { name: 'vehicle_sync_data.json', token: 'NEW', modified_time: 1791039554 };   // 2026-10-03(100 车那份)
+    check('S11d 顺序为 [旧, 新] 时取新', fn([oldCopy, newCopy]).token === 'NEW');
+    check('S11e ★顺序颠倒为 [新, 旧] 时仍取新(顺序无关是实现要点)', fn([newCopy, oldCopy]).token === 'NEW');
+    check('S11f 缺 modified_time 的条目排最后(不会因缺字段被误认为最新)',
+      fn([{ token: 'NO_TS' }, oldCopy]).token === 'OLD');
+    check('S11g 空列表返回 null(不抛异常)', fn([]) === null && fn(null) === null);
+    check('S11h 不修改入参数组(纯函数)', (() => {
+      const arr = [oldCopy, newCopy];
+      fn(arr);
+      return arr[0].token === 'OLD' && arr[1].token === 'NEW';
+    })());
+  }
+}
+
 /* 清理临时目录(仅 tmpdir, 绝不触碰仓库文件) */
 try {
   for (const d of tmpDirs) { try { fs.rmSync(d, { recursive: true, force: true }); } catch (e) {} }

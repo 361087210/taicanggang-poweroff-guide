@@ -234,16 +234,33 @@ async function feishuListFiles(token, folderToken){
   } while(pageToken);
   return out;
 }
+/**
+ * 同名多份时取"最新的一份"(modified_time 最大)。
+ *
+ * 为什么必须这样(2026-10-06 实测事故):
+ *   飞书 APP数据备份/同步数据/ 里同名 vehicle_sync_data.json 确实有**两份且内容不同**:
+ *     副本1 token=RHivbUPi… 98,347B / 100 车 / 数据时间戳 2026-10-03
+ *     副本2 token=B1Drbg1b… 77,765B /  82 车 / 数据时间戳 2026-09-06
+ *   原实现是 `hit = f; break;` —— 取 API 返回顺序里的第一份。顺序无任何保证,
+ *   一旦取到副本2, 线上数据会从 100 车**静默回滚到 82 车**, 而 0 条熔断(阈值 0)拦不住。
+ *   按 modified_time 取最大后, 无论顺序如何都拿到最新那份。
+ */
+function pickNewestByName(cands){
+  if(!cands || !cands.length) return null;
+  return cands.slice().sort((a, b) => (Number(b.modified_time) || 0) - (Number(a.modified_time) || 0))[0];
+}
+
 async function feishuFindFile(token, folderToken, name, _depth){
   _depth = _depth || 0;
   if(_depth > 6) return null; // 防御: 不超过6层
   const files = await feishuListFiles(token, folderToken);
-  let hit = null;
+  const cands = [];
   const folders = [];
   for(const f of files){
-    if(f.name === name || f.name === name + '.json'){ hit = f; break; }
+    if(f.name === name || f.name === name + '.json') cands.push(f);
     if(f.type === 'folder') folders.push(f.token);
   }
+  const hit = pickNewestByName(cands);
   if(hit) return hit;
   for(const ft of folders){
     const r = await feishuFindFile(token, ft, name, _depth + 1);
@@ -478,6 +495,21 @@ async function main(){
     process.exit(1);
   }
 
+  // P0 数据回退熔断(2026-10-06 补): 新镜像车型数**少于**已有产物 -> 拒绝写盘。
+  // 为什么 0 条熔断不够: 它只挡"被清空", 挡不住"被回退"。真实诱因是
+  // 飞书"同步数据"目录里同名的 vehicle_sync_data.json 有两份(100 车 / 82 车),
+  // 取错那份会让线上从 100 车**静默回退**到 82 车 —— 数据看起来"正常", 没有任何告警。
+  // 上游 feishuFindFile 已改为按 modified_time 取最新(治因), 本道是治果的兜底:
+  // 即便将来又出现新的"取错"路径, 这里也会拦住。
+  // 合法的车型删减场景(组长确实要下架车型)需人工加 --force 放行。
+  const newCount = (vehicle.vehicles || []).length;
+  if (newCount > 0 && prevCount > 0 && newCount < prevCount && !process.argv.includes('--force')) {
+    console.error(`[mirror] 拒绝写入: 新镜像 ${newCount} 车 < 已有产物 ${prevCount} 车(疑似取到同名陈旧副本)`);
+    console.error('[mirror] 已保留原镜像不覆盖。若是组长确实下架了车型, 加 --force 放行;');
+    console.error('[mirror] 否则请检查飞书「同步数据」目录里是否存在同名重复的 vehicle_sync_data.json。');
+    process.exit(1);
+  }
+
   mkdirp(opt.out);
   writeJson(opt.out, 'vehicle_sync_data.json', vehicle);
   writeJson(opt.out, 'approved_users.web.json', approvedWeb);
@@ -488,4 +520,9 @@ async function main(){
   console.log(`[mirror] meta.syncedAt=${meta.syncedAt} (网页层将据此激活)`);
 }
 
-main().catch(e => { console.error('[mirror] 失败:', e.message); process.exit(1); });
+// 仅在被直接执行时运行; 被 require 时不产生副作用(便于单元测试纯函数)
+if (require.main === module) {
+  main().catch(e => { console.error('[mirror] 失败:', e.message); process.exit(1); });
+}
+
+module.exports = { pickNewestByName, feishuFindFile };
