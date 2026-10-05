@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-04T17:52:12.632Z",
+  "generatedAt": "2026-10-05T11:30:46.204Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -1794,12 +1794,12 @@
       ],
       "videos": [
         {
-          "fileName": "奇瑞艾瑞泽_艾瑞泽5PRO.mp4",
+          "fileName": "奇瑞艾瑞泽_艾���泽5PRO.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": "tcgv_8a190f229f.mp4"
+          "releaseAsset": ""
         }
       ]
     },

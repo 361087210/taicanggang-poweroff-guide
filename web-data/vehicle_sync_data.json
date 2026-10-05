@@ -112,7 +112,7 @@
         "1.车辆钥匙数量及绑扎检查完。",
         "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
       ],
-      "remarks": "放干��剂",
+      "remarks": "放干燥剂",
       "photos": 3,
       "photoPaths": [
         "vehicle_images/image5.jpeg",
@@ -2145,7 +2145,7 @@
       ],
       "videos": 1,
       "videoPaths": [
-        "vehicle_videos/奇瑞艾瑞泽_艾瑞泽5PRO.mp4"
+        "vehicle_videos/奇瑞艾瑞泽_艾���泽5PRO.mp4"
       ]
     },
     {
@@ -3340,7 +3340,7 @@
       "keyContainer": [
         "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
       ],
-      "remarks": "前机盖���电",
+      "remarks": "前机盖断电",
       "photos": 2,
       "photoPaths": [
         "vehicle_images/长城炮（皮卡）4x4_p1_75e12a5e.jpeg",
