@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-06T07:28:17.076Z",
+  "generatedAt": "2026-10-06T14:25:31.486Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -2053,12 +2053,12 @@
       ],
       "videos": [
         {
-          "fileName": "奇��捷途JETOUR_T2_XWD.mp4",
+          "fileName": "奇瑞捷途JETOUR_T2_XWD.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": ""
+          "releaseAsset": "tcgv_abb8e25867.mp4"
         }
       ]
     },
