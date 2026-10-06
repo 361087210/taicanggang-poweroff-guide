@@ -671,7 +671,7 @@ window.VEHICLES = [
     "brandId": "byd",
     "brand": "比亚迪",
     "series": "腾势",
-    "config": "方程��B5",
+    "config": "方程豹B5",
     "display": "比亚迪腾势(方程豹B5)",
     "size": "",
     "powerType": "混动",
