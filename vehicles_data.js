@@ -1131,7 +1131,7 @@ window.VEHICLES = [
     "powerType": "混动",
     "position": "断电器熄灭后自动断电",
     "steps": [
-      "1.打开主驾驶车门，短按断电器点亮蓝灯，再次短按断电器蓝灯熄灭，确认车窗全部关闭后，取出车钥匙。",
+      "1.打开主驾驶车门，短按断电��点亮蓝灯，再次短按断电器蓝灯熄灭，确认车窗全部关闭后，取出车钥匙。",
       "2.关闭车门，确保车窗关闭，短按钥匙锁车键。",
       "4.再次拉动车门确保关闭。"
     ],
@@ -3065,7 +3065,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/比亚迪海豹SEAL_p1_bb8a0063.jpeg",
       "vehicle_images/比亚迪海豹SEAL_p2_27fd50ec.jpeg",
-      "vehicle_images/比亚迪海豹SEAL_p3_a992a0eb.jpeg",
+      "vehicle_images/比亚迪��豹SEAL_p3_a992a0eb.jpeg",
       "vehicle_images/比亚迪海豹SEAL_p4_dba5cf97.jpeg"
     ],
     "photoSections": [

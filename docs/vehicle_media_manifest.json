@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-06T14:25:31.486Z",
+  "generatedAt": "2026-10-06T23:18:25.527Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -2585,7 +2585,7 @@
           "qiniuKey": ""
         },
         {
-          "fileName": "比亚迪海豹SEAL_p3_a992a0eb.jpeg",
+          "fileName": "比亚迪��豹SEAL_p3_a992a0eb.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
