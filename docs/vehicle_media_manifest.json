@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T09:18:27.083Z",
+  "generatedAt": "2026-10-07T21:47:04.817Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -2788,7 +2788,7 @@
       "display": "北汽BAIC-BJ30e",
       "photos": [
         {
-          "fileName": "北京BAIC-BJ30e_p1_e2bf9e07.jpeg",
+          "fileName": "��京BAIC-BJ30e_p1_e2bf9e07.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
