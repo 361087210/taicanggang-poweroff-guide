@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-06T23:18:25.527Z",
+  "generatedAt": "2026-10-07T02:36:20.074Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -1868,12 +1868,12 @@
       ],
       "videos": [
         {
-          "fileName": "奇瑞捷途JETOUR_X50.mp4",
+          "fileName": "奇瑞捷���JETOUR_X50.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": "tcgv_77f5a28d53.mp4"
+          "releaseAsset": ""
         }
       ]
     },
@@ -2585,7 +2585,7 @@
           "qiniuKey": ""
         },
         {
-          "fileName": "比亚迪��豹SEAL_p3_a992a0eb.jpeg",
+          "fileName": "比亚迪海豹SEAL_p3_a992a0eb.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
