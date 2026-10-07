@@ -2215,7 +2215,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞捷���JETOUR_X50.mp4"
+      "vehicle_videos/奇瑞捷途JETOUR_X50.mp4"
     ]
   },
   {

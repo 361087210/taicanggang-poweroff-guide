@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T02:36:20.074Z",
+  "generatedAt": "2026-10-07T09:18:27.083Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -1868,12 +1868,12 @@
       ],
       "videos": [
         {
-          "fileName": "奇瑞捷���JETOUR_X50.mp4",
+          "fileName": "奇瑞捷途JETOUR_X50.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": ""
+          "releaseAsset": "tcgv_77f5a28d53.mp4"
         }
       ]
     },
