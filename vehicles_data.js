@@ -616,7 +616,7 @@ window.VEHICLES = [
     "brand": "比亚迪",
     "series": "汉",
     "config": "汉",
-    "display": "比亚��汉",
+    "display": "比亚迪汉",
     "size": "",
     "powerType": "混动",
     "position": "前机盖电池负极",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-09T00:59:54.092Z",
+  "generatedAt": "2026-10-09T07:19:13.918Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -459,7 +459,7 @@
     },
     {
       "id": 18,
-      "display": "比亚��汉",
+      "display": "比亚迪汉",
       "photos": [],
       "videos": []
     },
