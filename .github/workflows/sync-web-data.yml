@@ -37,6 +37,11 @@ jobs:
           FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
         run: node scripts/sync_web_data.js --out web-data
 
+      # 生成即校验: 产物一旦未通过脱敏复核即**阻断本次自动提交**,
+      #   防止未脱敏数据被推到公开 GitHub Pages。校验对象与 CI 同一脚本、同一口径。
+      - name: Gate web-data sanitization (block publish if leaked)
+        run: node scripts/check_web_data_sanitization.js web-data
+
       # P1 数据一致性根治: 把最新镜像反向写回 App 打包内置源 vehicles_data.js,
       # 并同步重生成车型映射表 + 媒体 manifest(三者收敛为同一份事实; 幂等, 无变化不写)
       - name: Reverse-generate vehicles_data.js + media mapping/manifest

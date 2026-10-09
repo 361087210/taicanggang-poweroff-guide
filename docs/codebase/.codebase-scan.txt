@@ -1,0 +1,458 @@
+
+=== DIRECTORY TREE (max depth 3, source files only) ===
+.adal
+.adal\skills
+.adal\skills\lark-approval
+.adal\skills\lark-apps
+.adal\skills\lark-attendance
+.adal\skills\lark-base
+.adal\skills\lark-calendar
+.adal\skills\lark-contact
+.adal\skills\lark-doc
+.adal\skills\lark-drive
+.adal\skills\lark-event
+.adal\skills\lark-im
+.adal\skills\lark-mail
+.adal\skills\lark-markdown
+.adal\skills\lark-meeting
+.adal\skills\lark-minutes
+.adal\skills\lark-note
+.adal\skills\lark-okr
+.adal\skills\lark-openapi-explorer
+.adal\skills\lark-shared
+.adal\skills\lark-sheets
+.adal\skills\lark-skill-maker
+.adal\skills\lark-slides
+.adal\skills\lark-task
+.adal\skills\lark-vc
+.adal\skills\lark-vc-agent
+.adal\skills\lark-whiteboard
+.adal\skills\lark-wiki
+.adal\skills\lark-workflow-meeting-summary
+.adal\skills\lark-workflow-standup-report
+.agents
+.agents\skills
+.agents\skills\lark-approval
+.agents\skills\lark-approval\references
+.agents\skills\lark-approval\SKILL.md
+.agents\skills\lark-apps
+.agents\skills\lark-apps\creative-design
+.agents\skills\lark-apps\references
+.agents\skills\lark-apps\SKILL.md
+.agents\skills\lark-attendance
+.agents\skills\lark-attendance\SKILL.md
+.agents\skills\lark-base
+.agents\skills\lark-base\references
+.agents\skills\lark-base\SKILL.md
+.agents\skills\lark-calendar
+.agents\skills\lark-calendar\references
+.agents\skills\lark-calendar\SKILL.md
+.agents\skills\lark-contact
+.agents\skills\lark-contact\references
+.agents\skills\lark-contact\SKILL.md
+.agents\skills\lark-doc
+.agents\skills\lark-doc\references
+.agents\skills\lark-doc\SKILL.md
+.agents\skills\lark-drive
+.agents\skills\lark-drive\references
+.agents\skills\lark-drive\SKILL.md
+.agents\skills\lark-event
+.agents\skills\lark-event\references
+.agents\skills\lark-event\SKILL.md
+.agents\skills\lark-im
+.agents\skills\lark-im\references
+.agents\skills\lark-im\SKILL.md
+.agents\skills\lark-mail
+.agents\skills\lark-mail\assets
+.agents\skills\lark-mail\references
+.agents\skills\lark-mail\SKILL.md
+.agents\skills\lark-markdown
+.agents\skills\lark-markdown\references
+.agents\skills\lark-markdown\SKILL.md
+.agents\skills\lark-meeting
+.agents\skills\lark-meeting\references
+.agents\skills\lark-meeting\scenes
+.agents\skills\lark-meeting\SKILL.md
+.agents\skills\lark-minutes
+.agents\skills\lark-minutes\SKILL.md
+.agents\skills\lark-note
+.agents\skills\lark-note\SKILL.md
+.agents\skills\lark-okr
+.agents\skills\lark-okr\references
+.agents\skills\lark-okr\SKILL.md
+.agents\skills\lark-openapi-explorer
+.agents\skills\lark-openapi-explorer\SKILL.md
+.agents\skills\lark-shared
+.agents\skills\lark-shared\references
+.agents\skills\lark-shared\SKILL.md
+.agents\skills\lark-sheets
+.agents\skills\lark-sheets\references
+.agents\skills\lark-sheets\scripts
+.agents\skills\lark-sheets\SKILL.md
+.agents\skills\lark-skill-maker
+.agents\skills\lark-skill-maker\SKILL.md
+.agents\skills\lark-slides
+.agents\skills\lark-slides\references
+.agents\skills\lark-slides\scripts
+.agents\skills\lark-slides\SKILL.md
+.agents\skills\lark-task
+.agents\skills\lark-task\references
+.agents\skills\lark-task\SKILL.md
+.agents\skills\lark-vc
+.agents\skills\lark-vc\SKILL.md
+.agents\skills\lark-vc-agent
+.agents\skills\lark-vc-agent\SKILL.md
+.agents\skills\lark-whiteboard
+.agents\skills\lark-whiteboard\elements
+.agents\skills\lark-whiteboard\references
+.agents\skills\lark-whiteboard\routes
+.agents\skills\lark-whiteboard\scenes
+.agents\skills\lark-whiteboard\SKILL.md
+.agents\skills\lark-wiki
+.agents\skills\lark-wiki\references
+.agents\skills\lark-wiki\SKILL.md
+.agents\skills\lark-workflow-meeting-summary
+.agents\skills\lark-workflow-meeting-summary\SKILL.md
+.agents\skills\lark-workflow-standup-report
+.agents\skills\lark-workflow-standup-report\SKILL.md
+.aider-desk
+.aider-desk\skills
+.aider-desk\skills\lark-approval
+.aider-desk\skills\lark-apps
+.aider-desk\skills\lark-attendance
+.aider-desk\skills\lark-base
+.aider-desk\skills\lark-calendar
+.aider-desk\skills\lark-contact
+.aider-desk\skills\lark-doc
+.aider-desk\skills\lark-drive
+.aider-desk\skills\lark-event
+.aider-desk\skills\lark-im
+.aider-desk\skills\lark-mail
+.aider-desk\skills\lark-markdown
+.aider-desk\skills\lark-meeting
+.aider-desk\skills\lark-minutes
+.aider-desk\skills\lark-note
+.aider-desk\skills\lark-okr
+.aider-desk\skills\lark-openapi-explorer
+.aider-desk\skills\lark-shared
+.aider-desk\skills\lark-sheets
+.aider-desk\skills\lark-skill-maker
+.aider-desk\skills\lark-slides
+.aider-desk\skills\lark-task
+.aider-desk\skills\lark-vc
+.aider-desk\skills\lark-vc-agent
+.aider-desk\skills\lark-whiteboard
+.aider-desk\skills\lark-wiki
+.aider-desk\skills\lark-workflow-meeting-summary
+.aider-desk\skills\lark-workflow-standup-report
+.augment
+.augment\skills
+.augment\skills\lark-approval
+.augment\skills\lark-apps
+.augment\skills\lark-attendance
+.augment\skills\lark-base
+.augment\skills\lark-calendar
+.augment\skills\lark-contact
+.augment\skills\lark-doc
+.augment\skills\lark-drive
+.augment\skills\lark-event
+.augment\skills\lark-im
+.augment\skills\lark-mail
+.augment\skills\lark-markdown
+.augment\skills\lark-meeting
+.augment\skills\lark-minutes
+.augment\skills\lark-note
+.augment\skills\lark-okr
+.augment\skills\lark-openapi-explorer
+.augment\skills\lark-shared
+.augment\skills\lark-sheets
+.augment\skills\lark-skill-maker
+.augment\skills\lark-slides
+.augment\skills\lark-task
+.augment\skills\lark-vc
+.augment\skills\lark-vc-agent
+.augment\skills\lark-whiteboard
+.augment\skills\lark-wiki
+.augment\skills\lark-workflow-meeting-summary
+.augment\skills\lark-workflow-standup-report
+.autohand
+.autohand\skills
+.autohand\skills\lark-approval
+.autohand\skills\lark-apps
+.autohand\skills\lark-attendance
+.autohand\skills\lark-base
+.autohand\skills\lark-calendar
+.autohand\skills\lark-contact
+.autohand\skills\lark-doc
+.autohand\skills\lark-drive
+.autohand\skills\lark-event
+.autohand\skills\lark-im
+.autohand\skills\lark-mail
+.autohand\skills\lark-markdown
+.autohand\skills\lark-meeting
+.autohand\skills\lark-minutes
+.autohand\skills\lark-note
+.autohand\skills\lark-okr
+.autohand\skills\lark-openapi-explorer
+.autohand\skills\lark-shared
+.autohand\skills\lark-sheets
+.autohand\skills\lark-skill-maker
+.autohand\skills\lark-slides
+.autohand\skills\lark-task
+.autohand\skills\lark-vc
+
+=== STACK DETECTION (manifest files) ===
+
+--- package-lock.json ---
+{
+  "name": "repo",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "repo",
+      "dependencies": {
+        "cordova": "^13.0.0"
+      },
+      "devDependencies": {
+        "jsdom": "^29.1.1"
+      }
+    },
+    "node_modules/@asamuzakjp/css-color": {
+      "version": "5.1.11",
+      "resolved": "https://registry.npmjs.org/@asamuzakjp/css-color/-/css-color-5.1.11.tgz",
+      "integrity": "sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "@asamuzakjp/generational-cache": "^1.0.1",
+        "@csstools/css-calc": "^3.2.0",
+        "@csstools/css-color-parser": "^4.1.0",
+        "@csstools/css-parser-algorithms": "^4.0.0",
+        "@csstools/css-tokenizer": "^4.0.0"
+      },
+      "engines": {
+        "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
+      }
+    },
+    "node_modules/@asamuzakjp/dom-selector": {
+      "version": "7.1.1",
+      "resolved": "https://registry.npmjs.org/@asamuzakjp/dom-selector/-/dom-selector-7.1.1.tgz",
+      "integrity": "sha512-67RZDnYRc8H/8MLDgQCDE//zoqVFwajkepHZgmXrbwybzXOEwOWGPYGmALYl9J2DOLfFPPs6kKCqmbzV895hTQ==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "@asamuzakjp/generational-cache": "^1.0.1",
+        "@asamuzakjp/nwsapi": "^2.3.9",
+        "bidi-js": "^1.0.3",
+        "css-tree": "^3.2.1",
+        "is-potential-custom-element-name": "^1.0.1"
+      },
+      "engines": {
+        "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
+      }
+    },
+    "node_modules/@asamuzakjp/generational-cache": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/@asamuzakjp/generational-cache/-/generational-cache-1.0.1.tgz",
+      "integrity": "sha512-wajfB8KqzMCN2KGNFdLkReeHncd0AslUSrvHVvvYWuU8ghncRJoA50kT3zP9MVL0+9g4/67H+cdvBskj9THPzg==",
+      "dev": true,
+      "license": "MIT",
+      "engines": {
+        "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
+      }
+    },
+    "node_modules/@asamuzakjp/nwsapi": {
+      "version": "2.3.9",
+      "resolved": "https://registry.npmjs.org/@asamuzakjp/nwsapi/-/nwsapi-2.3.9.tgz",
+      "integrity": "sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==",
+      "dev": true,
+      "license": "MIT"
+    },
+    "node_modules/@bramus/specificity": {
+      "version": "2.4.2",
+      "resolved": "https://registry.npmjs.org/@bramus/specificity/-/specificity-2.4.2.tgz",
+      "integrity": "sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "css-tree": "^3.0.0"
+      },
+      "bin": {
+        "specificity": "bin/cli.js"
+      }
+    },
+    "node_modules/@csstools/color-helpers": {
+      "version": "6.1.1",
+
+[TRUNCATED] Showing first 80 of 3142 lines.
+--- package.json ---
+{
+  "dependencies": {
+    "cordova": "^13.0.0"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  },
+  "scripts": {
+    "test:logic": "node tests/test_v57_logic.js",
+    "test:cross": "node tests/test_v57_cross_network.js",
+    "test:integration": "python tests/test_v57_integration.py",
+    "test:runtime": "node tests/test_v53_runtime.js",
+    "test:v103": "node tests/test_v103_fixes.js",
+    "test:v104": "node tests/test_v104_fixes.js",
+    "test:v105": "node tests/test_v105_fixes.js",
+    "test:v106": "node tests/test_v106_fixes.js",
+    "test:v107": "node tests/test_v107_fixes.js",
+    "test:v108": "node tests/test_v108_fixes.js",
+    "test:v109": "node tests/test_v109_fixes.js",
+    "test:v1010-solutions": "node tests/test_v1010_solutions_comparison.js",
+    "test:v1010-sync": "node tests/test_v1010_sync_e2e.js",
+    "test:v1010": "npm run test:v1010-solutions && npm run test:v1010-sync",
+    "test:v1011": "node tests/test_v1011_mirror_sync.js && node tests/test_v1011_feedback_sync.js",
+    "test:v1013": "node tests/test_v1013_a3.js",
+    "test:v1014": "node tests/test_v1014_zero_config_member.js",
+    "test:v1015": "node tests/test_v1015_member_sync_gate.js",
+    "test:v110-bitable": "node tests/test_v110_bitable_data_access.js",
+    "test:v110-audit": "node tests/test_v110_audit.js",
+    "test:v1016": "node tests/test_v1016_self_learning.js",
+    "test:version": "node scripts/check_version_consistency.js",
+    "test:all": "node scripts/run_all_tests.js",
+    "sync:push": "node scripts/sync_feishu_local.js --push",
+    "sync:pull": "node scripts/sync_feishu_local.js --pull",
+    "sync:feishu": "node scripts/sync_feishu_local.js --sync",
+    "sync:status": "node scripts/sync_feishu_local.js --status",
+    "migrate:bitable:dry": "node scripts/migrate_drive_to_bitable.js --dry-run",
+    "migrate:bitable": "node scripts/migrate_drive_to_bitable.js --force",
+    "test:refactor": "node tests/test_refactor_v1018.js",
+    "test:registration": "node tests/test_v1017_registration_video.js",
+    "test:video": "node tests/test_video_playback_v1019.js",
+    "test:v1019-addvehicle": "node tests/test_v1019_addvehicle_meta.js",
+    "test:v1019-gate": "node tests/test_v1019_version_gate.js",
+    "test:v1019-hygiene": "node tests/test_v1019_repo_hygiene.js",
+    "test:v1020-crud": "node tests/test_v1020_vehicles_crud.js",
+    "test:v1021-guard": "node tests/test_v1021_addvehicle_passthrough_guard.js",
+    "test:linkkey": "node tests/test_v1022_linkkey_p0.js",
+    "test:backup": "node tests/test_v1023_backup.js",
+    "test:web-account": "node tests/test_v1024_web_account.js",
+    "test:manifest": "node tests/test_v1025_manifest.js",
+    "test:remove-guard": "node tests/test_v1026_remove_vehicle_guard.js",
+    "test:audit": "node tests/test_v1027_audit.js",
+    "test:export-photo": "node tests/test_v1028_export_photo.js",
+    "test:vehicles-sync": "node tests/test_v1029_vehicles_data_sync.js",
+    "test:validate-web": "node tests/test_v1030_validate_web_assets.js",
+    "test:docx-sheets": "node tests/test_v1031_docx_sheets.js",
+    "test:video-sync": "node tests/test_v1032_video_release_sync.js",
+    "test:v1033": "node tests/test_v1033_linkkey_migration_ux.js",
+    "test:feedback-version": "node tests/test_feedback_version_field.js",
+    "test:feedback-status": "node tests/test_feedback_status_enum.js",
+    "test:process-feedback": "node tests/test_process_feedback_wiring.js",
+    "test:crypto-capability": "node tests/test_crypto_capability_ux.js",
+    "test:nav-guard": "node tests/test_nav_login_guard.js",
+    "test:vehicle-integrity": "node tests/test_vehicle_data_integrity.js",
+    "test:v10195": "node tests/test_v10195_feishu_rate_limit.js",
+    "test:v1035": "node tests/test_v1035_reset_member_pass.js",
+    "test:two-end-gate": "node tests/test_v1034_two_end_gate.js",
+    "check:two-end": "node scripts/check_two_end_sync.js",
+    "audit:media": "node scripts/audit_media_consistency.js",
+    "sync:web": "node scripts/sync_web_data.js --out web-data",
+    "scan:secrets": "node scripts/secret-scan.js",
+    "test:ci-coverage": "node scripts/check_ci_coverage.js"
+  }
+}
+
+
+=== ENTRY POINTS ===
+No common entry points found. Check 'main' or 'scripts.start' in manifest files above.
+
+=== LINTING AND FORMATTING CONFIG ===
+Found: tsconfig.json
+
+=== ENVIRONMENT VARIABLE TEMPLATES ===
+No .env.example or .env.template found. Identify required environment variables by searching the code and config for environment variable reads.
+
+=== TODO / FIXME / HACK (production code only, test dirs excluded) ===
+None found.
+
+=== GIT RECENT COMMITS (last 20) ===
+d6bca49 feat: V10.20.0 组员密码重置安全加固版
+0a89a79 chore: 自动同步数据 (web-data + vehicles_data + manifest) (2026-10-04T01:49:13Z)
+891c928 chore: 自动同步数据 (web-data + vehicles_data + manifest) (2026-10-03T22:21:34Z)
+09d9cc7 chore: 自动同步数据 (web-data + vehicles_data + manifest) (2026-10-03T19:27:05Z)
+ceca8f1 chore: 自动同步数据 (web-data + vehicles_data + manifest) (2026-10-03T16:35:22Z)
+f82c215 chore: 自动同步数据 (web-data + vehicles_data + manifest) (2026-10-03T12:24:42Z)
+f474d8c chore: 同步新视频直链映射 (media-videos)
+ce7c4ee chore: 自动同步数据 (web-data + vehicles_data + manifest) (2026-10-03T06:58:45Z)
+8e248a9 chore: 自动同步数据 (web-data + vehicles_data + manifest) (2026-10-03T01:27:53Z)
+2075a8c chore: 自动同步数据 (web-data + vehicles_data + manifest) (2026-10-02T22:35:53Z)
+ca4ad67 ci: 触发两端错配门禁复检 (v10.19.5 tag 已就位)
+49c81b9 fix(飞书): V10.19.5 限流根治-请求门控+退避重试+列表缓存+统一下载入口
+de908a6 chore: 自动同步数据 (web-data + vehicles_data + manifest) (2026-10-02T18:42:56Z)
+19bab07 refactor(同步): 移除废弃旧根同步, 发版产物仅同步到应用云盘根
+a617b84 fix(同步): 修复旧根降级告警引用未定义 APP_ID 导致的二次崩溃
+645ac65 fix(同步): 旧根未授权(1061004)不再阻断发版产物同步, 降级为告警并继续新根
+9003f1f docs: 补 V10.19.4 发布说明(缺失导致 Create Release 步骤失败)
+feb6449 fix: 清理 MEDIA_DIRECT_ASSETS 3 个无引用孤儿键(user_v 旧命名, 已迁移新资产名)
+e971765 chore: 自动同步数据 (web-data + vehicles_data + manifest) (2026-10-02T14:11:27Z)
+e441b0e fix: 清除 vehicles_data.js 残留 14 处 U+FFFD 并扩充校正表 9 条(产物 6 处 + 镜像 3 处新损坏)
+
+=== HIGH-CHURN FILES (last 90 days, top 20) ===
+1824 web-data/approved_users.web.json
+1823 web-data/meta.json
+1588 web-data/feedback_data.json
+ 143 web-data/vehicle_sync_data.json
+  92 demo.html
+  79 version.json
+  74 config.xml
+  58 web-data/debug_structure.json
+  48 js/00-bootstrap.js
+  38 package.json
+  38 vehicles_data.js
+  35 sw.js
+  35 .github/workflows/ios-release.yml
+  33 js/11-about.js
+  33 release/version.json
+  33 docs/vehicle_media_mapping.json
+  32 docs/vehicle_media_manifest.json
+  30 docs/vehicle_media_mapping.csv
+  30 scripts/sync_release_both_roots.py
+  28 web-data/data_update_notice.json
+
+=== MONOREPO SIGNALS ===
+No monorepo signals detected.
+
+=== CODE METRICS ===
+Total files scanned: 1483
+Total lines of code: 172233
+
+Files by language:
+  Other: 1338
+  JavaScript: 91
+  Python: 40
+  JavaScript/React: 14
+
+Top 10 largest files:
+docs\参考资料\太仓港商品车断电操作手册20260603版.docx: 21131.4KB
+docs\参考资料\断电指导软件截图(1).pdf: 20671.2KB
+docs\参考资料\比亚迪唐L断电操作.pdf: 9723.6KB
+docs\参考资料\太仓港商品车断电操作手册.docx: 6130.4KB
+.agents\skills\lark-slides\references\xml\iconpark-index.json: 765.9KB
+agent\skills\lark-slides\references\xml\iconpark-index.json: 765.9KB
+vehicle_images\image158.png: 757.9KB
+.uploads\3f41347c-056c-426e-b4c3-79e68f705ae6_飞书能力分析与设置指南.docx: 743.2KB
+.uploads\968d9e16-217a-4d5e-bd90-9f1724d4de21_飞书能力分析与设置指南.docx: 743.2KB
+vehicle_images\image157.png: 742.2KB
+
+=== CI/CD PIPELINES ===
+CI/CD: GitHub Actions
+
+=== CONTAINERS & ORCHESTRATION ===
+No containerization configs detected.
+
+=== SECURITY & COMPLIANCE ===
+Security: SECURITY.md
+
+=== PERFORMANCE & TESTING ===
+No performance testing configs detected.
+
+=== SCAN COMPLETE ===

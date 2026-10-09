@@ -1,6 +1,24 @@
-# 太仓港断电指导 App — 架构文档 V10.18（Capacitor + Vite + TS 重写）
+> # ⚠️ 作废提案 — 本文档描述的技术路线从未落地
+>
+> **本文是「Capacitor 6 + Vite 5 + TypeScript 5 重写」提案，已经业主确认作废，从未实施。**
+> 请勿据此开发。当前生产实现为 **Cordova 13 + 原生 JavaScript（无打包器）单页应用**：
+>
+> | 本文档所述（未落地） | 实际实现（生产） |
+> |---|---|
+> | `ts/*.ts` TypeScript 源码、`ts/main.ts` 编排 | `js/*.js`，由 `demo.html` 以 `<script defer>` 按数字前缀顺序加载；无 TS |
+> | `npm run dev` / `npm run build`（Vite） | 无构建步骤；不存在 `package.json` 中的 `dev`/`build` 脚本 |
+> | `dist/` 构建产物 | 不存在；网页端直接托管仓库根静态页 |
+> | `npx cap sync`、Capacitor iOS/Android 壳 | Cordova（`config.xml`），平台工程在 `tcg_app/`（已 gitignore） |
+> | 网页端由 Vite 构建产物发布 | 根目录静态页 + `scripts/sync_web_data.js` 生成的 `web-data/` 镜像（GitHub Pages） |
+>
+> 唯一生产依赖为 `cordova@^13.0.0`，唯一 devDependency 为 `jsdom@^29.1.1`。
+> **实际架构请以 `docs/codebase/` 代码库测绘文档为准。** 以下原文保留仅作历史存档。
+>
+> ---
 
-> 最后更新：2026-09-14 ｜ 当前版本 v10.19.0 ｜ 技术路线：Capacitor 6 + Vite 5 + TypeScript 5
+# 太仓港断电指导 App — 架构文档 V10.18（Capacitor + Vite + TS 重写）［已作废］
+
+> ⚠️ 以下内容为**作废提案原文**。最后更新：2026-09-14 ｜ 提案版本 v10.19.0 ｜ 提案技术路线：Capacitor 6 + Vite 5 + TypeScript 5
 > 数据/认证/通知：**飞书**（Bitable + Drive + 审批 + 群机器人）；代码/网页/媒体 CDN：**GitHub**
 
 ## 一、整体架构

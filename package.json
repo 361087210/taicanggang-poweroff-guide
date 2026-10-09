@@ -3,6 +3,7 @@
     "cordova": "^13.0.0"
   },
   "devDependencies": {
+    "c8": "^12.0.0",
     "jsdom": "^29.1.1"
   },
   "scripts": {
@@ -72,6 +73,9 @@
     "sync:photos": "node scripts/sync_photos_to_repo.js",
     "sync:web": "node scripts/sync_web_data.js --out web-data",
     "scan:secrets": "node scripts/secret-scan.js",
-    "test:ci-coverage": "node scripts/check_ci_coverage.js"
+    "scan:web-data": "node scripts/check_web_data_sanitization.js",
+    "test:ci-coverage": "node scripts/check_ci_coverage.js",
+    "test:coverage": "c8 --all --include=\"js/**/*.js\" --reporter=text --reporter=json-summary --reporter=text-summary npm run test:all",
+    "test:coverage-gate": "node scripts/check_coverage_threshold.js"
   }
 }

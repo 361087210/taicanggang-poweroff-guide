@@ -49,6 +49,14 @@ jobs:
       - name: 映射表一致性校验(与vehicles_data.js无漂移)
         run: node scripts/gen_media_mapping.js --check
 
+      # V10.20 隐私门禁: web-data/ 是每 15 分钟自动提交并发布到公开 Pages 的镜像产物,
+      #   但 scripts/secret-scan.js 的 SKIP 明确跳过 web-data(生成侧白名单只保护生成路径,
+      #   不保护已提交产物)。此 step 对**已入库产物**做默认拒绝复核: 记录级字段白名单 +
+      #   敏感/凭据字段名兜底 + 明文手机号取值 + linkKey 64位hex形态 + sanitized 哨兵。
+      #   独立 step, 退出码直接传播(不写 || true / continue-on-error)。
+      - name: web-data 脱敏门禁(公开镜像产物必须已脱敏)
+        run: npm run scan:web-data
+
       - name: 安装测试依赖(jsdom)
         run: npm ci --ignore-scripts || npm install --no-audit --no-fund
 
@@ -56,8 +64,20 @@ jobs:
       #   实际漏跑 12 个套件(含版本门禁/视频播放/addVehicle 回归/原型污染守卫),
       #   新增套件忘了接链也无人发现。test:all 覆盖全部测试文件;
       #   test:cross 需飞书 Secret, 已移至链尾且缺凭据时按"跳过"语义 exit 0, 不再掐断后续套件。
-      - name: 全量回归测试(npm run test:all)
-        run: npm run test:all
+      # V10.20: 同一入口改由 c8 包裹(test:coverage = c8 ... npm run test:all), 49 套件
+      #   只跑一遍即同时产出"全量回归结果"与"行覆盖率数据", 避免 CI 重复跑两轮。
+      - name: 全量回归测试 + 行覆盖率采集(npm run test:coverage)
+        run: npm run test:coverage
+
+      # V10.20 行覆盖率验收门禁: 把"到底覆盖了多少行源码"从隐形变成硬性验收线。
+      #   数据源 coverage/coverage-summary.json(c8 json-summary, 由上一 step 生成);
+      #   判定 js/ 下**可归因**源文件整体行覆盖率 >= 95%, 并对声明式排除项做 STALE 检查。
+      #   度量口径限制(为何存在排除项): js/00-config.js、09-web-sync.js、10-feedback.js、
+      #   11-about.js、12-bitable.js 由 JSDOM(window.eval) 装载, 不经 vm.runInContext,
+      #   c8 无法按文件名归因(实测 0%), 详见 docs/codebase/TESTING.md。
+      #   独立 step, 退出码直接传播(**不写** `|| true` / `continue-on-error`)。
+      - name: 行覆盖率验收门禁(js/ 可归因源文件 >= 95%)
+        run: npm run test:coverage-gate
 
       # ★ 两端错配门禁 —— 独立 step, 且把"绿"变成**被强制的不变量**(而非只打印一行):
       #   ① 退出码直接传播(**不写** `|| true` / `continue-on-error` / `|| echo`);

@@ -31,7 +31,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
 /**
- * 子套件清单 —— 原 test:all 串联的 48 个套件(单一真源)。
+ * 子套件清单 —— 原 test:all 串联的 52 个套件(单一真源)。
  * 注意: 仅复刻原 test:all 引用的子脚本, 不增不减; 新增套件须同步加入此处
  * 并登记到 package.json 的对应 test:* 脚本(否则 check_ci_coverage 门禁会拦截)。
  */

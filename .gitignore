@@ -116,3 +116,15 @@ skills-lock.json
 .windsurf/
 .zcode/
 .zencoder/
+
+# ===== c8 覆盖率产物不入库 =====
+# coverage/ 为 `npm run test:coverage` 的本地/CI 产物(tmp 原始分片 + 汇总 json/html),
+# 每次运行都会全量重写; 入库只会制造无意义 diff。门禁数据源 coverage/coverage-summary.json
+# 由 CI 当场生成消费(`npm run test:coverage-gate`), 不依赖入库快照。
+coverage/
+
+# ===== 事项6: AI 技能镜像收敛脚本仅本地保留, 不入库 =====
+# 这两个脚本面向本地多 AI 目录的符号链接一致性维护, 与业务无关;
+# 用户决策为「不入库, 仅本地保留」。故在此忽略, 保持工作树干净(文件仍在磁盘)。
+scripts/sync_skills_mirror.js
+scripts/check_skills_mirror_consistency.js

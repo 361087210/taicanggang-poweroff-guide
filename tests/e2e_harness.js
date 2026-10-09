@@ -18,6 +18,10 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
+// c8/V8 覆盖率归属: 透明改写 vm.runInContext 的"合成 filename"为真实源文件绝对路径。
+// require 即生效(模块内自动 install()), 对执行语义零影响(见 coverage-attribution.js)。
+require('./coverage-attribution');
+
 const DEMO_PATH = path.join(__dirname, '..', 'demo.html');
 const FEISHU_API_PATH = path.join(__dirname, '..', 'feishu-api.js');
 const JS_DIR = path.join(__dirname, '..', 'js');
@@ -36,6 +40,52 @@ function loadCombinedSource() {
     }
   }
   return src;
+}
+
+/** ============================================================
+ *  覆盖率归属支持: 块名 → 源文件绝对路径
+ *  ============================================================
+ *  背景: c8/V8 按被统计文件的 **URL/filename** 归属覆盖率。
+ *    合成名(`demo.html#State.js`、`v1020#x.js`)与裸相对路径(`js/01-state.js`)
+ *    都无法归属到仓库里的真实源文件 → js/ 覆盖率恒报 0。
+ *    实测: 绝对路径 / file:// 绝对 URL 可正常归属, 相对路径与合成名不可。
+ *  做法: 注入 vm 时把 filename 换成"该声明所在源文件的绝对路径",
+ *    使 c8 能把执行到的行归到真实源文件, 覆盖率才有意义。
+ *  注意: filename 仅用于堆栈与覆盖率归属, **不改变任何执行语义**。
+ *  可靠性: 索引只在首次调用时构建, 按"文件名自然排序"取首个命中, 与注入顺序一致。
+ * @returns {Map<string,string>}
+ */
+let _blockFileIndex = null;
+function _buildBlockFileIndex() {
+  const idx = new Map();
+  const push = file => {
+    let src;
+    try { src = fs.readFileSync(file, 'utf8'); } catch (e) { return; }
+    const re = /(?:^|\n)[ \t]*(?:export[ \t]+)?(?:default[ \t]+)?(?:async[ \t]+)?(?:function[ \t]+([A-Za-z_$][\w$]*)[ \t]*\(|(?:const|let|var)[ \t]+([A-Za-z_$][\w$]*)[ \t]*=)/g;
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      const nm = m[1] || m[2];
+      if (nm && !idx.has(nm)) idx.set(nm, file);
+    }
+  };
+  push(DEMO_PATH);
+  if (fs.existsSync(JS_DIR)) {
+    fs.readdirSync(JS_DIR)
+      .filter(f => f.endsWith('.js'))
+      .sort()
+      .forEach(f => push(path.join(JS_DIR, f)));
+  }
+  return idx;
+}
+
+/**
+ * 解析某声明块所在源文件的绝对路径(c8 归属用)。
+ * @param {string} name - 声明名
+ * @returns {string|null} 绝对路径(未找到返回 null)
+ */
+function resolveBlockFile(name) {
+  if (!_blockFileIndex) _blockFileIndex = _buildBlockFileIndex();
+  return _blockFileIndex.get(name) || null;
 }
 
 /** 判断某字符是否可作为"正则字面量前驱"(启发式, 覆盖本项目全部用例) */
@@ -274,9 +324,10 @@ function createAppSandbox(opts) {
   localStorage.setItem('feishu_config', JSON.stringify(cfg));
 
   // 按依赖序注入真实实现
+  // filename 用"块所在源文件绝对路径"(c8 归属需要), 找不到时回退合成名(不影响执行)
   for (const name of DEMO_BLOCKS) {
     const block = extractNamedBlock(src, name);
-    vm.runInContext(block, ctx, { filename: 'demo.html#' + name + '.js' });
+    vm.runInContext(block, ctx, { filename: resolveBlockFile(name) || ('demo.html#' + name + '.js') });
   }
   return {
     ctx, stubs, localStorage,
@@ -303,7 +354,7 @@ function createFeishuApiSandbox(opts) {
   };
   sandbox.window = sandbox;
   const ctx = vm.createContext(sandbox);
-  vm.runInContext(src, ctx, { filename: 'feishu-api.js' });
+  vm.runInContext(src, ctx, { filename: FEISHU_API_PATH });
   return { ctx, run: expr => vm.runInContext(expr, ctx, { filename: 'e2e_eval_api.js' }) };
 }
 
@@ -358,4 +409,4 @@ function inlineStylesheets(html) {
   });
 }
 
-module.exports = { loadCombinedSource, inlineDeferScripts, inlineStylesheets, extractNamedBlock, createAppSandbox, createFeishuApiSandbox, createMockFetch, createLocalStorage, DEMO_PATH, FEISHU_API_PATH };
+module.exports = { loadCombinedSource, inlineDeferScripts, inlineStylesheets, extractNamedBlock, resolveBlockFile, createAppSandbox, createFeishuApiSandbox, createMockFetch, createLocalStorage, DEMO_PATH, FEISHU_API_PATH };
