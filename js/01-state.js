@@ -294,7 +294,7 @@ const State={
    */
   removeUser(phone){
     const idx=USERS.findIndex(u=>u.phone===phone);
-    if(idx>-1){const removed=USERS[idx];USERS.splice(idx,1);if(window.Audit&&window.Audit.track)window.Audit.track('user.delete','user',phone,{name:removed.name,role:removed.role});return true;}
+    if(idx>-1){const removed=USERS[idx];USERS.splice(idx,1);if(window.Audit&&window.Audit.track)window.Audit.track('user.delete','user',phone,{name:removed.name,role:removed.role});if(typeof recordTombstone==='function')recordTombstone(phone,{src:'state'});return true;} // V10.24: 落墓碑, 防云端旧快照复活
     return false;
   },
   /**

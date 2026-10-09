@@ -416,7 +416,10 @@ async function pushApprovedUsersToFeishu(){
     const token=await getFeishuToken(cfg);
     // V5.7: 含哈希密码(salt$hash不可逆,云端无明文),支撑组员新设备登录闭环
     // V10.15.11: users行含pw_ts(账号级最近改密时间,ms)——拉取端据此仲裁密码新旧
-    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>({id:u.id,name:u.name,phone:u.phone,password:u.password||'',pw_ts:u.pw_ts||0,role:u.role,status:u.status,created:u.created,linkKey:u.linkKey||''}))};
+    const payload={type:'approved_users',version:'v'+APP_VERSION,timestamp:new Date().toISOString(),users:USERS.map(u=>({id:u.id,name:u.name,phone:u.phone,password:u.password||'',pw_ts:u.pw_ts||0,role:u.role,status:u.status,created:u.created,linkKey:u.linkKey||''})),
+      // V10.24 问题2: 随表下发删除名单(墓碑手机号)——跨设备传播"已注销"事实,
+      // 其他设备拉取后并入本地墓碑, 阻断云端旧快照把已删账号复活。
+      deleted:(typeof TOMBSTONES!=='undefined'?TOMBSTONES.map(t=>t.phone):[])};
     await uploadJsonToDataFeishu(token,'approved_users.json',JSON.stringify(payload),cfg.approvedSub);
     // 迁移清理: 删除旧位置(数据区根)同名文件,防止读到陈旧审批结果
     try{
@@ -459,11 +462,15 @@ async function pullApprovedStatusFromFeishu(userParam,fullMerge){
       try{data=await downloadJsonFromDataFeishu(token,'approved_users.json');}catch(e){console.debug('[ApprovalPull]旧位置(根)approved_users.json不存在(首次运行正常):',e.message)}
     }
     if(!data||!data.users)return false;
+    // V10.24 问题2: 先并入云端删除名单(跨设备传播), 保证本轮循环即可拦截复活
+    if(typeof mergeCloudTombstones==='function')mergeCloudTombstones(data.deleted);
     let me=null;
     for(const cu of data.users){
       if(!cu||!cu.phone)continue;
       const local=USERS.find(u=>u.phone===cu.phone);
       if(!local){
+        // V10.24 问题2: 命中墓碑(本机注销或云端已标删)→ 拒绝把已删账号重新入库(根治"删除后复活")
+        if(typeof isPhoneTombstoned==='function'&&isPhoneTombstoned(cu.phone))continue;
         // V5.7: 云端有而本地无(新设备/其他组长审批过)→合并入库,支撑跨设备登录
         // V10.18.0 反馈问题1(往期账号不可见): 往期版本注册账号云端status可能为空/旧值
         // (如'approved'/'normal'/'verified'), 旧逻辑只接纳active/pending/rejected,

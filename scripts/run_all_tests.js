@@ -87,6 +87,8 @@ const TEST_SUITES = [
   'test:zero-guard',
   'test:photo-sync',
   'test:honest-empty',
+  'test:v1038',
+  'test:v1039',
   'test:cross'
 ];
 

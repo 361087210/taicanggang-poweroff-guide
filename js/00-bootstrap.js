@@ -52,6 +52,45 @@ function loadUsers(){
 function saveUsers(users){localStorage.setItem('tcg_users',JSON.stringify(users));}
 let USERS=loadUsers();
 
+// ===================== 账号注销墓碑 (V10.24 问题2) =====================
+// 背景: 账号被注销/删除后, 飞书云端(审批结果/approved_users.json)可能仍是旧快照,
+// 下一次同步(pullApprovedStatusFromFeishu)见到"云端有本地无"就会把已删账号重新入库,
+// 即"删除后复活"缺陷。墓碑记录已删手机号, 在所有"云端→本地"复活点前置拦截。
+// 独立存储键 tcg_deleted_users, 与 tcg_users 同层持久化。
+function loadTombstones(){
+  try{ const t=JSON.parse(localStorage.getItem('tcg_deleted_users')||'null'); return Array.isArray(t)?t:[]; }
+  catch(e){ return []; }
+}
+function saveTombstones(list){ try{ localStorage.setItem('tcg_deleted_users',JSON.stringify(list||[])); }catch(e){} }
+let TOMBSTONES=loadTombstones();
+/** 手机号是否已被注销/删除(命中墓碑) */
+function isPhoneTombstoned(phone){ return !!phone&&TOMBSTONES.some(t=>t&&t.phone===String(phone)); }
+/** 记录墓碑(幂等), 返回是否为新记录 */
+function recordTombstone(phone,meta){
+  if(!phone)return false;
+  const p=String(phone);
+  if(isPhoneTombstoned(p))return false;
+  TOMBSTONES.push({phone:p,at:Date.now(),src:(meta&&meta.src)||'local'});
+  saveTombstones(TOMBSTONES);
+  return true;
+}
+/** 合并云端下发的删除名单(跨设备传播), 返回是否有新增 */
+function mergeCloudTombstones(list){
+  if(!Array.isArray(list))return false;
+  let added=false;
+  for(const p of list){ if(p&&recordTombstone(p,{src:'cloud'}))added=true; }
+  return added;
+}
+/** 清除墓碑(同一手机号重新注册场景: 用户显式重建账号, 旧删除标记作废) */
+function clearTombstone(phone){
+  if(!phone)return false;
+  const p=String(phone);
+  const before=TOMBSTONES.length;
+  TOMBSTONES=TOMBSTONES.filter(t=>!t||t.phone!==p);
+  if(TOMBSTONES.length!==before){ saveTombstones(TOMBSTONES); return true; }
+  return false;
+}
+
 // ===================== PASSWORD HASHING (V5.4 安全加固) =====================
 // V10.16.2 安全加固: 优先使用 PBKDF2(100k 迭代) 替代单轮 SHA-256, 大幅提升暴力破解成本。
 // 哈希格式: "pbkdf2$salt$iterations$hashHex" (新) 或 "salt$hashHex" (旧 SHA-256, 向后兼容)

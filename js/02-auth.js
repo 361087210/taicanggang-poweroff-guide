@@ -345,6 +345,8 @@ async function doRegister(){
   if(!/(?=.*\d)(?=.*[a-zA-Z])/.test(pass)){showToast('密码须包含数字和字母');return;}
   if(pass!==pass2){showToast('两次密码不一致');return;}
   if(USERS.find(u=>u.phone===phone)){showToast('该手机号已注册');return;}
+  // V10.24 问题2: 若该号为已注销/已删除号码, 本次属"重新注册"——清除墓碑, 使新账号不被复活拦截误伤
+  if(typeof clearTombstone==='function')clearTombstone(phone);
   // V5.4: 密码哈希化存储
   const salt = genSalt();
   const hashedPass = await hashPassword(pass, salt);
@@ -442,6 +444,35 @@ function doLogout(){
   showToast('已退出登录');
   document.getElementById('login-phone').value='';
   document.getElementById('login-pass').value='';
+}
+
+/**
+ * V10.24 问题2: 自助注销账号 —— 永久删除本人账号(本地 USERS + 飞书云端), 并退出登录。
+ * 与"退出登录"的区别: 退出登录仅清本地会话、账号仍保留在成员列表; 注销则删除账号记录本身。
+ * 权限边界: 组长账号不可自助注销 —— 组长是审批链的唯一源头, 注销后将无人可审批组员,
+ *          需先转让组长身份(或由运维在云端处理), 因此仅组员可自助注销。
+ * 复用链: showConfirm 二次确认 → State.removeUser(唯一合法 USERS 删除入口) → saveUsers
+ *         → pushApprovedUsersToFeishu(带 1 次 1500ms 重试) → doLogout 清会话回登录页。
+ */
+async function cancelAccount(){
+  if(!state.currentUser){ showToast('请先登录'); return; }
+  if(isLeader()){ showToast('组长账号不可自助注销, 请先转让组长身份'); return; }
+  const me=state.currentUser;
+  showConfirm('注销账号',`确定注销账号「${me.name}」？注销后该账号将被永久删除(本地与飞书云端), 且无法再登录。此操作不可恢复。`,async()=>{
+    const phone=me.phone;
+    if(!State.removeUser(phone)){ showToast('注销失败: 未找到当前账号记录'); return; }
+    hapticFeedback();
+    saveUsers(USERS);
+    showToast('正在同步注销到飞书云端...');
+    let pushed=await pushApprovedUsersToFeishu();
+    if(!pushed){ await new Promise(r=>setTimeout(r,1500)); pushed=await pushApprovedUsersToFeishu(); }
+    const doneMsg=pushed
+      ? '账号已注销, 云端已同步'
+      : '⚠️ 账号已在本地注销,但云端同步失败,请检查网络后重试同步';
+    // 注销成功(即使云端未同步, 本地账号已删) → 清会话并回到登录页; 随后覆盖提示为注销结果
+    doLogout();
+    showToast(doneMsg);
+  });
 }
 
 function isLeader(){return state.currentUser&&state.currentUser.role==='admin';}

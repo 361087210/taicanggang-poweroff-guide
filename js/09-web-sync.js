@@ -158,6 +158,8 @@ function _install(){
       var changed=false;
       var rejectedTransition=false;
       if(!local){
+        /* V10.24 问题2: 命中墓碑(本人已注销/被组长删除)→ 拒绝从镜像重建本地账号(同源复活缺陷) */
+        if(typeof isPhoneTombstoned==='function'&&isPhoneTombstoned(who&&who.phone))return false;
         if(!who||!who.phone||!who.password)return false; /* 无明文密码无法重建本地账号 */
         /* 换设备登录重建: id 取镜像, password 用本机新盐哈希存本地会话(镜像已无密码)。
          * 网页端仅组员只读: 强制 role='user'(组长功能一律引导去安卓端)。 */
@@ -309,6 +311,8 @@ function _install(){
       if(!/(?=.*\d)(?=.*[a-zA-Z])/.test(pass)){showToast('密码须包含数字和字母');return;}
       if(pass!==pass2){showToast('两次密码不一致');return;}
       if(USERS.find(u=>u.phone===phone)){showToast('该手机号已注册');return;}
+      // V10.24 问题2: 已注销号码在网页端重新注册 → 清除墓碑, 避免新账号被复活拦截误伤
+      if(typeof clearTombstone==='function')clearTombstone(phone);
       const salt=genSalt();
       const hashedPass=await hashPassword(pass, salt);
       /* P0 脱敏: 派生 linkKey, 审批通过后镜像即可用于网页登录 */

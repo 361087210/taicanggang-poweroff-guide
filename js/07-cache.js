@@ -147,6 +147,8 @@ async function addMember(){
   if(!/^\d{11}$/.test(phone)){showToast('请输入11位手机号');return;}
   if(pass.length<6){showToast('密码至少6位');return;}
   if(USERS.find(u=>u.phone===phone)){showToast('该手机号已注册');return;}
+  // V10.24 问题2: 组长重新为已注销号码建号 → 清除墓碑, 避免新账号被复活拦截误伤
+  if(typeof clearTombstone==='function')clearTombstone(phone);
   // V5.4: 密码哈希化存储
   const salt = genSalt();
   const hashedPass = await hashPassword(pass, salt);
