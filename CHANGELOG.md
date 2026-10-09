@@ -7,8 +7,9 @@
 ### 仓库治理: AI 工具配置目录出库（不涉及 APP 代码与 versionCode）
 
 #### 🚩 工程加固:
-- **58 个 AI 工具配置目录取消 git 跟踪**（本地保留, 不删除任何文件）: 仓库根被各类 AI 编程工具的技能安装器写入 `.claude` / `.agents` / `agent` / `skills` / `.qwen` / `.windsurf` / `.trae` 等 58 个配置、缓存与技能副本路径, 共 2576 个被跟踪文件——实体内容为两份完整的 lark 技能包副本（`.agents/` 与 `agent/` 各 550 文件 / 5.3MB）, 其余 50+ 个目录是指向它们的符号链接农场（各 28 条 symlink）。与业务无关, 膨胀仓库体积、暴露工具链信息
-- `.gitignore` 新增整段忽略规则防止再次入库; 已实证业务代码（js/、scripts/、feishu-api.js、package.json）与全部 CI workflow **零引用**, 取消跟踪无副作用; `.github` / `.gitignore` / `.traeignore` 保留跟踪
+- **59 个 AI 工具配置目录取消 git 跟踪**（本地保留, 不删除任何文件）: 仓库根被各类 AI 编程工具的技能安装器写入 `.claude` / `.agents` / `agent` / `skills` / `.qwen` / `.windsurf` / `.trae` 等 58 个配置、缓存与技能副本路径, 共 2576 个被跟踪文件——实体内容为两份完整的 lark 技能包副本（`.agents/` 与 `agent/` 各 550 文件 / 5.3MB）, 其余 50+ 个目录是指向它们的符号链接农场（各 28 条 symlink）。与业务无关, 膨胀仓库体积、暴露工具链信息
+- **复检补漏: 非根目录的 `data/skills/lark-*` 28 条符号链接出库**: 上述技能农场在 `data/` 下另有一份镜像（全为 mode 120000 链接, 指向同一批 lark 技能）, 首轮清理只覆盖仓库根路径故遗漏。经全仓符号链接扫描确认这是唯一残留的非根泄漏点, 且 `data/` 下其余文件与业务无关
+- `.gitignore` 新增整段忽略规则防止再次入库（含 `/data/skills/`）; 已实证业务代码（js/、scripts/、feishu-api.js、package.json）与全部 CI workflow **零引用**, 取消跟踪无副作用; `.github` / `.gitignore` / `.traeignore` 保留跟踪
 - ⚠️ 历史提交中仍残留这些文件的旧版本, 如需彻底缩减仓库体积需另行重写历史（破坏性操作, 单独评估）
 
 ### V10.20.1 诚实空态 + 同步防倒退版

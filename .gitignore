@@ -56,6 +56,8 @@ tests/*_probe_mutation.json
 # 各类 AI 编程工具(lark-cli skill 安装器等)在仓库根生成的配置/缓存/技能副本
 # 与业务无关, 膨胀仓库体积。仅本地保留, 不入库。
 # 实体内容在 .agents/ 与 agent/, 其余多为指向它们的符号链接农场。
+# data/skills/lark-* 是同一技能农场在 data/ 下的 28 条符号链接(业务零引用)。
+/data/skills/
 .agents/
 agent/
 skills/
