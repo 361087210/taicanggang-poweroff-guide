@@ -392,8 +392,26 @@ async function doForgotPassword(){
   // P0 脱敏: 重置密码后重算 linkKey(连接键随密码变化)
   const linkKey = await deriveLinkKey(phone, pass);
   if(linkKey)user.linkKey=linkKey;
+  // V10.23 修复: 忘记密码重置必须写 pw_ts, 否则跨设备密码仲裁(cuTs>=loTs)失效——
+  // 其他设备上的旧密码 pw_ts 更大反而胜出, 导致"重置后旧密码仍可登录"。
+  user.pw_ts = Date.now();
   saveUsers(USERS);
-  showToast('密码重置成功');
+  // V10.23 修复: 重置密码必须推送云端。原逻辑只写本地 localStorage, 云端
+  // approved_users.json 仍是旧密码哈希, 新设备 fullMerge 拉取旧哈希重建账号,
+  // 造成"新密码登录失败、旧密码反而有效"。推送前先 fullMerge 拉最新名单,
+  // 防止本地滞后名单整表覆盖云端(与 changePassword 同构, 见 07-cache.js)。
+  try{ await pullApprovedStatusFromFeishu(user, true); }catch(e){}
+  // fullMerge 可能以云端档重建本账号对象, 重新写入新密码保证推送值正确
+  const u2=USERS.find(x=>x.phone===phone);
+  if(u2){u2.password=user.password;u2.pw_ts=user.pw_ts;if(linkKey)u2.linkKey=linkKey;saveUsers(USERS);}
+  try{
+    const pushed=await pushApprovedUsersToFeishu();
+    if(pushed===true){ showToast('密码重置成功，已同步云端(全设备生效)'); }
+    else if(window.cordova){ showToast('密码重置成功(本机)，云端同步失败，联网后可重新重置或联系组长'); }
+    else{ showToast('密码重置成功(仅本浏览器生效)'); }
+  }catch(e){
+    showToast(window.cordova?'密码重置成功(本机)，云端同步失败':'密码重置成功(仅本浏览器生效)');
+  }
   showScreen('screen-login');
   // V5.7: 重置完成回到登录页后清空历史栈
   navReset();
@@ -411,6 +429,12 @@ function doLogout(){
   if(typeof _idleCheckTimer!=='undefined'&&_idleCheckTimer){clearInterval(_idleCheckTimer);_idleCheckTimer=null;}
   window.__tcgKicked=false; // 重置踢出标记,允许后续正常登录流程
   localStorage.removeItem('tcg_session');
+  // V10.23 安全加固: 登出应清理全部"会话/账号作用域"缓存, 避免残留。
+  // 原实现仅清 tcg_session 一键, 遗留会话期键会在换账号登录后被复用,
+  // 造成跨账号信息残留(共享设备场景)。保留设备级配置键(feishu_config/tcg_data_folder等)不动。
+  ['tcg_link_push_ts','tcg_recent_vehicles','tcg_link_upgrade_prompted_v1019'].forEach(function(k){
+    try{ localStorage.removeItem(k); }catch(e){}
+  });
   state.currentUser=null;
   showScreen('screen-login');
   // V5.7: 登出后立即清空历史栈,返回键不再退回已登录的主界面(安全隐患修复)

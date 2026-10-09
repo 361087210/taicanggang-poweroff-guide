@@ -412,7 +412,13 @@ async function changePassword(){
   // fullMerge可能以云端档重建本账号对象,重新写入新密码保证推送值正确
   u=USERS.find(x=>x.phone===state.currentUser.phone);
   if(u){if(u.password!==hashedNew){u.password=hashedNew;u.pw_ts=pwTs;}if(linkKey&&u.linkKey!==linkKey){u.linkKey=linkKey;}saveUsers(USERS);}
-  localStorage.setItem('tcg_session',JSON.stringify({uid:state.currentUser.id,phone:state.currentUser.phone,ts:Date.now()}));
+  // V10.23 安全加固: 改密后重建的会话必须重新签名。
+  // 原实现重建会话时缺少 sig 字段, 会被 restoreSession 的"旧版无签名"兼容分支补签放行,
+  // 使 V10.16.2 引入的会话签名硬化被改密路径旁路(等价于本地可伪造会话)。
+  // 密钥沿用本次新密码哈希 hashedNew(与 doLogin 同构), 会话立即生效且签名有效。
+  const sessionTs=Date.now();
+  const sessionSig=await signSession(state.currentUser.id,state.currentUser.phone,sessionTs,hashedNew);
+  localStorage.setItem('tcg_session',JSON.stringify({uid:state.currentUser.id,phone:state.currentUser.phone,ts:sessionTs,sig:sessionSig}));
   // V10.15.11: 密码修改必须推送云端——修复"换设备登录时新密码失效"根因:
   // 原逻辑只写本地localStorage,云端approved_users.json仍是旧密码哈希,
   // 新设备fullMerge拉取旧哈希重建账号,导致新密码登录失败、旧密码反而有效
