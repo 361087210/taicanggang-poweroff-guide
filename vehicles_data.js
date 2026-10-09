@@ -108,7 +108,7 @@ window.VEHICLES = [
       "1.车辆钥匙数量及绑扎检查完。",
       "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
     ],
-    "remarks": "放��燥剂",
+    "remarks": "放干燥剂",
     "photos": 3,
     "photoPaths": [
       "vehicle_images/image5.jpeg",
@@ -616,7 +616,7 @@ window.VEHICLES = [
     "brand": "比亚迪",
     "series": "汉",
     "config": "汉",
-    "display": "比亚迪汉",
+    "display": "比亚��汉",
     "size": "",
     "powerType": "混动",
     "position": "前机盖电池负极",
