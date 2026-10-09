@@ -22,7 +22,7 @@ check('F1b 定义 LINK_SALT=tcg-link-2026(替换旧 WEB_SYNC_SALT)', cfg.include
 check('F1c 定义 GITHUB_REPO', cfg.includes("GITHUB_REPO: '361087210/taicanggang-poweroff-guide'"));
 check('F1d 定义 BASE_APP_TOKEN', cfg.includes('Rv29b7CMAaKXj3sH2RBcRS5rnWb'));
 check('F1e 定义 DEFAULT_CHAT_ID', cfg.includes('oc_5f7c4e8becbfeb487b0eb107ede3f5fb'));
-check('F1f 不含密钥明文', !/***ROTATED-SECRET-REMOVED***|ghp_/.test(cfg)); /* noqa:secret */
+check('F1f 不含密钥明文', !/\*\*\*ROTATED-SECRET-REMOVED\*\*\*|ghp_/.test(cfg)); /* noqa:secret */
 
 section('F2 配置读取改造(降级兜底)');
 const web = src('js/09-web-sync.js');
