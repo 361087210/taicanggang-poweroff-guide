@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.20.2',
+    date: '2026-10-09',
+    highlight: '仓库治理版: AI 工具配置目录出库 + LICENSE 补全, 不涉及 APP 功能与 versionCode 语义变更',
+    features: [
+      '仓库卫生(出库): 59 个 AI 工具配置目录(实体副本 + 符号链接农场)取消 git 跟踪, 移除 2576 个与业务无关的跟踪文件; 本地文件全部保留, 不删除任何内容',
+      '复检补漏: 非根目录 data/skills/ 下 28 条 lark 技能符号链接一并出库, 全程扫描确认无残留泄漏点',
+      '合规: 补 Apache-2.0 LICENSE 全文, 修复 GitHub 无法识别仓库许可证的问题',
+      '文档: README 由 V10.11.0 更新至当前版本现状(版本 / 结构 / 功能 / 测试 / 安全)'
+    ]
+  },
+  {
     version: 'V10.20.1',
     date: '2026-10-06',
     features: [
@@ -540,7 +551,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.20.1'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.20.2'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

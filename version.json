@@ -1,8 +1,13 @@
 {
-  "version": "10.20.1",
-  "versionCode": 102001,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.20.0/tcg_poweroff_v10.20.0.apk",
+  "version": "10.20.2",
+  "versionCode": 102002,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.20.2/tcg_poweroff_v10.20.2.apk",
   "releaseNotes": [
+    "V10.20.2 仓库治理与开源合规版。一句话总结: 清理误入库的 59 个 AI 工具配置目录(共 2576 个文件)与 data/skills/ 下 28 个符号链接, 补入 Apache-2.0 LICENSE 并刷新 README, 让仓库回归纯净、协议可被 GitHub 识别; 本次不涉及 APP 功能与安全语义变更。",
+    "治理(仓库瘦身): 移除被误提交入库的 59 个 AI 工具配置目录(共 2576 个文件)及 data/skills/ 下 28 个符号链接, 消除无关噪音与平台符号链接不可移植问题",
+    "治理(协议合规): 新增 Apache-2.0 LICENSE 文件, 修复 README 声明协议与实际仓库不一致导致 GitHub 无法识别协议的问题",
+    "治理(文档): README 版本信息刷新至 v10.20.2(versionCode 102002), 更新发布说明入口与近期版本要点",
+    "工程(版本门禁): 版本七源对齐(config.xml/version.json/00-bootstrap/sw.js/demo.html/js 兜底字面量/关于页版本历史)至 10.20.2, 版本一致性校验全通过",
     "V10.20.0 组长重置口令安全加固版。一句话总结: 组长重置组员密码不再写死固定口令 '123456', 改为每次生成 12 位高熵随机一次性口令, 仅弹窗展示一次, 彻底消除「全员同口令」的重大弱口令隐患。",
     "安全(随机口令): 新增 generateRandomPassword 原语——crypto.getRandomValues(CSPRNG)取随机字节, 不可用时降级 Math.random(仍远优于固定口令); 拒绝采样消除取模偏差; 去歧义字符集(去除 0/O/o/1/l/I 等易混淆字符), 默认长度 12 位",
     "安全(重置改写): resetMemberPass 改为「随机口令 + 哈希存储」——genSalt 加盐后经 PBKDF2 哈希落库, 同步刷新 pw_ts 与 linkKey(供组员端拉取仲裁), 明文口令绝不落盘/上云",
