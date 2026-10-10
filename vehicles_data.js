@@ -3459,7 +3459,7 @@ window.VEHICLES = [
     "keyContainer": [
       "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
     ],
-    "remarks": "HEV断电��断电",
+    "remarks": "HEV断电器断电",
     "photos": 5,
     "photoPaths": [
       "vehicle_images/奇瑞OMODA欧萌达C5-HEV_p1_1be3a864.jpeg",
