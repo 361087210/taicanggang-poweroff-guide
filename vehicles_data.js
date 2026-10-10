@@ -795,7 +795,7 @@ window.VEHICLES = [
     "config": "CS15/CS35MAX/CS75/CS55PLUS(2025款)",
     "display": "悦翔(CS15/CS35MAX/CS75/CS55PLUS(2025款))",
     "size": "",
-    "powerType": "混动",
+    "powerType": "混��",
     "position": "前机盖电池负极",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，取出车钥匙。",
