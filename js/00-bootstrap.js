@@ -1625,6 +1625,9 @@ const MEDIA_DIRECT_ASSETS={
   //   ② 注释内禁止出现"右花括号紧跟分号"的字面组合 —— 多处解析器用非贪婪正则
   //      截取本对象, 一旦在注释里提前命中就会把表截断(键数悄悄变少)。
   '长安启源(EADO_PLUS)_v2_4ffd5489.mp4':'tcgv_ad959cdfbe.mp4',
+  'user_v74_v1_bba4db96.mp4':'tcgv_7641611f88.mp4',
+  'user_v74_v1_2d41bb72.mp4':'tcgv_1edd4aca08.mp4',
+  'user_v22_v2_7a155908.mp4':'tcgv_ac4b41ffc4_2.mp4',
 };
 
 /**
