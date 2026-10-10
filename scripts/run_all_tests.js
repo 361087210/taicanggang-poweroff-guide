@@ -89,6 +89,8 @@ const TEST_SUITES = [
   'test:honest-empty',
   'test:v1038',
   'test:v1039',
+  'test:v1025-media-paths',
+  'test:v1025-media-paths-e2e',
   'test:cross'
 ];
 

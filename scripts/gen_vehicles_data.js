@@ -26,6 +26,11 @@ const MIRROR = path.join(ROOT, 'web-data', 'vehicle_sync_data.json');
 const OUT = path.join(ROOT, 'vehicles_data.js');
 const CHECK = process.argv.includes('--check');
 
+// 媒体路径约定单一真源(与 js/00-media-paths.js 同源, V10.25.0)。
+// 优雅降级: 模块缺失时不影响数据校正主流程(仅跳过路径归一)。
+let MP = null;
+try { MP = require('../js/00-media-paths.js'); } catch (e) { MP = null; }
+
 /**
  * 已知编码损坏校正表 —— 损坏发生在**飞书表内容侧**(非本仓库脚本)。
  *
@@ -208,6 +213,48 @@ function autoCorrectVehicles(vehicles, corpusIn) {
   return { vehicles: out, applied: applied, unresolved: unresolved };
 }
 
+/**
+ * 媒体路径归一(V10.25.0) —— 让镜像 photoPaths 与 vehicle_images/ 的
+ * 「按车型名分文件夹」约定对称, 消除 --check 的伪漂移。
+ *
+ * 规则(与 scripts/migrate_media_to_folders.js 的归置口径逐字一致):
+ *   · 仅被 1 个车型引用      → vehicle_images/<车型目录>/<文件名>
+ *   · 被 ≥2 个车型引用(共享) → vehicle_images/_共享/<文件名>
+ *   · 已是三段式(含子目录)   → 幂等保留(共享/未归类等非车型目录不可重算)
+ *   · 非 vehicle_images 顶层(如裸文件名) → 原样保留
+ *
+ * 注意: 只归一 photoPaths。videoPaths 保持两段式(视频走 release 直链,
+ * 本地无文件, 且 tests/test_vehicle_data_integrity.js I1e 依赖两段式字面),
+ * 上传回写见 js/06-media.js。返回同一数组引用(原处修改)。
+ */
+function normalizePhotoPaths(vehicles) {
+  if (!MP || !Array.isArray(vehicles)) return vehicles;
+  // basename → 引用车型 id 集合(与迁移脚本同口径: 同一车型重复引用只计一次)
+  const refBy = Object.create(null);
+  vehicles.forEach(function (v) {
+    (v && v.photoPaths || []).forEach(function (p) {
+      const f = MP.parseMediaPath(p).fileName;
+      if (!f) return;
+      (refBy[f] || (refBy[f] = new Set())).add(v.id);
+    });
+  });
+  vehicles.forEach(function (v) {
+    if (!v || !Array.isArray(v.photoPaths)) return;
+    v.photoPaths = v.photoPaths.map(function (p) {
+      const parsed = MP.parseMediaPath(p);
+      if (!parsed.fileName) return p;
+      if (parsed.isNested) return p;                     // 已归位 → 幂等
+      if (parsed.top !== MP.PHOTO_TOP) return p;         // 非照片顶层 → 不碰
+      const ids = refBy[parsed.fileName];
+      const folder = (ids && ids.size > 1)
+        ? MP.SHARED_FOLDER
+        : MP.folderNameForVehicle(v);
+      return MP.photoRelPath(folder, parsed.fileName);
+    });
+  });
+  return vehicles;
+}
+
 /** 读 web-data 镜像的 vehicles 数组, 并施加已知编码损坏校正 */
 function loadMirrorVehicles() {
   const d = JSON.parse(fs.readFileSync(MIRROR, 'utf8'));
@@ -219,6 +266,8 @@ function loadMirrorVehicles() {
   const auto = autoCorrectVehicles(d.vehicles, collectCleanCorpus(d.vehicles));
   d.vehicles = auto.vehicles;
   auto.applied.forEach(a => console.log(`[自动派生] ${a.path}: ${JSON.stringify(a.from)} -> ${JSON.stringify(a.to)}`));
+  // ③ 媒体路径归一: 与 vehicle_images/「按车型名分文件夹」约定对称(见 normalizePhotoPaths)
+  d.vehicles = normalizePhotoPaths(d.vehicles);
   const afterCount = JSON.stringify(d.vehicles).match(/\uFFFD/g) || [];
   d.__corruption = {
     raw: rawCount.length,

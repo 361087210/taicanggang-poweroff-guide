@@ -20,6 +20,12 @@
 const fs = require('fs');
 const path = require('path');
 
+// V10.25.0: 媒体路径约定单一真源(递归枚举子目录布局)
+// ★必须有 try/catch 守卫: test_v1035_zero_guard.js 会把本脚本源码复刻到
+//   临时目录的 scripts/ 下运行, 此时相对路径 require 目标不存在, 不能让脚本崩溃。
+let MP = null;
+try { MP = require('../js/00-media-paths.js'); } catch (e) { MP = null; }
+
 const ROOT = path.resolve(__dirname, '..');
 const MANIFEST_PATH = (() => {
   const i = process.argv.indexOf('--manifest');
@@ -56,8 +62,12 @@ function main() {
   if (manifest.stats.videoCount !== videoRefs) fails.push(`C1 视频引用数漂移: manifest=${manifest.stats.videoCount} 实际=${videoRefs}`);
 
   // 本地照片清单 + 车型引用索引
+  // V10.25.0: 递归枚举(兼容 vehicle_images/<车型名>/* 子目录布局)
   const imgDir = path.join(ROOT, 'vehicle_images');
-  const localImages = new Set(fs.existsSync(imgDir) ? fs.readdirSync(imgDir) : []);
+  const localFiles = (MP && typeof MP.listMediaFiles === 'function')
+    ? MP.listMediaFiles(ROOT, MP.PHOTO_TOP)
+    : (fs.existsSync(imgDir) ? fs.readdirSync(imgDir).map(f => ({ fileName: f, relPath: 'vehicle_images/' + f })) : []);
+  const localImages = new Set(localFiles.map(f => f.fileName));
   const referenced = new Set();
   vehicles.forEach(v => (Array.isArray(v.photoPaths) ? v.photoPaths : []).forEach(p => referenced.add(basename(p))));
 
@@ -113,8 +123,9 @@ function main() {
   }
 
   // ---- C4 孤儿文件 ----
-  for (const f of localImages) {
-    if (!referenced.has(f)) warns.push(`C4 孤儿文件(无车型引用): vehicle_images/${f}`);
+  // V10.25.0: 输出真实相对路径(含子目录), 便于人工定位/删除
+  for (const f of localFiles) {
+    if (!referenced.has(f.fileName)) warns.push(`C4 孤儿文件(无车型引用): ${f.relPath}`);
   }
 
   // ---- C5 数据源对账: vehicles_data.js vs web-data 镜像(P1 防复发) ----

@@ -84,7 +84,10 @@ section('C组 视频恢复: 直链映射与封面');
 const assetsMatch = bootstrapJs.match(/const MEDIA_DIRECT_ASSETS=\{([\s\S]*?)\};/);
 const assetKeys = assetsMatch ? [...assetsMatch[1].matchAll(/'([^']+)':/g)].map(x => x[1]) : [];
 const vehicleSrc = src('vehicles_data.js');
-const referencedVids = [...new Set([...vehicleSrc.matchAll(/vehicle_videos\/([^'"]+)/g)].map(x => x[1]))];
+/* V10.25: 媒体路径改为三段式 vehicle_videos/<车型名>/xxx.mp4(见 js/00-media-paths.js)。
+ * 这里统一取路径末段(裸文件名)再与资产表键比对, 使两段式与三段式引用都能匹配,
+ * 49 计数语义保持不变。 */
+const referencedVids = [...new Set([...vehicleSrc.matchAll(/vehicle_videos\/([^'"]+)/g)].map(x => x[1].split('/').pop()))];
 check('C1 直链映射表数量=49(全部引用全覆盖)', assetKeys.length === 49);
 check('C2 视频引用数=49(49全部官方直链)', referencedVids.length === 49);
 /* P1 数据一致性(2026-10-02 更新): 组长新上传 长安深蓝(G318)_v2.mp4 等 3 个视频已配

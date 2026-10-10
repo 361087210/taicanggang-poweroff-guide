@@ -87,8 +87,11 @@ jobs:
           for f in tailwind.js xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js html-docx.js; do
             test -s "tcg_app/www/vendor/$f" || { echo "MISSING vendor/$f"; exit 1; }
           done
-          IMG_COUNT=$(ls tcg_app/www/vehicle_images/*.jpeg 2>/dev/null | wc -l)
-          echo "vehicle_images count: $IMG_COUNT"
+          # V10.25: 媒体已按车型名分子目录存放(vehicle_images/<车型名>/*.jpeg),
+          # 必须递归统计, 否则顶层再无 .jpeg ⇒ 计数 0 ⇒ 发版被误判为"图片不完整"硬拦截。
+          IMG_COUNT=$(find tcg_app/www/vehicle_images -type f -name '*.jpeg' 2>/dev/null | wc -l | tr -d ' ')
+          SUBDIR_COUNT=$(find tcg_app/www/vehicle_images -mindepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+          echo "vehicle_images count: $IMG_COUNT (车型子目录 $SUBDIR_COUNT 个, 递归统计)"
           [ "$IMG_COUNT" -ge 100 ] || { echo "vehicle_images incomplete (<100)"; exit 1; }
           grep -q "vendor/html-docx.js" tcg_app/www/demo.html || { echo "demo.html lost vendor refs"; exit 1; }
           echo "All export libraries and images verified."

@@ -1168,10 +1168,15 @@ async function _normalizePhotoForUpload(dataUrl,maxEdge){
  * 上传成功的照片其photoPaths原位替换为'vehicle_images/文件名'(与内置数据同构)
  * @param {string} token - tenant_access_token
  * @param {Array} vehicles - 车辆数组(原地修改photoPaths)
- * @returns {Promise<{replaced:number,failed:number,skipped:number}>} 统计
+ * @returns {Promise<{replaced:number,uploaded:number,failed:number,skipped:number}>} 统计
+ *   replaced=本地路径被重写(base64→云端路径,含跳过项); uploaded=真正新上传云端的项数
  */
 async function syncUploadVehiclePhotos(token,vehicles){
-  const stat={replaced:0,failed:0,skipped:0};
+  /* V10.25.2 统计口径修复: 原 replaced 在 if/else 之外无条件自增,导致"云端命中跳过"的
+   * 项也被计入上传数(2个待传项→日志"替换2 跳过2"=4次计数),对外提示(照片N张)与
+   * 通知文件 photoCount 均虚报上传量。现拆分: replaced=本地路径被重写项数(幂等持久化
+   * 判定用), uploaded=真正新上传项数(对外提示/统计用), 跳过项仅计 skipped。 */
+  const stat={replaced:0,uploaded:0,failed:0,skipped:0};
   // 预检: 是否存在待上传的base64照片(无则零开销直通)
   const pending=[];
   vehicles.forEach(v=>{
@@ -1182,14 +1187,56 @@ async function syncUploadVehiclePhotos(token,vehicles){
   if(!pending.length)return stat;
   const folder=await getDataSubFolderToken(token,'vehicle_images');
   if(!folder)throw new Error('vehicle_images目录不可用');
-  // 云端已有文件清单(幂等判定: 同名即已上传过,跳过)
+  /* V10.25: 媒体按车型名分子目录存放(vehicle_images/<车型名>/文件)。
+   * 单一真源 TCG_MEDIA_PATHS 在浏览器/Cordova 由 00-media-paths.js 挂载为裸全局,
+   * 此处用 typeof 兜底:沙箱(单块加载)或旧环境不可见时自动降级为顶层扁平布局,
+   * 保持对旧数据与旧客户端的向后兼容。 */
+  const MP=(typeof TCG_MEDIA_PATHS!=='undefined'&&TCG_MEDIA_PATHS)?TCG_MEDIA_PATHS:null;
+  // 云端已有文件清单(幂等判定: 同名即已上传过,跳过)。
+  // V10.25: 三段式布局下文件位于车型子目录内,故需同时收集顶层与各子目录文件,
+  //   否则幂等键失配→重复上传(云端冗余副本 + 组员端无谓流量)。
   let cloudNames=new Set();
+  const subFolderTokens={}; // 车型子目录名→token(首次列表时缓存,避免每个车型重复探测)
+  /* V10.25.1: 目录列表缓存强制失效——feishuListFiles 内置 30s 缓存(_feishuListCache)。
+   * 本函数处于"创建车型子目录→上传→按同名判定幂等"的写入路径上,若沿用创建前的
+   * 陈旧(空)列表,会导致幂等键失配→重复上传(云端冗余副本+组员端无谓流量+配额浪费)。
+   * 只失效本次涉及的目录键,保留其它目录缓存,不影响 99991400 限流治理的 QPS 收益。
+   * 沙箱(单块加载)或旧环境无该缓存对象时静默跳过,仅退化为可能读到 30s 内旧数据。 */
+  const _bustList=tk=>{try{if(typeof _feishuListCache!=='undefined'&&_feishuListCache)delete _feishuListCache['fl:'+tk];}catch(e){}};
+  _bustList(folder);
   try{
-    (await feishuListFiles(token,folder)||[]).filter(f=>f.type==='file').forEach(f=>cloudNames.add(f.name));
+    const topEntries=await feishuListFiles(token,folder);
+    (topEntries||[]).forEach(f=>{if(f.type==='file')cloudNames.add(f.name);});
+    for(const sub of (topEntries||[]).filter(f=>f.type==='folder')){
+      if(!sub||!sub.token)continue;
+      subFolderTokens[sub.name]=sub.token;
+      try{
+        _bustList(sub.token);
+        (await feishuListFiles(token,sub.token)||[]).forEach(f=>{if(f.type==='file')cloudNames.add(f.name);});
+      }catch(e2){console.warn('[SyncUpload]vehicle_images子目录列表跳过:',e2.message||e2);}
+    }
   }catch(e){console.warn('[SyncUpload]vehicle_images云端列表API失败(全部降级为重传,幂等兜底):',e.message,e.stack)}
+  // V10.25: 车型子目录 find-or-create(先查缓存→再创建)。任何一步失败均降级为顶层 folder,
+  //   保证上传不因目录布局问题中断;沙箱/旧环境无真源时 MP 为 null 直接返回顶层。
+  async function _ensureVehicleSubFolder(subName){
+    if(!MP||!subName)return folder;
+    if(subFolderTokens[subName])return subFolderTokens[subName];
+    try{
+      const cr=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{
+        method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+        body:JSON.stringify({name:subName,folder_token:folder})
+      });
+      const tk=(cr&&cr.data&&cr.data.token)||'';
+      if(tk){subFolderTokens[subName]=tk;return tk;}
+    }catch(e){console.warn('[SyncUpload]vehicle_images子目录创建失败(降级顶层):',e.message||e);}
+    return folder;
+  }
   for(const {v,i} of pending){
     const raw=v.photoPaths[i];
     try{
+      // V10.25: 定位/创建本车型子目录(失败降级顶层),照片上传至该目录
+      const uploadFolderToken=await _ensureVehicleSubFolder(MP?MP.folderNameForVehicle(v):'');
       const norm=await _normalizePhotoForUpload(raw,1280);
       const mm=/^data:image\/(png|jpe?g|webp);base64,(.*)$/.exec(norm);
       if(!mm){stat.failed++;continue;}
@@ -1206,18 +1253,25 @@ async function syncUploadVehiclePhotos(token,vehicles){
         const u8=_b64ToU8(mm[2]);
         const blob=new Blob([u8],{type:'image/jpeg'});
         // V10.10.0: 智能路由(小文件upload_all/超限自动分片),文件名先清洗
-        const up=await httpUploadFileSmart({token,fileName:_sanitizeFeishuFileName(fileName),folderToken:folder,blob});
+        const up=await httpUploadFileSmart({token,fileName:_sanitizeFeishuFileName(fileName),folderToken:uploadFolderToken,blob});
         if(up&&up.code!==0&&up.code!==undefined){throw new Error(up.msg||'照片上传失败');}
         cloudNames.add(fileName);
+        stat.uploaded++; // ★仅真实新上传计入对外统计
       }
       v.photoPaths[i]='vehicle_images/'+fileName;
+      // V10.25: 三段式覆盖写回(vehicle_images/<车型名>/<fileName>),与云端子目录布局一致;
+      //   沙箱内TCG_MEDIA_PATHS不可见时保持上面的两段式,向后兼容旧数据与旧客户端。
+      if(MP){
+        const relFolder=MP.folderNameForVehicle(v);
+        if(relFolder)v.photoPaths[i]=MP.photoRelPath(relFolder,fileName);
+      }
       stat.replaced++;
     }catch(e){
       stat.failed++;
       console.warn('[同步]照片上传失败(保留本地base64,下轮重试):',e.message||e);
     }
   }
-  console.log(`[同步]照片分离上传完成: 替换${stat.replaced} 跳过${stat.skipped} 失败${stat.failed}`);
+  console.log(`[同步]照片分离上传完成: 新传${stat.uploaded} 跳过${stat.skipped} 失败${stat.failed}(本地路径重写${stat.replaced})`);
   return stat;
 }
 
@@ -1235,10 +1289,15 @@ async function syncUploadVehiclePhotos(token,vehicles){
  *   不产生冗余副本;本地videoPaths同步替换并持久化,二次上传零流量。
  * @param {string} token - tenant_access_token
  * @param {Array} vehicles - 车辆数组(原地修改videoPaths)
- * @returns {Promise<{replaced:number,failed:number,skipped:number}>} 统计
+ * @returns {Promise<{replaced:number,uploaded:number,failed:number,skipped:number}>} 统计
+ *   replaced=本地路径被重写(base64→云端路径,含跳过项); uploaded=真正新上传云端的项数
  */
 async function syncUploadVehicleVideos(token,vehicles){
-  const stat={replaced:0,failed:0,skipped:0};
+  /* V10.25.2 统计口径修复: 与照片段同构——原 replaced 在 if/else 之外无条件自增,
+   * "云端命中跳过"项同时计入 skipped 与 replaced,对外提示与通知虚报上传量。
+   * 现拆分: replaced=本地路径被重写项数(幂等持久化判定用),
+   *   uploaded=真正新上传项数(对外提示/统计用), 跳过项仅计 skipped。 */
+  const stat={replaced:0,uploaded:0,failed:0,skipped:0};
   // 预检: 是否存在待上传的base64视频(无则零开销直通)
   const pending=[];
   vehicles.forEach(v=>{
@@ -1250,14 +1309,53 @@ async function syncUploadVehicleVideos(token,vehicles){
   // V10.9.0: vehicle_videos目录(与vehicle_images并列,数据分仓)
   const folder=await getDataSubFolderToken(token,'vehicle_videos');
   if(!folder)throw new Error('vehicle_videos目录不可用');
-  // 云端已有文件清单(幂等判定: 同名即已上传过,跳过)
+  /* V10.25: 视频按车型名分子目录存放(vehicle_videos/<车型名>/文件)。
+   * 单一真源 TCG_MEDIA_PATHS 在浏览器/Cordova 由 00-media-paths.js 挂载为裸全局,
+   * 此处用 typeof 兜底:沙箱(单块加载)或旧环境不可见时自动降级为顶层扁平布局,
+   * 保持对旧数据与旧客户端的向后兼容。 */
+  const MP=(typeof TCG_MEDIA_PATHS!=='undefined'&&TCG_MEDIA_PATHS)?TCG_MEDIA_PATHS:null;
+  // 云端已有文件清单(幂等判定: 同名即已上传过,跳过)。
+  // V10.25: 三段式布局下文件位于车型子目录内,故需同时收集顶层与各子目录文件,
+  //   否则幂等键失配→重复上传(云端冗余副本 + 组员端无谓流量)。
   let cloudNames=new Set();
+  const subFolderTokens={}; // 车型子目录名→token(首次列表时缓存,避免每个车型重复探测)
+  /* V10.25.1: 目录列表缓存强制失效——同照片段,写入路径上的幂等判定必须看到最新列表,
+   * 否则创建子目录前的陈旧(空)列表会导致重复上传。仅失效本次涉及的目录键。 */
+  const _bustList=tk=>{try{if(typeof _feishuListCache!=='undefined'&&_feishuListCache)delete _feishuListCache['fl:'+tk];}catch(e){}};
+  _bustList(folder);
   try{
-    (await feishuListFiles(token,folder)||[]).filter(f=>f.type==='file').forEach(f=>cloudNames.add(f.name));
+    const topEntries=await feishuListFiles(token,folder);
+    (topEntries||[]).forEach(f=>{if(f.type==='file')cloudNames.add(f.name);});
+    for(const sub of (topEntries||[]).filter(f=>f.type==='folder')){
+      if(!sub||!sub.token)continue;
+      subFolderTokens[sub.name]=sub.token;
+      try{
+        _bustList(sub.token);
+        (await feishuListFiles(token,sub.token)||[]).forEach(f=>{if(f.type==='file')cloudNames.add(f.name);});
+      }catch(e2){console.warn('[SyncUpload]vehicle_videos子目录列表跳过:',e2.message||e2);}
+    }
   }catch(e){console.warn('[SyncUpload]vehicle_videos云端列表API失败(全部降级为重传,幂等兜底):',e.message,e.stack)}
+  // V10.25: 车型子目录 find-or-create(先查缓存→再创建)。任何一步失败均降级为顶层 folder,
+  //   保证上传不因目录布局问题中断;沙箱/旧环境无真源时 MP 为 null 直接返回顶层。
+  async function _ensureVehicleVideoSubFolder(subName){
+    if(!MP||!subName)return folder;
+    if(subFolderTokens[subName])return subFolderTokens[subName];
+    try{
+      const cr=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{
+        method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+        body:JSON.stringify({name:subName,folder_token:folder})
+      });
+      const tk=(cr&&cr.data&&cr.data.token)||'';
+      if(tk){subFolderTokens[subName]=tk;return tk;}
+    }catch(e){console.warn('[SyncUpload]vehicle_videos子目录创建失败(降级顶层):',e.message||e);}
+    return folder;
+  }
   for(const {v,i} of pending){
     const raw=v.videoPaths[i];
     try{
+      // V10.25: 定位/创建本车型子目录(失败降级顶层),视频上传至该目录
+      const uploadFolderToken=await _ensureVehicleVideoSubFolder(MP?MP.folderNameForVehicle(v):'');
       // data:video/mp4;base64,XXXX → 提取MIME和base64数据
       const mm=/^data:video\/([a-z0-9]+);base64,(.*)$/i.exec(raw);
       if(!mm){stat.failed++;continue;}
@@ -1279,19 +1377,26 @@ async function syncUploadVehicleVideos(token,vehicles){
         if(blob.size>FEISHU_MULTIPART_THRESHOLD){
           showToast(`大视频分片上传中(${(blob.size/1048576).toFixed(0)}MB)...`);
         }
-        const up=await httpUploadFileSmart({token,fileName:_sanitizeFeishuFileName(fileName),folderToken:folder,blob,
+        const up=await httpUploadFileSmart({token,fileName:_sanitizeFeishuFileName(fileName),folderToken:uploadFolderToken,blob,
           onProgress:(done,total)=>{if(total>1)showToast(`视频分片上传 ${done}/${total}...`);}});
         if(up&&up.code!==0&&up.code!==undefined){throw new Error(up.msg||'视频上传失败');}
         cloudNames.add(fileName);
+        stat.uploaded++; // ★仅真实新上传计入对外统计
       }
       v.videoPaths[i]='vehicle_videos/'+fileName;
+      // V10.25: 三段式覆盖写回(vehicle_videos/<车型名>/<fileName>),与云端子目录布局一致;
+      //   沙箱内TCG_MEDIA_PATHS不可见时保持上面的两段式,向后兼容旧数据与旧客户端。
+      if(MP){
+        const relFolder=MP.folderNameForVehicle(v);
+        if(relFolder)v.videoPaths[i]=MP.videoRelPath(relFolder,fileName);
+      }
       stat.replaced++;
     }catch(e){
       stat.failed++;
       console.warn('[同步]视频上传失败(保留本地base64,下轮重试):',e.message||e);
     }
   }
-  console.log(`[同步]视频分离上传完成: 替换${stat.replaced} 跳过${stat.skipped} 失败${stat.failed}`);
+  console.log(`[同步]视频分离上传完成: 新传${stat.uploaded} 跳过${stat.skipped} 失败${stat.failed}(本地路径重写${stat.replaced})`);
   return stat;
 }
 
@@ -1304,6 +1409,7 @@ async function syncUploadVehicleVideos(token,vehicles){
  * 抽取动机: 旧版doSyncUpload把全部逻辑内联在确认框回调里,自动同步机制(问题2)
  *   需要复用同一管线,复制粘贴会产生两份漂移风险——重构为单一事实源。
  * @returns {Promise<{ok:boolean,vehicles:number,photos:number,version:string,msg?:string}>}
+ *   photos/videos=本轮真正新上传媒体数(V10.25.2 口径: 云端命中跳过项不计入)
  */
 async function _syncUploadPipeline(){
   /* V10.14.1 修复【上传管线配置出口统一】: 原直读 localStorage 绕过注入秘钥闭包缓存,
@@ -1368,13 +1474,16 @@ async function _syncUploadPipeline(){
    * 全量车型JSON。这是"上传成功后飞书同步通知组员账号更新数据"的云端通道;
    * 写入失败仅降级组员感知速度(红点5分钟节流全量比对仍在),不影响数据本体。 */
   try{
-    const notice={type:'data_update_notice',version:syncData.version,timestamp:syncData.timestamp,vehicleCount:syncData.vehicleCount,uploadedBy:syncData.uploadedBy,photoCount:photoStat.replaced,videoCount:videoStat.replaced};
+    /* V10.25.2: 通知中的照片/视频数取 uploaded(真实新上传量),避免云端命中跳过项被虚报 */
+    const notice={type:'data_update_notice',version:syncData.version,timestamp:syncData.timestamp,vehicleCount:syncData.vehicleCount,uploadedBy:syncData.uploadedBy,photoCount:photoStat.uploaded,videoCount:videoStat.uploaded};
     await uploadJsonToDataFeishu(token,'data_update_notice.json',JSON.stringify(notice),cfg.syncSub);
   }catch(e){console.warn('[同步]数据更新通知写入失败(组员感知退化为全量比对):',e.message);}
   localStorage.setItem('feishu_sync_data',JSON.stringify({vehicleCount:syncData.vehicleCount,version:syncData.version,timestamp:syncData.timestamp}));
   /* V10.10.0: 返回媒体失败计数——调用方(手动按钮/自动同步)可据此提示
-   * "部分媒体未上云,下轮自动重试",不再静默吞掉部分失败。 */
-  return {ok:true,vehicles:VEHICLES.length,photos:photoStat.replaced,videos:videoStat.replaced,
+   * "部分媒体未上云,下轮自动重试",不再静默吞掉部分失败。
+   * V10.25.2: photos/videos 语义明确为"本轮真正新上传数"(uploaded),
+   *   云端命中跳过项不计入,避免二次同步虚报"照片N张"。 */
+  return {ok:true,vehicles:VEHICLES.length,photos:photoStat.uploaded,videos:videoStat.uploaded,
     photoFailed:photoStat.failed,videoFailed:videoStat.failed,pendingMedia:_pendingMedia,version:syncData.version};
 }
 

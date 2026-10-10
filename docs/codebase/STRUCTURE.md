@@ -11,14 +11,14 @@
 | `demo.html` | **应用主程序**（单页应用，Cordova `content src`），862 行，含全部 screen/modal DOM | `config.xml:6`；`demo.html`（`screen-login`…`video-player`） |
 | `index.html` | 入口重定向页（meta refresh + `location.replace` 跳 `demo.html`） | `index.html:6-9` |
 | `feishu-api.js` | 飞书 OpenAPI 数据层单例（认证/Bitable/Drive/审批/消息），挂 `window.FeishuAPI` | `feishu-api.js:1095` |
-| `js/` | 业务逻辑，15 个按数字前缀顺序加载的模块 | `demo.html:666-682`；`js/` 目录 |
+| `js/` | 业务逻辑，16 个按数字前缀顺序加载的模块 | `demo.html:666-686`；`js/` 目录 |
 | `css/` | `app.css` 单一样式文件（Tailwind 之上的自定义样式） | `css/app.css`；`sw.js:14` |
 | `vendor/` | 本地化第三方库（tailwind/xlsx/jspdf/html-docx/html2canvas），零 CDN 外链 | `sw.js:30-35` |
 | `scripts/` | 构建/校验/同步/迁移脚本（Node + Python + shell） | `scripts/` 目录 |
 | `tests/` | 测试套件（48 JS + 1 PY + 共享 harness + mock server） | `tests/` 目录 |
 | `docs/` | 项目文档 + 媒体映射表/manifest + `参考资料/` + `codebase/`（本文档） | `docs/` 目录 |
 | `web-data/` | **自动生成**的网页镜像静态数据（cron 每 15 分钟重写） | `.github/workflows/sync-web-data.yml:33-38`；`.codebase-scan.txt` 高 churn |
-| `vehicle_images/` | 车辆图片（运行时契约目录，App 与云端同步依赖） | `sw.js` 未列；`config.xml`/CI 打包；`docs/codebase/.codebase-scan.txt` |
+| `vehicle_images/` | 车辆图片（运行时契约目录，**内部按车型名分子目录**，见「媒体路径约定」） | `sw.js` 未列；`config.xml`/CI 打包；`docs/codebase/.codebase-scan.txt` |
 | `vehicles_data.js` | 车辆数据（由 `web-data/vehicle_sync_data.json` 反向生成） | `scripts/gen_vehicles_data.js:1-17` |
 | `release/` | 发版产物镜像（`version.json` 副本、keystore/apk 已 gitignore） | `.gitignore:16-24`；`release/version.json` |
 | `.github/workflows/` | 14 条 CI/CD 流水线 | `.github/workflows/` 目录 |
@@ -49,6 +49,7 @@
 | Boundary | What belongs here | What must not be here |
 |----------|-------------------|------------------------|
 | `js/00-config.js` | 公开常量单一真源（`window.TCG_CONFIG`） | 任何密钥/secret（文件头明确红线，`js/00-config.js:13-17`） |
+| `js/00-media-paths.js` | 媒体路径约定单一真源（车型名→子目录名、路径解析、本地/云端候选路径） | 任何 I/O（浏览器侧纯函数；Node 侧仅 `fs/path` 只读辅助） |
 | `js/00-bootstrap.js` | 启动期原语：拼音/车辆/用户/密码哈希/HTTP/缓存/媒体直链/版本 | 不应再新增独立业务逻辑（已 1759 行，见 CONCERNS） |
 | `js/01-state.js` | 页面状态、导航栈、返回键路由 | 数据持久化/网络调用 |
 | `js/02-auth.js` | 登录/注册/会话/身份判断/linkKey 迁移 | 车辆业务渲染 |
@@ -91,7 +92,20 @@
 
 - **生成物（勿手改，cron 覆盖）**：`web-data/*.json`、`vehicles_data.js`（由镜像反向生成）、`docs/vehicle_media_mapping.{json,csv}`、`docs/vehicle_media_manifest.json`。
 - **源码**：`js/`、`demo.html`、`feishu-api.js`、`css/`、`scripts/`、`tests/`、`config.xml`、`version.json`。
-- **运行时契约目录（不得改名/移动）**：`vehicle_images/`、`vehicle_videos/`（云端同步链路依赖，见项目 memory 硬约束）。
+- **运行时契约目录（不得改名/移动）**：`vehicle_images/`、`vehicle_videos/`（云端同步链路依赖，见项目 memory 硬约束；**其内部按车型名分子目录**，见下节）。
+
+### 媒体路径约定（V10.25，单一真源 `js/00-media-paths.js`）
+
+> 本约定**不可随意更改**；更改须同步本文档与本文件头注（`js/00-media-paths.js:17`）。
+
+- **顶层目录名不变**：`vehicle_images/`（照片）、`vehicle_videos/`（视频）——GitHub 与飞书两侧一致，保留既有契约，避免外部链接失效。
+- **三段式路径（新规范）**：`vehicle_images/<车型子目录名>/<文件名>`、`vehicle_videos/<车型子目录名>/<文件名>`。
+- **车型子目录名**（`folderNameForVehicle`）：取 `display || series || brand`，经 `sanitizeName` 清洗（去控制字符与 emoji；`\ / : * ? " < > |` → `_`；折叠空白与 `_{2,}`；去首尾 `[.\s_]`；截断 40 字符）；清洗后为空则兜底 `vehicle_<id>`（无 id 则 `vehicle_unknown`）。
+- **共享目录**：`_共享`（`SHARED_FOLDER`），用于不归属单一车型的媒体；与车型子目录同级。
+- **向下兼容（关键）**：`parseMediaPath` 同时识别两段式（历史扁平 `vehicle_images/xxx.jpeg`）与三段式，`isNested` 标识是否为三段式；`candidateRelPaths` 按 `三段式 → 两段式 → 裸文件名` 顺序给出云端/本地候选，保证迁移过渡期两侧都能命中。
+- **启动期归一**：`js/08-main.js` 的 `migrateLegacyMedia()` 在每次启动把历史扁平路径归一为三段式（模块缺失时退化为旧扁平拼接），且**幂等**——已三段式路径原样保留，重复执行零改写。
+- **递归约束**：所有遍历媒体的脚本/CI 与测试必须**递归**统计（`scripts/gen_media_mapping.js`、`scripts/audit_media_consistency.js`、`scripts/sync_photos_to_repo.js`、`android-release.yml`/`ios-release.yml` 门禁），非递归会在迁移后误报为 0。
+- **测试锚点**：`tests/test_v1025_media_paths.js`（单元）、`tests/test_v1025_media_paths_e2e.js`（E2E + 门禁）。
 
 ### 非应用目录（可忽略）
 

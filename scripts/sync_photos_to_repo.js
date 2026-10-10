@@ -40,6 +40,11 @@ const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
+// V10.25.0: 媒体路径约定单一真源(车型名子目录/共享目录/三代路径解析)
+// 优雅降级: 模块缺失时回退旧的扁平目录逻辑, 保证脚本在无 js/ 上下文的场景仍可运行。
+let MP = null;
+try { MP = require('../js/00-media-paths.js'); } catch (e) { MP = null; }
+
 const ROOT = path.resolve(__dirname, '..');
 const FEISHU_HOST = 'https://open.feishu.cn';
 const MEDIA_TAG = 'media-photos';
@@ -108,6 +113,32 @@ function loadReferencedPhotoNames(src) {
     }
   }
   return set;
+}
+
+/**
+ * 构建 "照片文件名 → 车型目录名" 映射(V10.25.0)。
+ * 落盘时据此把照片写进 vehicle_images/<车型目录>/ 子目录, 避免顶层平铺 190+ 文件。
+ * 依赖 js/00-media-paths.js 的 folderNameForVehicle; 模块缺失或解析失败时返回 null(调用方回退扁平落盘)。
+ */
+function loadPhotoFolderMap(src) {
+  if (!MP || typeof MP.folderNameForVehicle !== 'function') return null;
+  const m = String(src || '').match(/(?:const\s+VEHICLES\s*=|window\.VEHICLES\s*=)/);
+  if (!m) return null;
+  const s = String(src).indexOf('[', m.index);
+  const e = String(src).lastIndexOf(']');
+  if (s < 0 || e <= s) return null;
+  let arr;
+  try { arr = new Function('return (' + String(src).slice(s, e + 1) + ')')(); } catch (err) { return null; }
+  if (!Array.isArray(arr)) return null;
+  const map = new Map();
+  for (const v of arr) {
+    const folder = MP.folderNameForVehicle(v);
+    for (const p of (v && v.photoPaths) || []) {
+      const n = String(p).split('/').pop();
+      if (n && !map.has(n)) map.set(n, folder);   // 同名以首次出现的车型为准
+    }
+  }
+  return map;
 }
 
 /** 计算缓冲区 SHA-256(索引清单用, 后续迁对象存储可做内容寻址去重) */
@@ -223,8 +254,13 @@ async function main() {
   if (!folderToken) { console.error('[错误] 缺少 FEISHU_FOLDER_TOKEN'); process.exit(1); }
 
   // ② 本地现有文件(缺失判定的基准)
+  // V10.25.0: 递归枚举(兼容 vehicle_images/<车型名>/* 子目录布局); 比对口径仍是"纯文件名"。
   if (!fs.existsSync(LOCAL_DIR)) fs.mkdirSync(LOCAL_DIR, { recursive: true });
-  const localNames = fs.readdirSync(LOCAL_DIR).filter(f => IMG_EXT.test(f));
+  const localNames = Array.from(new Set(
+    (MP && typeof MP.listMediaFiles === 'function')
+      ? MP.listMediaFiles(ROOT, MP.PHOTO_TOP).map(f => f.fileName).filter(n => IMG_EXT.test(n))
+      : fs.readdirSync(LOCAL_DIR).filter(f => IMG_EXT.test(f))
+  ));
   console.log(`[sync-photos] 本地 vehicle_images/ 现有 ${localNames.length} 个图片`);
 
   // ① 定位飞书 vehicle_images
@@ -243,6 +279,7 @@ async function main() {
   // ③ 检测待回流: 默认**只回流被车型引用的**(防私人废片被 cron 提交到公开仓库)
   const cloudNames = files.map(f => f.name);
   let missing;
+  let folderOfPhoto = null;   // V10.25.0: 照片名 → 车型目录名(落盘定位用; 仅默认安全模式可算出)
   if (allMode) {
     console.warn('[sync-photos] ⚠️ --all: 已关闭"仅被引用"过滤, 会把云盘里所有本地没有的图片(含私人废片/重复件)拉进公开仓库。');
     console.warn('[sync-photos] ⚠️ 该模式仅供人工排查使用, 严禁接进 cron。');
@@ -254,11 +291,14 @@ async function main() {
       console.error('[sync-photos] 如确需全量拉取(不建议), 显式加 --all。');
       process.exit(1);
     }
-    const referenced = loadReferencedPhotoNames(fs.readFileSync(refPath, 'utf8'));
+    const refSrc = fs.readFileSync(refPath, 'utf8');
+    const referenced = loadReferencedPhotoNames(refSrc);
     if (!referenced) {
       console.error('[sync-photos] 无法从 vehicles_data.js 解析 photoPaths; 拒绝在无白名单情况下回流。');
       process.exit(1);
     }
+    // V10.25.0: 取出"照片归属车型", 落盘时写进 vehicle_images/<车型目录>/ (顶层目录名不变)
+    folderOfPhoto = loadPhotoFolderMap(refSrc);
     missing = selectReferencedMissingPhotos([...referenced], cloudNames, localNames);
     const cloudOnly = detectMissingPhotos(cloudNames, localNames).length;
     console.log(`[sync-photos] 车型引用照片 ${referenced.size} 个 / 其中云盘有且本地缺 ${missing.length} 个`);
@@ -283,6 +323,11 @@ async function main() {
   }
 
   // ④ 下载写盘 + ⑤ 归档/报告
+  // V10.25.0: 目标目录解析 —— 被车型引用则落到同名子目录; 算不出归属(如 --all 模式)时回退顶层, 保持旧行为。
+  const photoTargetDir = (name) => {
+    const folder = folderOfPhoto ? folderOfPhoto.get(name) : '';
+    return folder ? path.join(LOCAL_DIR, folder) : LOCAL_DIR;
+  };
   const entries = [];
   let written = 0, archived = 0, failed = 0;
   for (const name of missing) {
@@ -291,18 +336,25 @@ async function main() {
     try {
       const buf = await feishuDownload(token, entry.token);
       if (buf.length < MIN_BYTES) { console.warn(`[sync-photos] 体积异常(${buf.length}B), 跳过: ${name}`); failed++; continue; }
-      if (!dryRun) fs.writeFileSync(path.join(LOCAL_DIR, name), buf);
+      // V10.25.0: 按车型目录落盘(顶层 vehicle_images/ 目录名不变, 内部按车型建子目录)
+      const destDir = photoTargetDir(name);
+      const destAbs = path.join(destDir, name);
+      if (!dryRun) {
+        if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+        fs.writeFileSync(destAbs, buf);
+      }
       written++;
       const rec = {
         name,
         bytes: buf.length,
         sha256: sha256Of(buf),
         feishuToken: entry.token,
+        relPath: path.relative(ROOT, destAbs).replace(/\\/g, '/'),
         syncedAt: new Date().toISOString(),
       };
       if (releaseOk) {
         try {
-          execFileSync('gh', ['release', 'upload', MEDIA_TAG, path.join(LOCAL_DIR, name), '--clobber'], {
+          execFileSync('gh', ['release', 'upload', MEDIA_TAG, destAbs, '--clobber'], {
             cwd: ROOT, stdio: 'pipe',
             env: Object.assign({}, process.env, { GH_TOKEN: ghToken, GITHUB_TOKEN: ghToken }),
           });
@@ -313,7 +365,7 @@ async function main() {
         }
       }
       entries.push(rec);
-      console.log(`[sync-photos] 已回流: ${name} (${buf.length}B, sha256=${rec.sha256.slice(0, 10)})`);
+      console.log(`[sync-photos] 已回流: ${rec.relPath} (${buf.length}B, sha256=${rec.sha256.slice(0, 10)})`);
     } catch (e) {
       failed++;
       console.warn(`[sync-photos] 下载失败, 跳过: ${name} — ${e.message}`);
@@ -342,4 +394,6 @@ module.exports = {
   filterImageFiles, detectMissingPhotos, sha256Of, mergeReport, IMG_EXT, MIN_BYTES, MEDIA_TAG,
   // 默认安全路径(按车型引用过滤) —— 新增, 供测试与后续复用
   selectReferencedMissingPhotos, loadReferencedPhotoNames,
+  // V10.25.0: 照片名 → 车型目录名(落盘按车型建子目录)
+  loadPhotoFolderMap,
 };

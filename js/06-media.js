@@ -258,13 +258,29 @@ async function _fetchFeishuImageBlobUrl(fileName){
   const token=await getFeishuToken(cfg);
   const dataFolder=await getDataFolderToken(token);
   if(!dataFolder)return null;
+  /* V10.25.1: 目录列表缓存强制失效——feishuListFiles 内置 30s 缓存(_feishuListCache)。
+   * 本函数处于"读取刚上传/刚同步的云端照片"路径上,若沿用陈旧(空)列表,
+   * "先顶层后逐子目录下钻"会失配→刚上传成功却提示照片缺失(30s 后自愈)。
+   * 只失效本次涉及的目录键;沙箱/旧环境无该缓存对象时静默跳过。 */
+  const _bustList=tk=>{try{if(typeof _feishuListCache!=='undefined'&&_feishuListCache)delete _feishuListCache['fl:'+tk];}catch(e){}};
+  _bustList(dataFolder);
   const dataFiles=await feishuListFiles(token,dataFolder);
   if(!dataFiles)return null;
   const imgFolder=dataFiles.find(f=>f.type==='folder'&&f.name==='vehicle_images');
   if(!imgFolder)return null;
+  _bustList(imgFolder.token);
   const imgFiles=await feishuListFiles(token,imgFolder.token);
   if(!imgFiles)return null;
-  const target=imgFiles.find(f=>f.type==='file'&&f.name===fileName);
+  // V10.25: 媒体按车型名分子目录存放——先顶层(历史扁平文件兼容)后逐子目录下钻
+  let target=imgFiles.find(f=>f.type==='file'&&f.name===fileName);
+  if(!target){
+    for(const sub of imgFiles.filter(f=>f.type==='folder')){
+      _bustList(sub.token);
+      const subFiles=await feishuListFiles(token,sub.token);
+      target=(subFiles||[]).find(f=>f.type==='file'&&f.name===fileName);
+      if(target)break;
+    }
+  }
   if(!target)return null;
   // V10.19.5: 统一门控下载(150ms最小间隔+并发上限3+限流99991400退避重试),
   //           取代裸 sendRequest/fetch——旧路径突发并发直接撞飞书QPS限流
@@ -676,14 +692,29 @@ async function playFromFeishuCloud(video,fileName,session){
     const token=await getFeishuToken(cfg);
     const dataFolder=await getDataFolderToken(token);
     if(!dataFolder)return false;
+    /* V10.25.1: 目录列表缓存强制失效——feishuListFiles 内置 30s 缓存(_feishuListCache)。
+     * 组长刚上传完视频会立即 openVideoPlayer(读取路径),若沿用上传前的陈旧(空)列表,
+     * "先顶层后逐子目录下钻"会失配→刚上传成功却提示"视频待补充"(30s 后自愈)。
+     * 只失效本次涉及的目录键,保留其它缓存;沙箱/旧环境无该缓存对象时静默跳过。 */
+    const _bustList=tk=>{try{if(typeof _feishuListCache!=='undefined'&&_feishuListCache)delete _feishuListCache['fl:'+tk];}catch(e){}};
     // 在数据文件夹下查找vehicle_videos子目录(懒创建仅查询)
+    _bustList(dataFolder);
     const dataFiles=await feishuListFiles(token,dataFolder);
     if(!dataFiles)return false;
     const videoFolder=dataFiles.find(f=>f.type==='folder'&&f.name==='vehicle_videos');
     let cloudFiles=[];
     if(videoFolder){
-      const allVideoFiles=await feishuListFiles(token,videoFolder.token);
-      cloudFiles=(allVideoFiles||[]).filter(f=>f.type==='file');
+      // V10.25: 视频按车型名分子目录存放——先收顶层文件(历史扁平布局兼容),
+      //         再逐子目录下钻并合并,使完整文件命中与 .part 分片收集在
+      //         两段(vehicle_videos/X.mp4)与三段(vehicle_videos/<车型名>/X.mp4)布局下均可用。
+      _bustList(videoFolder.token);
+      const topEntries=(await feishuListFiles(token,videoFolder.token))||[];
+      cloudFiles=topEntries.filter(f=>f.type==='file');
+      for(const sub of topEntries.filter(f=>f.type==='folder')){
+        _bustList(sub.token);
+        const subFiles=await feishuListFiles(token,sub.token);
+        cloudFiles=cloudFiles.concat((subFiles||[]).filter(f=>f.type==='file'));
+      }
     }
     let target=cloudFiles.find(f=>f.name===fileName);
     // 分片形态: X.mp4.part001..NNN,按数字序重组
@@ -696,6 +727,7 @@ async function playFromFeishuCloud(video,fileName,session){
     //       文件名与车型videoPaths完全匹配,但旧版只搜子目录,永远找不到,
     //       用户反复看到"视频待补充"而云端明明有视频。
     if(!target&&parts.length===0){
+      _bustList(cfg.folder);
       const rootFiles=await feishuListFiles(token,cfg.folder);
       const rootTarget=rootFiles&&rootFiles.find(f=>f.type==='file'&&f.name===fileName);
       if(rootTarget){target=rootTarget;rootHit=true;}
@@ -812,17 +844,46 @@ function pickVideoFile(){
       const token=await getFeishuToken(cfg);
       const dataFolder=await getDataFolderToken(token);
       if(!dataFolder)throw new Error('数据文件夹不可用');
+      /* V10.25.1: 目录列表缓存强制失效——feishuListFiles 内置 30s 缓存(_feishuListCache)。
+       * 本函数是"先查后建"的写入路径:若沿用创建前的陈旧(空)列表,子目录探测会失配→
+       * 重复 create_folder(飞书可能报 1061044/参数错)→subToken 落空→降级为顶层扁平上传,
+       * 与三段式布局不一致(幂等键与云端定位双双失配)。创建成功后同步失效父目录缓存,
+       * 使紧随其后的上传与播放(openVideoPlayer)读到最新列表。
+       * 只失效本次涉及的目录键,保留其它缓存不影响 QPS 治理收益;沙箱/旧环境静默跳过。 */
+      const _bustList=tk=>{try{if(typeof _feishuListCache!=='undefined'&&_feishuListCache)delete _feishuListCache['fl:'+tk];}catch(e){}};
       // 确保vehicle_videos子目录存在(先查后建)
       let vfToken=null;
+      _bustList(dataFolder);
       const exist=(await feishuListFiles(token,dataFolder)||[]).find(f=>f.type==='folder'&&f.name==='vehicle_videos');
       if(exist)vfToken=exist.token;
       if(!vfToken){
         const cr=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({name:'vehicle_videos',folder_token:dataFolder})});
         vfToken=(cr.data||{}).token;
+        _bustList(dataFolder); // 新建后失效父目录陈旧列表
       }
       if(!vfToken)throw new Error('创建视频文件夹失败');
+      // V10.25: 媒体按车型名分子目录存放——在vehicle_videos下确保本车型子目录存在(先查后建)。
+      //         子目录名由单一真源TCG_MEDIA_PATHS.folderNameForVehicle派生,与照片上传、
+      //         云端定位共用同一命名;沙箱内该真源不可见时自动降级为顶层(vfToken)上传。
+      let uploadFolderToken=vfToken;
+      const MP=(typeof TCG_MEDIA_PATHS!=='undefined'&&TCG_MEDIA_PATHS)?TCG_MEDIA_PATHS:null;
+      if(MP){
+        const subFolderName=MP.folderNameForVehicle(v);
+        if(subFolderName&&subFolderName!=='vehicle_videos'){
+          _bustList(vfToken);
+          const vfFiles=await feishuListFiles(token,vfToken);
+          const subExist=(vfFiles||[]).find(f=>f.type==='folder'&&f.name===subFolderName);
+          if(subExist)uploadFolderToken=subExist.token;
+          else{
+            const cr2=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({name:subFolderName,folder_token:vfToken})});
+            const subToken=(cr2.data||{}).token;
+            if(subToken)uploadFolderToken=subToken;
+            _bustList(vfToken); // 新建后失效父目录陈旧列表,防重复建目录
+          }
+        }
+      }
       // V10.10.0: 智能路由——>16MB自动分片上传,附分片进度提示
-      const res=await httpUploadFileSmart({token,fileName,folderToken:vfToken,blob:file,
+      const res=await httpUploadFileSmart({token,fileName,folderToken:uploadFolderToken,blob:file,
         onProgress:(done,total)=>{if(total>1)showToast(`视频分片上传 ${done}/${total}...`);}});
       if(res.code!==0)throw new Error(res.msg||'飞书拒绝上传');
       showToast('视频上传成功,全组设备已可播放');
@@ -838,6 +899,12 @@ function pickVideoFile(){
       }
       // V10.18.0(反馈问题4): 回写按车型命名的云端路径并持久化,确保本机与组员端一致
       v.videoPaths[idx]='vehicle_videos/'+fileName;
+      // V10.25: 三段式覆盖写回(vehicle_videos/<车型名>/<fileName>),与云端子目录布局一致;
+      //         沙箱内TCG_MEDIA_PATHS不可见时保持上面的两段式,向后兼容旧数据与旧客户端。
+      if(MP){
+        const relFolder=MP.folderNameForVehicle(v);
+        if(relFolder)v.videoPaths[idx]=MP.videoRelPath(relFolder,fileName);
+      }
       if(typeof persistVehicles==='function')persistVehicles();
       if(typeof renderVehicleDetail==='function')renderVehicleDetail(v.id);
       openVideoPlayer(idx);

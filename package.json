@@ -70,6 +70,8 @@
     "test:honest-empty": "node tests/test_v1037_honest_empty_state.js",
     "test:v1038": "node tests/test_v1038_account_cancel.js",
     "test:v1039": "node tests/test_v1039_tombstone.js",
+    "test:v1025-media-paths": "node tests/test_v1025_media_paths.js",
+    "test:v1025-media-paths-e2e": "node tests/test_v1025_media_paths_e2e.js",
     "check:two-end": "node scripts/check_two_end_sync.js",
     "audit:media": "node scripts/audit_media_consistency.js",
     "sync:photos": "node scripts/sync_photos_to_repo.js",

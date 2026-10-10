@@ -26,6 +26,11 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+// V10.25.0: 媒体路径约定单一真源(车型名子目录/共享目录/三代路径解析)
+// 优雅降级: 模块缺失时回退旧的扁平逻辑, 保证脚本在临时目录复刻场景下仍可运行
+let MP = null;
+try { MP = require('../js/00-media-paths.js'); } catch (e) { MP = null; }
+
 const ROOT = path.resolve(__dirname, '..');
 const OUT_JSON = path.join(ROOT, 'docs', 'vehicle_media_mapping.json');
 const OUT_CSV = path.join(ROOT, 'docs', 'vehicle_media_mapping.csv');
@@ -56,8 +61,13 @@ function loadVehicles() {
   return new Function('return (' + arrText + ')')();
 }
 
-/** 生成本地图片清单, 用于照片缺失统计 */
+/** 生成本地图片清单, 用于照片缺失统计
+ * V10.25.0: 递归枚举(兼容 vehicle_images/<车型名>/* 子目录布局),
+ * 返回 fileName 集合(与既有 basename 比对口径保持一致)。 */
 function loadLocalImages() {
+  if (MP && typeof MP.listMediaFiles === 'function') {
+    return new Set(MP.listMediaFiles(ROOT, MP.PHOTO_TOP).map(f => f.fileName));
+  }
   const imgDir = path.join(ROOT, 'vehicle_images');
   return new Set(fs.existsSync(imgDir) ? fs.readdirSync(imgDir) : []);
 }
@@ -157,8 +167,15 @@ function mediaEntry(p, type, mediaAssets, localImages, warnings) {
   }
 
   if (type === 'photo') {
-    const localPath = path.join(ROOT, 'vehicle_images', name);
-    if (localImages.has(name) && fs.existsSync(localPath)) {
+    // V10.25.0: 存在性优先定位(兼容扁平/车型名子目录/共享目录三代布局)
+    let localPath = '';
+    if (MP && typeof MP.resolveLocalFile === 'function') {
+      localPath = MP.resolveLocalFile(ROOT, MP.PHOTO_TOP, raw);
+    } else {
+      const legacy = path.join(ROOT, 'vehicle_images', name);
+      if (fs.existsSync(legacy)) localPath = legacy;
+    }
+    if (localImages.has(name) && localPath) {
       entry.sha256 = sha256File(localPath);
       entry.size = sizeOf(localPath);
     } else {

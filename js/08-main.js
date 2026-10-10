@@ -72,30 +72,69 @@ window.addEventListener('popstate',()=>{
 });
 history.pushState(null,'',location.href);
 
-// ===================== MEDIA MIGRATION (V5.3) =====================
+// ===================== MEDIA MIGRATION (V5.3 / V10.25) =====================
 /**
- * 旧版媒体数据迁移 - V5.3核心修复(问题1照片根源)
+ * 旧版媒体数据迁移 - V5.3核心修复(问题1照片根源) / V10.25 升级为三段式
  * 为什么需要: vehicles_data.js由提取脚本生成,photos字段是旧格式字符串数组
  * (如['images/image1.jpeg']),而UI层期望photoPaths路径数组;且数组与数字比较
  * (v.photos>0)恒为false,导致详情页"车辆照片"区块整个不渲染。
  * 另外旧引用的images/目录在打包时实际名为vehicle_images/,需同步修正目录名。
- * 幂等设计: 已迁移数据不会重复处理,每次启动安全执行。
- * @returns {number} 本次迁移修复的车辆数
+ * V10.25 起媒体文件按车型名分子目录存放(约定见 js/00-media-paths.js),因此除了
+ * 改名,还要把历史扁平路径(vehicle_images/xxx.jpeg)归一为三段式
+ * (vehicle_images/<车型名>/xxx.jpeg),供存量文件迁移后的本地/云端定位使用。
+ * 幂等设计: 已是三段式的路径原样保留,重复执行不产生任何变化,每次启动安全执行。
+ * 兼容性: 部分测试沙箱/装载路径不注入 00-media-paths.js,故对 TCG_MEDIA_PATHS
+ * 做 typeof 守卫; 模块缺失时退化为旧版扁平拼接,保证任何环境下都不会抛错。
+ * @returns {number} 旧版 photos 数组被转换为 photoPaths 的车辆数(V5.3 语义不变;
+ *   路径形态归一的车辆数见下方 [媒体迁移] 归一日志)
  */
 function migrateLegacyMedia(){
+  const MP=(typeof TCG_MEDIA_PATHS!=='undefined'&&TCG_MEDIA_PATHS)?TCG_MEDIA_PATHS:null;
+  // 车型对象 → 车型子目录名(模块缺失时返回空串 ⇒ 退化为两段式,与旧行为一致)
+  function folderOf(v){
+    try{return (MP&&MP.folderNameForVehicle)?MP.folderNameForVehicle(v):'';}catch(e){return '';}
+  }
+  // 单条媒体路径归一为三段式。
+  // 幂等关键: 已含车型子目录(paths长度>=3)或远程/内联资源 → 原样返回,不做任何改写。
+  function normalizePath(p,folder,isVideo){
+    if(typeof p!=='string'||!p)return p;
+    // 远程/内联资源不参与本地目录归一(避免把 http://、data: 等误判为相对路径)
+    if(/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(p)||/^(?:data|blob|file|content):/i.test(p))return p;
+    const parsed=(MP&&MP.parseMediaPath)?MP.parseMediaPath(p):null;
+    if(parsed&&parsed.isNested)return p;                       // 已是三段式 → 保持不动
+    const fileName=(parsed&&parsed.fileName)?parsed.fileName:String(p).split('/').pop();
+    if(!fileName)return p;
+    if(MP)return isVideo?MP.videoRelPath(folder,fileName):MP.photoRelPath(folder,fileName);
+    return (isVideo?'vehicle_videos/':'vehicle_images/')+fileName;  // 模块缺失: 旧扁平兜底
+  }
   let fixed=0;
+  let normalized=0;
   VEHICLES.forEach(v=>{
+    const folder=folderOf(v);
+    // 1) V5.3: 旧 photos:['images/image1.jpeg'] → photoPaths(直接产出三段式)
     if(Array.isArray(v.photos)&&v.photos.length&&!(v.photoPaths&&v.photoPaths.length)){
       v.photoPaths=v.photos
         .filter(p=>typeof p==='string')
-        .map(p=>p.replace(/^images?\//,'vehicle_images/'));
+        .map(p=>normalizePath(p,folder,false));
       fixed++;
     }
+    // 2) V10.25: 历史扁平路径归一为三段式(已三段式则零改写,保证幂等)
+    let changed=false;
+    if(Array.isArray(v.photoPaths)){
+      const next=v.photoPaths.map(p=>normalizePath(p,folder,false));
+      if(next.join('\u0001')!==v.photoPaths.join('\u0001')){v.photoPaths=next;changed=true;}
+    }
+    if(Array.isArray(v.videoPaths)){
+      const next=v.videoPaths.map(p=>normalizePath(p,folder,true));
+      if(next.join('\u0001')!==v.videoPaths.join('\u0001')){v.videoPaths=next;changed=true;}
+    }
+    if(changed)normalized++;
     // 统一photos/videos字段为数量语义(UI层用v.photos>0判断)
     if(Array.isArray(v.photoPaths))v.photos=v.photoPaths.length;
     if(Array.isArray(v.videoPaths))v.videos=v.videoPaths.length;
   });
   if(fixed>0)console.log('[媒体迁移] '+fixed+'辆车的照片路径已修正为vehicle_images/');
+  if(normalized>0)console.log('[媒体迁移] '+normalized+'辆车的媒体路径已归一为车型子目录(三段式)');
   return fixed;
 }
 

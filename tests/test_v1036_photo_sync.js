@@ -138,8 +138,17 @@ check('S5b run_all_tests.js TEST_SUITES 已纳入 test:photo-sync', /'test:photo
 /* ---------- S6 现状观测(不阻断) ---------- */
 section('S6 现状观测: 仓库照片数与清单');
 if (fs.existsSync(IMAGES_DIR)) {
-  const n = fs.readdirSync(IMAGES_DIR).filter(f => m && m.IMG_EXT.test(f)).length;
-  console.log(`  [INFO] 仓库 vehicle_images/ 当前 ${n} 个图片文件`);
+  /* V10.25: 媒体已按车型名分子目录存放, 必须递归统计 —— 非递归会让迁移后此处恒报 0,
+   * 造成"仓库没有照片"的误导。本段仅 INFO 观测、不阻断。 */
+  let n = 0;
+  const walk = d => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      if (e.isDirectory()) walk(path.join(d, e.name));
+      else if (m && m.IMG_EXT.test(e.name)) n++;
+    }
+  };
+  walk(IMAGES_DIR);
+  console.log(`  [INFO] 仓库 vehicle_images/ 当前 ${n} 个图片文件(递归统计, 含车型子目录)`);
   console.log('  [INFO] 缺失数量由 npm run audit:media 的 C2 告警给出; 首次运行回流脚本后应显著下降');
 } else {
   console.log('  [INFO] 未找到 vehicle_images/, 跳过观测');

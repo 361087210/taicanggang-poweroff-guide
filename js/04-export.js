@@ -485,13 +485,30 @@ async function _feishuDownloadBlob(token, fileToken, mimeType){
  * @returns {Promise<Object|null>} 目标文件对象 {token,name,...}
  */
 async function _feishuLocatePhotoFile(token, dataFolder, fileName){
+  /* V10.25.1: 定位前强制失效相关目录的列表缓存——feishuListFiles 有 30s 缓存,
+   * 若沿用陈旧(空)列表,"先顶层后逐子目录下钻"的二级查找会失配→找不到已存在的文件,
+   * 表现为导出的照片长时间缺失(需等缓存过期才自愈)。只失效本次涉及的目录键。
+   * 沙箱/旧环境无该缓存对象时静默跳过,仅退化为可能读到 30s 内旧数据。 */
+  const _bustList=tk=>{try{if(typeof _feishuListCache!=='undefined'&&_feishuListCache)delete _feishuListCache['fl:'+tk];}catch(e){}};
+  _bustList(dataFolder);
   const dataFiles=await feishuListFiles(token,dataFolder);
   if(!dataFiles)return null;                                                           // 卫语句: 列目录失败直接出
   const imgFolder=dataFiles.find(f=>f.type==='folder'&&f.name==='vehicle_images');
   if(!imgFolder)return null;                                                           // 卫语句: 无照片子目录直接出
+  _bustList(imgFolder.token);
   const imgFiles=await feishuListFiles(token,imgFolder.token);
   if(!imgFiles)return null;
-  return imgFiles.find(f=>f.type==='file'&&f.name===fileName)||null;
+  // V10.25: 媒体按车型名分子目录存放——先查顶层(兼容历史扁平文件),未命中再逐子目录下钻。
+  //         按文件名精确匹配,无需预先知晓车型名(子目录名与文件名同源,均含车型名)。
+  const topHit=imgFiles.find(f=>f.type==='file'&&f.name===fileName);
+  if(topHit)return topHit;
+  for(const sub of imgFiles.filter(f=>f.type==='folder')){
+    _bustList(sub.token);
+    const subFiles=await feishuListFiles(token,sub.token);
+    const hit=(subFiles||[]).find(f=>f.type==='file'&&f.name===fileName);
+    if(hit)return hit;
+  }
+  return null;
 }
 
 /**
