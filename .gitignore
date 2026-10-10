@@ -18,9 +18,10 @@ scripts/.npm-scratch/
 release/keystore/
 *.keystore
 *.jks
-release/*.apk
-release/*.ipa
-release/*.sha256
+# 发布产物整目录作为本地镜像忽略(见 V5.3.1 红线: 正式产物走 GitHub Release, 源码仓库不放二进制)
+release/
+# 飞书云盘下载的离线媒体(视频 ~2.7GB), 本地仅镜像、不入库
+vehicle_videos/
 platforms/android/release-signing.properties
 
 # =====# V10.13: 飞书同步临时产物 + 凭据本地文件
