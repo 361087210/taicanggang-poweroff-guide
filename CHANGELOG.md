@@ -2,6 +2,36 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.25.0] - 2026-10-10
+
+### 媒体工程化: 图片/视频按车型名分文件夹 + 账号生命周期加固 + 工程门禁
+
+> 一句话总结: 本版为**媒体工程化与账号安全加固版**——图片/视频改为按车型名分文件夹存储(GitHub 与飞书同构), 以单一真源 `js/00-media-paths.js` 加运行时三段式路径下钻定位(04-export/05-sync/06-media)从结构上杜绝媒体与车型错配, 并完成存量 193 个文件迁移; 同步补上账号注销防复活(墓碑机制)、自助注销与账号生命周期三处安全加固, 新增代码库知识文档、web-data 脱敏门禁与行覆盖率验收门禁。
+
+#### 🟢 新增(媒体结构化):
+- **图片/视频按车型名分文件夹存储**: 单一真源 `js/00-media-paths.js` 统一生成三段式路径(柜体规格/车型名/部位), GitHub 与飞书两侧同构, 从目录结构上杜绝媒体与车型错配
+- **运行时三段式路径下钻定位**: `js/04-export.js` / `js/05-sync.js` / `js/06-media.js` 按 `04-export` / `05-sync` / `06-media` 三段逐级解析定位, 命名即归属
+- **存量迁移脚本** `scripts/migrate_media_to_folders.js`: 单车 163 + 共享 14 + 未归类 16, 合计 193 个文件按新结构归位
+
+#### 🟢 新增(账号):
+- **注销防复活(墓碑机制)**: 新增独立存储键 `tcg_deleted_users`, 三条删除路径统一经 `State.removeUser` 收口落墓碑; 云端 `approved_users.json` 增 `deleted` 名单跨设备传播已注销事实; 所有「云端 → 本地」复活点以 `isPhoneTombstoned` 前置拦截, 重新注册时以 `clearTombstone` 作废旧标记
+- **自助注销**: 新增 `cancelAccount` 自助注销入口(菜单 + `js/02-auth.js`), 用户可自主发起注销
+
+#### 🔴 核心修复(账号生命周期加固):
+- **忘记密码跨设备仲裁失效**: `doForgotPassword` 重置后补写 `pw_ts`, 修复跨设备密码仲裁失效
+- **登出残留导致换号串号**: `doLogout` 清理会话与账号作用域缓存, 避免换号后读到上一账号数据
+- **篡改会话绕过校验**: `changePassword` 改密后重建会话并重新签名 `sig`, 修复被篡改会话绕过校验
+
+#### 🚩 工程加固:
+- **代码库知识文档**: 新增 `docs/codebase/` 七篇(STACK/STRUCTURE/ARCHITECTURE/CONVENTIONS/INTEGRATIONS/TESTING/CONCERNS)与扫描快照, 每项结论可溯源; `ARCHITECTURE` 标注 Capacitor 方案作废
+- **web-data 脱敏门禁**: 对已入库产物做脱敏复核(字段白名单 + 敏感字段名兜底 + 明文手机号 + linkKey 形态 + sanitized 哨兵)
+- **行覆盖率门禁**: 引入 c8 行覆盖率采集与验收门禁(`js/` 可归因源文件 >= 95%)
+- **代码清理**: 移除 3 个无引用孤儿会话键(映射表 52 → 49), 修复 refactor 正则字面量导致的非法量词语法错误, 恢复门禁全绿
+- **测试**: 新增 `test_v1038` / `test_v1039` 覆盖墓碑与自助注销; 覆盖率门禁实测 99.38%
+
+#### 🚩 版本一致性升级 10.20.2 → 10.25.0(versionCode 102500)
+- 七源对齐: `version.json` / `release/version.json` / `config.xml` / `sw.js` / `demo.html` / `js/00-bootstrap.js` / `js/11-about.js`(含版本历史与兜底字面量)
+
 ## [10.20.2] - 2026-10-09
 
 ### 仓库治理: AI 工具配置目录出库

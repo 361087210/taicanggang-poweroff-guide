@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.25.0',
+    date: '2026-10-10',
+    highlight: '媒体工程化版: 图片/视频按车型名分文件夹(GitHub + 飞书同构)杜绝错配 + 账号注销防复活(墓碑)与生命周期加固',
+    features: [
+      '媒体(结构化): 图片/视频按车型名分文件夹存储, 单一真源加三段式路径下钻定位, GitHub 与飞书同构, 从结构上杜绝媒体与车型错配; 存量迁移单车163 + 共享14 + 未归类16 共 193 个文件',
+      '账号(防复活): 新增 tcg_deleted_users 墓碑机制, 三条删除路径统一经 State.removeUser 收口落墓碑, 云端 deleted 名单跨设备传播, 所有复活点前置拦截',
+      '账号(自助注销): 新增自助注销入口(菜单 + 02-auth), 用户可自主发起注销',
+      '安全(生命周期加固): 忘记密码重置写 pw_ts 修复跨设备仲裁、登出清理账号作用域缓存防串号、改密重建会话重新签名 sig 修复篡改绕过',
+      '工程(门禁): 新增 web-data 脱敏门禁与 c8 行覆盖率验收门禁(js/ 可归因源文件 >= 95%), 新增 docs/codebase 七篇知识文档'
+    ]
+  },
+  {
     version: 'V10.20.2',
     date: '2026-10-09',
     highlight: '仓库治理版: AI 工具配置目录出库 + LICENSE 补全, 不涉及 APP 功能与 versionCode 语义变更',
@@ -551,7 +563,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.20.2'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.0'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

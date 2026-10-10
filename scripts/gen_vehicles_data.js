@@ -265,7 +265,17 @@ function loadMirrorVehicles() {
   // ② 自动派生补齐: 语料取自**校正后**的干净字段(含手工表的成果)
   const auto = autoCorrectVehicles(d.vehicles, collectCleanCorpus(d.vehicles));
   d.vehicles = auto.vehicles;
-  auto.applied.forEach(a => console.log(`[自动派生] ${a.path}: ${JSON.stringify(a.from)} -> ${JSON.stringify(a.to)}`));
+  if (auto.applied.length) {
+    if (CHECK) {
+      // --check 为对账模式: 只报计数, 不打逐条明细。两个原因:
+      // ① 明细是"生成/审计"用的过程日志(--check 下无写盘, 无审计价值);
+      // ② 对账失败原因([FAIL] 车型内容漂移 ...)在 stderr, 若 stdout 被逐条明细占满,
+      //    下游按"输出前段"定位失败原因的消费者(如 test_v1029 S4e)会读不到关键行。
+      console.error(`[自动派生] 唯一解自动修复 ${auto.applied.length} 处编码损坏 (明细见非 --check 生成模式)`);
+    } else {
+      auto.applied.forEach(a => console.log(`[自动派生] ${a.path}: ${JSON.stringify(a.from)} -> ${JSON.stringify(a.to)}`));
+    }
+  }
   // ③ 媒体路径归一: 与 vehicle_images/「按车型名分文件夹」约定对称(见 normalizePhotoPaths)
   d.vehicles = normalizePhotoPaths(d.vehicles);
   const afterCount = JSON.stringify(d.vehicles).match(/\uFFFD/g) || [];
