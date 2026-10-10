@@ -3646,7 +3646,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/比亚迪ATTO-3-EVO/比亚迪ATTO-3-EVO_p1_962acf4c.jpeg",
+      "vehicle_images/比亚迪ATTO-3-EVO/比亚���ATTO-3-EVO_p1_962acf4c.jpeg",
       "vehicle_images/比亚迪ATTO-3-EVO/比亚迪ATTO-3-EVO_p2_753c03a.jpeg",
       "vehicle_images/比亚迪ATTO-3-EVO/比亚迪ATTO-3-EVO_p3_9f93e56c.jpeg"
     ],
