@@ -50,7 +50,7 @@ window.VEHICLES = [
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
       "2.打开副驾驶和右后车门，副驾驶座椅调到最前方，关闭副驾驶车门，短按钥匙锁车键。",
-      "3.进入右后排，副驾驶底部电池用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
+      "3.进入右后排，副驾驶底部电��用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
       "4.关闭后排车门，再次拉动车门确保关闭。"
     ],
     "keyFrame": [
@@ -3646,7 +3646,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/比亚迪ATTO-3-EVO/比亚���ATTO-3-EVO_p1_962acf4c.jpeg",
+      "vehicle_images/比亚迪ATTO-3-EVO/比亚迪ATTO-3-EVO_p1_962acf4c.jpeg",
       "vehicle_images/比亚迪ATTO-3-EVO/比亚迪ATTO-3-EVO_p2_753c03a.jpeg",
       "vehicle_images/比亚迪ATTO-3-EVO/比亚迪ATTO-3-EVO_p3_9f93e56c.jpeg"
     ],
