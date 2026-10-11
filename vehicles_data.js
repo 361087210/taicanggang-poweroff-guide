@@ -1,4 +1,4 @@
-// 飞书云端同步于 2026-10-03T14:59:10.879Z
+// 飞书云端同步于 2026-10-11T07:00:44.908Z
 window.VEHICLES = [
   {
     "id": 1,
@@ -28,13 +28,13 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/_共享/image1.jpeg",
-      "vehicle_images/_共享/image2.jpeg",
-      "vehicle_images/_共享/image3.jpeg"
+      "vehicle_images/比亚迪海豚DOLPHIN(低配)/image1.jpeg",
+      "vehicle_images/比亚迪海豚DOLPHIN(低配)/image2.jpeg",
+      "vehicle_images/比亚迪海豚DOLPHIN(低配)/image3.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪海豚_低配.mp4"
+      "vehicle_videos/比亚迪海豚DOLPHIN(低配)/比亚迪海豚_低配.mp4"
     ]
   },
   {
@@ -50,7 +50,7 @@ window.VEHICLES = [
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
       "2.打开副驾驶和右后车门，副驾驶座椅调到最前方，关闭副驾驶车门，短按钥匙锁车键。",
-      "3.进入右后排，副驾驶底部电��用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
+      "3.进入右后排，副驾驶底部电池用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
       "4.关闭后排车门，再次拉动车门确保关闭。"
     ],
     "keyFrame": [
@@ -65,9 +65,9 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/_共享/image1.jpeg",
-      "vehicle_images/_共享/image2.jpeg",
-      "vehicle_images/_共享/image4.jpeg"
+      "vehicle_images/比亚迪海豚EV/image1.jpeg",
+      "vehicle_images/比亚迪海豚EV/image2.jpeg",
+      "vehicle_images/比亚迪海豚EV/image4.jpeg"
     ],
     "photoSections": [
       "exterior",
@@ -117,7 +117,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/比亚迪海鸥(低配)/通用断电视频.mp4"
     ]
   },
   {
@@ -150,11 +150,11 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/比亚迪海鸥(高配(天窗))/image8.jpeg",
       "vehicle_images/比亚迪海鸥(高配(天窗))/image9.jpeg",
-      "vehicle_images/_共享/image4.jpeg"
+      "vehicle_images/比亚迪海鸥(高配(天窗))/image4.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪海鸥_高配_天窗_.mp4"
+      "vehicle_videos/比亚迪海鸥(高配(天窗))/比亚迪海鸥_高配_天窗_.mp4"
     ]
   },
   {
@@ -191,7 +191,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪海豹_海豹DM_I.mp4"
+      "vehicle_videos/比亚迪海豹SEAL-DM-I/比亚迪海豹_海豹DM_I.mp4"
     ]
   },
   {
@@ -224,11 +224,11 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/比亚迪海豹(海豹EV)/image13.jpeg",
       "vehicle_images/比亚迪海豹(海豹EV)/image14.jpeg",
-      "vehicle_images/_共享/image4.jpeg"
+      "vehicle_images/比亚迪海豹(海豹EV)/image4.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/比亚迪海豹(海豹EV)/通用断电视频.mp4"
     ]
   },
   {
@@ -264,7 +264,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/比亚迪海狮/通用断电视频.mp4"
     ]
   },
   {
@@ -354,7 +354,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪宋_宋PLUS_DM_I.mp4"
+      "vehicle_videos/比亚迪宋(宋PLUS_DM-I)/比亚迪宋_宋PLUS_DM_I.mp4"
     ]
   },
   {
@@ -425,7 +425,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/比亚迪唐(唐L-EV（天神之眼）)/通用断电视频.mp4"
     ]
   },
   {
@@ -460,7 +460,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/比亚迪唐(唐EV（欧标）)/通用断电视频.mp4"
     ]
   },
   {
@@ -489,12 +489,12 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比亚迪唐ATTO-8/image21.jpeg",
+      "vehicle_images/比��迪唐ATTO-8/image21.jpeg",
       "vehicle_images/比亚迪唐ATTO-8/image22.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪唐_ATTO8.mp4"
+      "vehicle_videos/比亚迪唐ATTO-8/比亚迪唐_ATTO8.mp4"
     ]
   },
   {
@@ -525,11 +525,11 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 1,
     "photoPaths": [
-      "vehicle_images/_共享/image4.jpeg"
+      "vehicle_images/比亚迪元(元UP)/image4.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪元_元UP.mp4"
+      "vehicle_videos/比亚迪元(元UP)/比亚迪元_元UP.mp4"
     ]
   },
   {
@@ -541,7 +541,7 @@ window.VEHICLES = [
     "display": "比亚迪元YUAN-PRO-EV",
     "size": "",
     "powerType": "纯电",
-    "position": "前机盖电池负极",
+    "position": "无需断电",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
       "2.短按钥匙锁车键锁住车门，再次拉动车门确保关闭。"
@@ -556,18 +556,39 @@ window.VEHICLES = [
       "2.确认断电无误后放置于车内中控台。"
     ],
     "remarks": "放干燥剂",
-    "photos": 2,
+    "photos": 9,
     "photoPaths": [
-      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元(元PRO)_p1_f17d44b3.jpeg",
-      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元(元PRO)_p2_93102652.jpeg"
+      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p1_9ec9c3e2.jpeg",
+      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p2_366f5e34.jpeg",
+      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p3_64ad5771.jpeg",
+      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p4_fa43370e.jpeg",
+      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p5_b421c04c.jpeg",
+      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p6_bfaf4d40.jpeg",
+      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p7_5ee790d.jpeg",
+      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p8_7a652a84.jpeg",
+      "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg"
     ],
     "photoSections": [
       "exterior",
-      "exterior"
+      "exterior",
+      "exterior",
+      "exterior",
+      "exterior",
+      "position",
+      "key",
+      "key",
+      "key"
     ],
     "photoLabels": [
+      "车尾",
+      "尾标",
+      "尾标",
+      "尾标",
       "车头",
-      "车尾"
+      "断电位置",
+      "车钥匙",
+      "车钥匙",
+      "车钥匙"
     ],
     "keyPhotoRemark": "",
     "videos": 0,
@@ -603,11 +624,11 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/比亚迪元(元PLUS)/image24.jpeg",
       "vehicle_images/比亚迪元(元PLUS)/image25.jpeg",
-      "vehicle_images/_共享/image3.jpeg"
+      "vehicle_images/比亚迪元(元PLUS)/image3.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/比亚迪元(元PLUS)/通用断电视频.mp4"
     ]
   },
   {
@@ -696,11 +717,11 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/比亚迪腾势(方程豹B5)/image26.jpeg",
       "vehicle_images/比亚迪腾势(方程豹B5)/image27.jpeg",
-      "vehicle_images/_共享/image3.jpeg"
+      "vehicle_images/比亚迪腾势(方程豹B5)/image3.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪腾势_方程豹B5.mp4"
+      "vehicle_videos/比亚迪腾势(方程豹B5)/比亚迪腾势_方程豹B5.mp4"
     ]
   },
   {
@@ -746,7 +767,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长安深蓝_S7_S5.mp4"
+      "vehicle_videos/长安深蓝(S7_S5_S05)/长安深蓝_S7_S5.mp4"
     ]
   },
   {
@@ -783,8 +804,8 @@ window.VEHICLES = [
     ],
     "videos": 2,
     "videoPaths": [
-      "vehicle_videos/长安深蓝_G318.mp4",
-      "vehicle_videos/长安深蓝(G318)_v2.mp4"
+      "vehicle_videos/长安深蓝(G318)/长安深蓝_G318.mp4",
+      "vehicle_videos/长安深蓝(G318)/长安深蓝(G318)_v2.mp4"
     ]
   },
   {
@@ -817,11 +838,11 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/悦翔(CS15_CS35MAX_CS75_CS55PLUS(2025款))/image34.jpeg",
       "vehicle_images/悦翔(CS15_CS35MAX_CS75_CS55PLUS(2025款))/image35.jpeg",
-      "vehicle_images/_共享/image36.jpeg"
+      "vehicle_images/悦翔(CS15_CS35MAX_CS75_CS55PLUS(2025款))/image36.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长安悦翔_CS15_CS35MAX_CS75_CS55PLUS_2025款_.mp4"
+      "vehicle_videos/悦翔(CS15_CS35MAX_CS75_CS55PLUS(2025款))/长安悦翔_CS15_CS35MAX_CS75_CS55PLUS_2025款_.mp4"
     ]
   },
   {
@@ -858,7 +879,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长安启源_CS55PLUS_2026款_.mp4"
+      "vehicle_videos/长安启源(CS55PLUS(2026款))/长安启源_CS55PLUS_2026款_.mp4"
     ]
   },
   {
@@ -906,8 +927,8 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 2,
     "videoPaths": [
-      "vehicle_videos/长安启源_EADO_PLUS.mp4",
-      "vehicle_videos/长安启源(EADO_PLUS)_v2_4ffd5489.mp4"
+      "vehicle_videos/长安启源(EADO_PLUS)/长安启源_EADO_PLUS.mp4",
+      "vehicle_videos/长安启源(EADO_PLUS)/长安启源(EADO_PLUS)_v2_4ffd5489.mp4"
     ]
   },
   {
@@ -940,11 +961,11 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/长安糯米/image43.jpeg",
       "vehicle_images/长安糯米/image44.jpeg",
-      "vehicle_images/_共享/image36.jpeg"
+      "vehicle_images/长安糯米/image36.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长安糯米_糯米.mp4"
+      "vehicle_videos/长安糯米/长安糯米_糯米.mp4"
     ]
   },
   {
@@ -975,8 +996,8 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/_共享/image45.jpeg",
-      "vehicle_images/_共享/image46.jpeg"
+      "vehicle_images/长安UNI-T/image45.jpeg",
+      "vehicle_images/长安UNI-T/image46.jpeg"
     ],
     "photoSections": [
       "exterior",
@@ -989,7 +1010,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长安UNI__UNI_T.mp4"
+      "vehicle_videos/长安UNI-T/长安UNI__UNI_T.mp4"
     ]
   },
   {
@@ -1020,8 +1041,8 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/_共享/image45.jpeg",
-      "vehicle_images/_共享/image46.jpeg"
+      "vehicle_images/长安UNI-V/image45.jpeg",
+      "vehicle_images/长安UNI-V/image46.jpeg"
     ],
     "photoSections": [
       "exterior",
@@ -1034,7 +1055,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长安UNI__UNI_T.mp4"
+      "vehicle_videos/长安UNI-V/长安UNI__UNI_T.mp4"
     ]
   },
   {
@@ -1069,7 +1090,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长安长安之星_小货车.mp4"
+      "vehicle_videos/长安长安之星(小货车)/长安长安之星_小货车.mp4"
     ]
   },
   {
@@ -1117,7 +1138,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长安皮卡_HUNTER_猎手_燃油版_混动版.mp4"
+      "vehicle_videos/长安皮卡(HUNTER（猎手）燃油版_混动版)/长安皮卡_HUNTER_猎手_燃油版_混动版.mp4"
     ]
   },
   {
@@ -1164,7 +1185,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/上汽名爵_ZS_HS_EHS_PHEV_.mp4"
+      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/上汽名爵_ZS_HS_EHS_PHEV_.mp4"
     ]
   },
   {
@@ -1200,7 +1221,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/上汽名爵_赛博斯特.mp4"
+      "vehicle_videos/上汽名爵(赛博斯特)/上汽名爵_赛博斯特.mp4"
     ]
   },
   {
@@ -1236,7 +1257,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/上汽大通_大通货车.mp4"
+      "vehicle_videos/上汽大通(大通货车)/上汽大通_大通货车.mp4"
     ]
   },
   {
@@ -1273,7 +1294,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长城哈佛_H6.mp4"
+      "vehicle_videos/长城哈佛(H6)/长城哈佛_H6.mp4"
     ]
   },
   {
@@ -1309,7 +1330,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长城好猫_好猫.mp4"
+      "vehicle_videos/长城好猫/长城好猫_好猫.mp4"
     ]
   },
   {
@@ -1346,7 +1367,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/东风风行_T5EVO.mp4"
+      "vehicle_videos/东风风行(T5EVO)/东风风行_T5EVO.mp4"
     ]
   },
   {
@@ -1383,7 +1404,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/东风风度_帕拉丁_PALADIN_.mp4"
+      "vehicle_videos/东风风度(帕拉丁（PALADIN）)/东风风度_帕拉丁_PALADIN_.mp4"
     ]
   },
   {
@@ -1415,11 +1436,11 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/东风风神(风神HUGEMHD500T_MAGEMHD500T)/image71.jpeg",
       "vehicle_images/东风风神(风神HUGEMHD500T_MAGEMHD500T)/image72.jpeg",
-      "vehicle_images/_共享/image73.jpeg"
+      "vehicle_images/东风风神(风神HUGEMHD500T_MAGEMHD500T)/image73.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/东风风神_风神HUGEMHD500T_MAGEMHD500T.mp4"
+      "vehicle_videos/东风风神(风神HUGEMHD500T_MAGEMHD500T)/东风风神_风神HUGEMHD500T_MAGEMHD500T.mp4"
     ]
   },
   {
@@ -1453,7 +1474,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/东风VIGO_VIGO_纳米06海外版__纳米06国内版.mp4"
+      "vehicle_videos/东风VIGO(VIGO（纳米06海外版）_纳米06国内版)/东风VIGO_VIGO_纳米06海外版__纳米06国内版.mp4"
     ]
   },
   {
@@ -1562,7 +1583,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/东风锐棋_RICH__RICH6.mp4"
+      "vehicle_videos/东风锐棋（RICH）(RICH6)/东风锐棋_RICH__RICH6.mp4"
     ]
   },
   {
@@ -1598,7 +1619,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/东风小康_MPVC37.mp4"
+      "vehicle_videos/东风小康(MPVC37)/东风小康_MPVC37.mp4"
     ]
   },
   {
@@ -1635,7 +1656,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/江淮E_JS1_4_E_JS1_4.mp4"
+      "vehicle_videos/江淮E-JS1_4/江淮E_JS1_4_E_JS1_4.mp4"
     ]
   },
   {
@@ -1672,7 +1693,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/江淮江淮皮卡(T8PRO)/通用断电视频.mp4"
     ]
   },
   {
@@ -1709,7 +1730,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/江淮江淮皮卡(T6)/通用断电视频.mp4"
     ]
   },
   {
@@ -1742,7 +1763,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/吉利极氪_极氪001_X_7X.mp4"
+      "vehicle_videos/吉利极氪(极氪001_X_7X)/吉利极氪_极氪001_X_7X.mp4"
     ]
   },
   {
@@ -1778,7 +1799,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/吉利沃尔沃_S60.mp4"
+      "vehicle_videos/吉利沃尔沃(S60)/吉利沃尔沃_S60.mp4"
     ]
   },
   {
@@ -1815,7 +1836,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/吉利雷达（RIODARA）皮卡(雷达6)/通用断电视频.mp4"
     ]
   },
   {
@@ -1848,7 +1869,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/吉利银河_EX5_银河E5_.mp4"
+      "vehicle_videos/吉利银河(EX5（银河E5）)/吉利银河_EX5_银河E5_.mp4"
     ]
   },
   {
@@ -1885,7 +1906,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/吉利银河(EX2（银河E2）)/通用断电视频.mp4"
     ]
   },
   {
@@ -1913,11 +1934,11 @@ window.VEHICLES = [
     "photos": 2,
     "photoPaths": [
       "vehicle_images/吉利领克(领克02)/image108.jpeg",
-      "vehicle_images/_共享/image109.jpeg"
+      "vehicle_images/吉利领克(领克02)/image109.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/吉利领克_领克02.mp4"
+      "vehicle_videos/吉利领克(领克02)/吉利领克_领克02.mp4"
     ]
   },
   {
@@ -1946,7 +1967,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/吉利领克(领克08)/image110.jpeg",
       "vehicle_images/吉利领克(领克08)/image111.jpeg",
-      "vehicle_images/_共享/image109.jpeg"
+      "vehicle_images/吉利领克(领克08)/image109.jpeg"
     ],
     "videos": 0
   },
@@ -1995,7 +2016,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞欧萌达_欧萌达5.mp4"
+      "vehicle_videos/奇瑞欧萌达OMODA-5/奇瑞欧萌达_欧萌达5.mp4"
     ]
   },
   {
@@ -2031,7 +2052,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞瑞虎_瑞虎7PRO.mp4"
+      "vehicle_videos/奇瑞瑞虎(瑞虎7PRO)/奇瑞瑞虎_瑞虎7PRO.mp4"
     ]
   },
   {
@@ -2068,7 +2089,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/奇瑞瑞虎(瑞虎7_CSH_PLUGIN_HYBRID)/通用断电视频.mp4"
     ]
   },
   {
@@ -2105,7 +2126,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞瑞虎_瑞虎8_CSH.mp4"
+      "vehicle_videos/奇瑞瑞虎(瑞虎8_CSH)/奇瑞瑞虎_瑞虎8_CSH.mp4"
     ]
   },
   {
@@ -2141,7 +2162,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞艾瑞泽_艾瑞泽5PRO.mp4"
+      "vehicle_videos/奇瑞艾瑞泽(艾瑞泽5PRO)/奇瑞艾瑞泽_艾瑞泽5PRO.mp4"
     ]
   },
   {
@@ -2178,7 +2199,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/奇瑞皮卡(RELY（瑞麟）R8)/通用断电视频.mp4"
     ]
   },
   {
@@ -2211,11 +2232,11 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/奇瑞捷途JETOUR(X50)/image128.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(X50)/image129.jpeg",
-      "vehicle_images/_共享/image130.jpeg"
+      "vehicle_images/奇瑞捷途JETOUR(X50)/image130.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞捷途JETOUR_X50.mp4"
+      "vehicle_videos/奇瑞捷途JETOUR(X50)/奇瑞捷途JETOUR_X50.mp4"
     ]
   },
   {
@@ -2248,11 +2269,11 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/奇瑞捷途JETOUR(X70)/image131.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(X70)/image132.jpeg",
-      "vehicle_images/_共享/image130.jpeg"
+      "vehicle_images/奇瑞捷途JETOUR(X70)/image130.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞捷途JETOUR_X70.mp4"
+      "vehicle_videos/奇瑞捷途JETOUR(X70)/奇瑞捷途JETOUR_X70.mp4"
     ]
   },
   {
@@ -2289,7 +2310,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞捷途JETOUR_DASHENG.mp4"
+      "vehicle_videos/奇瑞捷途JETOUR(DASHENG)/奇瑞捷途JETOUR_DASHENG.mp4"
     ]
   },
   {
@@ -2326,7 +2347,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞捷途JETOUR_T1_I_DM.mp4"
+      "vehicle_videos/奇瑞捷途JETOUR(T1_I-DM)/奇瑞捷途JETOUR_T1_I_DM.mp4"
     ]
   },
   {
@@ -2357,13 +2378,13 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/_共享/image139.jpeg",
+      "vehicle_images/奇瑞捷途JETOUR(T2_I-DM)/image139.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(T2_I-DM)/image140.jpeg",
-      "vehicle_images/_共享/image141.jpeg"
+      "vehicle_images/奇瑞捷途JETOUR(T2_I-DM)/image141.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞捷途JETOUR_T2_I_DM.mp4"
+      "vehicle_videos/奇瑞捷途JETOUR(T2_I-DM)/奇瑞捷途JETOUR_T2_I_DM.mp4"
     ]
   },
   {
@@ -2394,13 +2415,13 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/_共享/image139.jpeg",
+      "vehicle_images/奇瑞捷途JETOUR(T2_XWD)/image139.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(T2_XWD)/image142.jpeg",
-      "vehicle_images/_共享/image141.jpeg"
+      "vehicle_images/奇瑞捷途JETOUR(T2_XWD)/image141.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞捷途JETOUR_T2_XWD.mp4"
+      "vehicle_videos/奇瑞捷途JETOUR(T2_XWD)/奇瑞捷途JETOUR_T2_XWD.mp4"
     ]
   },
   {
@@ -2433,7 +2454,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/奇瑞捷途JETOUR(G700-GAIA)/image143.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(G700-GAIA)/image144.jpeg",
-      "vehicle_images/_共享/image73.jpeg"
+      "vehicle_images/奇瑞捷途JETOUR(G700-GAIA)/image73.jpeg"
     ],
     "photoSections": [
       "exterior",
@@ -2448,7 +2469,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4"
+      "vehicle_videos/奇瑞捷途JETOUR(G700-GAIA)/奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4"
     ]
   },
   {
@@ -2485,7 +2506,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/奇瑞东南SOUEAST(S06DM)/通用断电视频.mp4"
     ]
   },
   {
@@ -2522,7 +2543,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞东南SOUEAST_S07.mp4"
+      "vehicle_videos/奇瑞东南SOUEAST(S07)/奇瑞东南SOUEAST_S07.mp4"
     ]
   },
   {
@@ -2559,7 +2580,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞东南SOUEAST_S08DM.mp4"
+      "vehicle_videos/奇瑞东南SOUEAST(S08DM)/奇瑞东南SOUEAST_S08DM.mp4"
     ]
   },
   {
@@ -2596,7 +2617,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/奇瑞东南SOUEAST(S09-AWD)/通用断电视频.mp4"
     ]
   },
   {
@@ -2623,8 +2644,8 @@ window.VEHICLES = [
     "remarks": "不收卡片不收机械钥匙",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/_共享/image157.png",
-      "vehicle_images/_共享/image158.png"
+      "vehicle_images/零跑Leapmotor-B10/image157.png",
+      "vehicle_images/零跑Leapmotor-B10/image158.png"
     ],
     "photoSections": [
       "exterior",
@@ -2637,7 +2658,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/零跑零跑_零跑B10.mp4"
+      "vehicle_videos/零跑Leapmotor-B10/零跑零跑_零跑B10.mp4"
     ]
   },
   {
@@ -2668,13 +2689,13 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/_共享/image157.png",
-      "vehicle_images/_共享/image158.png",
+      "vehicle_images/零跑Leapmotor-C10/image157.png",
+      "vehicle_images/零跑Leapmotor-C10/image158.png",
       "vehicle_images/零跑Leapmotor-C10/image159.png"
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/通用断电视频.mp4"
+      "vehicle_videos/零跑Leapmotor-C10/通用断电视频.mp4"
     ]
   },
   {
@@ -3090,7 +3111,7 @@ window.VEHICLES = [
     "brand": "吉利",
     "series": "豪越OKAVANGO",
     "config": "标准",
-    "display": "吉利豪越OKAVANGO",
+    "display": "��利豪越OKAVANGO",
     "size": "",
     "powerType": "请选择",
     "position": "前机盖",
@@ -3755,7 +3776,7 @@ window.VEHICLES = [
     "brand": "北汽(BAIC)",
     "series": "极狐ARCFOX",
     "config": "请选择配置",
-    "display": "北汽-极狐ARCFOX-T1",
+    "display": "北汽-极狐ARCFOX-T1/T5",
     "size": "",
     "powerType": "混动",
     "position": "屏幕下电",
@@ -3774,11 +3795,11 @@ window.VEHICLES = [
     "remarks": "屏幕下电",
     "photos": 5,
     "photoPaths": [
-      "vehicle_images/北汽-极狐ARCFOX-T1/北汽-极狐ARCFOX-T1_p1_ad644948.jpeg",
-      "vehicle_images/北汽-极狐ARCFOX-T1/北汽-极狐ARCFOX-T1_p2_339ba39b.jpeg",
-      "vehicle_images/北汽-极狐ARCFOX-T1/北汽-极狐ARCFOX-T1_p3_c82181fe.jpeg",
-      "vehicle_images/北汽-极狐ARCFOX-T1/北汽-极狐ARCFOX-T1_p4_ac6b1397.jpeg",
-      "vehicle_images/北汽-极狐ARCFOX-T1/北汽-极狐ARCFOX-T1_p5_5c705a82.jpeg"
+      "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p1_ad644948.jpeg",
+      "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p2_339ba39b.jpeg",
+      "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p3_c82181fe.jpeg",
+      "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p4_ac6b1397.jpeg",
+      "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p5_5c705a82.jpeg"
     ],
     "photoSections": [
       "exterior",
