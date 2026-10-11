@@ -489,7 +489,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比��迪唐ATTO-8/image21.jpeg",
+      "vehicle_images/比亚迪唐ATTO-8/image21.jpeg",
       "vehicle_images/比亚迪唐ATTO-8/image22.jpeg"
     ],
     "videos": 1,
@@ -1901,7 +1901,7 @@ window.VEHICLES = [
     "photos": 3,
     "photoPaths": [
       "vehicle_images/吉利银河(EX2（银河E2）)/image105.jpeg",
-      "vehicle_images/吉利银河(EX2（银河E2）)/image106.jpeg",
+      "vehicle_images/吉利银河(EX2（���河E2）)/image106.jpeg",
       "vehicle_images/吉利银河(EX2（银河E2）)/image107.jpeg"
     ],
     "videos": 1,
@@ -3111,7 +3111,7 @@ window.VEHICLES = [
     "brand": "吉利",
     "series": "豪越OKAVANGO",
     "config": "标准",
-    "display": "��利豪越OKAVANGO",
+    "display": "吉利豪越OKAVANGO",
     "size": "",
     "powerType": "请选择",
     "position": "前机盖",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-11T07:51:37.944Z",
+  "generatedAt": "2026-10-11T14:39:50.751Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -352,8 +352,8 @@
       "photos": [
         {
           "fileName": "image21.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "d6235acfc1d551c2510570de2c42b1173f5a84e8b8cf317688c099c20c65f864",
+          "size": 27284,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -1599,8 +1599,8 @@
         },
         {
           "fileName": "image106.jpeg",
-          "sha256": "48e9092ef73c9e41e6d928aa5f0c0e642c71f9e927f130bd8db17b8051d74615",
-          "size": 34997,
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -2652,7 +2652,7 @@
     },
     {
       "id": 85,
-      "display": "��利豪越OKAVANGO",
+      "display": "吉利豪越OKAVANGO",
       "photos": [
         {
           "fileName": "吉利豪越OKAVANGO_p1_5fbee0c1.jpeg",
@@ -3254,6 +3254,13 @@
         13
       ]
     },
+    "d6235acfc1d551c2510570de2c42b1173f5a84e8b8cf317688c099c20c65f864": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        14
+      ]
+    },
     "3dc4f280a579845a411eaf5b6c2a8bed51301ed08af10a420a79688507e1bf47": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -3772,13 +3779,6 @@
         51
       ]
     },
-    "48e9092ef73c9e41e6d928aa5f0c0e642c71f9e927f130bd8db17b8051d74615": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        51
-      ]
-    },
     "8737c2d097dd56f6f9c216d49060129f73a976d82d619c3ed48db5423ca4584e": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -4275,6 +4275,6 @@
     "vehicleCount": 100,
     "photoCount": 266,
     "videoCount": 64,
-    "totalBytes": 10118620
+    "totalBytes": 10110907
   }
 }
