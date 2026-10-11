@@ -1901,7 +1901,7 @@ window.VEHICLES = [
     "photos": 3,
     "photoPaths": [
       "vehicle_images/吉利银河(EX2（银河E2）)/image105.jpeg",
-      "vehicle_images/吉利银河(EX2（���河E2）)/image106.jpeg",
+      "vehicle_images/吉利银河(EX2（银河E2）)/image106.jpeg",
       "vehicle_images/吉利银河(EX2（银河E2）)/image107.jpeg"
     ],
     "videos": 1,
