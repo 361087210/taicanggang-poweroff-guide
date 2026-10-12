@@ -1213,7 +1213,7 @@ window.VEHICLES = [
       "1.车辆钥匙数量及绑扎检查完。",
       "2.确认断电无误后放置于车内中控台。"
     ],
-    "remarks": "备注：机盖打开方式：拉动前保险杠左前盖板内的拉线",
+    "remarks": "备注：机盖打��方式：拉动前保险杠左前盖板内的拉线",
     "photos": 2,
     "photoPaths": [
       "vehicle_images/上汽名爵(赛博斯特)/image55.jpeg",
@@ -3755,7 +3755,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/比亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
+      "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/���亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
       "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/比亚迪皮卡灰鲸鲨MAKO_p2_dba5cf97.jpeg"
     ],
     "photoSections": [
