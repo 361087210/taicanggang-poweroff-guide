@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-13T15:58:52.757Z",
+  "generatedAt": "2026-10-13T21:08:47.819Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -2655,7 +2655,7 @@
       "display": "吉利豪越OKAVANGO",
       "photos": [
         {
-          "fileName": "吉��豪越OKAVANGO_p1_5fbee0c1.jpeg",
+          "fileName": "吉利豪越OKAVANGO_p1_5fbee0c1.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",

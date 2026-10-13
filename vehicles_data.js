@@ -3133,7 +3133,7 @@ window.VEHICLES = [
     "remarks": "前机盖断电",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/吉利豪越OKAVANGO/吉��豪越OKAVANGO_p1_5fbee0c1.jpeg",
+      "vehicle_images/吉利豪越OKAVANGO/吉利豪越OKAVANGO_p1_5fbee0c1.jpeg",
       "vehicle_images/吉利豪越OKAVANGO/吉利豪越OKAVANGO_p2_36848bf5.jpeg",
       "vehicle_images/吉利豪越OKAVANGO/吉利豪越OKAVANGO_p3_8d0bcab1.jpeg"
     ],
@@ -3731,7 +3731,7 @@ window.VEHICLES = [
   {
     "id": 99,
     "brandId": "byd",
-    "brand": "��亚迪",
+    "brand": "比亚迪",
     "series": "灰鲸鲨MAKO",
     "config": "标准",
     "display": "比亚迪皮卡灰鲸鲨MAKO",
