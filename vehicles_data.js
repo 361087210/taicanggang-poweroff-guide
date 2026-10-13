@@ -1967,7 +1967,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/吉利领克(领克08)/image110.jpeg",
       "vehicle_images/吉利领克(领克08)/image111.jpeg",
-      "vehicle_images/吉利领克(领克08)/image109.jpeg"
+      "vehicle_images/吉���领克(领克08)/image109.jpeg"
     ],
     "videos": 0
   },
