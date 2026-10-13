@@ -191,7 +191,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪海豹SEAL-DM-I/比亚迪海豹_��豹DM_I.mp4"
+      "vehicle_videos/比亚迪海豹SEAL-DM-I/比亚迪海豹_海豹DM_I.mp4"
     ]
   },
   {
@@ -3626,7 +3626,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/比亚迪海狮SEALION-7-4.5s-AWD/比亚迪海狮SEALLION7-4_p1_87686476.jpeg",
       "vehicle_images/比亚迪海狮SEALION-7-4.5s-AWD/比亚迪海狮SEALLION7-4_p2_9a2a8485.jpeg",
-      "vehicle_images/比��迪海狮SEALION-7-4.5s-AWD/比亚迪海狮SEALLION7-4_p3_129f032f.jpeg"
+      "vehicle_images/比亚迪海狮SEALION-7-4.5s-AWD/比亚迪海狮SEALLION7-4_p3_129f032f.jpeg"
     ],
     "photoSections": [
       "exterior",
