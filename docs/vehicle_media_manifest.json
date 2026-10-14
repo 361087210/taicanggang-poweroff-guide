@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-14T00:18:37.630Z",
+  "generatedAt": "2026-10-14T05:12:20.896Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -3023,7 +3023,7 @@
     },
     {
       "id": 98,
-      "display": "吉��STARRAY-EM-i",
+      "display": "吉利STARRAY-EM-i",
       "photos": [
         {
           "fileName": "吉利STARRAY-EM-i_p1_b24e574e.jpeg",
