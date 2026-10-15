@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-15T10:19:59.697Z",
+  "generatedAt": "2026-10-15T15:13:31.593Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -352,8 +352,8 @@
       "photos": [
         {
           "fileName": "image21.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "d6235acfc1d551c2510570de2c42b1173f5a84e8b8cf317688c099c20c65f864",
+          "size": 27284,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -2746,7 +2746,7 @@
           "qiniuKey": ""
         },
         {
-          "fileName": "比亚迪SEALION海���06_p2_5b727539.jpeg",
+          "fileName": "比亚迪SEALION海狮06_p2_5b727539.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
@@ -3252,6 +3252,13 @@
       "releaseAsset": "",
       "vehicleIds": [
         13
+      ]
+    },
+    "d6235acfc1d551c2510570de2c42b1173f5a84e8b8cf317688c099c20c65f864": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        14
       ]
     },
     "3dc4f280a579845a411eaf5b6c2a8bed51301ed08af10a420a79688507e1bf47": {
@@ -4275,6 +4282,6 @@
     "vehicleCount": 100,
     "photoCount": 266,
     "videoCount": 64,
-    "totalBytes": 10118620
+    "totalBytes": 10145904
   }
 }
