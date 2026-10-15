@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-14T05:12:20.896Z",
+  "generatedAt": "2026-10-15T00:54:11.797Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -859,15 +859,15 @@
       "photos": [
         {
           "fileName": "image47.jpeg",
-          "sha256": "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897",
-          "size": 41132,
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
         {
           "fileName": "image48.jpeg",
-          "sha256": "dcf9314516288313f528e0a5c46ecdfc81ae0a6dcbd2a4c0e50c166677ccc92d",
-          "size": 45942,
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -2328,7 +2328,7 @@
     },
     {
       "id": 72,
-      "display": "零跑Leapmotor-C10",
+      "display": "��跑Leapmotor-C10",
       "photos": [
         {
           "fileName": "image157.png",
@@ -2739,7 +2739,7 @@
       "display": "比亚迪SEALION海狮06",
       "photos": [
         {
-          "fileName": "比亚迪SEALION海狮06_p1_85c9d7e8.jpeg",
+          "fileName": "比亚���SEALION海狮06_p1_85c9d7e8.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
@@ -3392,20 +3392,6 @@
       "releaseAsset": "",
       "vehicleIds": [
         26
-      ]
-    },
-    "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        29
-      ]
-    },
-    "dcf9314516288313f528e0a5c46ecdfc81ae0a6dcbd2a4c0e50c166677ccc92d": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        29
       ]
     },
     "2646de759b43583ada839a8d26568745e3fb04f21bc2f1138aee2ed98a1a8e5b": {
@@ -4282,6 +4268,6 @@
     "vehicleCount": 100,
     "photoCount": 266,
     "videoCount": 64,
-    "totalBytes": 10145904
+    "totalBytes": 10058830
   }
 }
