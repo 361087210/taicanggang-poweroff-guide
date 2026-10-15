@@ -489,7 +489,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比亚迪唐ATTO-8/image21.jpeg",
+      "vehicle_images/比亚���唐ATTO-8/image21.jpeg",
       "vehicle_images/比亚迪唐ATTO-8/image22.jpeg"
     ],
     "videos": 1,
@@ -3269,7 +3269,7 @@ window.VEHICLES = [
     "photos": 2,
     "photoPaths": [
       "vehicle_images/比亚迪SEALION海狮06/比亚迪SEALION海狮06_p1_85c9d7e8.jpeg",
-      "vehicle_images/比亚迪SEALION海狮06/比亚迪SEALION海狮06_p2_5b727539.jpeg"
+      "vehicle_images/比亚迪SEALION海狮06/比亚迪SEALION海���06_p2_5b727539.jpeg"
     ],
     "photoSections": [
       "exterior",
