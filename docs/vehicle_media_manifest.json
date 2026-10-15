@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-15T15:13:31.593Z",
+  "generatedAt": "2026-10-15T19:12:11.847Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
