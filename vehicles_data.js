@@ -3756,7 +3756,7 @@ window.VEHICLES = [
     "photos": 2,
     "photoPaths": [
       "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/比亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
-      "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/比亚迪皮卡灰���鲨MAKO_p2_dba5cf97.jpeg"
+      "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/比亚迪皮卡灰鲸鲨MAKO_p2_dba5cf97.jpeg"
     ],
     "photoSections": [
       "exterior",
