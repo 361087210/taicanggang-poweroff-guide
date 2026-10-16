@@ -2554,7 +2554,7 @@ window.VEHICLES = [
     "config": "S08DM",
     "display": "奇瑞东南SOUEAST(S08DM)",
     "size": "",
-    "powerType": "混动",
+    "powerType": "混���",
     "position": "后备箱电池负极",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
