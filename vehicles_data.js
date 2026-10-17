@@ -581,7 +581,7 @@ window.VEHICLES = [
     ],
     "photoLabels": [
       "车尾",
-      "���标",
+      "尾标",
       "尾标",
       "尾标",
       "车头",
@@ -1185,7 +1185,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/���汽名爵_ZS_HS_EHS_PHEV_.mp4"
+      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/上汽名爵_ZS_HS_EHS_PHEV_.mp4"
     ]
   },
   {
@@ -1613,7 +1613,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/东风小康(MPVC37)/image83.jpeg",
+      "vehicle_images/东风小��(MPVC37)/image83.jpeg",
       "vehicle_images/东风小康(MPVC37)/image84.jpeg",
       "vehicle_images/东风小康(MPVC37)/image85.jpeg"
     ],
@@ -1901,7 +1901,7 @@ window.VEHICLES = [
     "photos": 3,
     "photoPaths": [
       "vehicle_images/吉利银河(EX2（银河E2）)/image105.jpeg",
-      "vehicle_images/吉利银河(EX2（银河E2）)/image106.jpeg",
+      "vehicle_images/吉利银河(EX2��银河E2）)/image106.jpeg",
       "vehicle_images/吉利银河(EX2（银河E2）)/image107.jpeg"
     ],
     "videos": 1,
