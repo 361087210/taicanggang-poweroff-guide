@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-17T15:25:39.477Z",
+  "generatedAt": "2026-10-17T17:54:04.591Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -859,8 +859,8 @@
       "photos": [
         {
           "fileName": "image47.jpeg",
-          "sha256": "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897",
-          "size": 41132,
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -1310,8 +1310,8 @@
       "photos": [
         {
           "fileName": "image83.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "d53c9a69b69ef8fd680eb98af4682f35d2db35963180ff8132281efe1a9be71d",
+          "size": 40323,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -1599,8 +1599,8 @@
         },
         {
           "fileName": "image106.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "48e9092ef73c9e41e6d928aa5f0c0e642c71f9e927f130bd8db17b8051d74615",
+          "size": 34997,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -3394,13 +3394,6 @@
         26
       ]
     },
-    "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        29
-      ]
-    },
     "dcf9314516288313f528e0a5c46ecdfc81ae0a6dcbd2a4c0e50c166677ccc92d": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -3618,6 +3611,13 @@
         42
       ]
     },
+    "d53c9a69b69ef8fd680eb98af4682f35d2db35963180ff8132281efe1a9be71d": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        43
+      ]
+    },
     "94f367949d336e3421ec26f9a3448cfa227f4f7441f420266ea9f0731942b52c": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -3766,6 +3766,13 @@
       ]
     },
     "0a3cb3484933629e6c4e5f2ffef0c1574e5249ce0d4f7fbb616bd33eaed32b19": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        51
+      ]
+    },
+    "48e9092ef73c9e41e6d928aa5f0c0e642c71f9e927f130bd8db17b8051d74615": {
       "qiniuKey": "",
       "releaseAsset": "",
       "vehicleIds": [
@@ -4268,6 +4275,6 @@
     "vehicleCount": 100,
     "photoCount": 266,
     "videoCount": 64,
-    "totalBytes": 10070584
+    "totalBytes": 10104772
   }
 }

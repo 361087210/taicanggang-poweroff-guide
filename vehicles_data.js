@@ -1085,7 +1085,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/长安长安之星(小货车)/image47.jpeg",
+      "vehicle_images/长���长安之星(小货车)/image47.jpeg",
       "vehicle_images/长安长安之星(小货车)/image48.jpeg"
     ],
     "videos": 1,
@@ -1613,7 +1613,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/东风小��(MPVC37)/image83.jpeg",
+      "vehicle_images/东风小康(MPVC37)/image83.jpeg",
       "vehicle_images/东风小康(MPVC37)/image84.jpeg",
       "vehicle_images/东风小康(MPVC37)/image85.jpeg"
     ],
@@ -1901,7 +1901,7 @@ window.VEHICLES = [
     "photos": 3,
     "photoPaths": [
       "vehicle_images/吉利银河(EX2（银河E2）)/image105.jpeg",
-      "vehicle_images/吉利银河(EX2��银河E2）)/image106.jpeg",
+      "vehicle_images/吉利银河(EX2（银河E2）)/image106.jpeg",
       "vehicle_images/吉利银河(EX2（银河E2）)/image107.jpeg"
     ],
     "videos": 1,
