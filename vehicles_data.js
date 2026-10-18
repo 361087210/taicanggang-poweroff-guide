@@ -191,7 +191,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪海豹SEAL-DM-I/比亚迪海豹_���豹DM_I.mp4"
+      "vehicle_videos/比亚迪海豹SEAL-DM-I/比亚迪海豹_海豹DM_I.mp4"
     ]
   },
   {
