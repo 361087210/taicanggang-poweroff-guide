@@ -432,7 +432,7 @@ window.VEHICLES = [
     "id": 13,
     "brandId": "byd",
     "brand": "比亚迪",
-    "series": "唐",
+    "series": "���",
     "config": "唐EV（欧标）",
     "display": "比亚迪唐(唐EV（欧标）)",
     "size": "",
