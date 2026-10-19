@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-19T06:52:28.663Z",
+  "generatedAt": "2026-10-19T14:21:51.063Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -352,8 +352,8 @@
       "photos": [
         {
           "fileName": "image21.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "d6235acfc1d551c2510570de2c42b1173f5a84e8b8cf317688c099c20c65f864",
+          "size": 27284,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -948,12 +948,12 @@
       ],
       "videos": [
         {
-          "fileName": "上汽名爵_ZS_HS_EHS_PHEV_.mp4",
+          "fileName": "���汽名爵_ZS_HS_EHS_PHEV_.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": "tcgv_104bb1ef84.mp4"
+          "releaseAsset": ""
         }
       ]
     },
@@ -1380,7 +1380,7 @@
     },
     {
       "id": 45,
-      "display": "江淮江淮��卡(T8PRO)",
+      "display": "江淮江淮皮卡(T8PRO)",
       "photos": [
         {
           "fileName": "image89.jpeg",
@@ -3254,6 +3254,13 @@
         13
       ]
     },
+    "d6235acfc1d551c2510570de2c42b1173f5a84e8b8cf317688c099c20c65f864": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        14
+      ]
+    },
     "3dc4f280a579845a411eaf5b6c2a8bed51301ed08af10a420a79688507e1bf47": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -4275,6 +4282,6 @@
     "vehicleCount": 100,
     "photoCount": 266,
     "videoCount": 64,
-    "totalBytes": 10118620
+    "totalBytes": 10145904
   }
 }

@@ -489,7 +489,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比亚��唐ATTO-8/image21.jpeg",
+      "vehicle_images/比亚迪唐ATTO-8/image21.jpeg",
       "vehicle_images/比亚迪唐ATTO-8/image22.jpeg"
     ],
     "videos": 1,
@@ -581,7 +581,7 @@ window.VEHICLES = [
     ],
     "photoLabels": [
       "车尾",
-      "尾标",
+      "���标",
       "尾标",
       "尾标",
       "车头",
@@ -1185,7 +1185,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/上汽名爵_ZS_HS_EHS_PHEV_.mp4"
+      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/���汽名爵_ZS_HS_EHS_PHEV_.mp4"
     ]
   },
   {
@@ -1665,7 +1665,7 @@ window.VEHICLES = [
     "brand": "江淮",
     "series": "江淮皮卡",
     "config": "T8PRO",
-    "display": "江淮江淮��卡(T8PRO)",
+    "display": "江淮江淮皮卡(T8PRO)",
     "size": "",
     "powerType": "混动",
     "position": "前机盖电池负极",
@@ -2232,7 +2232,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/奇瑞捷途JETOUR(X50)/image128.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(X50)/image129.jpeg",
-      "vehicle_images/奇瑞捷��JETOUR(X50)/image130.jpeg"
+      "vehicle_images/奇瑞捷途JETOUR(X50)/image130.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
