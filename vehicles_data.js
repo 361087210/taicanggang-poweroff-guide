@@ -1759,7 +1759,7 @@ window.VEHICLES = [
     "photos": 2,
     "photoPaths": [
       "vehicle_images/吉利极氪(极氪001_X_7X)/image95.jpeg",
-      "vehicle_images/吉利极氪(极��001_X_7X)/image96.jpeg"
+      "vehicle_images/吉利极氪(极氪001_X_7X)/image96.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -3133,7 +3133,7 @@ window.VEHICLES = [
     "remarks": "前机盖断电",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/吉利豪越OKAVANGO/吉利���越OKAVANGO_p1_5fbee0c1.jpeg",
+      "vehicle_images/吉利豪越OKAVANGO/吉利豪越OKAVANGO_p1_5fbee0c1.jpeg",
       "vehicle_images/吉利豪越OKAVANGO/吉利豪越OKAVANGO_p2_36848bf5.jpeg",
       "vehicle_images/吉利豪越OKAVANGO/吉利豪越OKAVANGO_p3_8d0bcab1.jpeg"
     ],
