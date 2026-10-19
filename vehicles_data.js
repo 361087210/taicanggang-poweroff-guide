@@ -581,7 +581,7 @@ window.VEHICLES = [
     ],
     "photoLabels": [
       "车尾",
-      "���标",
+      "尾标",
       "尾标",
       "尾标",
       "车头",
@@ -1185,7 +1185,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/���汽名爵_ZS_HS_EHS_PHEV_.mp4"
+      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/上汽名爵_ZS_HS_EHS_PHEV_.mp4"
     ]
   },
   {

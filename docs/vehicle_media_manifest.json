@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-19T14:21:51.063Z",
+  "generatedAt": "2026-10-19T20:05:04.340Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -948,12 +948,12 @@
       ],
       "videos": [
         {
-          "fileName": "���汽名爵_ZS_HS_EHS_PHEV_.mp4",
+          "fileName": "上汽名爵_ZS_HS_EHS_PHEV_.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": ""
+          "releaseAsset": "tcgv_104bb1ef84.mp4"
         }
       ]
     },
