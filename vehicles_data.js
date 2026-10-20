@@ -1085,7 +1085,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/长安长���之星(小货车)/image47.jpeg",
+      "vehicle_images/长安长安之星(小货车)/image47.jpeg",
       "vehicle_images/长安长安之星(小货车)/image48.jpeg"
     ],
     "videos": 1,
