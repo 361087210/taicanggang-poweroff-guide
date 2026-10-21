@@ -3534,7 +3534,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/奇瑞OMODA欧萌达C5/奇瑞OMODA欧萌达C5_p1_1be3a864.jpeg",
       "vehicle_images/奇瑞OMODA欧萌达C5/奇瑞OMODA欧萌达C5_p2_9859b4fa.jpeg",
-      "vehicle_images/奇瑞OMODA欧萌达C5/奇瑞OMODA欧萌达C5_p3_ec0e7275.jpeg",
+      "vehicle_images/奇瑞OMODA欧���达C5/奇瑞OMODA欧萌达C5_p3_ec0e7275.jpeg",
       "vehicle_images/奇瑞OMODA欧萌达C5/奇瑞OMODA欧萌达C5_p4_27e2da3d.jpeg"
     ],
     "photoSections": [
