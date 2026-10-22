@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-20T13:00:40.852Z",
+  "generatedAt": "2026-10-22T00:48:22.045Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -1310,8 +1310,8 @@
       "photos": [
         {
           "fileName": "image83.jpeg",
-          "sha256": "d53c9a69b69ef8fd680eb98af4682f35d2db35963180ff8132281efe1a9be71d",
-          "size": 40323,
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -3618,13 +3618,6 @@
         42
       ]
     },
-    "d53c9a69b69ef8fd680eb98af4682f35d2db35963180ff8132281efe1a9be71d": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        43
-      ]
-    },
     "94f367949d336e3421ec26f9a3448cfa227f4f7441f420266ea9f0731942b52c": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -4282,6 +4275,6 @@
     "vehicleCount": 100,
     "photoCount": 266,
     "videoCount": 64,
-    "totalBytes": 10145904
+    "totalBytes": 10105581
   }
 }
