@@ -432,7 +432,7 @@ window.VEHICLES = [
     "id": 13,
     "brandId": "byd",
     "brand": "比亚迪",
-    "series": "���",
+    "series": "唐",
     "config": "唐EV（欧标）",
     "display": "比亚迪唐(唐EV（欧标）)",
     "size": "",
@@ -1901,7 +1901,7 @@ window.VEHICLES = [
     "photos": 3,
     "photoPaths": [
       "vehicle_images/吉利银河(EX2（银河E2）)/image105.jpeg",
-      "vehicle_images/吉利银河(EX2（银河E2）)/image106.jpeg",
+      "vehicle_images/吉利银河(EX2（��河E2）)/image106.jpeg",
       "vehicle_images/吉利银河(EX2（银河E2）)/image107.jpeg"
     ],
     "videos": 1,
@@ -2469,7 +2469,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞捷途JETOUR(G700-GAIA)/奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4"
+      "vehicle_videos/奇瑞捷��JETOUR(G700-GAIA)/奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4"
     ]
   },
   {
