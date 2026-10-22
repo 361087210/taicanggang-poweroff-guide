@@ -581,7 +581,7 @@ window.VEHICLES = [
     ],
     "photoLabels": [
       "车尾",
-      "尾标",
+      "���标",
       "尾标",
       "尾标",
       "车头",
@@ -1185,7 +1185,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/上汽名爵_ZS_HS_EHS_PHEV_.mp4"
+      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/���汽名爵_ZS_HS_EHS_PHEV_.mp4"
     ]
   },
   {
@@ -1901,7 +1901,7 @@ window.VEHICLES = [
     "photos": 3,
     "photoPaths": [
       "vehicle_images/吉利银河(EX2（银河E2）)/image105.jpeg",
-      "vehicle_images/吉利银河(EX2（��河E2）)/image106.jpeg",
+      "vehicle_images/吉利银河(EX2（银河E2）)/image106.jpeg",
       "vehicle_images/吉利银河(EX2（银河E2）)/image107.jpeg"
     ],
     "videos": 1,
@@ -2469,7 +2469,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/奇瑞捷��JETOUR(G700-GAIA)/奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4"
+      "vehicle_videos/奇瑞捷途JETOUR(G700-GAIA)/奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4"
     ]
   },
   {
@@ -2667,7 +2667,7 @@ window.VEHICLES = [
     "brand": "零跑",
     "series": "零跑",
     "config": "标准",
-    "display": "零跑Leapmotor-C10",
+    "display": "��跑Leapmotor-C10",
     "size": "",
     "powerType": "纯电",
     "position": "后备箱盖板下方",
@@ -3268,7 +3268,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比亚迪SEALION海狮06/比亚迪SEALION海狮06_p1_85c9d7e8.jpeg",
+      "vehicle_images/比亚迪SEALION海狮06/比亚���SEALION海狮06_p1_85c9d7e8.jpeg",
       "vehicle_images/比亚迪SEALION海狮06/比亚迪SEALION海狮06_p2_5b727539.jpeg"
     ],
     "photoSections": [
