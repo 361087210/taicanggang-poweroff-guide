@@ -1613,7 +1613,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/东风��康(MPVC37)/image83.jpeg",
+      "vehicle_images/东风小康(MPVC37)/image83.jpeg",
       "vehicle_images/东风小康(MPVC37)/image84.jpeg",
       "vehicle_images/东风小康(MPVC37)/image85.jpeg"
     ],
