@@ -2773,7 +2773,7 @@ window.VEHICLES = [
     "remarks": "确认钥匙数量，电源、车窗是否全部关闭",
     "photos": 4,
     "photoPaths": [
-      "vehicle_images/吉利银���EX3PRO/user_v74_p1_c0e6b738.jpeg",
+      "vehicle_images/吉利银河EX3PRO/user_v74_p1_c0e6b738.jpeg",
       "vehicle_images/吉利银河EX3PRO/user_v74_p2_5277c320.jpeg",
       "vehicle_images/吉利银河EX3PRO/user_v74_p3_8f0cc021.jpeg",
       "vehicle_images/吉利银河EX3PRO/user_v74_p4_3c9b24ae.jpeg"
