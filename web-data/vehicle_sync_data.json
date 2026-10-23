@@ -436,7 +436,7 @@
       "id": 13,
       "brandId": "byd",
       "brand": "比亚迪",
-      "series": "唐",
+      "series": "���",
       "config": "唐EV（欧标）",
       "display": "比亚迪唐(唐EV（欧标）)",
       "size": "",
@@ -569,7 +569,7 @@
         "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p5_b421c04c.jpeg",
         "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p6_bfaf4d40.jpeg",
         "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p7_5ee790d.jpeg",
-        "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p8_7a652a84.jpeg",
+        "vehicle_images/比亚迪元YUAN-PRO-EV/比亚��元YUAN-PRO-EV_p8_7a652a84.jpeg",
         "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg"
       ],
       "photoSections": [
@@ -1751,7 +1751,7 @@
         "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
       ],
       "keyFrame": [
-        "1.所有车辆钥匙数量，绑扎及框架检查完。",
+        "1.所有车辆钥匙数量，绑扎及框��检查完。",
         "2.确认断电无误后放到铅封袋内封好袋口。",
         "3.放入钥匙盒关好，封好铅封。"
       ],
@@ -1894,7 +1894,7 @@
       ],
       "keyFrame": [
         "1.所有车辆钥匙数量，绑扎及框架检查完。",
-        "2.确认断电无误后放到铅���袋内封好袋口。",
+        "2.确认断电无误后放到铅封袋内封好袋口。",
         "3.放入钥匙盒关好，封好铅封。"
       ],
       "keyContainer": [
@@ -2635,7 +2635,7 @@
       "powerType": "纯电",
       "position": "前机盖电池负极",
       "steps": [
-        "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
+        "打开主���驶车门，确认全部车窗关闭，取出车钥匙"
       ],
       "keyFrame": [
         "1.所有车辆钥匙数量，绑扎及框架检查完。",
@@ -3794,7 +3794,7 @@
         "3.放入钥匙盒关好，封好铅封。"
       ],
       "keyContainer": [
-        "2.车辆进箱无需收钥匙，确认断电无误后��置于车内中控台。"
+        "2.车辆进箱无需收钥匙，确认断电无误后放置于车内中控台。"
       ],
       "remarks": "屏幕下电",
       "photos": 5,
