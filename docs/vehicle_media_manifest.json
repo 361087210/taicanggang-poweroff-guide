@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-22T22:47:55.759Z",
+  "generatedAt": "2026-10-23T01:13:37.934Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -948,12 +948,12 @@
       ],
       "videos": [
         {
-          "fileName": "���汽名爵_ZS_HS_EHS_PHEV_.mp4",
+          "fileName": "上汽名爵_ZS_HS_EHS_PHEV_.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": ""
+          "releaseAsset": "tcgv_104bb1ef84.mp4"
         }
       ]
     },
@@ -2328,7 +2328,7 @@
     },
     {
       "id": 72,
-      "display": "��跑Leapmotor-C10",
+      "display": "零跑Leapmotor-C10",
       "photos": [
         {
           "fileName": "image157.png",
@@ -2397,8 +2397,8 @@
       "photos": [
         {
           "fileName": "user_v74_p1_c0e6b738.jpeg",
-          "sha256": "824f78669c945ccea1e97b3b2035ce138c75930011ac01f9f0fc5efbb4d8e66e",
-          "size": 36171,
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -2739,7 +2739,7 @@
       "display": "比亚迪SEALION海狮06",
       "photos": [
         {
-          "fileName": "比亚���SEALION海狮06_p1_85c9d7e8.jpeg",
+          "fileName": "比亚迪SEALION海狮06_p1_85c9d7e8.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
@@ -4136,13 +4136,6 @@
         73
       ]
     },
-    "824f78669c945ccea1e97b3b2035ce138c75930011ac01f9f0fc5efbb4d8e66e": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        74
-      ]
-    },
     "2caa34bbc5a146bfb9e0acefc71b8aadf88d9caf433b1f35cc05125ed5cc6237": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -4282,6 +4275,6 @@
     "vehicleCount": 100,
     "photoCount": 266,
     "videoCount": 64,
-    "totalBytes": 10145904
+    "totalBytes": 10109733
   }
 }

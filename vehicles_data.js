@@ -581,7 +581,7 @@ window.VEHICLES = [
     ],
     "photoLabels": [
       "车尾",
-      "���标",
+      "尾标",
       "尾标",
       "尾标",
       "车头",
@@ -1185,7 +1185,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/���汽名爵_ZS_HS_EHS_PHEV_.mp4"
+      "vehicle_videos/上汽名爵(ZS_HS_EHS(PHEV))/上汽名爵_ZS_HS_EHS_PHEV_.mp4"
     ]
   },
   {
@@ -2667,7 +2667,7 @@ window.VEHICLES = [
     "brand": "零跑",
     "series": "零跑",
     "config": "标准",
-    "display": "��跑Leapmotor-C10",
+    "display": "零跑Leapmotor-C10",
     "size": "",
     "powerType": "纯电",
     "position": "后备箱盖板下方",
@@ -2773,7 +2773,7 @@ window.VEHICLES = [
     "remarks": "确认钥匙数量，电源、车窗是否全部关闭",
     "photos": 4,
     "photoPaths": [
-      "vehicle_images/吉利银河EX3PRO/user_v74_p1_c0e6b738.jpeg",
+      "vehicle_images/吉利银���EX3PRO/user_v74_p1_c0e6b738.jpeg",
       "vehicle_images/吉利银河EX3PRO/user_v74_p2_5277c320.jpeg",
       "vehicle_images/吉利银河EX3PRO/user_v74_p3_8f0cc021.jpeg",
       "vehicle_images/吉利银河EX3PRO/user_v74_p4_3c9b24ae.jpeg"
@@ -3268,7 +3268,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比亚迪SEALION海狮06/比亚���SEALION海狮06_p1_85c9d7e8.jpeg",
+      "vehicle_images/比亚迪SEALION海狮06/比亚迪SEALION海狮06_p1_85c9d7e8.jpeg",
       "vehicle_images/比亚迪SEALION海狮06/比亚迪SEALION海狮06_p2_5b727539.jpeg"
     ],
     "photoSections": [
