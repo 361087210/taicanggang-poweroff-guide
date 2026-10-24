@@ -3486,7 +3486,7 @@ window.VEHICLES = [
       "vehicle_images/奇瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p1_1be3a864.jpeg",
       "vehicle_images/奇瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p2_249cba48.jpeg",
       "vehicle_images/奇瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p3_9859b4fa.jpeg",
-      "vehicle_images/��瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p4_df248724.jpeg",
+      "vehicle_images/奇瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p4_df248724.jpeg",
       "vehicle_images/奇瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p5_8d0bcab1.jpeg"
     ],
     "photoSections": [
