@@ -3420,7 +3420,7 @@ window.VEHICLES = [
     "config": "请选择配置",
     "display": "北汽BAIC-BJ30e",
     "size": "",
-    "powerType": "请选择",
+    "powerType": "请选��",
     "position": "后备箱",
     "steps": [
       "1.打开车门，确保四个车窗关闭，取出车钥匙。",
