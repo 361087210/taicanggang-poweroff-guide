@@ -3636,7 +3636,7 @@ window.VEHICLES = [
     "photoLabels": [
       "车尾",
       "尾标",
-      "��标"
+      "尾标"
     ],
     "keyPhotoRemark": "",
     "videos": 0,
