@@ -436,7 +436,7 @@
       "id": 13,
       "brandId": "byd",
       "brand": "比亚迪",
-      "series": "���",
+      "series": "唐",
       "config": "唐EV（欧标）",
       "display": "比亚迪唐(唐EV（欧标）)",
       "size": "",
@@ -569,7 +569,7 @@
         "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p5_b421c04c.jpeg",
         "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p6_bfaf4d40.jpeg",
         "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p7_5ee790d.jpeg",
-        "vehicle_images/比亚迪元YUAN-PRO-EV/比亚��元YUAN-PRO-EV_p8_7a652a84.jpeg",
+        "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p8_7a652a84.jpeg",
         "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg"
       ],
       "photoSections": [
@@ -785,7 +785,7 @@
       "powerType": "混动",
       "position": "后备箱右下方",
       "steps": [
-        "1.打开主驾驶车门，取出车钥匙。",
+        "1.打开主��驶车门，取出车钥匙。",
         "2.关闭车门，短按钥匙锁车键后，打开后备箱右下方盖板。",
         "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
         "4.关闭后备箱，再次拉动车门确保关闭。"
@@ -1751,7 +1751,7 @@
         "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
       ],
       "keyFrame": [
-        "1.所有车辆钥匙数量，绑扎及框��检查完。",
+        "1.所有车辆钥匙数量，绑扎及框架检查完。",
         "2.确认断电无误后放到铅封袋内封好袋口。",
         "3.放入钥匙盒关好，封好铅封。"
       ],
@@ -2635,7 +2635,7 @@
       "powerType": "纯电",
       "position": "前机盖电池负极",
       "steps": [
-        "打开主���驶车门，确认全部车窗关闭，取出车钥匙"
+        "打开主驾驶车门，确认全部车窗关闭，取出车钥匙"
       ],
       "keyFrame": [
         "1.所有车辆钥匙数量，绑扎及框架检查完。",
@@ -3120,7 +3120,7 @@
       "powerType": "请选择",
       "position": "前机盖",
       "steps": [
-        "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
+        "1.打开主驾驶车门，拉动前机���开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
         "确保电源车窗全部关闭，遥控钥匙锁车",
         "打开前机盖，10号扳手逆时针旋转拧松电池负极螺丝",
         "拔掉负极线束，套上珍珠套管避免接触",
@@ -3490,7 +3490,7 @@
         "vehicle_images/奇瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p1_1be3a864.jpeg",
         "vehicle_images/奇瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p2_249cba48.jpeg",
         "vehicle_images/奇瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p3_9859b4fa.jpeg",
-        "vehicle_images/奇瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p4_df248724.jpeg",
+        "vehicle_images/��瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p4_df248724.jpeg",
         "vehicle_images/奇瑞OMODA欧萌达C5-HEV/奇瑞OMODA欧萌达C5-HEV_p5_8d0bcab1.jpeg"
       ],
       "photoSections": [

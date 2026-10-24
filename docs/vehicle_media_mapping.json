@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-23T22:54:33.950Z",
+  "generatedAt": "2026-10-24T01:22:54.360Z",
   "stats": {
     "车型总数": 100,
     "品牌数": 12,
@@ -205,7 +205,7 @@
     {
       "车型ID": "V013",
       "品牌": "比亚迪",
-      "车系": "���",
+      "车系": "唐",
       "配置": "唐EV（欧标）",
       "显示名称": "比亚迪唐(唐EV（欧标）)",
       "动力类型": "纯电",
@@ -259,7 +259,7 @@
       "动力类型": "纯电",
       "断电位置": "无需断电",
       "照片数": 9,
-      "照片文件": "比亚迪元YUAN-PRO-EV_p1_9ec9c3e2.jpeg;比亚迪元YUAN-PRO-EV_p2_366f5e34.jpeg;比亚迪元YUAN-PRO-EV_p3_64ad5771.jpeg;比亚迪元YUAN-PRO-EV_p4_fa43370e.jpeg;比亚迪元YUAN-PRO-EV_p5_b421c04c.jpeg;比亚迪元YUAN-PRO-EV_p6_bfaf4d40.jpeg;比亚迪元YUAN-PRO-EV_p7_5ee790d.jpeg;比亚��元YUAN-PRO-EV_p8_7a652a84.jpeg;比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg",
+      "照片文件": "比亚迪元YUAN-PRO-EV_p1_9ec9c3e2.jpeg;比亚迪元YUAN-PRO-EV_p2_366f5e34.jpeg;比亚迪元YUAN-PRO-EV_p3_64ad5771.jpeg;比亚迪元YUAN-PRO-EV_p4_fa43370e.jpeg;比亚迪元YUAN-PRO-EV_p5_b421c04c.jpeg;比亚迪元YUAN-PRO-EV_p6_bfaf4d40.jpeg;比亚迪元YUAN-PRO-EV_p7_5ee790d.jpeg;比亚迪元YUAN-PRO-EV_p8_7a652a84.jpeg;比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg",
       "本地照片缺失数": 9,
       "视频数": 0,
       "视频文件": "",
