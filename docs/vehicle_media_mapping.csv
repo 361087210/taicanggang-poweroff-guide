@@ -33,7 +33,7 @@ V031,上汽,名爵,ZS/HS/EHS(PHEV),上汽名爵(ZS/HS/EHS(PHEV)),混动,断电�
 V032,上汽,名爵,赛博斯特,上汽名爵(赛博斯特),混动,前机盖电池负极,2,image55.jpeg;image56.jpeg,0,1,上汽名爵_赛博斯特.mp4,本地缺失-需云端补录,备注：机盖打开方式：拉动前保险杠左前盖板内的拉线
 V033,上汽,大通,大通货车,上汽大通(大通货车),混动,前机盖电池负极,2,image58.jpeg;image59.jpeg,0,1,上汽大通_大通货车.mp4,本地缺失-需云端补录,
 V034,长城,哈佛,H6,长城哈佛(H6),混动,后备箱盖板下方,3,image60.jpeg;image61.jpeg;image62.jpeg,0,1,长城哈佛_H6.mp4,本地缺失-需云端补录,放干燥剂
-V035,长城,好猫,好猫,长城好猫,纯电,前机盖电池负极,2,image63.png;image64.png,0,1,长城好猫_好猫.mp4,本地缺失-需云端补录,放干��剂
+V035,长城,好猫,好猫,长城好猫,纯电,前机盖电池负极,2,image63.png;image64.png,0,1,长城好猫_好猫.mp4,本地缺失-需云端补录,放干燥剂
 V036,东风,风行,T5EVO,东风风行(T5EVO),纯电,后备箱盖板右下方,3,image65.jpeg;image66.jpeg;image67.jpeg,0,1,东风风行_T5EVO.mp4,本地缺失-需云端补录,
 V037,东风,风度,帕拉丁（PALADIN）,东风风度(帕拉丁（PALADIN）),混动,前机盖电池负极,3,image68.jpeg;image69.jpeg;image70.jpeg,0,1,东风风度_帕拉丁_PALADIN_.mp4,本地缺失-需云端补录,
 V038,东风,风神,风神HUGEMHD500T/MAGEMHD500T,东风风神(风神HUGEMHD500T/MAGEMHD500T),混动,后备箱右后方,3,image71.jpeg;image72.jpeg;image73.jpeg,0,1,东风风神_风神HUGEMHD500T_MAGEMHD500T.mp4,本地缺失-需云端补录,
@@ -87,7 +87,7 @@ V086,比亚迪,海豹,DM-i,比亚迪海豹SEAL-5-DM-I,请选择,后备箱左侧�
 V087,长安,UNI-,请选择配置,长安UNI-K-AWD,燃油,前机盖,3,长安UNI-K-AWD_p1_e3abc03a.jpeg;长安UNI-K-AWD_p2_47cbb920.jpeg;长安UNI-K-AWD_p3_206dba9f.jpeg,3,0,,无视频引用,前机盖断电
 V088,比亚迪,海狮,请选择配置,比亚迪SEALION海狮06,请选择,无需断电,2,比亚迪SEALION海狮06_p1_85c9d7e8.jpeg;比亚迪SEALION海狮06_p2_5b727539.jpeg,2,0,,无视频引用,放干燥剂
 V089,比亚迪,腾势,请选择配置,比亚迪腾势DENZA-Z9GT-FLASHe3,请选择,无需断电,5,比亚迪腾势DENZA-Z9GT-FLASHe3_p1_3a90fb56.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p2_ed120c8e.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p3_5c58eb95.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p4_ee06d8df.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p5_9ada07e9.jpeg,5,0,,无视频引用,放干燥剂，遥控锁车
-V090,长城,长城炮POER,请选择配置,长城炮（皮卡）4x4,燃油,��机盖,2,长城炮（皮卡）4x4_p1_75e12a5e.jpeg;长城炮（皮卡）4x4_p2_9948b5f9.jpeg,2,0,,无视频引用,前机盖断电
+V090,长城,长城炮POER,请选择配置,长城炮（皮卡）4x4,燃油,前机盖,2,长城炮（皮卡）4x4_p1_75e12a5e.jpeg;长城炮（皮卡）4x4_p2_9948b5f9.jpeg,2,0,,无视频引用,前机盖断电
 V091,比亚迪,元,DM-i,比亚迪元YUAN-UP-DM-I,混动,无需断电,1,比亚迪元YUAN-UP-DM-I_p1_fd9fe6f8.jpeg,1,0,,无视频引用,放干燥剂，遥控锁车
 V092,北汽BAIC,北京BJ,请选择配置,北汽BAIC-BJ30e,请选择,后备箱,3,北京BAIC-BJ30e_p1_e2bf9e07.jpeg;北京BAIC-BJ30e_p2_ee1a013a.jpeg;北京BAIC-BJ30e_p3_27e2da3d.jpeg,3,0,,无视频引用,后备箱断电
 V093,奇瑞,欧萌达,请选择配置,奇瑞OMODA欧萌达C5-HEV,请选择,断电器熄灭后自动断电,5,奇瑞OMODA欧萌达C5-HEV_p1_1be3a864.jpeg;奇瑞OMODA欧萌达C5-HEV_p2_249cba48.jpeg;奇瑞OMODA欧萌达C5-HEV_p3_9859b4fa.jpeg;奇瑞OMODA欧萌达C5-HEV_p4_df248724.jpeg;奇瑞OMODA欧萌达C5-HEV_p5_8d0bcab1.jpeg,5,0,,无视频引用,HEV断电器断电
