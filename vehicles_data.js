@@ -1138,7 +1138,7 @@ window.VEHICLES = [
     "keyPhotoRemark": "",
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/长安皮卡(HUNTER（猎手）燃油版_混动版)/长安皮��_HUNTER_猎手_燃油版_混动版.mp4"
+      "vehicle_videos/长安皮卡(HUNTER（猎手）燃油版_混动版)/长安皮卡_HUNTER_猎手_燃油版_混动版.mp4"
     ]
   },
   {
@@ -1322,7 +1322,7 @@ window.VEHICLES = [
       "1.车辆钥匙数量及绑扎检查完。",
       "2.确认断电无误后放置于车内中控台。"
     ],
-    "remarks": "放干燥剂",
+    "remarks": "放干��剂",
     "photos": 2,
     "photoPaths": [
       "vehicle_images/长城好猫/image63.png",
@@ -3341,7 +3341,7 @@ window.VEHICLES = [
     "display": "长城炮（皮卡）4x4",
     "size": "",
     "powerType": "燃油",
-    "position": "前机盖",
+    "position": "��机盖",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
       "确保电源车窗全部关闭，遥控钥匙锁车",
