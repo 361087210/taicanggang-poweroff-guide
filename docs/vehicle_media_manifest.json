@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-24T17:36:52.354Z",
+  "generatedAt": "2026-10-25T14:06:54.827Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -911,12 +911,12 @@
       ],
       "videos": [
         {
-          "fileName": "长安皮卡_HUNTER_猎手_燃油版_混动版.mp4",
+          "fileName": "长安皮��_HUNTER_猎手_燃油版_混动版.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": "tcgv_ec0bb6fa76_2.mp4"
+          "releaseAsset": ""
         }
       ]
     },
