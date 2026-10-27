@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-27T12:33:40.478Z",
+  "generatedAt": "2026-10-27T22:29:17.536Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -359,8 +359,8 @@
         },
         {
           "fileName": "image22.jpeg",
-          "sha256": "3dc4f280a579845a411eaf5b6c2a8bed51301ed08af10a420a79688507e1bf47",
-          "size": 30528,
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -1380,7 +1380,7 @@
     },
     {
       "id": 45,
-      "display": "江淮江淮皮卡(T8PRO)",
+      "display": "江淮江���皮卡(T8PRO)",
       "photos": [
         {
           "fileName": "image89.jpeg",
@@ -3261,13 +3261,6 @@
         14
       ]
     },
-    "3dc4f280a579845a411eaf5b6c2a8bed51301ed08af10a420a79688507e1bf47": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        14
-      ]
-    },
     "7d0c44a15db5acc54c873a1ee2883a569b2bddb4e6e66b1cd766c4786eb25c56": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -4282,6 +4275,6 @@
     "vehicleCount": 100,
     "photoCount": 266,
     "videoCount": 64,
-    "totalBytes": 10145904
+    "totalBytes": 10115376
   }
 }
