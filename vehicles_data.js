@@ -1085,7 +1085,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/长安长安之星(小货车)/image47.jpeg",
+      "vehicle_images/长安��安之星(小货车)/image47.jpeg",
       "vehicle_images/长安长安之星(小货车)/image48.jpeg"
     ],
     "videos": 1,
@@ -2483,7 +2483,7 @@ window.VEHICLES = [
     "powerType": "混动",
     "position": "后备箱电池负极",
     "steps": [
-      "1.打开车门，先放倒后排座椅，确保四个车窗关闭，取出车钥匙。",
+      "1.打开车门，先放倒后排座椅，确保四个���窗关闭，取出车钥匙。",
       "2.短按主驾驶锁车键锁住车门，在车内移动到后备箱位置。",
       "3.用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
       "4.打开主驾驶车门，机械钥匙锁住车门，再次拉动车门确保关闭。"
