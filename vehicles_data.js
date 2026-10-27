@@ -3731,7 +3731,7 @@ window.VEHICLES = [
   {
     "id": 99,
     "brandId": "byd",
-    "brand": "���亚迪",
+    "brand": "比亚迪",
     "series": "灰鲸鲨MAKO",
     "config": "标准",
     "display": "比亚迪皮卡灰鲸鲨MAKO",
