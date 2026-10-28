@@ -1098,7 +1098,7 @@ window.VEHICLES = [
     "brandId": "changan",
     "brand": "长安",
     "series": "皮卡",
-    "config": "HUNTER（猎手）燃油版/混动���",
+    "config": "HUNTER（猎手）燃油版/混动版",
     "display": "长安皮卡(HUNTER（猎手）燃油版/混动版)",
     "size": "",
     "powerType": "混动",
