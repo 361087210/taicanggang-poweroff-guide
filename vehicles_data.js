@@ -1191,7 +1191,7 @@ window.VEHICLES = [
   {
     "id": 32,
     "brandId": "saic",
-    "brand": "上汽",
+    "brand": "上���",
     "series": "名爵",
     "config": "赛博斯特",
     "display": "上汽名爵(赛博斯特)",
@@ -3798,7 +3798,7 @@ window.VEHICLES = [
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p1_ad644948.jpeg",
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p2_339ba39b.jpeg",
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p3_c82181fe.jpeg",
-      "vehicle_images/北汽-���狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p4_ac6b1397.jpeg",
+      "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p4_ac6b1397.jpeg",
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p5_5c705a82.jpeg"
     ],
     "photoSections": [
