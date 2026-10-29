@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-29T09:23:08.122Z",
+  "generatedAt": "2026-10-29T16:20:47.466Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -3054,7 +3054,7 @@
       "display": "比亚迪皮卡灰鲸鲨MAKO",
       "photos": [
         {
-          "fileName": "��亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
+          "fileName": "比亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",

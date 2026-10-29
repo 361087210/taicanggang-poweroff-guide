@@ -3755,7 +3755,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/��亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
+      "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/比亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
       "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/比亚迪皮卡灰鲸鲨MAKO_p2_dba5cf97.jpeg"
     ],
     "photoSections": [
@@ -3798,7 +3798,7 @@ window.VEHICLES = [
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p1_ad644948.jpeg",
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p2_339ba39b.jpeg",
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p3_c82181fe.jpeg",
-      "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p4_ac6b1397.jpeg",
+      "vehicle_images/北汽-���狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p4_ac6b1397.jpeg",
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p5_5c705a82.jpeg"
     ],
     "photoSections": [
