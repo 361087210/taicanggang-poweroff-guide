@@ -503,7 +503,7 @@ window.VEHICLES = [
     "brand": "比亚迪",
     "series": "元",
     "config": "元UP",
-    "display": "��亚迪元(元UP)",
+    "display": "比亚迪元(元UP)",
     "size": "",
     "powerType": "纯电",
     "position": "后排坐椅腿托下方",

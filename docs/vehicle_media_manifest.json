@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-30T07:15:46.691Z",
+  "generatedAt": "2026-10-30T14:18:10.794Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -378,7 +378,7 @@
     },
     {
       "id": 15,
-      "display": "��亚迪元(元UP)",
+      "display": "比亚迪元(元UP)",
       "photos": [
         {
           "fileName": "image4.jpeg",
