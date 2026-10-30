@@ -425,7 +425,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪唐(唐L-EV（天神之眼）)/���用断电视频.mp4"
+      "vehicle_videos/比亚迪唐(唐L-EV（天神之眼）)/通用断电视频.mp4"
     ]
   },
   {
@@ -503,7 +503,7 @@ window.VEHICLES = [
     "brand": "比亚迪",
     "series": "元",
     "config": "元UP",
-    "display": "比亚迪元(元UP)",
+    "display": "��亚迪元(元UP)",
     "size": "",
     "powerType": "纯电",
     "position": "后排坐椅腿托下方",
@@ -3114,7 +3114,7 @@ window.VEHICLES = [
     "display": "吉利豪越OKAVANGO",
     "size": "",
     "powerType": "请选择",
-    "position": "前��盖",
+    "position": "前机盖",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
       "确保电源车窗全部关闭，遥控钥匙锁车",
