@@ -1503,7 +1503,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/东风VIGO(纳��01)/image76.jpeg",
+      "vehicle_images/东风VIGO(纳米01)/image76.jpeg",
       "vehicle_images/东风VIGO(纳米01)/image77.jpeg"
     ],
     "videos": 0
