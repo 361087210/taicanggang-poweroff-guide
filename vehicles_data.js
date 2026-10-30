@@ -425,7 +425,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪唐(唐L-EV（天神之眼）)/通用断电视频.mp4"
+      "vehicle_videos/比亚迪唐(唐L-EV（天神之眼）)/���用断电视频.mp4"
     ]
   },
   {
@@ -1191,7 +1191,7 @@ window.VEHICLES = [
   {
     "id": 32,
     "brandId": "saic",
-    "brand": "上���",
+    "brand": "上汽",
     "series": "名爵",
     "config": "赛博斯特",
     "display": "上汽名爵(赛博斯特)",
@@ -3114,7 +3114,7 @@ window.VEHICLES = [
     "display": "吉利豪越OKAVANGO",
     "size": "",
     "powerType": "请选择",
-    "position": "前机盖",
+    "position": "前��盖",
     "steps": [
       "1.打开主驾驶车门，拉动前机盖开关打开前机盖，确认全部车窗关闭，取出车钥匙。",
       "确保电源车窗全部关闭，遥控钥匙锁车",
