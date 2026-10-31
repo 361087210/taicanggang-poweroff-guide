@@ -425,7 +425,7 @@ window.VEHICLES = [
     ],
     "videos": 1,
     "videoPaths": [
-      "vehicle_videos/比亚迪唐(唐L-EV（天神之眼）)/通用断电视频.mp4"
+      "vehicle_videos/比亚迪唐(唐L-EV（天神之眼）)/���用断电视频.mp4"
     ]
   },
   {
