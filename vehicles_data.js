@@ -489,7 +489,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比亚迪唐ATTO-8/image21.jpeg",
+      "vehicle_images/比亚���唐ATTO-8/image21.jpeg",
       "vehicle_images/比亚迪唐ATTO-8/image22.jpeg"
     ],
     "videos": 1,
@@ -1086,7 +1086,7 @@ window.VEHICLES = [
     "photos": 2,
     "photoPaths": [
       "vehicle_images/长安长安之星(小货车)/image47.jpeg",
-      "vehicle_images/长安长安之星(小货车)/image48.jpeg"
+      "vehicle_images/长安长安之��(小货车)/image48.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
