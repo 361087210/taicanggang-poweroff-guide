@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-01T19:39:38.662Z",
+  "generatedAt": "2026-11-01T23:05:59.789Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -352,8 +352,8 @@
       "photos": [
         {
           "fileName": "image21.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "d6235acfc1d551c2510570de2c42b1173f5a84e8b8cf317688c099c20c65f864",
+          "size": 27284,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -859,15 +859,15 @@
       "photos": [
         {
           "fileName": "image47.jpeg",
-          "sha256": "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897",
-          "size": 41132,
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
         {
           "fileName": "image48.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "dcf9314516288313f528e0a5c46ecdfc81ae0a6dcbd2a4c0e50c166677ccc92d",
+          "size": 45942,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -1928,7 +1928,7 @@
     },
     {
       "id": 61,
-      "display": "奇瑞捷途JETOUR(X70)",
+      "display": "奇瑞捷��JETOUR(X70)",
       "photos": [
         {
           "fileName": "image131.jpeg",
@@ -2439,8 +2439,8 @@
         },
         {
           "fileName": "user_v75_p2_907837b9.jpeg",
-          "sha256": "2c5af442854e00aa3f1c13948811ccba3f7888739fe2aab9ca8670b14798f2a0",
-          "size": 55963,
+          "sha256": "",
+          "size": 0,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -3254,6 +3254,13 @@
         13
       ]
     },
+    "d6235acfc1d551c2510570de2c42b1173f5a84e8b8cf317688c099c20c65f864": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        14
+      ]
+    },
     "3dc4f280a579845a411eaf5b6c2a8bed51301ed08af10a420a79688507e1bf47": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -3387,7 +3394,7 @@
         26
       ]
     },
-    "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897": {
+    "dcf9314516288313f528e0a5c46ecdfc81ae0a6dcbd2a4c0e50c166677ccc92d": {
       "qiniuKey": "",
       "releaseAsset": "",
       "vehicleIds": [
@@ -4157,13 +4164,6 @@
         75
       ]
     },
-    "2c5af442854e00aa3f1c13948811ccba3f7888739fe2aab9ca8670b14798f2a0": {
-      "qiniuKey": "",
-      "releaseAsset": "",
-      "vehicleIds": [
-        75
-      ]
-    },
     "68e59708cb491f48c424f2361270bb3104ef8810fca5ec84ebc95766fc570acb": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -4268,6 +4268,6 @@
     "vehicleCount": 100,
     "photoCount": 266,
     "videoCount": 64,
-    "totalBytes": 10072678
+    "totalBytes": 10048809
   }
 }

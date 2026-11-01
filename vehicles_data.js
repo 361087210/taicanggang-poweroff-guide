@@ -489,7 +489,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比亚���唐ATTO-8/image21.jpeg",
+      "vehicle_images/比亚迪唐ATTO-8/image21.jpeg",
       "vehicle_images/比亚迪唐ATTO-8/image22.jpeg"
     ],
     "videos": 1,
@@ -1085,8 +1085,8 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/长安长安之星(小货车)/image47.jpeg",
-      "vehicle_images/长安长安之��(小货车)/image48.jpeg"
+      "vehicle_images/长安��安之星(小货车)/image47.jpeg",
+      "vehicle_images/长安长安之星(小货车)/image48.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -1098,7 +1098,7 @@ window.VEHICLES = [
     "brandId": "changan",
     "brand": "长安",
     "series": "皮卡",
-    "config": "HUNTER（猎手）燃油版/混动版",
+    "config": "HUNTER（猎手）燃油版/混动��",
     "display": "长安皮卡(HUNTER（猎手）燃油版/混动版)",
     "size": "",
     "powerType": "混动",
@@ -2245,7 +2245,7 @@ window.VEHICLES = [
     "brand": "奇瑞",
     "series": "捷途JETOUR",
     "config": "X70",
-    "display": "奇瑞捷途JETOUR(X70)",
+    "display": "奇瑞捷��JETOUR(X70)",
     "size": "",
     "powerType": "混动",
     "position": "前机盖电池负极",
@@ -2811,7 +2811,7 @@ window.VEHICLES = [
     "photos": 2,
     "photoPaths": [
       "vehicle_images/长安悦翔ALSVINPLUS/user_v75_p1_f4341164.jpeg",
-      "vehicle_images/长安悦翔ALSVINPLUS/user_v75_p2_907837b9.jpeg"
+      "vehicle_images/长���悦翔ALSVINPLUS/user_v75_p2_907837b9.jpeg"
     ],
     "videos": 0,
     "videoPaths": []
