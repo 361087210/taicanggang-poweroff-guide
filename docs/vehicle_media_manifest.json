@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-31T22:41:22.261Z",
+  "generatedAt": "2026-11-01T01:29:31.885Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -314,12 +314,12 @@
       ],
       "videos": [
         {
-          "fileName": "���用断电视频.mp4",
+          "fileName": "通用断电视频.mp4",
           "sha256": "",
           "size": 0,
           "mime": "video/mp4",
           "qiniuKey": "",
-          "releaseAsset": ""
+          "releaseAsset": "tcgv_b5fc668c92.mp4"
         }
       ]
     },
