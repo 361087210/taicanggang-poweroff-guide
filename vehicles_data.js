@@ -49,7 +49,7 @@ window.VEHICLES = [
     "position": "后排座椅腿托下方",
     "steps": [
       "1.短按主驾驶车门把手通电，确保四个车窗关闭，取出车钥匙。",
-      "2.打开副驾驶和右后车门，副驾驶座椅调到最前方，关闭副驾驶车门，短按钥匙锁车键。",
+      "2.打开副驾��和右后车门，副驾驶座椅调到最前方，关闭副驾驶车门，短按钥匙锁车键。",
       "3.进入右后排，副驾驶底部电池用10号扳手逆时针松动电池负极线束夹，拔掉负极线束夹并套上珍珠套管避免接触。",
       "4.关闭后排车门，再次拉动车门确保关闭。"
     ],
@@ -1085,7 +1085,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/长安��安之星(小货车)/image47.jpeg",
+      "vehicle_images/长安长安之星(小货车)/image47.jpeg",
       "vehicle_images/长安长安之星(小货车)/image48.jpeg"
     ],
     "videos": 1,
@@ -1098,7 +1098,7 @@ window.VEHICLES = [
     "brandId": "changan",
     "brand": "长安",
     "series": "皮卡",
-    "config": "HUNTER（猎手）燃油版/混动��",
+    "config": "HUNTER（猎手）燃油版/混动版",
     "display": "长安皮卡(HUNTER（猎手）燃油版/混动版)",
     "size": "",
     "powerType": "混动",
@@ -2245,7 +2245,7 @@ window.VEHICLES = [
     "brand": "奇瑞",
     "series": "捷途JETOUR",
     "config": "X70",
-    "display": "奇瑞捷��JETOUR(X70)",
+    "display": "奇瑞捷途JETOUR(X70)",
     "size": "",
     "powerType": "混动",
     "position": "前机盖电池负极",
@@ -2811,7 +2811,7 @@ window.VEHICLES = [
     "photos": 2,
     "photoPaths": [
       "vehicle_images/长安悦翔ALSVINPLUS/user_v75_p1_f4341164.jpeg",
-      "vehicle_images/长���悦翔ALSVINPLUS/user_v75_p2_907837b9.jpeg"
+      "vehicle_images/长安悦翔ALSVINPLUS/user_v75_p2_907837b9.jpeg"
     ],
     "videos": 0,
     "videoPaths": []
