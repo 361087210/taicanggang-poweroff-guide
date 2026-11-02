@@ -581,7 +581,7 @@ window.VEHICLES = [
     ],
     "photoLabels": [
       "车尾",
-      "尾标",
+      "���标",
       "尾标",
       "尾标",
       "车头",
@@ -1470,7 +1470,7 @@ window.VEHICLES = [
     "photos": 2,
     "photoPaths": [
       "vehicle_images/东风VIGO(VIGO（纳米06海外版）_纳米06国内版)/image74.jpeg",
-      "vehicle_images/东风VIGO(VIGO（纳米06海外版）_纳米06国内版)/image75.jpeg"
+      "vehicle_images/东风VIGO(VIGO（纳米06海外版��_纳米06国内版)/image75.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
