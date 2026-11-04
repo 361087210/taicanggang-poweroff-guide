@@ -490,7 +490,7 @@ window.VEHICLES = [
     "photos": 2,
     "photoPaths": [
       "vehicle_images/比亚迪唐ATTO-8/image21.jpeg",
-      "vehicle_images/比亚迪���ATTO-8/image22.jpeg"
+      "vehicle_images/比亚迪唐ATTO-8/image22.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -1665,7 +1665,7 @@ window.VEHICLES = [
     "brand": "江淮",
     "series": "江淮皮卡",
     "config": "T8PRO",
-    "display": "江淮江淮���卡(T8PRO)",
+    "display": "江淮江淮皮卡(T8PRO)",
     "size": "",
     "powerType": "混动",
     "position": "前机盖电池负极",
