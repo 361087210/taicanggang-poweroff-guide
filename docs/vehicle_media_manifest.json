@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-08T18:58:51.800Z",
+  "generatedAt": "2026-11-08T22:44:53.861Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -859,8 +859,8 @@
       "photos": [
         {
           "fileName": "image47.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897",
+          "size": 41132,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -2599,7 +2599,7 @@
       "display": "吉利GOME（几何）E2",
       "photos": [
         {
-          "fileName": "吉利GOMEE2_p1_5526d031.jpeg",
+          "fileName": "���利GOMEE2_p1_5526d031.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
@@ -3054,7 +3054,7 @@
       "display": "比亚迪皮卡灰鲸鲨MAKO",
       "photos": [
         {
-          "fileName": "���亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
+          "fileName": "比亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
           "sha256": "",
           "size": 0,
           "mime": "image/jpeg",
@@ -3392,6 +3392,13 @@
       "releaseAsset": "",
       "vehicleIds": [
         26
+      ]
+    },
+    "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        29
       ]
     },
     "dcf9314516288313f528e0a5c46ecdfc81ae0a6dcbd2a4c0e50c166677ccc92d": {
@@ -4275,6 +4282,6 @@
     "vehicleCount": 100,
     "photoCount": 266,
     "videoCount": 64,
-    "totalBytes": 10104772
+    "totalBytes": 10145904
   }
 }
