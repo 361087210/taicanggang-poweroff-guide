@@ -118,6 +118,21 @@ function versionToCode(version) {
   return parts.map((p) => p.padStart(2, '0')).join('');
 }
 
+/**
+ * package.json 的 version。
+ * V10.25.1: package.json 此前缺 name/version, npm 工具链与依赖审计无法识别包;
+ * 补上 version 后它成为第 8 个版本来源, 必须纳入本门禁, 否则发版时会漂移。
+ * @returns {string|null} 版本号, 缺失或解析失败返回 null
+ */
+function getPackageJsonVersion() {
+  try {
+    const pkg = JSON.parse(readText('package.json'));
+    return pkg && pkg.version ? String(pkg.version) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function main() {
   const errors = [];
 
@@ -127,6 +142,7 @@ function main() {
   const sw = getSwCache();
   const demo = getDemoHtml();
   const fallbacks = getVersionFallbacks();
+  const pkgVersion = getPackageJsonVersion();
 
   // 1. 三个来源的 version 一致
   const versions = new Set([cfg.version, ver.version, boot.version]);
@@ -161,6 +177,13 @@ function main() {
     errors.push('js/11-about.js: 未能在 VERSION_HISTORY 解析到最新版本');
   } else if (aboutTop !== ver.version) {
     errors.push(`关于板块版本历史未同步: VERSION_HISTORY 最新=${aboutTop}, version.json=${ver.version}（发版需同步更新关于页版本历史）`);
+  }
+
+  // 1b. package.json version 对齐(缺失视为错误: 补上后不应再丢)
+  if (!pkgVersion) {
+    errors.push('package.json: 缺少 version 字段(需与 version.json 保持一致)');
+  } else if (pkgVersion !== ver.version) {
+    errors.push(`package.json 版本漂移: package.json=${pkgVersion}, version.json=${ver.version}`);
   }
 
   // 2. versionCode 一致
