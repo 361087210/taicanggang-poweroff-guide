@@ -1,4 +1,9 @@
 {
+  "name": "tcg-poweroff-guide",
+  "version": "10.25.0",
+  "description": "太仓港商品车断电操作标准化指导平台（Cordova 安卓/iOS + GitHub Pages 网页镜像）",
+  "license": "Apache-2.0",
+  "private": true,
   "dependencies": {
     "cordova": "^13.0.0"
   },
