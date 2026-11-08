@@ -1098,7 +1098,7 @@ window.VEHICLES = [
     "brandId": "changan",
     "brand": "长安",
     "series": "皮卡",
-    "config": "HUNTER（猎手）燃油版/混动版",
+    "config": "HUNTER（猎手）燃油版/混动��",
     "display": "长安皮卡(HUNTER（猎手）燃油版/混动版)",
     "size": "",
     "powerType": "混动",
@@ -2245,7 +2245,7 @@ window.VEHICLES = [
     "brand": "奇瑞",
     "series": "捷途JETOUR",
     "config": "X70",
-    "display": "奇瑞捷途JETOUR(X70)",
+    "display": "奇瑞捷��JETOUR(X70)",
     "size": "",
     "powerType": "混动",
     "position": "前机盖电池负极",
@@ -3755,7 +3755,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/��亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
+      "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/比亚迪皮卡灰鲸鲨MAKO_p1_82effcdf.jpeg",
       "vehicle_images/比亚迪皮卡灰鲸鲨MAKO/比亚迪皮卡灰鲸鲨MAKO_p2_dba5cf97.jpeg"
     ],
     "photoSections": [
