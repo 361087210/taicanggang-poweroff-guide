@@ -87,14 +87,20 @@ try {
   check('M2d vehicles 数组非空', Array.isArray(m.vehicles) && m.vehicles.length > 0, m.vehicles && m.vehicles.length);
   check('M2e stats.vehicleCount === vehicles.length', m.stats.vehicleCount === m.vehicles.length, m.stats.vehicleCount + ' vs ' + m.vehicles.length);
 
-  // 找一个本地照片(image1.jpeg)验证真实 sha256
-  const v1 = (m.vehicles.find(v => v.id === 1) || {});
-  const ph1 = (v1.photos || []).find(p => p.fileName === 'image1.jpeg');
-  check('M2f 本地照片有真实 SHA-256(64hex)', !!(ph1 && /^[0-9a-f]{64}$/.test(ph1.sha256)), ph1 && ph1.sha256);
-  check('M2g 本地照片有 size>0', !!(ph1 && ph1.size > 0), ph1 && ph1.size);
-  check('M2h 本地照片 mime=image/jpeg', !!(ph1 && ph1.mime === 'image/jpeg'), ph1 && ph1.mime);
+  /* V10.25.4: 不再硬编码"id=1 的 image1.jpeg" —— 该文件可能整体缺失(真缺口),
+   * 那样断言测的就变成"某张图存不存在", 而不是"生成器是否正确计算指纹"。
+   * 改为全量扫描: 有指纹的必须是 64 位 hex 且有体积; 同时至少有一批(>50)算得出来。 */
+  const allPhotos = m.vehicles.flatMap(v => (v.photos || []));
+  const withSha = allPhotos.filter(p => p.sha256);
+  const bad = withSha.filter(p => !/^[0-9a-f]{64}$/.test(p.sha256) || !(p.size > 0));
+  check('M2f 有指纹的照片必须是 64hex 且 size>0', withSha.length > 0 && bad.length === 0,
+        '样本 ' + withSha.length + ' 条, 异常 ' + bad.length);
+  check('M2g 指纹覆盖率合理(>50 条可算)', withSha.length > 50, withSha.length + ' 条');
+  check('M2h 有指纹照片的 mime 必须已识别', withSha.every(p => /^image\//.test(p.mime || '')),
+        '异常 ' + withSha.filter(p => !/^image\//.test(p.mime || '')).length + ' 条');
 
   // 视频有 releaseAsset(比亚迪海豚_低配.mp4 -> tcgv_*.mp4)
+  const v1 = (m.vehicles.find(v => v.id === 1) || {});   // 视频断言仍定位到 1 号车
   const vd1 = (v1.videos || []).find(v => v.fileName === '比亚迪海豚_低配.mp4');
   check('M2i 视频有 releaseAsset(tcgv_*.mp4)', !!(vd1 && /^tcgv_[0-9a-f]+\.mp4$/.test(vd1.releaseAsset)), vd1 && vd1.releaseAsset);
   check('M2j 视频 sha256 置空(云端资产本阶段无指纹)', !!(vd1 && vd1.sha256 === ''));
