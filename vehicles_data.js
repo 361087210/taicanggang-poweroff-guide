@@ -1999,7 +1999,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/奇瑞欧萌达OMODA-5/image112.jpeg",
+      "vehicle_images/奇瑞欧��达OMODA-5/image112.jpeg",
       "vehicle_images/奇瑞欧萌达OMODA-5/image113.jpeg",
       "vehicle_images/奇瑞欧萌达OMODA-5/image114.png"
     ],
@@ -3042,7 +3042,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/吉利GOME（几何）E2/���利GOMEE2_p1_5526d031.jpeg",
+      "vehicle_images/吉利GOME（几何）E2/吉利GOMEE2_p1_5526d031.jpeg",
       "vehicle_images/吉利GOME（几何）E2/吉利GOMEE2_p2_96501117.jpeg"
     ],
     "photoSections": [
@@ -3797,7 +3797,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p1_ad644948.jpeg",
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p2_339ba39b.jpeg",
-      "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p3_c82181fe.jpeg",
+      "vehicle_images/���汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p3_c82181fe.jpeg",
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p4_ac6b1397.jpeg",
       "vehicle_images/北汽-极狐ARCFOX-T1_T5/北汽-极狐ARCFOX-T1_p5_5c705a82.jpeg"
     ],
