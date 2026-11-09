@@ -193,6 +193,27 @@ async function feishuListFiles(token, folderToken) {
   return out;
 }
 
+/**
+ * V10.25.4: 递归列举(迁移后照片/视频都在 <车型名>/ 子目录里, 只列顶层会**永远找不到新文件**)。
+ * 为什么必须改: V10.25 把媒体改成三段式布局后, 本脚本仍只列 vehicle_images/ 顶层,
+ *   于是每晚 cron 实收 0 个文件 → 新增照片永远回不到仓库(Pages/APK 看不到), 且不报错。
+ * 边界: 只下探一层(与约定 <top>/<车型目录>/<文件> 一致), 防符号链接环与无谓递归。
+ */
+async function feishuListFilesDeep(listFn, rootToken) {
+  const root = await listFn(rootToken);
+  const files = [];
+  const subs = [];
+  for (const f of root) {
+    if (f.type === 'folder') subs.push(f);
+    else files.push(f);
+  }
+  for (const sub of subs) {
+    const kids = await listFn(sub.token);
+    for (const k of kids) if (k.type !== 'folder') files.push(k);
+  }
+  return files;
+}
+
 async function feishuFindFolder(token, parentToken, name) {
   const files = await feishuListFiles(token, parentToken);
   return (files.find(f => f.type === 'folder' && f.name === name) || null);
@@ -273,7 +294,7 @@ async function main() {
     console.log('[sync-photos] 未找到飞书 vehicle_images 文件夹(已试 APP数据备份/ 下与根下), 跳过');
     return;
   }
-  const files = filterImageFiles(await feishuListFiles(token, photosFolder.token));
+  const files = filterImageFiles(await feishuListFilesDeep(t => feishuListFiles(token, t), photosFolder.token));
   console.log(`[sync-photos] 飞书 vehicle_images/ 共 ${files.length} 个图片`);
 
   // ③ 检测待回流: 默认**只回流被车型引用的**(防私人废片被 cron 提交到公开仓库)
@@ -391,6 +412,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  feishuListFilesDeep,
   filterImageFiles, detectMissingPhotos, sha256Of, mergeReport, IMG_EXT, MIN_BYTES, MEDIA_TAG,
   // 默认安全路径(按车型引用过滤) —— 新增, 供测试与后续复用
   selectReferencedMissingPhotos, loadReferencedPhotoNames,
