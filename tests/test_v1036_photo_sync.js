@@ -121,7 +121,12 @@ check('S4a .github/workflows/sync-photos-repo.yml 存在', fs.existsSync(WF));
 const wf = fs.existsSync(WF) ? fs.readFileSync(WF, 'utf8') : '';
 check('S4b 工作流执行回流脚本', /node\s+scripts\/sync_photos_to_repo\.js/.test(wf));
 check('S4c 凭据全走 secrets(无明文)', /secrets\.FEISHU_APP_ID/.test(wf) && /secrets\.FEISHU_APP_SECRET/.test(wf) && /secrets\.FEISHU_FOLDER_TOKEN/.test(wf));
-check('S4d 提交 vehicle_images/ 与索引清单', /git\s+add\s+vehicle_images\s+docs\/photo_sync_report\.json/.test(wf));
+/* V10.25.4: 原断言把命令写死成 "git add vehicle_images docs/photo_sync_report.json"。
+ * 但索引清单只在"有新照片"时才生成, 无新照片时该路径不存在 → git add 直接 fatal(exit 128),
+ * 整条流水线因此连续三天红着失败。现改为"先 add 目录, 清单存在才 add", 断言同步放宽为
+ * "两处都覆盖到", 不再锁死易碎的字面命令。 */
+check('S4d 提交 vehicle_images/ 与索引清单',
+  /git\s+add\s+vehicle_images/.test(wf) && /photo_sync_report\.json/.test(wf));
 check('S4e cron 与视频同步(0 2 * * *)错开, 避免争抢 5 QPS',
   /cron:\s*'30 2 \* \* \*'/.test(wf) && !/cron:\s*'0 2 \* \* \*'/.test(wf));
 check('S4f 无新照片时跳过提交(防空提交刷历史)', /无新照片, 跳过提交/.test(wf));

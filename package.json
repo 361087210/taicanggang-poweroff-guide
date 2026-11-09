@@ -80,6 +80,7 @@
     "scan:web-data": "node scripts/check_web_data_sanitization.js",
     "test:ci-coverage": "node scripts/check_ci_coverage.js",
     "test:coverage": "c8 --all --include=\"js/**/*.js\" --reporter=text --reporter=json-summary --reporter=text-summary npm run test:all",
-    "test:coverage-gate": "node scripts/check_coverage_threshold.js"
+    "test:coverage-gate": "node scripts/check_coverage_threshold.js",
+    "test:v10254-deep": "node tests/test_v10254_deep_list.js"
   }
 }
