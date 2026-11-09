@@ -1,0 +1,80 @@
+name: Deploy Web to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'demo.html'
+      - 'css/**'
+      - 'js/**'
+      - 'vendor/**'
+      - 'vehicle_images/**'
+      - 'web-data/**'
+      - 'manifest.json'
+      - 'sw.js'
+      - 'feishu-api.js'
+      - 'vehicles_data.js'
+      - 'version.json'
+      - 'icon-*.png'
+      - 'icon.svg'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Prepare publish directory
+        run: |
+          mkdir -p _publish
+          cp index.html _publish/
+          cp demo.html _publish/
+          cp manifest.json _publish/
+          cp sw.js _publish/
+          cp feishu-api.js _publish/
+          cp vehicles_data.js _publish/
+          cp version.json _publish/
+          cp icon-*.png _publish/ 2>/dev/null || true
+          cp icon.svg _publish/ 2>/dev/null || true
+          cp -r css _publish/
+          cp -r js _publish/
+          cp -r vendor _publish/
+          cp -r vehicle_images _publish/
+          # web-data为镜像数据目录(首次同步前可能不存在,容错跳过)
+          if [ -d web-data ]; then
+            cp -r web-data _publish/
+            echo "web-data files:"
+            ls -la _publish/web-data/
+          else
+            echo "WARN: web-data目录不存在(首次同步前属正常,待sync-web-data工作流生成)"
+          fi
+          echo "Publish dir contents:"
+          ls -la _publish/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: './_publish'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

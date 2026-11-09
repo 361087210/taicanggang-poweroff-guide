@@ -1,0 +1,222 @@
+name: Android CI Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g. 5.7.0)'
+        required: true
+        default: '5.7.0'
+
+# V5.7.1: 新仓库GITHUB_TOKEN默认只读, 创建Release需要显式contents:write权限
+permissions:
+  contents: write
+
+env:
+  JAVA_VERSION: '17'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # V5.7: 版本号统一从 config.xml 读取, 杜绝 env 硬编码与 APK versionCode 漂移
+      - name: Derive version from config.xml
+        id: ver
+        run: |
+          APP_VERSION=$(grep -oP 'version="\K[0-9.]+' config.xml | head -1)
+          VERSION_CODE=$(grep -oP 'android-versionCode="\K[0-9]+' config.xml | head -1)
+          echo "APP_VERSION=${APP_VERSION}" >> $GITHUB_ENV
+          echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_ENV
+          echo "Detected version=${APP_VERSION} code=${VERSION_CODE}"
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      # V10.19.1: 移除 android-actions/setup-android@v3(第三方 action, 依赖下载 cmdline-tools,
+      #   2026-09-15 起失效导致构建失败)。ubuntu-latest 已预装 Android SDK
+      #   (build-tools 34.0.0 + platforms android-34), 直接使用, 无需额外下载。
+      - name: Setup Android SDK (使用 runner 预装)
+        run: |
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          # 把 cmdline-tools 的 sdkmanager 加进 PATH, 供后续 accept licenses 使用
+          CMDLINE_BIN=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
+          if [ -n "$CMDLINE_BIN" ]; then echo "$CMDLINE_BIN" >> $GITHUB_PATH; fi
+          echo "build-tools: $(ls "$ANDROID_HOME/build-tools" 2>/dev/null | tr '\n' ' ')"
+          test -x "$ANDROID_HOME/build-tools/34.0.0/zipalign"  || { echo "❌ 预装 SDK 缺少 build-tools 34.0.0/zipalign";  exit 1; }
+          test -x "$ANDROID_HOME/build-tools/34.0.0/apksigner" || { echo "❌ 预装 SDK 缺少 build-tools 34.0.0/apksigner"; exit 1; }
+          echo "✅ Android SDK 就绪"
+
+      - name: Install Cordova
+        run: |
+          npm install -g cordova@12
+          cordova --version
+
+      # V5.7 关键修复: 打包 vendor 导出库(html-docx/jspdf/xlsx)与车辆图片
+      # 此前 CI 遗漏两者, 导致 APK 内 Word/PDF/Excel 导出与图片展示全部失效
+      - name: Prepare build environment
+        run: |
+          mkdir -p tcg_app/www
+          cp config.xml tcg_app/config.xml
+          cp demo.html tcg_app/www/
+          cp feishu-api.js tcg_app/www/
+          cp vehicles_data.js tcg_app/www/
+          cp -r vendor tcg_app/www/vendor
+          cp -r css tcg_app/www/css
+          cp -r js tcg_app/www/js
+          cp -r vehicle_images tcg_app/www/vehicle_images
+          mkdir -p tcg_app/scripts
+          cp scripts/patch_projectbuilder.js tcg_app/scripts/
+
+      # V5.7 防御: 校验导出库与图片真实存在, 缺一即失败, 防止问题再次回归
+      - name: Verify bundled web assets
+        run: |
+          for f in tailwind.js xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js html-docx.js; do
+            test -s "tcg_app/www/vendor/$f" || { echo "MISSING vendor/$f"; exit 1; }
+          done
+          # V10.25: 媒体已按车型名分子目录存放(vehicle_images/<车型名>/*.jpeg),
+          # 必须递归统计, 否则顶层再无 .jpeg ⇒ 计数 0 ⇒ 发版被误判为"图片不完整"硬拦截。
+          IMG_COUNT=$(find tcg_app/www/vehicle_images -type f -name '*.jpeg' 2>/dev/null | wc -l | tr -d ' ')
+          SUBDIR_COUNT=$(find tcg_app/www/vehicle_images -mindepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+          echo "vehicle_images count: $IMG_COUNT (车型子目录 $SUBDIR_COUNT 个, 递归统计)"
+          [ "$IMG_COUNT" -ge 100 ] || { echo "vehicle_images incomplete (<100)"; exit 1; }
+          grep -q "vendor/html-docx.js" tcg_app/www/demo.html || { echo "demo.html lost vendor refs"; exit 1; }
+          echo "All export libraries and images verified."
+
+      # V10.12: 构建期Secret注入——把demo.html里的__BUILD_SECRETS__标签写入/www/demo.html(首次读取后delete)
+      # Secrets缺失则严格模式直接失败,防止发布空Secret版本到用户端
+      - name: Inject Feishu build secrets into www/demo.html (strict fail)
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+          DEMO_HTML_PATH: ${{ github.workspace }}/tcg_app/www/demo.html
+          FEISHU_STRICT: '1'
+        run: node scripts/inject_build_secrets.js
+
+      - name: Accept Android SDK licenses
+        run: |
+          mkdir -p $HOME/.android
+          touch $HOME/.android/repositories.cfg
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
+
+      - name: Add Android platform
+        working-directory: ./tcg_app
+        run: cordova platform add android@13
+
+      - name: Install plugins
+        working-directory: ./tcg_app
+        run: |
+          cordova plugin add cordova-plugin-whitelist@1.3.5
+          cordova plugin add cordova-plugin-device@3.0.0
+          cordova plugin add cordova-plugin-network-information@3.0.0
+          cordova plugin add cordova-plugin-dialogs@2.0.2
+          cordova plugin add cordova-plugin-inappbrowser@6.0.0
+          cordova plugin add cordova-plugin-file@8.1.0
+          cordova plugin add cordova-plugin-file-transfer@2.0.0
+          cordova plugin add cordova-plugin-camera@7.0.0 --variable ANDROIDX_CORE_VERSION=1.8.+
+          cordova plugin add cordova-plugin-media-capture@5.0.0
+          cordova plugin add cordova-plugin-geolocation@5.0.0
+          cordova plugin add cordova-plugin-advanced-http@3.3.1
+          cordova plugin add cordova-plugin-x-socialsharing@6.0.4
+          # V5.7.1: qrscanner已移除(APP零使用+其gradle与AGP8不兼容)
+          cordova plugin add cordova-plugin-screen-orientation@3.0.3
+          cordova plugin add cordova-plugin-statusbar@4.0.0
+          cordova plugin add cordova-plugin-splashscreen@6.0.2
+          cordova plugin add cordova-plugin-app-version@0.1.14
+          cordova plugin add cordova-plugin-android-permissions@1.1.5
+          cordova plugin add cordova-plugin-local-notification@1.2.3
+          cordova plugin add cordova-plugin-file-opener2@4.0.0
+
+      - name: Apply ProjectBuilder patch
+        working-directory: ./tcg_app
+        run: node scripts/patch_projectbuilder.js
+
+      - name: Build release APK
+        working-directory: ./tcg_app
+        run: cordova build android --release -- --packageType=apk
+
+      # V5.7 根治: 旧版引用不存在的 secrets.KEYSTORE_PATH 文件路径导致 v5.4 起签名全失败
+      # 现改为 KEYSTORE_BASE64 解码 + apksigner (v1+v2 签名方案, 兼容 Android 7-14)
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+          ls -la release.keystore
+
+      - name: Sign APK (zipalign + apksigner)
+        working-directory: ./tcg_app
+        run: |
+          mkdir -p ../release
+          APK_IN=platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          APK_ALIGNED=platforms/android/app/build/outputs/apk/release/app-release-aligned.apk
+          APK_OUT=../release/tcg_poweroff_v${APP_VERSION}.apk
+          # zipalign 不在 PATH, 必须用 SDK build-tools 全路径(与 apksigner 同理)
+            $ANDROID_HOME/build-tools/34.0.0/zipalign -f -p 4 "$APK_IN" "$APK_ALIGNED"
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            --ks ../release.keystore \
+            --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
+            --ks-pass "pass:${{ secrets.KEYSTORE_PASSWORD }}" \
+            --key-pass "pass:${{ secrets.KEY_PASSWORD }}" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --out "$APK_OUT" "$APK_ALIGNED"
+          $ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs "$APK_OUT"
+
+      # V10.14.0: 生成 APK SHA-256 校验文件,发布时一起上传,避免中间人替换/CDN缓存脏数据校验失败
+      - name: Generate APK SHA-256 Checksum
+        working-directory: ./tcg_app
+        run: |
+          APK_OUT=../release/tcg_poweroff_v${APP_VERSION}.apk
+          (cd ../release && sha256sum "tcg_poweroff_v${APP_VERSION}.apk" > "tcg_poweroff_v${APP_VERSION}.apk.sha256")
+          echo "=== SHA-256 ===" && cat ../release/tcg_poweroff_v${APP_VERSION}.apk.sha256
+          echo "=== size ===" && stat -c "%s bytes" "$APK_OUT" || stat -f "%z bytes" "$APK_OUT"
+
+      - name: Upload artifact (APK + SHA256 + signer verify output)
+        uses: actions/upload-artifact@v5
+        with:
+          name: tcg-poweroff-apk
+          path: |
+            release/tcg_poweroff_v${{ env.APP_VERSION }}.apk
+            release/tcg_poweroff_v${{ env.APP_VERSION }}.apk.sha256
+
+      - name: Create Release (tag 触发 → 正式发布)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release/tcg_poweroff_v${{ env.APP_VERSION }}.apk
+            release/tcg_poweroff_v${{ env.APP_VERSION }}.apk.sha256
+          # V10.19.1: 用 docs/RELEASE_V<版本>.md 作为 Release 正文(行业标准: 完整发布说明),
+          #   取代 generate_release_notes 的自动 diff 摘要(仅一条 Full Changelog 链接, 无实质内容)
+          body_path: docs/RELEASE_V${{ env.APP_VERSION }}.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # V5.7: versionCode 与 APK 内实际值(config.xml)严格一致, 修复旧版 BASE+run_number
+      # 导致 version.json 与 APK 不一致进而误报更新的问题
+      - name: Update version.json download URL
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          sed -i "s|\"downloadUrl\": \".*\"|\"downloadUrl\": \"https://github.com/361087210/taicanggang-poweroff-guide/releases/download/${TAG}/tcg_poweroff_v${APP_VERSION}.apk\"|" version.json
+          sed -i "s|\"versionCode\": [0-9]*|\"versionCode\": ${VERSION_CODE}|" version.json
+          sed -i "s|\"version\": \"[0-9.]*\"|\"version\": \"${APP_VERSION}\"|" version.json
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add version.json
+          git commit -m "ci: update version.json for ${TAG} [skip ci]" || true
+          git push || true

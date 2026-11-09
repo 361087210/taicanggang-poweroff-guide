@@ -238,8 +238,75 @@ function ensureRelease(ghToken) {
 
 /* ===================== 主流程 ===================== */
 
+
+/**
+ * V10.25.4: 删除传播 —— 仓库侧孤儿清理。
+ *
+ * 为什么需要:
+ *   组长在 App 里删掉一张照片后, 引用消失, 但**仓库里的文件还在**(本脚本历史上只增不删),
+ *   于是 vehicle_images/ 只长不消, 与飞书对不上, "资源库同步"其实只做了加法。
+ *
+ * 判定(与云端 GC 同一口径):
+ *   仓库里某文件 → 没有任何车型 photoPaths 引用它, 且不在 _共享/ (共享=多车型复用) →
+ *   视为孤儿。默认**只报告**, 加 --prune-apply 才真正 git rm。
+ *
+ * 安全边界:
+ *   - _未归类/ 不参与(那是人工待判区)
+ *   - 判据用"文件名"而非路径: 与解析层的向后兼容口径一致
+ *   - 先 git rm(可 git checkout 恢复) 而不是裸删
+ */
+function pruneOrphans(dryRun) {
+  const src = fs.readFileSync(path.join(ROOT, 'vehicles_data.js'), 'utf8');
+  const decl = src.match(/(?:const\s+VEHICLES\s*=|window\.VEHICLES\s*=)/);
+  const s0 = src.indexOf('[', decl.index);
+  const e0 = src.lastIndexOf(']');
+  const vehicles = new Function('return (' + src.slice(s0, e0 + 1) + ')')();
+
+  const referenced = new Set();
+  vehicles.forEach(v => (v.photoPaths || []).forEach(p => {
+    if (typeof p === 'string' && !/^(data:|https?:)/.test(p)) referenced.add(p.split('/').pop());
+  }));
+
+  const files = (MP && MP.listMediaFiles) ? MP.listMediaFiles(ROOT, MP.PHOTO_TOP) : [];
+  const orphans = files.filter(f => {
+    if (!IMG_EXT.test(f.fileName)) return false;
+    if (referenced.has(f.fileName)) return false;
+    if (String(f.relPath).includes('/' + (MP ? MP.SHARED_FOLDER : '_共享') + '/')) return false;
+    if (String(f.relPath).includes('/_未归类/')) return false;
+    return true;
+  });
+
+  if (!orphans.length) {
+    console.log('[sync-photos] 仓库侧无孤儿文件, 无需清理');
+    return 0;
+  }
+  console.log(`[sync-photos] 仓库孤儿 ${orphans.length} 个(无任何车型引用):`);
+  orphans.slice(0, 10).forEach(o => console.log('  - ' + o.relPath));
+  if (orphans.length > 10) console.log(`  ... 另有 ${orphans.length - 10} 个`);
+
+  if (dryRun) {
+    console.log('[sync-photos] --prune 只报告。确认后加 --prune-apply 执行 (git rm, 可从历史恢复)');
+    return orphans.length;
+  }
+
+  let removed = 0;
+  for (const o of orphans) {
+    const abs = path.join(ROOT, o.relPath);
+    try {
+      require('child_process').execFileSync('git', ['rm', '-q', '--', o.relPath], { cwd: ROOT });
+      removed++;
+    } catch (e) {
+      try { fs.unlinkSync(abs); removed++; } catch (e2) { console.warn('[sync-photos] 删除失败:', o.relPath, e2.message); }
+    }
+  }
+  console.log(`[sync-photos] 已清理 ${removed} 个孤儿文件(可用 git checkout 恢复)`);
+  return removed;
+}
+
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
+  const pruneMode = process.argv.includes('--prune') || process.argv.includes('--prune-apply');
+  const pruneApply = process.argv.includes('--prune-apply');
   const noRelease = process.argv.includes('--no-release');
   const allMode = process.argv.includes('--all');
   const limitArg = process.argv.indexOf('--limit');
@@ -250,6 +317,7 @@ async function main() {
   const folderToken = process.env.FEISHU_FOLDER_TOKEN || '';
   const ghToken = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '';
 
+  if (pruneMode) { pruneOrphans(!pruneApply); if (process.argv.includes('--prune-only')) return; }
   if (!appId || !appSecret) { console.error('[错误] 缺少 FEISHU_APP_ID / FEISHU_APP_SECRET'); process.exit(1); }
   if (!folderToken) { console.error('[错误] 缺少 FEISHU_FOLDER_TOKEN'); process.exit(1); }
 
@@ -391,6 +459,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  pruneOrphans,
   filterImageFiles, detectMissingPhotos, sha256Of, mergeReport, IMG_EXT, MIN_BYTES, MEDIA_TAG,
   // 默认安全路径(按车型引用过滤) —— 新增, 供测试与后续复用
   selectReferencedMissingPhotos, loadReferencedPhotoNames,

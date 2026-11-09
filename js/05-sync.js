@@ -1195,6 +1195,12 @@ async function syncUploadVehiclePhotos(token,vehicles){
   // 云端已有文件清单(幂等判定: 同名即已上传过,跳过)。
   // V10.25: 三段式布局下文件位于车型子目录内,故需同时收集顶层与各子目录文件,
   //   否则幂等键失配→重复上传(云端冗余副本 + 组员端无谓流量)。
+  /* V10.25.3(本次): 幂等键必须带"作用域"(车型子目录)。
+   * 旧实现把所有子目录的文件名倒进同一个 Set, 于是 A 车型目录里的 image1.jpeg
+   * 会让 B 车型的 image1.jpeg 被判为"已上传"而跳过 —— 该传的没传(缺失);
+   * 若解析时又按名字命中 A 的文件, 就变成"显示别人的图"(张冠李戴)。
+   * 现改为 key = "子目录名/文件名", 顶层文件 key = "文件名"(作用域为空)。 */
+  const _cloudKey=(scope,name)=>(scope?scope+'/':'')+name;
   let cloudNames=new Set();
   const subFolderTokens={}; // 车型子目录名→token(首次列表时缓存,避免每个车型重复探测)
   /* V10.25.1: 目录列表缓存强制失效——feishuListFiles 内置 30s 缓存(_feishuListCache)。
@@ -1206,37 +1212,59 @@ async function syncUploadVehiclePhotos(token,vehicles){
   _bustList(folder);
   try{
     const topEntries=await feishuListFiles(token,folder);
-    (topEntries||[]).forEach(f=>{if(f.type==='file')cloudNames.add(f.name);});
+    (topEntries||[]).forEach(f=>{if(f.type==='file')cloudNames.add(_cloudKey('',f.name));});
     for(const sub of (topEntries||[]).filter(f=>f.type==='folder')){
       if(!sub||!sub.token)continue;
       subFolderTokens[sub.name]=sub.token;
       try{
         _bustList(sub.token);
-        (await feishuListFiles(token,sub.token)||[]).forEach(f=>{if(f.type==='file')cloudNames.add(f.name);});
+        (await feishuListFiles(token,sub.token)||[]).forEach(f=>{if(f.type==='file')cloudNames.add(_cloudKey(sub.name,f.name));});
       }catch(e2){console.warn('[SyncUpload]vehicle_images子目录列表跳过:',e2.message||e2);}
     }
   }catch(e){console.warn('[SyncUpload]vehicle_images云端列表API失败(全部降级为重传,幂等兜底):',e.message,e.stack)}
   // V10.25: 车型子目录 find-or-create(先查缓存→再创建)。任何一步失败均降级为顶层 folder,
   //   保证上传不因目录布局问题中断;沙箱/旧环境无真源时 MP 为 null 直接返回顶层。
+  /* V10.25.1(本次): 车型子目录创建失败时**不再静默降级到顶层**。
+   * 旧行为: 创建失败 → 返回顶层 token → 照片全部堆在 vehicle_images/ 根目录,
+   *   正是"飞书端分布散乱"的直接来源(而且没有任何告警, 只有 console 一行)。
+   * 新行为: 先重试(可能只是其他设备刚建好导致同名冲突) → 仍失败则抛错,
+   *   由外层 catch 记为 failed 并保留本地 base64 下轮重试; 宁可这次没传,
+   *   也不要在云端留下一个无法归属的散文件。 */
   async function _ensureVehicleSubFolder(subName){
     if(!MP||!subName)return folder;
     if(subFolderTokens[subName])return subFolderTokens[subName];
-    try{
-      const cr=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{
-        method:'POST',
-        headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
-        body:JSON.stringify({name:subName,folder_token:folder})
-      });
-      const tk=(cr&&cr.data&&cr.data.token)||'';
-      if(tk){subFolderTokens[subName]=tk;return tk;}
-    }catch(e){console.warn('[SyncUpload]vehicle_images子目录创建失败(降级顶层):',e.message||e);}
-    return folder;
+    for(let attempt=1;attempt<=2;attempt++){
+      try{
+        const cr=await httpFetch('https://open.feishu.cn/open-apis/drive/v1/files/create_folder',{
+          method:'POST',
+          headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+          body:JSON.stringify({name:subName,folder_token:folder})
+        });
+        const tk=(cr&&cr.data&&cr.data.token)||'';
+        if(tk){subFolderTokens[subName]=tk;return tk;}
+      }catch(e){
+        console.warn('[SyncUpload]创建车型子目录失败(第'+attempt+'次):',e.message||e);
+        /* 常见原因: 目录已存在(另一台设备刚创建) —— 重新列表确认一次 */
+        try{
+          _bustList(folder);
+          const ents=await feishuListFiles(token,folder);
+          const hit=(ents||[]).find(f=>f.type==='folder'&&f.name===subName);
+          if(hit&&hit.token){subFolderTokens[subName]=hit.token;return hit.token;}
+        }catch(e2){console.warn('[SyncUpload]复列目录失败:',e2.message||e2);}
+      }
+      await new Promise(r=>setTimeout(r,300));
+    }
+    throw new Error('车型子目录不可用(拒绝降级顶层以免云端散乱): '+subName);
   }
   for(const {v,i} of pending){
     const raw=v.photoPaths[i];
     try{
       // V10.25: 定位/创建本车型子目录(失败降级顶层),照片上传至该目录
-      const uploadFolderToken=await _ensureVehicleSubFolder(MP?MP.folderNameForVehicle(v):'');
+      const wantSub=(MP&&MP.folderNameForVehicle)?MP.folderNameForVehicle(v):'';
+      const uploadFolderToken=await _ensureVehicleSubFolder(wantSub);
+      /* V10.25.3: 幂等作用域跟随"实际落盘的目录" —— 子目录创建失败会降级到顶层,
+       * 此时作用域必须为空, 否则会用子目录键去查顶层文件, 判定失效导致重复上传。 */
+      const scopeName=(uploadFolderToken===folder)?'':wantSub;
       const norm=await _normalizePhotoForUpload(raw,1280);
       const mm=/^data:image\/(png|jpe?g|webp);base64,(.*)$/.exec(norm);
       if(!mm){stat.failed++;continue;}
@@ -1247,15 +1275,15 @@ async function syncUploadVehiclePhotos(token,vehicles){
       // 车型名经 _sanitizeFeishuFileName 清洗(上传时再洗一次,此处预清洗保证幂等键稳定)
       const baseName=_sanitizeFeishuFileName(v.display||('vehicle_'+v.id),60).replace(/\.[^.]+$/,'');
       const fileName=`${baseName}_p${i+1}_${hash}.jpeg`;
-      if(cloudNames.has(fileName)){
-        stat.skipped++; // 云端已有同内容照片,仅替换本地路径
+      if(cloudNames.has(_cloudKey(scopeName,fileName))){
+        stat.skipped++; // 该车型目录下已有同内容照片,仅替换本地路径
       }else{
         const u8=_b64ToU8(mm[2]);
         const blob=new Blob([u8],{type:'image/jpeg'});
         // V10.10.0: 智能路由(小文件upload_all/超限自动分片),文件名先清洗
         const up=await httpUploadFileSmart({token,fileName:_sanitizeFeishuFileName(fileName),folderToken:uploadFolderToken,blob});
         if(up&&up.code!==0&&up.code!==undefined){throw new Error(up.msg||'照片上传失败');}
-        cloudNames.add(fileName);
+        cloudNames.add(_cloudKey(scopeName,fileName));
         stat.uploaded++; // ★仅真实新上传计入对外统计
       }
       v.photoPaths[i]='vehicle_images/'+fileName;

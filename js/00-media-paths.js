@@ -46,6 +46,9 @@
   var PHOTO_TOP = 'vehicle_images';   // 照片顶层契约目录(不得改名)
   var VIDEO_TOP = 'vehicle_videos';   // 视频顶层契约目录(不得改名)
   var SHARED_FOLDER = '_共享';        // 多车型共用资产子目录
+  var ORPHAN_FOLDER = '_未归类';      // 迁移期临时归置目录(无车型引用的孤儿文件)
+  /* 保留目录名(系统占用, 车型目录不得与之重名) —— 见 folderNameForVehicle 的守卫 */
+  var RESERVED_FOLDERS = [SHARED_FOLDER, ORPHAN_FOLDER];
   var MAX_FOLDER_LEN = 40;            // 子目录名长度上限(飞书/Windows 双端留足余量)
 
   /**
@@ -87,7 +90,13 @@
     // 传 fallback='' 关闭时间戳兜底: 清洗后为空说明本源无有效名称,
     // 此时才应走可预测的 vehicle_<id> 退化(而非 file_<timestamp> 随机目录)
     var name = sanitizeName(base, MAX_FOLDER_LEN, false, '');
-    if (!name) name = (v && v.id != null) ? ('vehicle_' + v.id) : 'vehicle_unknown';
+    /* V10.25.1 守卫: 车型目录不得占用系统保留名(_共享/_未归类), 也不得以 '_' 开头 ——
+     * 否则该车型的所有媒体会与"共享/孤儿"语义混淆, 迁移脚本据目录名判定归属时将误判。 */
+    if (!name || name.charAt(0) === '_' || RESERVED_FOLDERS.indexOf(name) > -1) {
+      var idPart = (v && v.id != null) ? v.id : 'unknown';
+      name = 'v_' + idPart + (name ? '_' + name.replace(/^_+/, '') : '');
+      name = sanitizeName(name, MAX_FOLDER_LEN, false, '') || ('vehicle_' + idPart);
+    }
     return name;
   }
 
@@ -180,6 +189,8 @@
     PHOTO_TOP: PHOTO_TOP,
     VIDEO_TOP: VIDEO_TOP,
     SHARED_FOLDER: SHARED_FOLDER,
+    ORPHAN_FOLDER: ORPHAN_FOLDER,
+    RESERVED_FOLDERS: RESERVED_FOLDERS,
     MAX_FOLDER_LEN: MAX_FOLDER_LEN,
     sanitizeName: sanitizeName,
     folderNameForVehicle: folderNameForVehicle,
