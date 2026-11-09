@@ -81,6 +81,8 @@
     "test:ci-coverage": "node scripts/check_ci_coverage.js",
     "test:coverage": "c8 --all --include=\"js/**/*.js\" --reporter=text --reporter=json-summary --reporter=text-summary npm run test:all",
     "test:coverage-gate": "node scripts/check_coverage_threshold.js",
-    "test:v10254-deep": "node tests/test_v10254_deep_list.js"
+    "test:v10254-deep": "node tests/test_v10254_deep_list.js",
+    "media:rename": "node scripts/migrate_vehicle_rename.js",
+    "test:v10254": "node tests/test_v10254_rename_migration.js"
   }
 }
