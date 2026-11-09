@@ -51,6 +51,10 @@ try { MP = require('../js/00-media-paths.js'); } catch (e) { MP = null; }
  *       人工从上下文确定正确字符串 -> 追加一条 { broken, fixed }。
  */
 const KNOWN_CORRUPTIONS = [
+  /* V10.25.5: 2026-11-09 20:10 自动同步新产生的损坏(替换符数量与历史条目不同, 旧表匹配不到) */
+  { broken: '钥\uFFFD\uFFFD锁车键', fixed: '钥匙锁车键', note: 'id=24 长安启源 steps[1] (2×efbfbd, 参照「钥匙锁车」)' },
+  { broken: '断电\uFFFD\uFFFD\uFFFD误后', fixed: '断电无误后', note: 'id=57 奇瑞瑞虎(瑞虎8 CSH) keyFrame[1] (3×efbfbd)' },
+  { broken: '\uFFFD\uFFFD\uFFFD利GOMEE2_p1_5526d031', fixed: '吉利GOMEE2_p1_5526d031', note: 'id=2 photoPaths 文件名首字损坏(3×efbfbd → 「吉」)' },
   { broken: '锁\uFFFD\uFFFD\uFFFD车门',       fixed: '锁住车门',            note: '比亚迪唐ATTO-8 steps[1] (残留 3×efbfbd)' },
   { broken: '2.\uFFFD\uFFFD\uFFFD认断电无误', fixed: '2.确认断电无误',      note: '吉利极氪 keyContainer[1] (残留 3×efbfbd)' },
   { broken: '奇瑞\uFFFD\uFFFD途JETOUR',      fixed: '奇瑞捷途JETOUR',      note: '奇瑞捷途JETOUR(T2 I-DM) videoPaths[0]' },
@@ -405,6 +409,16 @@ function main() {
   }
   const header = '// 飞书云端同步于 ' + (data.timestamp || new Date().toISOString()) + '\n';
   const body = 'window.VEHICLES = ' + JSON.stringify(mirrorVehicles, null, 2) + ';\n';
+  /* V10.25.5 fail-fast: 生成结果仍含 U+FFFD 就**拒绝写盘**。
+   * 历史做法是"能修就修, 修不了照样写" —— 于是损坏悄悄进了产物, 只能靠事后测试发现。
+   * 现在改为: 无法校正 = 数据源有问题, 宁可本次不生成, 也不把坏数据提交进仓库。 */
+  const bad = (header + body).match(/[^\n]*\uFFFD[^\n]*/g) || [];
+  if (bad.length) {
+    console.error(`[gen_vehicles_data] ❌ 生成结果仍含 ${bad.length} 处 U+FFFD, 拒绝写盘:`);
+    bad.slice(0, 3).forEach(l => console.error('   ' + l.trim().slice(0, 140)));
+    console.error('[gen_vehicles_data] 请在 KNOWN_CORRUPTIONS 补条目(参照上下文推断原字), 或检查数据源编码。');
+    process.exit(1);
+  }
   fs.writeFileSync(OUT, header + body, 'utf8');
   console.log(`[gen_vehicles_data] 已生成 vehicles_data.js: ${mirrorVehicles.length} 车型 (漂移项 ${drifts.length}, 校正 ${cc.corrected} 处编码损坏)`);
 }
