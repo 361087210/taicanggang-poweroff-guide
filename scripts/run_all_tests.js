@@ -36,6 +36,7 @@ const ROOT = path.resolve(__dirname, '..');
  * 并登记到 package.json 的对应 test:* 脚本(否则 check_ci_coverage 门禁会拦截)。
  */
 const TEST_SUITES = [
+  'test:v10254-deep',
   'test:version',
   'check:two-end',
   'test:two-end-gate',
@@ -107,8 +108,11 @@ function runSuite(name) {
   try {
     execSync('npm run ' + name, { cwd: ROOT, stdio: 'inherit' });
   } catch (e) {
-    ok = false;
     code = (e && typeof e.status === 'number') ? e.status : 1;
+    /* V10.25.4: exit 2 是仓库约定的 SKIP(如 check:two-end 在无 tag 的浅克隆/PR 分支上
+     * 主动跳过), 不是失败。此前一律按失败处理 —— 导致"任何 PR 都必然红",
+     * 绿灯失去意义(PENDING_ISSUES §1.1 的同一类问题)。 */
+    ok = (code === 2);
   }
   const secs = ((Date.now() - start) / 1000).toFixed(1);
   return { name: name, ok: ok, code: code, secs: secs };
@@ -124,7 +128,8 @@ function main() {
   for (const name of TEST_SUITES) {
     const r = runSuite(name);
     results.push(r);
-    console.log((r.ok ? '  [PASS] ' : '  [FAIL] ') + name + '  (exit=' + r.code + ', ' + r.secs + 's)');
+    const tag = r.code === 2 ? '  [SKIP] ' : (r.ok ? '  [PASS] ' : '  [FAIL] ');
+    console.log(tag + name + '  (exit=' + r.code + ', ' + r.secs + 's)');
   }
 
   const passed = results.filter(r => r.ok).map(r => r.name);
