@@ -3042,7 +3042,7 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/吉利GOME（几何）E2/���利GOMEE2_p1_5526d031.jpeg",
+      "vehicle_images/吉利GOME（几何）E2/吉利GOMEE2_p1_5526d031.jpeg",
       "vehicle_images/吉利GOME（几何）E2/吉利GOMEE2_p2_96501117.jpeg"
     ],
     "photoSections": [

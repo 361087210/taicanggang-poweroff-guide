@@ -199,7 +199,19 @@ function readJsonSafe(p){
 }
 function writeJson(outDir, name, obj){
   const f = path.join(outDir, name);
-  fs.writeFileSync(f, JSON.stringify(obj, null, 2), 'utf8');
+  const text = JSON.stringify(obj, null, 2);
+  /* V10.25.5 fail-fast: 云盘同步可能带进损坏字符(U+FFFD 替换符)。
+   * 历史上是"照样写盘", 于是坏数据进了产物与仓库, 只能靠事后测试发现
+   * (2026-11-09 20:10 那次同步就写坏了 3 处)。这里拒绝落盘并报出位置。 */
+  const bad = text.match(/[^\n]*\uFFFD[^\n]*/g) || [];
+  if (bad.length) {
+    console.error(`[sync-web-data] ❌ ${name} 含 ${bad.length} 处 U+FFFD, 拒绝写盘:`);
+    bad.slice(0, 3).forEach(l => console.error('   ' + l.trim().slice(0, 140)));
+    console.error('[sync-web-data] 请检查飞书源数据编码; 修好后重跑, 不要带着坏数据提交。');
+    process.exitCode = 1;
+    throw new Error('镜像含编码损坏, 已中止写盘');
+  }
+  fs.writeFileSync(f, text, 'utf8');
   return f;
 }
 
