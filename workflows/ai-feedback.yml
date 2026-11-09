@@ -1,0 +1,84 @@
+# =============================================================================
+# AI 反馈闭环 - F0-c 接线 (V10.19.3)
+# -----------------------------------------------------------------------------
+# 作用: 轮询多维表格「待处理」反馈 → 置「分析中」→ DeepSeek 分析 → 置「已修复」
+#       + 回写「AI分析摘要」「技术文档链接」「AI定位报告」「修复PR链接」
+#         「门禁结果」「尝试次数」→ 推送飞书通知。
+#
+# 触发:
+#   - schedule 每 30 分钟(*/30)。注意: GitHub Actions 的 schedule 仅对**默认分支**
+#     生效 —— 本文件必须合入 main 后定时任务才会真正运行(历史上的漏接正是因此)。
+#   - workflow_dispatch: 手动触发, 用于接线验证与人工补跑(不可省)。
+#
+# 溯源与相对历史版本的修正(原型 = 提交 718d0ce, 位于 release/10.19.3, 非 main 祖先):
+#   1) **移除 `AI_REQUIRE_LLM=1` 与历史「密钥存在性前置检查(DEEPSEEK_API_KEY)」步骤**。
+#      原因: scripts/process_feedback.js 已被重写(b5daaaf), 该脚本**不再读取**
+#      AI_REQUIRE_LLM(`grep -n "AI_REQUIRE_LLM" scripts/process_feedback.js` 为空)。
+#      挂在 workflow 上属**死配置** —— 会制造"已防静默降级"的假象。改为在 workflow
+#      侧自带的 fail-fast 校验(见下方 step), 这才是当下唯一真实生效的守卫。
+#   2) env 收窄为脚本**实际读取**的 4 个变量之交集。脚本对
+#      FEISHU_BASE_APP_TOKEN / FEISHU_FEEDBACK_TABLE_ID / FEISHU_DOC_URL 有内联默认值,
+#      故 **不** 在 workflow 注入 —— 否则空的 Secret 会把脚本默认值**覆盖成空**。
+#   3) permissions 收敛为 contents: read(本作业只检出代码 + 调飞书/DeepSeek, 不提交任何东西)。
+#
+# Secret 边界(硬约束, 见 docs/CICD使用说明.md 与设计文档 §6 三作业 Secret 切分):
+#   本作业**仅**挂 FEISHU_APP_ID / FEISHU_APP_SECRET / FEISHU_FEEDBACK_CHAT_ID /
+#   DEEPSEEK_API_KEY。签名类凭据(Android/iOS 签名密钥族)与仓库写权限令牌一律**不挂载**。
+#   边界由 tests/test_process_feedback_wiring.js 的 H6/H7 段做子串级零容忍断言 (防复发)。
+# =============================================================================
+name: AI Feedback Loop
+
+on:
+  schedule:
+    # 每 30 分钟。⚠️ 仅默认分支(main)生效; 在 feat-* 分支上此触发器不会运行。
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # 防止上一轮尚未跑完又被定时唤醒, 造成同一条反馈并发置态/重复通知。
+  group: ai-feedback-loop
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    name: 反馈 AI 分析(轮询→分析→回写→通知)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 配置 Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # fail-fast: 缺任一必需 Secret 直接失败, **绝不**让作业静默进入
+      # process_feedback.js 的「内置结构化分析器」兜底分支 —— 那会产生
+      # "看着像 AI 分析、其实没调模型"的假成功(历史提交的设计意图, 此处以
+      # workflow 侧守卫落实, 因为脚本侧的 AI_REQUIRE_LLM 开关已被移除)。
+      - name: 必需 Secret 存在性前置检查
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          missing=""
+          [ -z "$FEISHU_APP_ID" ] && missing="$missing FEISHU_APP_ID"
+          [ -z "$FEISHU_APP_SECRET" ] && missing="$missing FEISHU_APP_SECRET"
+          [ -z "$DEEPSEEK_API_KEY" ] && missing="$missing DEEPSEEK_API_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::缺少必需 Secret:$missing —— 拒绝静默运行(无 DEEPSEEK_API_KEY 会回退兜底分析器, 产生'假 AI 分析')"
+            exit 2
+          fi
+
+      # env 表 = 脚本 process.env 读取集合与 workflow 可挂 Secret 的交集(收窄见文件头 §2)。
+      - name: 运行反馈分析管道
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_FEEDBACK_CHAT_ID: ${{ secrets.FEISHU_FEEDBACK_CHAT_ID }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: node scripts/process_feedback.js

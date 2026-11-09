@@ -36,6 +36,8 @@ const ROOT = path.resolve(__dirname, '..');
  * 并登记到 package.json 的对应 test:* 脚本(否则 check_ci_coverage 门禁会拦截)。
  */
 const TEST_SUITES = [
+  'test:v10251',
+  'test:v10251-gc',
   'test:version',
   'check:two-end',
   'test:two-end-gate',
