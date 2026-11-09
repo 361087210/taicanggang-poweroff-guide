@@ -99,7 +99,7 @@ check('I1b vehicles_data.js 无任何 U+FFFD', countUFFFD(before) === 0, '实际
 const EXPECTED_FIXES = [
   { name: 'I1c 比亚迪唐ATTO-8 锁住车门',        needle: '锁住车门，再次拉动车门确保关闭' },
   { name: 'I1d 吉利极氪 确认断电无误',          needle: '确认断电无误后放置于车内中控台' },
-  { name: 'I1e 奇瑞捷途JETOUR_T2_I_DM 视频名',  needle: 'vehicle_videos/奇瑞捷途JETOUR_T2_I_DM.mp4' },
+  { name: 'I1e 奇瑞捷途JETOUR_T2_I_DM 视频名',  needle: 'vehicle_videos/奇瑞捷途JETOUR(T2_I-DM)/奇瑞捷途JETOUR_T2_I_DM.mp4' },
   { name: 'I1f 比亚迪海豹 10号扳手',            needle: '10号扳手逆时针旋转拧松电池负极螺丝' },
 ];
 EXPECTED_FIXES.forEach(({ name, needle }) => {

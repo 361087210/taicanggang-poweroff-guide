@@ -178,7 +178,11 @@ section('M7 ref≠main 时同样堆积 → WARN(0)(降级, 不因特性分支变
   const d = mkRepo(); sh(d, ['tag', 'v1.0.0']);
   fs.writeFileSync(path.join(d, 'js', 'app.js'), 'var a=5;\n');
   commit(d, 'change js on feature');
-  const r = runGate(d);   /* 不传 --ref → 实际 ref=main? 本仓默认分支已设为 main, 故改用 --ref 模拟特性分支 */
+  /* V10.25.4: 必须显式 --ref main。
+   * 门禁的 ref 取值顺序是 --ref → GITHUB_REF_NAME(Actions 注入) → git 分支 → HEAD;
+   * CI 里 GITHUB_REF_NAME 是 "8/merge" 之类的 PR 引用, 于是本应 FAIL 的用例被降级成
+   * WARN(0), 断言 r.code===1 必红 —— 这条测试此前在**任何 PR** 上都会失败。 */
+  const r = runGate(d, ['--ref', 'main']);
   const r2 = runGate(d, ['--ref', 'feat/x']);
   check('M7 exit=0(降级不阻断)', r2.code === 0, 'code=' + r2.code);
   check('M7 判定 WARN 且 reason 含"降级"', r2.json && r2.json.level === 'WARN' && String(r2.json.reason).indexOf('降级') >= 0, JSON.stringify(r2.json));
