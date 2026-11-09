@@ -122,6 +122,27 @@ async function feishuListFiles(token, folderToken){
   return out;
 }
 
+/**
+ * V10.25.4: 递归列举(迁移后照片/视频都在 <车型名>/ 子目录里, 只列顶层会**永远找不到新文件**)。
+ * 为什么必须改: V10.25 把媒体改成三段式布局后, 本脚本仍只列 vehicle_images/ 顶层,
+ *   于是每晚 cron 实收 0 个文件 → 新增照片永远回不到仓库(Pages/APK 看不到), 且不报错。
+ * 边界: 只下探一层(与约定 <top>/<车型目录>/<文件> 一致), 防符号链接环与无谓递归。
+ */
+async function feishuListFilesDeep(listFn, rootToken) {
+  const root = await listFn(rootToken);
+  const files = [];
+  const subs = [];
+  for (const f of root) {
+    if (f.type === 'folder') subs.push(f);
+    else files.push(f);
+  }
+  for (const sub of subs) {
+    const kids = await listFn(sub.token);
+    for (const k of kids) if (k.type !== 'folder') files.push(k);
+  }
+  return files;
+}
+
 async function feishuFindFolder(token, parentToken, name){
   const files = await feishuListFiles(token, parentToken);
   return (files.find(f => f.type === 'folder' && f.name === name) || null);
@@ -175,7 +196,7 @@ async function main(){
   if(!dataFolder){ console.log('[sync-videos] 未找到 APP数据备份 文件夹, 跳过'); return; }
   const videosFolder = await feishuFindFolder(token, dataFolder.token, 'vehicle_videos');
   if(!videosFolder){ console.log('[sync-videos] 未找到 vehicle_videos 文件夹, 跳过'); return; }
-  const files = await feishuListFiles(token, videosFolder.token);
+  const files = await feishuListFilesDeep(t => feishuListFiles(token, t), videosFolder.token);
   const videoFiles = files.filter(f => f.type === 'file' && VIDEO_EXT.test(f.name));
   console.log(`[sync-videos] 飞书 vehicle_videos 共 ${videoFiles.length} 个视频`);
 
@@ -243,4 +264,5 @@ if(require.main === module){
   main().catch(e => { console.error('[sync-videos] 失败:', e && e.message); process.exit(1); });
 }
 
-module.exports = { _flattenForAssetKey, parseMediaDirectAssets, detectMissingVideos, assetNameFor, buildMappingLine };
+module.exports = {
+  feishuListFilesDeep, _flattenForAssetKey, parseMediaDirectAssets, detectMissingVideos, assetNameFor, buildMappingLine };
