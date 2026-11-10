@@ -79,6 +79,50 @@ function _photoViewerMissingSvg(vehicle,label,reason){
     '</svg>');
 }
 
+/* ===================== V10.25.3 照片候选路径回退 =====================
+ * 背景: 迁移脚本把「被 ≥2 个车型引用」的文件移入 vehicle_images/_共享/, 而历史数据
+ *   可能仍指向车型子目录; 浏览器端没有 fs, 无法像 Node 那样做"存在性优先"定位,
+ *   只能按候选顺序逐个试。
+ * 顺序: 原路径 → _共享/同名 → 顶层/同名(旧扁平布局)
+ * 安全边界: 只试"同名不同目录", 绝不跨名猜测(断电教学照片看错车型有现场风险)。
+ *           命中即停, 全失败才交给上层(飞书云端 → 诚实缺失)。
+ */
+function mediaCandidateSrcs(path){
+  const out=[];
+  if(!path)return out;
+  out.push(path);
+  try{
+    const MP=(typeof TCG_MEDIA_PATHS!=='undefined'&&TCG_MEDIA_PATHS)?TCG_MEDIA_PATHS:null;
+    if(MP&&MP.parseMediaPath){
+      const p=MP.parseMediaPath(path);
+      const fn=p&&p.fileName;
+      if(fn){
+        if(p.isNested){
+          out.push(MP.PHOTO_TOP+'/'+MP.SHARED_FOLDER+'/'+fn);
+          out.push(MP.PHOTO_TOP+'/'+fn);
+        }else if(p.isTopOnly){
+          out.push(MP.PHOTO_TOP+'/'+MP.SHARED_FOLDER+'/'+fn);
+        }
+      }
+    }
+  }catch(e){/* 约定模块缺失时退化为单源, 与旧行为一致 */}
+  return out.filter((v,i)=>v&&out.indexOf(v)===i);
+}
+
+/** 按候选顺序加载照片; 全部失败时回调 onAllFail(由调用方决定云端回退/缺失态) */
+function loadPhotoWithFallback(img,path,onAllFail){
+  const cands=mediaCandidateSrcs(path);
+  const origOnload=img.onload;
+  let i=0;
+  function attempt(){
+    if(i>=cands.length){ img.onerror=null; if(onAllFail)onAllFail(); return; }
+    img.onerror=function(){ attempt(); };
+    img.onload=function(ev){ img.onerror=null; if(typeof origOnload==='function')origOnload.call(img,ev); };
+    img.src=cands[i++];
+  }
+  attempt();
+}
+
 function openPhotoViewer(index){
   state.photoIndex=index;
   state.photoZoom=1;
@@ -87,20 +131,20 @@ function openPhotoViewer(index){
   const labels=['前脸照片','车尾照片','钥匙照片','断电位照片'];
   document.getElementById('photo-viewer-label').textContent=labels[index]||`照片 ${index+1}`;
   if(v&&v.photoPaths&&v.photoPaths[index]){
-    img.src=v.photoPaths[index];
+    const photoPath=v.photoPaths[index];
     // V10.16: 本地图加载成功后,分辨率不足时后台探测飞书云端高清版热替换
     img.onload=()=>{
-      const fn=(v.photoPaths[index]||'').split('/').pop();
+      const fn=(photoPath||'').split('/').pop();
       _tryHdUpgrade(img,fn);
     };
-    // 运行时加载失败兜底: 先试飞书云端回退, 仍失败则明确告知"文件缺失"
-    img.onerror=()=>{
-      img.onerror=null;
-      const fn=(v.photoPaths[index]||'').split('/').pop();
+    /* V10.25.3: 先走候选路径(原路径 → _共享/同名 → 顶层/同名),
+     * 全失败再回退飞书云端, 最后才显示"照片缺失"的诚实空态。 */
+    loadPhotoWithFallback(img,photoPath,()=>{
+      const fn=(photoPath||'').split('/').pop();
       imgFromFeishuCloud(img,fn).then(ok=>{
         if(!ok)img.src=_photoViewerMissingSvg(v,labels[index],'missing');
       });
-    };
+    });
   }else{
     // 该车型根本没登记这一张(与"登记了但文件丢了"是两回事, 文案必须区分)
     img.src=_photoViewerMissingSvg(v,labels[index],'never');
@@ -671,13 +715,25 @@ async function imgFromFeishuCloud(img,fileName){
   }
 }
 
-/** 列表缩略图加载失败: 先试飞书云端,未命中则显示"缺失"(诚实空态, 不再塞灰图) */
+/** 列表缩略图加载失败: 先试候选路径(车型目录 → _共享 → 顶层), 再试飞书云端,
+ * 都未命中才显示"缺失"(诚实空态, 不再塞灰图)。
+ * V10.25.3: 原实现直接跳云端, 导致"文件就在 _共享/ 里"的图被误报缺失。 */
 function thumbImgError(img){
   img.onerror=null;
-  const fn=(img.getAttribute('src')||'').split('/').pop();
-  imgFromFeishuCloud(img,fn).then(ok=>{
-    if(!ok)showThumbMissing(img);
-  });
+  const orig=img.getAttribute('data-src')||img.getAttribute('src')||'';
+  const fn=orig.split('/').pop();
+  const cands=mediaCandidateSrcs(orig).filter(u=>u!==img.getAttribute('src'));
+  let i=0;
+  function next(){
+    if(i>=cands.length){
+      imgFromFeishuCloud(img,fn).then(ok=>{ if(!ok)showThumbMissing(img); });
+      return;
+    }
+    img.onerror=function(){ next(); };
+    img.onload=function(){ img.onerror=null; };
+    img.src=cands[i++];
+  }
+  next();
 }
 
 async function playFromFeishuCloud(video,fileName,session){
