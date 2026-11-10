@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-10T10:07:33.388Z",
+  "source": "feishu:APP数据备份/vehicle_images",
+  "count": 9,
+  "photos": [
+    {
+      "name": "比亚迪元YUAN-PRO-EV_p1_9ec9c3e2.jpeg",
+      "bytes": 165704,
+      "sha256": "006e5ce667fe06ea4a8d7cdc5c511adb6608080fd7d64435531def6ff367a9c2",
+      "feishuToken": "TWYkbfGBto2l0Mx9a7lcXslTnIc",
+      "relPath": "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p1_9ec9c3e2.jpeg",
+      "syncedAt": "2026-11-10T10:07:17.559Z",
+      "releaseAsset": "比亚迪元YUAN-PRO-EV_p1_9ec9c3e2.jpeg"
+    },
+    {
+      "name": "比亚迪元YUAN-PRO-EV_p2_366f5e34.jpeg",
+      "bytes": 142695,
+      "sha256": "b9c5b9f97a60212d0770b32df5288f2bf019308cf49528a5306f9f253a14b168",
+      "feishuToken": "V0Y7bfbe2oQxYoxrUnyciiVxnof",
+      "relPath": "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p2_366f5e34.jpeg",
+      "syncedAt": "2026-11-10T10:07:20.472Z",
+      "releaseAsset": "比亚迪元YUAN-PRO-EV_p2_366f5e34.jpeg"
+    },
+    {
+      "name": "比亚迪元YUAN-PRO-EV_p3_64ad5771.jpeg",
+      "bytes": 145100,
+      "sha256": "349b5b442e06b330b65d26752a6c33f0c88be6d48a56594e2339356edda9a27d",
+      "feishuToken": "SD49bOswKoyP6oxZWbycQtOonVd",
+      "relPath": "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p3_64ad5771.jpeg",
+      "syncedAt": "2026-11-10T10:07:22.140Z",
+      "releaseAsset": "比亚迪元YUAN-PRO-EV_p3_64ad5771.jpeg"
+    },
+    {
+      "name": "比亚迪元YUAN-PRO-EV_p4_fa43370e.jpeg",
+      "bytes": 137116,
+      "sha256": "afbff22a6b3f90f53c2c6e7240ef81c66443894944fa11a1d55b5cfd686857ca",
+      "feishuToken": "S10cbqtifoWUa9x3t2CcS8lynLb",
+      "relPath": "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p4_fa43370e.jpeg",
+      "syncedAt": "2026-11-10T10:07:23.741Z",
+      "releaseAsset": "比亚迪元YUAN-PRO-EV_p4_fa43370e.jpeg"
+    },
+    {
+      "name": "比亚迪元YUAN-PRO-EV_p5_b421c04c.jpeg",
+      "bytes": 146280,
+      "sha256": "c4f3792e7ed2d80241f01e22a434e07128505afd6b9fef08540664bcce792255",
+      "feishuToken": "O2MTbtSH1o23A9xL93bcIhHUnKe",
+      "relPath": "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p5_b421c04c.jpeg",
+      "syncedAt": "2026-11-10T10:07:25.359Z",
+      "releaseAsset": "比亚迪元YUAN-PRO-EV_p5_b421c04c.jpeg"
+    },
+    {
+      "name": "比亚迪元YUAN-PRO-EV_p6_bfaf4d40.jpeg",
+      "bytes": 123067,
+      "sha256": "3e14898a5b156d7bb3c6a40962638183cd1204a2a5732dba1c478111d25ddd23",
+      "feishuToken": "XOVPbKET7ow5gSx5qXmcWX3Qndc",
+      "relPath": "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p6_bfaf4d40.jpeg",
+      "syncedAt": "2026-11-10T10:07:27.033Z",
+      "releaseAsset": "比亚迪元YUAN-PRO-EV_p6_bfaf4d40.jpeg"
+    },
+    {
+      "name": "比亚迪元YUAN-PRO-EV_p7_5ee790d.jpeg",
+      "bytes": 164404,
+      "sha256": "f9d67412ea276b1dfaeabaca347d9e0c7d6082cf5d47c1adab1572325e9760bf",
+      "feishuToken": "LM53bCqw5o38d1xruBbchhI1nUd",
+      "relPath": "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p7_5ee790d.jpeg",
+      "syncedAt": "2026-11-10T10:07:28.593Z",
+      "releaseAsset": "比亚迪元YUAN-PRO-EV_p7_5ee790d.jpeg"
+    },
+    {
+      "name": "比亚迪元YUAN-PRO-EV_p8_7a652a84.jpeg",
+      "bytes": 146314,
+      "sha256": "2ffadd9286191538303af14e44684ee6dfa36ddf9d03c1f616173d80c8143f3a",
+      "feishuToken": "Ndu0bz8BEoIJmgx8G2vcgTzknLg",
+      "relPath": "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p8_7a652a84.jpeg",
+      "syncedAt": "2026-11-10T10:07:30.556Z",
+      "releaseAsset": "比亚迪元YUAN-PRO-EV_p8_7a652a84.jpeg"
+    },
+    {
+      "name": "比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg",
+      "bytes": 182255,
+      "sha256": "c944118aefa1db54b086155ca9b2fca3514ae238c8de9c6e3abb07cda5fd8907",
+      "feishuToken": "AFngbZz8bohtnCxICCDcNFf5nHb",
+      "relPath": "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg",
+      "syncedAt": "2026-11-10T10:07:32.280Z",
+      "releaseAsset": "比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg"
+    }
+  ]
+}
