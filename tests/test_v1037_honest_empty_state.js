@@ -69,8 +69,11 @@ check('S1d showThumbMissing 存在(列表缩略图诚实空态)',
 
 check('S1e imgLoadError 未命中云端时走 showPhotoMissing(而非换灰图)',
   /function\s+imgLoadError[\s\S]{0,320}showPhotoMissing\(img\)/.test(mediaSrc));
+/* V10.25.4: 窗口从 320 放宽到 800 —— thumbImgError 内新增了"候选路径回退"
+ * (原路径 → _共享/同名 → 顶层/同名)，函数自然变长；不变式(未命中云端 → showThumbMissing)
+ * 本身没变，只是距离变远。锁死字符窗口属于易碎断言。 */
 check('S1f thumbImgError 未命中云端时走 showThumbMissing(而非换灰图)',
-  /function\s+thumbImgError[\s\S]{0,320}showThumbMissing\(img\)/.test(mediaSrc));
+  /function\s+thumbImgError[\s\S]{0,800}showThumbMissing\(img\)/.test(mediaSrc));
 check('S1g 全文件不再出现 _imgPlaceholder 调用',
   (mediaSrc.match(/_imgPlaceholder/g) || []).length <= 1, // 仅允许注释里那一处说明
   '出现次数=' + ((mediaSrc.match(/_imgPlaceholder/g) || []).length));

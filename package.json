@@ -87,6 +87,7 @@
     "media:gc": "node scripts/feishu_media_gc.js",
     "check:fields": "node scripts/check_field_duplicates.js",
     "check:ownership": "node scripts/check_media_ownership.js",
-    "test:v10251-gc": "node tests/test_v10251_media_gc_plan.js"
+    "test:v10251-gc": "node tests/test_v10251_media_gc_plan.js",
+    "test:v10251": "node tests/test_v10251_media_fallback.js"
   }
 }

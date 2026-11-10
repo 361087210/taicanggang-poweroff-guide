@@ -46,6 +46,9 @@
   var PHOTO_TOP = 'vehicle_images';   // 照片顶层契约目录(不得改名)
   var VIDEO_TOP = 'vehicle_videos';   // 视频顶层契约目录(不得改名)
   var SHARED_FOLDER = '_共享';        // 多车型共用资产子目录
+  var ORPHAN_FOLDER = '_未归类';      // 迁移期临时归置目录(无车型引用的孤儿文件)
+  /* 保留目录名(系统占用, 车型目录不得与之重名) —— 见 folderNameForVehicle 的守卫 */
+  var RESERVED_FOLDERS = [SHARED_FOLDER, ORPHAN_FOLDER];
   var MAX_FOLDER_LEN = 40;            // 子目录名长度上限(飞书/Windows 双端留足余量)
 
   /**
@@ -180,6 +183,8 @@
     PHOTO_TOP: PHOTO_TOP,
     VIDEO_TOP: VIDEO_TOP,
     SHARED_FOLDER: SHARED_FOLDER,
+    ORPHAN_FOLDER: ORPHAN_FOLDER,
+    RESERVED_FOLDERS: RESERVED_FOLDERS,
     MAX_FOLDER_LEN: MAX_FOLDER_LEN,
     sanitizeName: sanitizeName,
     folderNameForVehicle: folderNameForVehicle,

@@ -234,7 +234,7 @@ function renderVehicleCard(v,i,ml){
   const statusText=v.id%5===0?'已完成':'未开始';
   const hasPhoto=v.photoPaths&&v.photoPaths.length>0;
   // V10.12: 用户可编辑字段全部 esc(); 资源 src= 保持原文
-  const thumbHtml=hasPhoto?`<div class="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"><img src="${v.photoPaths[0]}" class="w-full h-full object-cover" alt="${esc(v.display)}" onerror="thumbImgError(this)"></div>`:'';
+  const thumbHtml=hasPhoto?`<div class="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"><img src="${v.photoPaths[0]}" data-src="${v.photoPaths[0]}" class="w-full h-full object-cover" alt="${esc(v.display)}" onerror="thumbImgError(this)"></div>`:'';
   return `<div onclick="openVehicleDetail(${v.id})" class="${ml} bg-white rounded-xl p-3 shadow-sm border border-gray-100 active:scale-98 transition-transform cursor-pointer mb-1.5 anim-up" style="animation-delay:${i*0.03}s">
     <div class="flex items-start gap-2">
       ${thumbHtml}
