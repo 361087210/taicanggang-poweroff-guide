@@ -83,6 +83,10 @@
     "test:coverage-gate": "node scripts/check_coverage_threshold.js",
     "test:v10254-deep": "node tests/test_v10254_deep_list.js",
     "media:rename": "node scripts/migrate_vehicle_rename.js",
-    "test:v10254": "node tests/test_v10254_rename_migration.js"
+    "test:v10254": "node tests/test_v10254_rename_migration.js",
+    "media:gc": "node scripts/feishu_media_gc.js",
+    "check:fields": "node scripts/check_field_duplicates.js",
+    "check:ownership": "node scripts/check_media_ownership.js",
+    "test:v10251-gc": "node tests/test_v10251_media_gc_plan.js"
   }
 }

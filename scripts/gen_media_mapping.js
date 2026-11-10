@@ -154,6 +154,15 @@ function sizeOf(p) {
 }
 
 /** 单个媒体条目: 本地可拿到的算真实 SHA-256, 云端/base64 置空并告警 */
+let _videoFpCache = null;
+function loadVideoFingerprints() {
+  if (_videoFpCache) return _videoFpCache;
+  const p = path.join(ROOT, 'docs', 'video_fingerprints.json');
+  try { _videoFpCache = JSON.parse(fs.readFileSync(p, 'utf8')); }
+  catch (e) { _videoFpCache = { videos: {} }; }
+  return _videoFpCache;
+}
+
 function mediaEntry(p, type, mediaAssets, localImages, warnings) {
   const name = basename(p);
   const entry = { fileName: name, sha256: '', size: 0, mime: mimeOf(name), qiniuKey: '' };
@@ -182,7 +191,17 @@ function mediaEntry(p, type, mediaAssets, localImages, warnings) {
       warnings.push(`照片本地缺失, SHA-256 置空(巡检将告警): ${name}`);
     }
   } else {
-    // 视频不在仓库(存于飞书云端 / GitHub Release), 本阶段一律置空指纹
+    // 视频不入仓库(存于飞书云端 / GitHub Release), 指纹来自 docs/video_fingerprints.json
+    // (由 scripts/fingerprint_videos.js 在持有本地视频的机器上生成)。
+    // 有了指纹, 共享视频的"内容一致"才是可验证事实, 而不是约定。
+    const fp = loadVideoFingerprints();
+    const rec = fp.videos && fp.videos[name];
+    if (rec && rec.sha256) {
+      entry.sha256 = rec.sha256;
+      entry.size = Number(rec.size) || 0;
+    } else {
+      warnings.push(`视频无内容指纹(先跑 scripts/fingerprint_videos.js): ${name}`);
+    }
     if (!entry.releaseAsset) warnings.push(`视频无 Release 资产映射: ${name}`);
   }
   return entry;

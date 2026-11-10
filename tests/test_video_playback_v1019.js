@@ -110,7 +110,12 @@ check('S1b 每个车型视频引用都能精确命中官方资产(除已知待�
 const usedAssets = new Set(Object.values(MAP));
 check('S1c 官方资产无冗余(全部被引用)', usedAssets.size === Object.keys(MAP).length);
 /* 组长新上传、待数据侧接入的 3 个视频: 直链已配, 车型引用尚未在表格中更新 */
-const KNOWN_UNWIRED = ['长安深蓝(G318)_v2.mp4', '奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4', '长安启源(EADO_PLUS)_v2_4ffd5489.mp4'];
+const KNOWN_UNWIRED = [
+  '长安深蓝(G318)_v2.mp4', '奇瑞捷途JETOUR(G700-GAIA)_v1_fce9c2a6.mp4', '长安启源(EADO_PLUS)_v2_4ffd5489.mp4',
+  /* V10.25.4: 通用教学视频(叉车), 不属于任何车型, 云端在 vehicle_videos/_共享/。
+   * 直链已配、车型引用永远不会有 —— 属"正当无引用", 不是脏键。 */
+  '柳工2.5T叉车.mp4'
+];
 const unusedKey = Object.keys(MAP).filter(k => !refs.some(r => r.file === k) && !KNOWN_UNWIRED.includes(k));
 check('S1d 映射表无未被任何车型引用的孤儿键(除组长新上传待接入)', unusedKey.length === 0, unusedKey.slice(0, 3).join(', '));
 console.log('  (车型引用 ' + refs.length + ' 条 / 官方资产 ' + Object.keys(MAP).length + ' 个)');

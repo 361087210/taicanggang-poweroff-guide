@@ -14,7 +14,7 @@ V012,比亚迪,唐,唐L-EV（天神之眼）,比亚迪唐(唐L-EV（天神之眼
 V013,比亚迪,唐,唐EV（欧标）,比亚迪唐(唐EV（欧标）),纯电,前机盖电池负极,1,image20.png,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
 V014,比亚迪,唐,标准,比亚迪唐ATTO-8,纯电,无需断电,2,image21.jpeg;image22.jpeg,0,1,比亚迪唐_ATTO8.mp4,本地缺失-需云端补录,放干燥剂
 V015,比亚迪,元,元UP,比亚迪元(元UP),纯电,后排坐椅腿托下方,1,image4.jpeg,0,1,比亚迪元_元UP.mp4,本地缺失-需云端补录,放干燥剂
-V016,比亚迪,元,标准,比亚迪元YUAN-PRO-EV,纯电,无需断电,9,比亚迪元YUAN-PRO-EV_p1_9ec9c3e2.jpeg;比亚迪元YUAN-PRO-EV_p2_366f5e34.jpeg;比亚迪元YUAN-PRO-EV_p3_64ad5771.jpeg;比亚迪元YUAN-PRO-EV_p4_fa43370e.jpeg;比亚迪元YUAN-PRO-EV_p5_b421c04c.jpeg;比亚迪元YUAN-PRO-EV_p6_bfaf4d40.jpeg;比亚迪元YUAN-PRO-EV_p7_5ee790d.jpeg;比亚迪元YUAN-PRO-EV_p8_7a652a84.jpeg;比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg,9,0,,无视频引用,放干燥剂
+V016,比亚迪,元,标准,比亚迪元YUAN-PRO-EV,纯电,无需断电,9,比亚迪元YUAN-PRO-EV_p1_9ec9c3e2.jpeg;比亚迪元YUAN-PRO-EV_p2_366f5e34.jpeg;比亚迪元YUAN-PRO-EV_p3_64ad5771.jpeg;比亚迪元YUAN-PRO-EV_p4_fa43370e.jpeg;比亚迪元YUAN-PRO-EV_p5_b421c04c.jpeg;比亚迪元YUAN-PRO-EV_p6_bfaf4d40.jpeg;比亚迪元YUAN-PRO-EV_p7_5ee790d.jpeg;比亚迪元YUAN-PRO-EV_p8_7a652a84.jpeg;比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg,0,0,,无视频引用,放干燥剂
 V017,比亚迪,元,元PLUS,比亚迪元(元PLUS),纯电,副驾驶底部,3,image24.jpeg;image25.jpeg;image3.jpeg,0,1,通用断电视频.mp4,本地缺失-需云端补录,放干燥剂
 V018,比亚迪,汉,汉,比亚迪汉,混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
 V019,比亚迪,驱逐舰05（KING）,驱逐舰05（KING）,比亚迪驱逐舰05（KING）,混动,前机盖电池负极,0,,0,0,,无视频引用,放干燥剂
@@ -89,7 +89,7 @@ V088,比亚迪,海狮,请选择配置,比亚迪SEALION海狮06,请选择,无需�
 V089,比亚迪,腾势,请选择配置,比亚迪腾势DENZA-Z9GT-FLASHe3,请选择,无需断电,5,比亚迪腾势DENZA-Z9GT-FLASHe3_p1_3a90fb56.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p2_ed120c8e.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p3_5c58eb95.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p4_ee06d8df.jpeg;比亚迪腾势DENZA-Z9GT-FLASHe3_p5_9ada07e9.jpeg,5,0,,无视频引用,放干燥剂，遥控锁车
 V090,长城,长城炮POER,请选择配置,长城炮（皮卡）4x4,燃油,前机盖,2,长城炮（皮卡）4x4_p1_75e12a5e.jpeg;长城炮（皮卡）4x4_p2_9948b5f9.jpeg,2,0,,无视频引用,前机盖断电
 V091,比亚迪,元,DM-i,比亚迪元YUAN-UP-DM-I,混动,无需断电,1,比亚迪元YUAN-UP-DM-I_p1_fd9fe6f8.jpeg,1,0,,无视频引用,放干燥剂，遥控锁车
-V092,北汽BAIC,北京BJ,请选择配置,北汽BAIC-BJ30e,请选择,后备箱,3,北京BAIC-BJ30e_p1_e2bf9e07.jpeg;北京BAIC-BJ30e_p2_ee1a013a.jpeg;北京BAIC-BJ30e_p3_27e2da3d.jpeg,3,0,,无视频引用,后备箱断电
+V092,北汽(BAIC),北京BJ,请选择配置,北汽BAIC-BJ30e,请选择,后备箱,3,北京BAIC-BJ30e_p1_e2bf9e07.jpeg;北京BAIC-BJ30e_p2_ee1a013a.jpeg;北京BAIC-BJ30e_p3_27e2da3d.jpeg,3,0,,无视频引用,后备箱断电
 V093,奇瑞,欧萌达,请选择配置,奇瑞OMODA欧萌达C5-HEV,请选择,断电器熄灭后自动断电,5,奇瑞OMODA欧萌达C5-HEV_p1_1be3a864.jpeg;奇瑞OMODA欧萌达C5-HEV_p2_249cba48.jpeg;奇瑞OMODA欧萌达C5-HEV_p3_9859b4fa.jpeg;奇瑞OMODA欧萌达C5-HEV_p4_df248724.jpeg;奇瑞OMODA欧萌达C5-HEV_p5_8d0bcab1.jpeg,5,0,,无视频引用,HEV断电器断电
 V094,奇瑞,欧萌达,标准,奇瑞OMODA欧萌达C5,燃油,前机盖,4,奇瑞OMODA欧萌达C5_p1_1be3a864.jpeg;奇瑞OMODA欧萌达C5_p2_9859b4fa.jpeg;奇瑞OMODA欧萌达C5_p3_ec0e7275.jpeg;奇瑞OMODA欧萌达C5_p4_27e2da3d.jpeg,4,0,,无视频引用,车窗电源关闭
 V095,长城,JOLION,标准,长城初恋JOLION,燃油,前机盖,3,长城初恋JOLION_p1_c975ac03.jpeg;长城初恋JOLION_p2_12f97fb1.jpeg;长城初恋JOLION_p3_9abb5075.jpeg,3,0,,无视频引用,

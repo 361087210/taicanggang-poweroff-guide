@@ -28,9 +28,9 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/比亚迪海豚DOLPHIN(低配)/image1.jpeg",
-      "vehicle_images/比亚迪海豚DOLPHIN(低配)/image2.jpeg",
-      "vehicle_images/比亚迪海豚DOLPHIN(低配)/image3.jpeg"
+      "vehicle_images/_共享/image1.jpeg",
+      "vehicle_images/_共享/image2.jpeg",
+      "vehicle_images/_共享/image3.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -65,9 +65,9 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/比亚迪海豚EV/image1.jpeg",
-      "vehicle_images/比亚迪海豚EV/image2.jpeg",
-      "vehicle_images/比亚迪海豚EV/image4.jpeg"
+      "vehicle_images/_共享/image1.jpeg",
+      "vehicle_images/_共享/image2.jpeg",
+      "vehicle_images/_共享/image4.jpeg"
     ],
     "photoSections": [
       "exterior",
@@ -150,7 +150,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/比亚迪海鸥(高配(天窗))/image8.jpeg",
       "vehicle_images/比亚迪海鸥(高配(天窗))/image9.jpeg",
-      "vehicle_images/比亚迪海鸥(高配(天窗))/image4.jpeg"
+      "vehicle_images/_共享/image4.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -224,7 +224,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/比亚迪海豹(海豹EV)/image13.jpeg",
       "vehicle_images/比亚迪海豹(海豹EV)/image14.jpeg",
-      "vehicle_images/比亚迪海豹(海豹EV)/image4.jpeg"
+      "vehicle_images/_共享/image4.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -525,7 +525,7 @@ window.VEHICLES = [
     "remarks": "放干燥剂",
     "photos": 1,
     "photoPaths": [
-      "vehicle_images/比亚迪元(元UP)/image4.jpeg"
+      "vehicle_images/_共享/image4.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -624,7 +624,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/比亚迪元(元PLUS)/image24.jpeg",
       "vehicle_images/比亚迪元(元PLUS)/image25.jpeg",
-      "vehicle_images/比亚迪元(元PLUS)/image3.jpeg"
+      "vehicle_images/_共享/image3.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -717,7 +717,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/比亚迪腾势(方程豹B5)/image26.jpeg",
       "vehicle_images/比亚迪腾势(方程豹B5)/image27.jpeg",
-      "vehicle_images/比亚迪腾势(方程豹B5)/image3.jpeg"
+      "vehicle_images/_共享/image3.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -838,7 +838,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/悦翔(CS15_CS35MAX_CS75_CS55PLUS(2025款))/image34.jpeg",
       "vehicle_images/悦翔(CS15_CS35MAX_CS75_CS55PLUS(2025款))/image35.jpeg",
-      "vehicle_images/悦翔(CS15_CS35MAX_CS75_CS55PLUS(2025款))/image36.jpeg"
+      "vehicle_images/_共享/image36.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -961,7 +961,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/长安糯米/image43.jpeg",
       "vehicle_images/长安糯米/image44.jpeg",
-      "vehicle_images/长安糯米/image36.jpeg"
+      "vehicle_images/_共享/image36.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -996,8 +996,8 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/长安UNI-T/image45.jpeg",
-      "vehicle_images/长安UNI-T/image46.jpeg"
+      "vehicle_images/_共享/image45.jpeg",
+      "vehicle_images/_共享/image46.jpeg"
     ],
     "photoSections": [
       "exterior",
@@ -1041,8 +1041,8 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/长安UNI-V/image45.jpeg",
-      "vehicle_images/长安UNI-V/image46.jpeg"
+      "vehicle_images/_共享/image45.jpeg",
+      "vehicle_images/_共享/image46.jpeg"
     ],
     "photoSections": [
       "exterior",
@@ -1436,7 +1436,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/东风风神(风神HUGEMHD500T_MAGEMHD500T)/image71.jpeg",
       "vehicle_images/东风风神(风神HUGEMHD500T_MAGEMHD500T)/image72.jpeg",
-      "vehicle_images/东风风神(风神HUGEMHD500T_MAGEMHD500T)/image73.jpeg"
+      "vehicle_images/_共享/image73.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -1934,7 +1934,7 @@ window.VEHICLES = [
     "photos": 2,
     "photoPaths": [
       "vehicle_images/吉利领克(领克02)/image108.jpeg",
-      "vehicle_images/吉利领克(领克02)/image109.jpeg"
+      "vehicle_images/_共享/image109.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -1967,7 +1967,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/吉利领克(领克08)/image110.jpeg",
       "vehicle_images/吉利领克(领克08)/image111.jpeg",
-      "vehicle_images/吉利领克(领克08)/image109.jpeg"
+      "vehicle_images/_共享/image109.jpeg"
     ],
     "videos": 0
   },
@@ -2232,7 +2232,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/奇瑞捷途JETOUR(X50)/image128.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(X50)/image129.jpeg",
-      "vehicle_images/奇瑞捷途JETOUR(X50)/image130.jpeg"
+      "vehicle_images/_共享/image130.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -2269,7 +2269,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/奇瑞捷途JETOUR(X70)/image131.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(X70)/image132.jpeg",
-      "vehicle_images/奇瑞捷途JETOUR(X70)/image130.jpeg"
+      "vehicle_images/_共享/image130.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -2378,9 +2378,9 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/奇瑞捷途JETOUR(T2_I-DM)/image139.jpeg",
+      "vehicle_images/_共享/image139.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(T2_I-DM)/image140.jpeg",
-      "vehicle_images/奇瑞捷途JETOUR(T2_I-DM)/image141.jpeg"
+      "vehicle_images/_共享/image141.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -2415,9 +2415,9 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/奇瑞捷途JETOUR(T2_XWD)/image139.jpeg",
+      "vehicle_images/_共享/image139.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(T2_XWD)/image142.jpeg",
-      "vehicle_images/奇瑞捷途JETOUR(T2_XWD)/image141.jpeg"
+      "vehicle_images/_共享/image141.jpeg"
     ],
     "videos": 1,
     "videoPaths": [
@@ -2454,7 +2454,7 @@ window.VEHICLES = [
     "photoPaths": [
       "vehicle_images/奇瑞捷途JETOUR(G700-GAIA)/image143.jpeg",
       "vehicle_images/奇瑞捷途JETOUR(G700-GAIA)/image144.jpeg",
-      "vehicle_images/奇瑞捷途JETOUR(G700-GAIA)/image73.jpeg"
+      "vehicle_images/_共享/image73.jpeg"
     ],
     "photoSections": [
       "exterior",
@@ -2644,8 +2644,8 @@ window.VEHICLES = [
     "remarks": "不收卡片不收机械钥匙",
     "photos": 2,
     "photoPaths": [
-      "vehicle_images/零跑Leapmotor-B10/image157.png",
-      "vehicle_images/零跑Leapmotor-B10/image158.png"
+      "vehicle_images/_共享/image157.png",
+      "vehicle_images/_共享/image158.png"
     ],
     "photoSections": [
       "exterior",
@@ -2689,8 +2689,8 @@ window.VEHICLES = [
     "remarks": "",
     "photos": 3,
     "photoPaths": [
-      "vehicle_images/零跑Leapmotor-C10/image157.png",
-      "vehicle_images/零跑Leapmotor-C10/image158.png",
+      "vehicle_images/_共享/image157.png",
+      "vehicle_images/_共享/image158.png",
       "vehicle_images/零跑Leapmotor-C10/image159.png"
     ],
     "videos": 1,
@@ -3415,7 +3415,7 @@ window.VEHICLES = [
   {
     "id": 92,
     "brandId": "custom",
-    "brand": "北汽BAIC",
+    "brand": "北汽(BAIC)",
     "series": "北京BJ",
     "config": "请选择配置",
     "display": "北汽BAIC-BJ30e",
