@@ -98,10 +98,15 @@ function main() {
 
   // ---- C3 张冠李戴(共享须显式声明) ----
   const owners = {}; // fileName -> Set(vehicleId)
+  const kindByName = {}; // fileName -> '图片' | '视频' | '图片+视频'(同名跨类型, 视为异常)
+  const markKind = (n, k) => {
+    if (!kindByName[n]) kindByName[n] = k;
+    else if (kindByName[n] !== k) kindByName[n] = '图片+视频';
+  };
   for (const mv of manifest.vehicles || []) {
     const names = [];
-    (mv.photos || []).forEach(p => { if (p && p.fileName) names.push(p.fileName); });
-    (mv.videos || []).forEach(v => { if (v && v.fileName) names.push(v.fileName); });
+    (mv.photos || []).forEach(p => { if (p && p.fileName) { names.push(p.fileName); markKind(p.fileName, '图片'); } });
+    (mv.videos || []).forEach(v => { if (v && v.fileName) { names.push(v.fileName); markKind(v.fileName, '视频'); } });
     names.forEach(n => { (owners[n] = owners[n] || new Set()).add(mv.id); });
   }
   // sha256 -> fileName(反向查找, 用于 assets 校验)
@@ -112,7 +117,9 @@ function main() {
   for (const [name, ids] of Object.entries(owners)) {
     if (ids.size <= 1) continue;
     const sha = shaByName[name];
-    if (!sha) { warns.push(`C3 视频跨车共用(无内容指纹, 待七牛阶段补 sha256): ${name} -> [${[...ids].join(',')}]`); continue; }
+    const kind = kindByName[name] || '媒体';
+    if (kind === '图片+视频') fails.push(`C3 同名跨类型: ${name} 同时被当作图片与视频引用, 必须改名`);
+    if (!sha) { warns.push(`C3 ${kind}跨车共用(无内容指纹, 无法证明内容一致): ${name} -> [${[...ids].join(',')}]`); continue; }
     const asset = manifest.assets && manifest.assets[sha];
     if (!asset || !Array.isArray(asset.vehicleIds) || asset.vehicleIds.length <= 1) {
       fails.push(`C3 张冠李戴风险: ${name} 被多车引用但未在 assets.vehicleIds 显式声明 [${[...ids].join(',')}]`);
@@ -182,6 +189,48 @@ function main() {
     fails.push('C6 零条熔断: manifest 车型数为 0, 疑似同步链被清空(禁止放行)');
   }
 
+  // ---- C7 三层对账(区分"路径失配"与"真缺失") ----
+  // 背景: 迁移脚本把多重引用文件搬进 _共享/ 后未回写引用, 导致"云盘/仓库里有文件但应用 404"。
+  // 旧报表只报一个"缺失总数", 现场看到"比我报的多", 信任被消耗。此处拆成三列:
+  //   ① 存在        : 引用路径可直接命中本地文件
+  //   ② 引用失配    : 路径不命中, 但同名文件在别处(多为 _共享/), 可由回写脚本自动修
+  //   ③ 真缺失      : 全树无同名文件, 只能补传/补拍
+  function threeWay(list, topDir) {
+    const out = { ok: 0, misplaced: [], missing: [] };
+    for (const ref of list) {
+      if (/^(data:|https?:)/.test(String(ref))) continue;
+      let hit = '';
+      if (MP && typeof MP.resolveLocalFile === 'function') hit = MP.resolveLocalFile(ROOT, topDir, ref);
+      if (hit) { out.ok++; continue; }
+      const bn = basename(ref);
+      if (localImages.has(bn)) out.misplaced.push(String(ref));
+      else out.missing.push(String(ref));
+    }
+    return out;
+  }
+  const photoRefList = vehicles.flatMap(v => (v.photoPaths || []));
+  const pSplit = threeWay(photoRefList, MP ? MP.PHOTO_TOP : 'vehicle_images');
+  if (pSplit.misplaced.length) {
+    warns.push(`C7 照片引用失配(文件在别处, 可回写修复) ${pSplit.misplaced.length} 条, 例: ${pSplit.misplaced.slice(0, 3).join(' | ')}`);
+  }
+  if (pSplit.missing.length) {
+    warns.push(`C7 照片真缺失(全树无同名文件, 需补传/补拍) ${pSplit.missing.length} 条`);
+  }
+
+  // ---- C8 视频内容指纹覆盖率 ----
+  // 共享视频(如"通用断电视频")必须能用 sha256 证明"确实是同一个片", 否则只是约定。
+  const vids = (manifest.vehicles || []).flatMap(mv => mv.videos || []);
+  const vWithSha = vids.filter(v => v.sha256).length;
+  const vSharedNoSha = [];
+  for (const [name, ids] of Object.entries(owners)) {
+    if (ids.size <= 1 || kindByName[name] === '图片') continue;
+    const rec = vids.find(v => v.fileName === name);
+    if (!rec || !rec.sha256) vSharedNoSha.push(name);
+  }
+  if (vSharedNoSha.length) {
+    warns.push(`C8 共享视频无内容指纹 ${vSharedNoSha.length} 个(无法证明内容一致): ${vSharedNoSha.slice(0, 5).join(', ')}`);
+  }
+
   // ---- 汇总 ----
   warns.forEach(w => console.warn('[WARN] ' + w));
   if (fails.length) {
@@ -190,6 +239,8 @@ function main() {
     process.exit(1);
   }
   console.log(`[audit:media] 巡检通过: ${manifest.stats.vehicleCount} 车型 / ${manifest.stats.photoCount} 照片 / ${manifest.stats.videoCount} 视频 / assets ${Object.keys(manifest.assets || {}).length} 项 / ${warns.length} 个警告`);
+  console.log(`[audit:media] 照片对账: 存在 ${pSplit.ok} | 引用失配(可自动修) ${pSplit.misplaced.length} | 真缺失 ${pSplit.missing.length}`);
+  console.log(`[audit:media] 视频指纹: ${vWithSha}/${vids.length} 已有 sha256`);
 }
 
 main();
