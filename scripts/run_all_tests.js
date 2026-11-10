@@ -38,6 +38,7 @@ const ROOT = path.resolve(__dirname, '..');
 const TEST_SUITES = [
   'test:v10254-deep',
   'test:v10254',
+  'test:v10251-gc',
   'test:version',
   'check:two-end',
   'test:two-end-gate',
