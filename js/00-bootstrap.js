@@ -1561,9 +1561,6 @@ const UPDATE_API_SOURCE=`https://api.github.com/repos/${GITHUB_REPO}/contents/ve
  */
 const MEDIA_RELEASE_BASE=`https://github.com/${GITHUB_REPO}/releases/download/media-videos`;
 const MEDIA_DIRECT_ASSETS={
-  'user_v22_v2_7a155908.mp4':'tcgv_ac4b41ffc4_2.mp4',
-  'user_v74_v1_2d41bb72.mp4':'tcgv_1edd4aca08.mp4',
-  'user_v74_v1_bba4db96.mp4':'tcgv_7641611f88.mp4',
   '上汽名爵_ZS_HS_EHS_PHEV_.mp4':'tcgv_104bb1ef84.mp4',
   '上汽名爵_赛博斯特.mp4':'tcgv_0267256ec1.mp4',
   '上汽大通_大通货车.mp4':'tcgv_3d0e993e4d.mp4',
@@ -1613,7 +1610,7 @@ const MEDIA_DIRECT_ASSETS={
   '长安皮卡_HUNTER_猎手_燃油版_混动版.mp4':'tcgv_ec0bb6fa76_2.mp4',
   '长安糯米_糯米.mp4':'tcgv_5f94195e59.mp4',
   '长安长安之星_小货车.mp4':'tcgv_3a9d541a72.mp4',
-  '零跑零跑_零跑B10.mp4':'tcgv_e6e7f70cf0.mp4'
+  '零跑零跑_零跑B10.mp4':'tcgv_e6e7f70cf0.mp4',
 };
 
 /**
