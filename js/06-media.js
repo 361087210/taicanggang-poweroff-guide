@@ -722,7 +722,10 @@ function thumbImgError(img){
   img.onerror=null;
   const orig=img.getAttribute('data-src')||img.getAttribute('src')||'';
   const fn=orig.split('/').pop();
-  const cands=mediaCandidateSrcs(orig).filter(u=>u!==img.getAttribute('src'));
+  /* 沙箱/单测会把本函数单独抽出来跑, 那时 mediaCandidateSrcs 可能不在作用域内 ——
+   * 用 typeof 守卫退化为"无候选", 保持可测性与向后兼容。 */
+  const cands=(typeof mediaCandidateSrcs==='function'?mediaCandidateSrcs(orig):[])
+    .filter(u=>u!==img.getAttribute('src'));
   let i=0;
   function next(){
     if(i>=cands.length){
