@@ -49,6 +49,14 @@ jobs:
       - name: 映射表一致性校验(与vehicles_data.js无漂移)
         run: node scripts/gen_media_mapping.js --check
 
+      # 数据一致性门禁: 同一品牌/车系/配置被写成两种形式会让筛选器把同类车裂成两个选项
+      - name: 字段近似重复巡检(品牌/车系/配置等写法分裂)
+        run: node scripts/check_field_duplicates.js
+
+      # 媒体归属门禁: 保证每张照片/视频都落在它自己的车型目录里(A1 三段式/A2 归属一致/A3 显示名唯一/A4 目录唯一)
+      - name: 媒体归属门禁(引用必须落在本车型目录)
+        run: node scripts/check_media_ownership.js
+
       # V10.20 隐私门禁: web-data/ 是每 15 分钟自动提交并发布到公开 Pages 的镜像产物,
       #   但 scripts/secret-scan.js 的 SKIP 明确跳过 web-data(生成侧白名单只保护生成路径,
       #   不保护已提交产物)。此 step 对**已入库产物**做默认拒绝复核: 记录级字段白名单 +
