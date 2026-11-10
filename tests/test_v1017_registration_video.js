@@ -88,7 +88,11 @@ const vehicleSrc = src('vehicles_data.js');
  * 这里统一取路径末段(裸文件名)再与资产表键比对, 使两段式与三段式引用都能匹配,
  * 49 计数语义保持不变。 */
 const referencedVids = [...new Set([...vehicleSrc.matchAll(/vehicle_videos\/([^'"]+)/g)].map(x => x[1].split('/').pop()))];
-check('C1 直链映射表数量=49(全部引用全覆盖)', assetKeys.length === 49);
+/* V10.25.4: 原断言把"表里必须正好 49 条"写死。但资产表会随"通用教学视频"(无车型归属)
+ * 与组长新上传而增长, 键数不是不变式 —— 真正的不变式是"每个引用都有直链"。
+ * 故改为覆盖性断言; 冗余键由 test:video S1d 独立把关。 */
+const keyMissing = referencedVids.filter(v => !assetKeys.includes(v));
+check('C1 直链映射表覆盖全部引用(无缺失)', keyMissing.length === 0, keyMissing.slice(0, 3).join(','));
 check('C2 视频引用数=49(49全部官方直链)', referencedVids.length === 49);
 /* P1 数据一致性(2026-10-02 更新): 组长新上传 长安深蓝(G318)_v2.mp4 等 3 个视频已配
  * Release 直链(见 MEDIA_DIRECT_ASSETS), 且多维表格车辆数据已接入新名
