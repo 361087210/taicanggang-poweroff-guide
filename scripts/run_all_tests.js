@@ -39,6 +39,7 @@ const TEST_SUITES = [
   'test:v10254-deep',
   'test:v10254',
   'test:v10251-gc',
+  'test:v10251',
   'test:version',
   'check:two-end',
   'test:two-end-gate',
