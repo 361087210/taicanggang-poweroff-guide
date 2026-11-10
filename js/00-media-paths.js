@@ -90,13 +90,7 @@
     // 传 fallback='' 关闭时间戳兜底: 清洗后为空说明本源无有效名称,
     // 此时才应走可预测的 vehicle_<id> 退化(而非 file_<timestamp> 随机目录)
     var name = sanitizeName(base, MAX_FOLDER_LEN, false, '');
-    /* V10.25.1 守卫: 车型目录不得占用系统保留名(_共享/_未归类), 也不得以 '_' 开头 ——
-     * 否则该车型的所有媒体会与"共享/孤儿"语义混淆, 迁移脚本据目录名判定归属时将误判。 */
-    if (!name || name.charAt(0) === '_' || RESERVED_FOLDERS.indexOf(name) > -1) {
-      var idPart = (v && v.id != null) ? v.id : 'unknown';
-      name = 'v_' + idPart + (name ? '_' + name.replace(/^_+/, '') : '');
-      name = sanitizeName(name, MAX_FOLDER_LEN, false, '') || ('vehicle_' + idPart);
-    }
+    if (!name) name = (v && v.id != null) ? ('vehicle_' + v.id) : 'vehicle_unknown';
     return name;
   }
 
