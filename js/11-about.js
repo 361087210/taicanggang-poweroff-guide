@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.25.4',
+    date: '2026-11-10',
+    highlight: '媒体链路修复: 上传幂等按车型作用域 + 失败不再降级顶层 + 客户端候选路径回退',
+    features: [
+      '媒体(幂等): 判重键改为「车型目录/文件名」, 修复 A 车型同名文件导致 B 车型被跳传',
+      '媒体(防散乱): 子目录创建失败不再静默降级顶层, 改为重试+抛错, 保留下轮重试',
+      '媒体(回退): 客户端新增候选路径回退(原路径 → _共享/同名 → 顶层/同名)',
+      '媒体(映射): 直链映射补齐 3 条, 50 → 53',
+      '工程(守卫): 保留目录名断言, 防车型目录与系统目录撞名'
+    ]
+  },
+  {
     version: 'V10.25.0',
     date: '2026-10-10',
     highlight: '媒体工程化版: 图片/视频按车型名分文件夹(GitHub + 飞书同构)杜绝错配 + 账号注销防复活(墓碑)与生命周期加固',
@@ -563,7 +575,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.0'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.4'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
