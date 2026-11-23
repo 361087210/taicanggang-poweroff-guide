@@ -733,7 +733,7 @@ function handlePhotoSelect(input,source,section){
   toProcess.forEach(file=>{
     if(!file.type.startsWith('image/'))return;
     // V10.15.5 反馈2-2: 提高压缩尺寸/质量(1280/0.8→1600/0.9),避免分辨率损耗过重
-    compressImage(file,1600,0.9).then(dataUrl=>{
+    compressImage(file,2400,0.92).then(dataUrl=>{
       editPhotos.push({name:file.name,data:dataUrl,section:sec.key,label:''});
       renderPhotoPreview(sec.key);
     });

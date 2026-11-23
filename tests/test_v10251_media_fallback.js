@@ -89,6 +89,41 @@ const cloud = new Set([_cloudKey('A车型', 'image1.jpeg')]);
 ok(cloud.has(_cloudKey('A车型', 'image1.jpeg')) === true, 'A 车重复上传 → 正确跳过');
 ok(cloud.has(_cloudKey('B车型', 'image1.jpeg')) === false, 'B 车同名文件 → 正确判定为"未上传"(旧实现会误跳过)');
 
+/* ---------- C. 媒体是补充: 上云快照 / 拉取保留待传媒体 (V10.27.1) ---------- */
+console.log('\n[C] 媒体不阻断车型信息同步');
+// eslint-disable-next-line no-new-func
+const _cloudVehicleSnapshot = new Function(extractFn(syncSrc, '_cloudVehicleSnapshot') + '\nreturn _cloudVehicleSnapshot;')();
+// eslint-disable-next-line no-new-func
+const _keepPendingLocalMedia = new Function(extractFn(syncSrc, '_keepPendingLocalMedia') + '\nreturn _keepPendingLocalMedia;')();
+
+const vMixed = {
+  id: 1, display: '测试车', photos: 3, photoPaths: ['vehicle_images/A_p1_1.jpeg', 'data:image/jpeg;base64,AAA', 'vehicle_images/A_p3_3.jpeg'],
+  photoSections: ['exterior', 'key', 'position'], photoLabels: ['车头', '钥匙', '断电'],
+  videos: 2, videoPaths: ['vehicle_videos/A_v1_1.mp4', 'data:video/mp4;base64,BBB']
+};
+const snap = _cloudVehicleSnapshot(vMixed);
+ok(snap.photoPaths.length === 2 && snap.photos === 2, 'C1 上云副本剔除未上传的base64照片', JSON.stringify(snap.photoPaths));
+ok(snap.photoSections.join(',') === 'exterior,position' && snap.photoLabels.join(',') === '车头,断电', 'C2 板块/标签随剔除同步对齐', JSON.stringify(snap.photoSections) + '|' + JSON.stringify(snap.photoLabels));
+ok(snap.videoPaths.length === 1 && snap.videos === 1, 'C3 上云副本剔除未上传的base64视频');
+ok(vMixed.photoPaths.length === 3 && vMixed.videos === 2, 'C4 本地数据不被改动(下轮继续重试)');
+const snapEmpty = _cloudVehicleSnapshot({ id: 2, display: 'x', photoPaths: ['data:image/jpeg;base64,AAA'], photoSections: ['key'], photoLabels: ['钥匙'], videoPaths: [] });
+ok(snapEmpty.photos === 0 && snapEmpty.videos === 0 && snapEmpty.photoSections.length === 0, 'C5 全为base64时上云副本仅保留文字信息');
+
+const localV = { photoPaths: ['vehicle_images/A_p1_1.jpeg', 'data:image/jpeg;base64,AAA'], photoSections: ['exterior', 'key'], photoLabels: ['车头', '钥匙'], videoPaths: ['data:video/mp4;base64,BBB'] };
+const cloudV = { photoPaths: ['vehicle_images/A_p1_1.jpeg'], photoSections: ['exterior'], photoLabels: ['车头'], videoPaths: [] };
+const merged = _keepPendingLocalMedia(localV, cloudV);
+ok(merged.photoPaths.length === 2 && merged.photos === 2, 'C6 拉取合并保留本机待上传照片');
+ok(merged.photoSections.join(',') === 'exterior,key' && merged.photoLabels.join(',') === '车头,钥匙', 'C7 保留的待传照片板块/标签同下标对齐');
+ok(merged.videoPaths.length === 1 && merged.videos === 1, 'C8 拉取合并保留本机待上传视频');
+const noLocal = _keepPendingLocalMedia(null, { photoPaths: ['a'], videos: 0 });
+ok(noLocal.photoPaths.join(',') === 'a', 'C9 无本地记录时安全返回');
+
+/* 清晰度参数回归(防止无意回退到低分辨率) */
+const vehicleSrc = fs.readFileSync(path.join(ROOT, 'js', '03-vehicles.js'), 'utf8');
+ok(/compressImage\(file,2400,0\.92\)/.test(vehicleSrc), 'C10 本地照片压缩 2400px / 0.92');
+ok(/_normalizePhotoForUpload\(raw,2560\)/.test(syncSrc) && /toDataURL\('image\/jpeg',0\.9\)/.test(syncSrc), 'C11 上云照片归一 2560px / 0.9');
+ok(/naturalWidth>=1600/.test(mediaSrc), 'C12 高清升级阈值 1600(433/1280 旧图可升级)');
+
 /* ---------- 汇总 ---------- */
 console.log('\n' + '='.repeat(50));
 console.log(`结果: ${pass} 通过 / ${fail} 失败 / ${pass + fail} 总计`);

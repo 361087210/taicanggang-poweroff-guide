@@ -1150,13 +1150,13 @@ function _strHashDjb2(str){
 async function _normalizePhotoForUpload(dataUrl,maxEdge){
   try{
     const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('decode'));i.src=dataUrl;});
-    const limit=maxEdge||1280;
+    const limit=maxEdge||2560;
     const scale=Math.min(limit/Math.max(img.width,1),limit/Math.max(img.height,1),1);
     const c=document.createElement('canvas');
     c.width=Math.max(1,Math.round(img.width*scale));
     c.height=Math.max(1,Math.round(img.height*scale));
     c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-    return c.toDataURL('image/jpeg',0.85);
+    return c.toDataURL('image/jpeg',0.9);
   }catch(e){
     console.warn('[同步]照片归一化失败,原样上传:',e.message||e);
     return dataUrl;
@@ -1265,7 +1265,7 @@ async function syncUploadVehiclePhotos(token,vehicles){
       /* V10.25.3: 幂等作用域跟随"实际落盘的目录" —— 子目录创建失败会降级到顶层,
        * 此时作用域必须为空, 否则会用子目录键去查顶层文件, 判定失效导致重复上传。 */
       const scopeName=(uploadFolderToken===folder)?'':wantSub;
-      const norm=await _normalizePhotoForUpload(raw,1280);
+      const norm=await _normalizePhotoForUpload(raw,2560);
       const mm=/^data:image\/(png|jpe?g|webp);base64,(.*)$/.exec(norm);
       if(!mm){stat.failed++;continue;}
       const hash=_strHashDjb2(mm[2]).toString(16);
@@ -1440,6 +1440,21 @@ async function syncUploadVehicleVideos(token,vehicles){
  *   photos/videos=本轮真正新上传媒体数(V10.25.2 口径: 云端命中跳过项不计入)
  */
 async function _syncUploadPipeline(){
+  /* 上云快照: 剔除仍留在本地的 base64 媒体(上传失败/目录不可用), 并同步裁剪
+   * photoSections/photoLabels, 保证云端副本的路径、计数与元数据严格对齐。
+   * 媒体是车型信息的补充——媒体传不上去时, 车型文字信息必须继续上云;
+   * 本地数据不做任何删改, 下一轮同步继续重试这些 base64 媒体。 */
+  function _cloudVehicleSnapshot(v){
+    const photoPaths=[], photoSections=[], photoLabels=[];
+    (v.photoPaths||[]).forEach(function(p,i){
+      if(!p||/^data:/i.test(p)) return;
+      photoPaths.push(p);
+      photoSections.push((v.photoSections||[])[i]||'exterior');
+      photoLabels.push((v.photoLabels||[])[i]||'');
+    });
+    const videoPaths=(v.videoPaths||[]).filter(function(p){ return p&&!/^data:/i.test(p); });
+    return {id:v.id,brandId:v.brandId,brand:v.brand,series:v.series,config:v.config,display:v.display,size:v.size||'',powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:photoPaths.length,photoPaths:photoPaths,photoSections:photoSections,photoLabels:photoLabels,keyPhotoRemark:v.keyPhotoRemark,videos:videoPaths.length,videoPaths:videoPaths};
+  }
   /* V10.14.1 修复【上传管线配置出口统一】: 原直读 localStorage 绕过注入秘钥闭包缓存,
    * 组长端未在设置页手动保存过配置时(依赖构建注入凭据)被 feishuCfgReady 恒拦截,
    * "飞书配置不完整"→数据无法上云。改走 getFeishuCfg() 统一出口(含全部子目录字段
@@ -1451,11 +1466,25 @@ async function _syncUploadPipeline(){
    * vehicle_images目录并替换为云端路径,再写JSON。
    * 旧版把数MB级base64直接塞进JSON导致上传必败,此为"新增数据
    * 无法同步到飞书"的直接根因。 */
-  const photoStat=await syncUploadVehiclePhotos(token,VEHICLES);
+  /* 媒体是车型信息的补充: 照片/视频分离上传失败(目录不可用/网络/权限)时,
+   * 只记录失败并继续上传车型文字数据, 绝不因此阻断信息同步。 */
+  let photoStat={replaced:0,uploaded:0,skipped:0,failed:0};
+  let videoStat={replaced:0,uploaded:0,skipped:0,failed:0};
+  try{
+    photoStat=await syncUploadVehiclePhotos(token,VEHICLES);
+  }catch(e){
+    photoStat.failed=VEHICLES.reduce((n,v)=>n+((v.photoPaths||[]).filter(p=>/^data:/i.test(p)).length),0);
+    addSyncLog('[同步]照片分离失败(车型数据继续同步): '+(e.message||e),'red');
+  }
   /* V10.9.0 问题1: 视频分离上传——与照片同构,把base64视频单独传至
    * vehicle_videos目录并替换为云端路径,再写JSON。
    * 根因: 视频base64(10-50MB)留在JSON中导致组员端下载超时/OOM失败。 */
-  const videoStat=await syncUploadVehicleVideos(token,VEHICLES);
+  try{
+    videoStat=await syncUploadVehicleVideos(token,VEHICLES);
+  }catch(e){
+    videoStat.failed=VEHICLES.reduce((n,v)=>n+((v.videoPaths||[]).filter(p=>/^data:/i.test(p)).length),0);
+    addSyncLog('[同步]视频分离失败(车型数据继续同步): '+(e.message||e),'red');
+  }
   if(photoStat.replaced>0||videoStat.replaced>0){
     persistVehicles(); // 本地路径与云端对齐后立即持久化,重启不回退
     renderVehicleList();
@@ -1466,7 +1495,8 @@ async function _syncUploadPipeline(){
     uploadedBy:state.currentUser?state.currentUser.name:'unknown',
     vehicleCount:VEHICLES.length,
     // V10.6.0: 补齐size/brandId字段——旧版漏传导致同步后车辆尺寸/品牌索引丢失
-    vehicles:VEHICLES.map(v=>({id:v.id,brandId:v.brandId,brand:v.brand,series:v.series,config:v.config,display:v.display,size:v.size||'',powerType:v.powerType,position:v.position,steps:v.steps,keyFrame:v.keyFrame,keyContainer:v.keyContainer,remarks:v.remarks,photos:v.photos,photoPaths:v.photoPaths,photoSections:v.photoSections,photoLabels:v.photoLabels,keyPhotoRemark:v.keyPhotoRemark,videos:v.videos,videoPaths:v.videoPaths}))
+    // V10.27.1: 上云副本剔除未上云的base64媒体, 媒体失败不阻断车型信息同步
+    vehicles:VEHICLES.map(_cloudVehicleSnapshot)
   };
   /* V10.10.0 守卫: JSON体积预检——媒体分离后JSON应<1MB;若仍>16MB说明
    * 有base64媒体分离失败滞留,直接诊断性失败,避免把巨大JSON推上云端
@@ -1474,7 +1504,7 @@ async function _syncUploadPipeline(){
   const _jsonStr=JSON.stringify(syncData);
   const _pendingMedia=VEHICLES.reduce((n,v)=>n+((v.photoPaths||[]).filter(p=>/^data:/i.test(p)).length)+((v.videoPaths||[]).filter(p=>/^data:/i.test(p)).length),0);
   if(_jsonStr.length>FEISHU_MULTIPART_THRESHOLD){
-    const msg=`同步数据异常过大(${(_jsonStr.length/1048576).toFixed(1)}MB,残留媒体${_pendingMedia}项),请检查媒体上传失败项后重试`;
+    const msg=`同步数据异常过大(${(_jsonStr.length/1048576).toFixed(1)}MB,未上云媒体${_pendingMedia}项已从副本剔除),请检查文字字段后重试`;
     addSyncLog('[同步]'+msg,'red');
     // V10.10.0: 诊断性失败也携带媒体失败计数,调用方可定位具体失败项
     return {ok:false,msg,photoFailed:photoStat.failed,videoFailed:videoStat.failed,pendingMedia:_pendingMedia};
@@ -1526,9 +1556,14 @@ function doSyncUpload(){
       const mediaParts=[];
       if(r.photos>0)mediaParts.push(`照片${r.photos}张`);
       if(r.videos>0)mediaParts.push(`视频${r.videos}段`);
+      const pendingCount=(r.photoFailed||0)+(r.videoFailed||0);
+      if(pendingCount>0)mediaParts.push(`媒体待重试${pendingCount}项`);
       const mediaStr=mediaParts.length?'，'+mediaParts.join(''):'';
       showToast(`数据已同步至飞书，共${r.vehicles}条车型数据${mediaStr}`);
       addSyncLog(`上传同步完成 · ${r.vehicles}条车型数据${mediaStr} · 飞书`,'green');
+      if(pendingCount>0){
+        addSyncLog(`媒体未上云${pendingCount}项：仅影响照片/视频展示，车型信息已同步；下轮保存或上传将自动重试`,'red');
+      }
       // V10.3 问题5.2: 上传成功即消化红点提示(本地即云端最新版)
       _setSyncNewDot(false);
       const cv=document.getElementById('sync-cloud-ver');
@@ -1621,6 +1656,30 @@ async function _runAutoSyncAfterSave(){
  * @returns {Promise<{ok:boolean,msg?:string,added:number,updated:number,removed:number,skipped?:boolean}>}
  */
 async function doSyncDownload(){
+  /* 拉取合并时保留本机尚未上云的 base64 媒体(云端副本里没有),
+   * 追加在云端媒体之后并保持板块/标签同下标对齐, 避免一次拉取吞掉待上传媒体。 */
+  function _keepPendingLocalMedia(local, nv){
+    if(!local) return nv;
+    function keep(kind, secKey, labKey){
+      const pending=[];
+      (local[kind]||[]).forEach(function(p,i){ if(/^data:/i.test(p||'')) pending.push(i); });
+      if(!pending.length) return;
+      const have=new Set(nv[kind]||[]);
+      pending.forEach(function(i){
+        const p=local[kind][i];
+        if(have.has(p)) return;
+        nv[kind]=nv[kind]||[];
+        nv[kind].push(p);
+        if(secKey){ nv[secKey]=nv[secKey]||[]; nv[secKey].push((local[secKey]||[])[i]||'exterior'); }
+        if(labKey){ nv[labKey]=nv[labKey]||[]; nv[labKey].push((local[labKey]||[])[i]||''); }
+      });
+    }
+    keep('photoPaths','photoSections','photoLabels');
+    keep('videoPaths');
+    nv.photos=(nv.photoPaths||[]).length;
+    nv.videos=(nv.videoPaths||[]).length;
+    return nv;
+  }
   /* V10.14.1 修复【组员拉取被配置门禁误拦】: 原直读 localStorage——组员端本地无
    * 保存配置时 appSecret 恒空,feishuCfgReady 拦截"飞书配置不完整",云端数据永远
    * 拉不下来(本次"组长组员数据无法同步"主根因)。改走 getFeishuCfg()(syncSub 等
@@ -1671,6 +1730,9 @@ async function doSyncDownload(){
             if(localIds.has(sv.id))updatedCount++;else addedCount++;
             const local=VEHICLES.find(x=>x.id===sv.id);
             const nv=Object.assign({},local,sv);
+            ['photoPaths','videoPaths','photoSections','photoLabels'].forEach(k=>{if(Array.isArray(nv[k]))nv[k]=nv[k].slice();});
+            /* 本机尚未上云的 base64 媒体不能因为一次拉取而丢失(下轮同步重试) */
+            _keepPendingLocalMedia(local,nv);
             nv.pinyin=getPinyin(sv.display);
             return nv;
           });

@@ -341,7 +341,7 @@ test('C3 幂等二次上传: 已上云媒体零流量跳过,云端无冗余副�
   assert.strictEqual(cMock.listFolder('APP数据备份/vehicle_videos').length, before.vidCount, '媒体目录产生冗余副本');
 });
 
-test('C4 JSON体积守卫: 媒体分离失败残留时诊断性失败,云端数据不被污染', async () => {
+test('C4 JSON体积守卫: 媒体分离失败时剔除未上云媒体,车型信息照常同步且云端不被base64污染', async () => {
   const mock = new MockFeishuServer();
   const box = createAppSandbox({ mock, vehicles: [], userName: '组长-老王' });
   const goodPhoto = 'data:image/jpeg;base64,' + b64(randBytes(1024));
@@ -349,17 +349,21 @@ test('C4 JSON体积守卫: 媒体分离失败残留时诊断性失败,云端数�
   vehicles.forEach(v => box.ctx.VEHICLES.push(v));
   const r1 = await box.run('_syncUploadPipeline()');
   assert.strictEqual(r1.ok, true, '基线上传失败: ' + JSON.stringify(r1));
-  const beforeBuf = mock.findFile('APP数据备份/同步数据/vehicle_sync_data.json').buffer;
 
-  // 注入损坏的大视频(非base64格式→分离必败→滞留JSON)
+  // 注入损坏的大视频(非base64格式→分离必败→滞留本地)
   box.ctx.__broken = 'x'.repeat(17 * MB);
   box.run(`VEHICLES.push(${JSON.stringify(makeVehicle(9102, '损坏媒体车型', [], []))}); VEHICLES[VEHICLES.length-1].videoPaths=['data:video/mp4;broken,'+__broken];`);
   const r2 = await box.run('_syncUploadPipeline()');
-  assert.strictEqual(r2.ok, false, '守卫未拦截异常大JSON');
-  assert.ok(/异常过大/.test(r2.msg || ''), '守卫错误信息不明确: ' + r2.msg);
+  // V10.27.0: 媒体是车型信息的补充——媒体失败不阻断信息同步,但绝不允许base64进入云端JSON
+  assert.strictEqual(r2.ok, true, '媒体失败不应阻断车型信息同步: ' + JSON.stringify(r2));
   assert.strictEqual(r2.videoFailed, 1, '应报告1个媒体失败');
-  const afterBuf = mock.findFile('APP数据备份/同步数据/vehicle_sync_data.json').buffer;
-  assert.ok(bufEqual(beforeBuf, afterBuf), '守卫失败后云端数据被污染');
+  assert.strictEqual(r2.pendingMedia, 1, '应报告1项待重试媒体');
+  const afterStr = new TextDecoder('utf-8').decode(mock.findFile('APP数据备份/同步数据/vehicle_sync_data.json').buffer);
+  assert.ok(!afterStr.includes('data:video/mp4;broken'), '云端JSON不应包含未上云base64');
+  const afterJson = JSON.parse(afterStr);
+  assert.strictEqual(afterJson.vehicles.length, 2, '车型信息未完整同步');
+  assert.ok(afterJson.vehicles.some(v => v.display === '损坏媒体车型'), '新增车型信息未上云');
+  assert.ok(afterStr.length < 200 * 1024, '云端JSON体积异常: ' + afterStr.length);
 });
 
 test('C5 随机名称压力: 5台恶意命名车型+控制字符全部同步成功且云端文件名合法', async () => {

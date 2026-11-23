@@ -328,6 +328,92 @@ function cloudSandbox(overrides){
   check('M9h iOS 打包拷入索引', iosWf.indexOf('cp media_library.json tcg_app/www/') >= 0 &&
     iosWf.indexOf('test -s tcg_app/www/media_library.json') >= 0);
 
+  /* ---------------- M10 分页渲染 ---------------- */
+  section('M10 分页渲染(50 条/页)');
+  const many = {
+    schemaVersion: 1, generatedAt: '2026-11-23T00:00:00Z',
+    assets: Array.from({ length: 120 }, (_, i) => ({
+      path: 'vehicle_images/A/f' + i + '.jpeg', kind: 'photo', kindLabel: '照片',
+      status: 'ok', vehicleText: 'A', vehicles: []
+    })),
+    orphans: []
+  };
+  const envP = cloudSandbox({ fetch: async () => ({ ok: true, json: async () => many }) });
+  /* 纯分页用例: 清空车型引用, 避免实时引用并集影响总条数 */
+  envP.ctx.window.VEHICLES = [];
+  envP.ctx.VEHICLES = [];
+  const MP = envP.ctx.window.MediaLibrary;
+  const H = () => envP.els['screen-media-library'].innerHTML;
+  const rowCount = () => (H().match(/data-ml-key=/g) || []).length;
+  MP.open();
+  await sleep(30);
+  check('M10a 首页只渲染 50 行', rowCount() === 50, 'rows=' + rowCount());
+  check('M10b 页码与总数', H().indexOf('共 120 项') >= 0 && H().indexOf('第 1/3 页') >= 0 && H().indexOf('1 / 3') >= 0);
+  MP.setPage(2);
+  check('M10c 末页余数 20 行', rowCount() === 20 && H().indexOf('3 / 3') >= 0, 'rows=' + rowCount());
+  MP.setPage(99);
+  check('M10d 越界钳制在末页', H().indexOf('3 / 3') >= 0);
+  MP.setFilter('missing');
+  check('M10e 筛选后回到第 1 页且无分页条', H().indexOf('共 0 项') >= 0 && H().indexOf('id="ml-pager"') < 0);
+  MP.setFilter('all');
+  MP.setPage(1);
+  /* ---------------- M11 车型 ↔ 资源库双向联动 ---------------- */
+  section('M11 车型 ↔ 资源库双向联动(纯函数)');
+  const LV = [
+    { id: 1, display: 'A', photoPaths: ['vehicle_images/A/x1.jpeg', 'vehicle_images/A/miss.jpeg', 'vehicle_images/_共享/s.jpeg'], videoPaths: [] },
+    { id: 2, display: 'B', photoPaths: ['vehicle_images/_共享/s.jpeg'], videoPaths: ['vehicle_videos/B/v1.mp4'] },
+    { id: 3, display: 'C', photoPaths: [], videoPaths: [] }
+  ];
+  const live = MP.liveAssetsOf(LV);
+  check('M11a 实时引用覆盖照片/视频', live.length === 4 && live.some(a => a.kind === 'video'), JSON.stringify(live.map(a => a.path)));
+  const shared = live.find(a => a.path.indexOf('/_共享/') >= 0);
+  check('M11b 同一路径多车共享合并为一行', !!shared && shared.vehicles.length === 2 && shared.vehicleText === 'A、B', shared && shared.vehicleText);
+  check('M11c 新引用默认标"新增"', live.every(a => a.status === 'new'));
+  check('M11d 新增筛选项可命中', MP.filterAssets(live, 'new', '').length === live.length);
+
+  const statics = [
+    { path: 'vehicle_images/A/x1.jpeg', status: 'ok', vehicles: [{ id: 1, display: 'A' }], vehicleText: 'A' },
+    { path: 'vehicle_images/A/gone.jpeg', status: 'ok', vehicles: [{ id: 1, display: 'A' }], vehicleText: 'A' },
+    { path: 'vehicle_images/A/miss.jpeg', status: 'missing', vehicles: [{ id: 1, display: 'A' }], vehicleText: 'A', missingFor: [{ id: 1 }] },
+    { path: 'vehicle_images/_未归类/o.jpeg', status: 'orphan', vehicles: [], vehicleText: '未归类' }
+  ];
+  const merged = MP.mergeAssets(statics, live);
+  check('M11e 合并保留静态行且不重复', merged.filter(a => a.path === 'vehicle_images/A/x1.jpeg').length === 1 &&
+    merged.find(a => a.path === 'vehicle_images/A/x1.jpeg').status === 'ok');
+  check('M11f 车型不再引用的静态行被剔除', !merged.some(a => a.path === 'vehicle_images/A/gone.jpeg'));
+  check('M11g 仍缺失的行保留', merged.some(a => a.path === 'vehicle_images/A/miss.jpeg'));
+  check('M11h 孤儿行不受引用裁剪影响', merged.some(a => a.path === 'vehicle_images/_未归类/o.jpeg'));
+  check('M11i 索引未收录的新引用补进来', merged.some(a => a.path === 'vehicle_videos/B/v1.mp4' && a.status === 'new'));
+  check('M11j 合并后行数正确', merged.length === 5, 'len=' + merged.length);
+
+  section('M12 车型计数随媒体变更');
+  const p12 = MP.mediaPatchOf({ id: 1, photos: 99, videos: 99, photoPaths: ['a', 'b'], videoPaths: ['v'] });
+  check('M12a photos/videos 由路径现算(不沿用陈旧计数)', p12.photos === 2 && p12.videos === 1, JSON.stringify(p12));
+  check('M12b 路径原样回写', p12.photoPaths.length === 2 && p12.videoPaths[0] === 'v');
+  const empty12 = MP.mediaPatchOf({});
+  check('M12c 空车型安全', empty12.photos === 0 && empty12.videos === 0 &&
+    Array.isArray(empty12.photoPaths) && Array.isArray(empty12.videoPaths));
+  const p12d = MP.mediaPatchOf({ photoPaths: ['p1', 'p2'], photoSections: ['key'], photoLabels: ['钥匙'] });
+  check('M12d 新增照片补齐板块/标签(与路径等长)', p12d.photoSections.length === 2 &&
+    p12d.photoSections[0] === 'key' && p12d.photoSections[1] === 'exterior' &&
+    p12d.photoLabels.length === 2 && p12d.photoLabels[1] === '', JSON.stringify(p12d));
+  const p12e = MP.mediaPatchOf({ photoPaths: ['p1'], photoSections: ['key', 'position'], photoLabels: ['钥匙', '断电'] });
+  check('M12e 删除照片后元数据截断到等长', p12e.photoSections.length === 1 && p12e.photoSections[0] === 'key' &&
+    p12e.photoLabels.length === 1 && p12e.photoLabels[0] === '钥匙');
+
+  section('M13 资源库删文件 ↔ 车型照片板块/标签同步剔除');
+  const v13 = { id: 9, photoPaths: ['a', 'b', 'c'], photoSections: ['exterior', 'key', 'position'], photoLabels: ['车头', '钥匙', '断电'] };
+  const linked13 = MP.unlinkPathOf(v13, 'b');
+  check('M13a 命中引用返回 true 并移除路径', linked13 === true && v13.photoPaths.join(',') === 'a,c', v13.photoPaths.join(','));
+  check('M13b 板块随下标同步剔除(不前移错位)', v13.photoSections.join(',') === 'exterior,position', v13.photoSections.join(','));
+  check('M13c 标签随下标同步剔除', v13.photoLabels.join(',') === '车头,断电', v13.photoLabels.join(','));
+  const patch13 = MP.mediaPatchOf(v13);
+  check('M13d 计数与路径一致', patch13.photos === 2 && patch13.photoSections.length === 2 && patch13.photoLabels.length === 2);
+  check('M13e 未命中引用返回 false 且不改数据', MP.unlinkPathOf(v13, 'zzz') === false && v13.photoPaths.length === 2);
+  check('M13f 空车型/非法路径安全', MP.unlinkPathOf(null, 'a') === false && MP.unlinkPathOf({}, null) === false);
+  const v13v = { id: 10, videoPaths: ['v1', 'v2'], photoPaths: [] };
+  check('M13g 视频引用同样可解除', MP.unlinkPathOf(v13v, 'v1') === true && v13v.videoPaths.join(',') === 'v2');
+
   finish();
 })().catch(function(e){
   check('M8 云端用例执行', false, e && e.message);
