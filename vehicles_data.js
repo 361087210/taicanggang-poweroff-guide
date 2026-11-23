@@ -291,7 +291,7 @@ window.VEHICLES = [
       "2.确认断电无误后放置于车内中控台。"
     ],
     "remarks": "放干燥剂",
-    "photos": 0,
+    "photos": 1,
     "photoPaths": [
       "vehicle_images/比亚迪鲨鱼皮卡（SHARK）/比亚迪鲨鱼皮卡（SHARK）_p1_4d3599e1.jpg"
     ],
