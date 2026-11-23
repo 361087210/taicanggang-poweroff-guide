@@ -1,8 +1,13 @@
 {
-  "version": "10.26.1",
-  "versionCode": 102601,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.1/tcg_poweroff_v10.26.1.apk",
+  "version": "10.26.2",
+  "versionCode": 102602,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.2/tcg_poweroff_v10.26.2.apk",
   "releaseNotes": [
+    "V10.26.2 样式提速版。一句话总结: 把运行时 Tailwind(441KB JS, 官方明确不可用于生产) 换成预编译静态 CSS(25KB), 首屏再省 415KB; 并加「类名覆盖率」门禁, 新增模板类名忘重建会直接红。",
+    "性能(样式): vendor/tailwind.js(Play CDN 运行时 JIT, 441KB) → css/tailwind.build.css(25KB, gzip 5KB), 首屏少下载 415KB JS, 也去掉浏览器里扫描 DOM 生成样式的开销",
+    "工程(可复现): 新增 scripts/build_tailwind_css.js(npm run build:tailwind), 扫描 demo.html + js/**.js(模板字符串里的类名一并收集); 发版工作流的 vendor 校验同步去掉 tailwind",
+    "测试(门禁): test_v10261_tailwind_static(20 断言) —— 其中「类名覆盖率 100%」会把模板里用到的工具类逐个对产物校验, 漏一个即红, 防止「加类名忘重建 CSS」导致局部没样式",
+    "说明: 已用无头 Chrome 对照 148 个可见元素 × 29 项计算样式, 与运行时版本 0 差异",
     "V10.26.1 首屏提速版。一句话总结: 把只在导出时才用的 1.8MB 组件(xlsx/jsPDF/autotable/html-docx/html2canvas)从 <head> 移出、改为首次导出按需注入, 模拟 4G 下 FCP 6.9s → 3.6s; 同时 12 张 PNG 重编码省 3.1MB、57MB 参考资料移出仓库归档 Release。",
     "性能(首屏): 5 个导出库移出 <head>(此前没有 defer, 阻塞首屏), 改由 js/04-export.js 的 ensureExportLibs() 首次导出时幂等注入; sw.js 仍预缓存 → 离线导出不退化",
     "性能(图片): 12 张 PNG 以调色板 PNG 重编码(同路径同扩展名, 数据零改动): 4.96MB → 1.89MB",

@@ -254,9 +254,16 @@ setTimeout(async () => {
     console.log('='.repeat(62));
     console.log('维度5: 导出与vendor依赖 (issue 2)');
     console.log('='.repeat(62));
-    const vendorRefs = (html.match(/vendor\/[a-z0-9._-]+\.js/g) || []);
-    // V10.6.0: 新增html2canvas(中文PDF画布渲染),本地化依赖5→6个
-    check('5.1 vendor导出库被引用(6个)', vendorRefs.length === 6, vendorRefs.join(','));
+    /* V10.26.x 订正: 断言"6 个本地化依赖仍在"这一意图, 不再绑死引用位置。
+     * 现状(V10.26.2):
+     *   ① tailwind 已改为预编译静态 CSS(css/tailwind.build.css), 不再是 vendor/*.js;
+     *   ② 其余 5 个导出库改为首次导出时按需注入, 引用点从 demo.html 移到 js/04-export.js。
+     * 因此改为: vendor 实体存在 + (html 或 js 装载清单)里能引用到 5 个导出库 + 样式表存在。 */
+    const exportVendors = ['xlsx.full.min.js','jspdf.umd.min.js','jspdf.plugin.autotable.min.js','html-docx.js','html2canvas.min.js'];
+    const vendorRefs = exportVendors.filter(f => html.indexOf('vendor/' + f) >= 0);
+    check('5.1 vendor导出库被引用(5个, 本地化且可达)', vendorRefs.length === 5, vendorRefs.join(','));
+    check('5.1b Tailwind 已改为预编译静态 CSS 且产物存在',
+      html.indexOf('css/tailwind.build.css') >= 0 && fs.existsSync('css/tailwind.build.css'));
     check('5.2 Word/Excel/PDF 导出入口齐备(exportData/exportSingle)',
       typeof G('exportData') === 'function' && typeof G('exportSingle') === 'function'
       && /case\s*'word'|format==='word'/.test(html) && /case\s*'pdf'|format==='pdf'/.test(html)

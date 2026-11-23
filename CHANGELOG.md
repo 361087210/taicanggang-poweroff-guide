@@ -2,7 +2,24 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [10.26.1] - 2026-11-23
+## [10.26.2] - 2026-11-23
+
+### 样式提速：运行时 Tailwind → 预编译静态 CSS
+
+> `vendor/tailwind.js` 是 Play CDN 运行时 JIT（441KB，官方明确不可用于生产），要在浏览器里扫描 DOM 再生成 CSS。换成 25KB 预编译产物。
+
+#### ⚡ 性能:
+- `vendor/tailwind.js`（441KB）→ `css/tailwind.build.css`（**25KB / gzip 5KB**）：首屏少下载 **415KB**，并去掉运行时扫描开销
+
+#### 🛠 可复现:
+- 新增 `scripts/build_tailwind_css.js`（`npm run build:tailwind`）：扫描 `demo.html` + `js/**/*.js`（**模板字符串里的类名也收集**）
+- 两条发版工作流的 vendor 校验同步去掉 `tailwind.js`
+
+#### 🧪 门禁:
+- 新增 `tests/test_v10261_tailwind_static.js`（20 断言），核心是**类名覆盖率**：把模板里用到的工具类逐个对产物校验，漏一个即红 —— 防「加了类名忘重建 CSS → 局部没样式」
+- 等价性验证：无头 Chrome 对照 148 个可见元素 × 29 项计算样式，与运行时版本 **0 差异**
+
+
 
 ### 首屏提速：导出组件按需加载 + 图片瘦身 + 参考资料出仓
 

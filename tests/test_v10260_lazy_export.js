@@ -42,7 +42,11 @@ LAZY.forEach(f => {
   const tag = '<script src="' + f + '"></script>';
   check('E1 ' + f.split('/').pop() + ' 已移出 <head>', demo.indexOf(tag) < 0);
 });
-check('E1 tailwind 仍在 head(样式必需)', demo.indexOf('<script src="vendor/tailwind.js"></script>') > 0);
+/* V10.26.2 订正: Tailwind 由运行时 Play CDN 改为预编译静态 CSS(首屏少 441KB JS)。
+ * 断言意图不变 —— "样式必须在首屏可用": link 必须是排在 head 里的本地 CSS。 */
+check('E1 样式表为本地预编译 CSS(不再运行时 441KB)',
+  demo.indexOf('<link rel="stylesheet" href="css/tailwind.build.css">') > 0
+  && demo.indexOf('<script src="vendor/tailwind.js"></script>') < 0);
 check('E1 cordova.js 仍在(Cordova 桥必需)', demo.indexOf('<script src="cordova.js"></script>') > 0);
 
 section('E2 装载器: 覆盖 5 个路径 + 幂等');

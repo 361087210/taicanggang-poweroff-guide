@@ -1,6 +1,6 @@
 {
   "name": "taicanggang-poweroff-guide",
-  "version": "10.26.1",
+  "version": "10.26.2",
   "private": true,
   "description": "太仓港商品车断电操作标准化指导平台（PWA + Cordova 安卓/iOS 双端）",
   "license": "Apache-2.0",
@@ -84,8 +84,10 @@
     "test:v10256-decode": "node tests/test_v10256_stream_decode.js",
     "test:v10257-media-library": "node tests/test_v10257_media_library.js",
     "test:v10260-lazy-export": "node tests/test_v10260_lazy_export.js",
+    "test:v10261-tailwind": "node tests/test_v10261_tailwind_static.js",
     "check:two-end": "node scripts/check_two_end_sync.js",
     "audit:media": "node scripts/audit_media_consistency.js",
+    "build:tailwind": "node scripts/build_tailwind_css.js",
     "media:library": "node scripts/gen_media_library.js",
     "check:media-library": "node scripts/gen_media_library.js --check",
     "sync:photos": "node scripts/sync_photos_to_repo.js",

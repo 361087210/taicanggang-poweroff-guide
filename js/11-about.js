@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.26.2',
+    date: '2026-11-23',
+    highlight: '样式提速: 运行时 Tailwind(441KB) → 预编译静态 CSS(25KB)',
+    features: [
+      '性能: 首屏少下载 415KB JS, 去掉浏览器里扫描 DOM 生成样式的开销',
+      '工程: npm run build:tailwind 可复现(扫描 demo.html + js/**.js, 模板类名一并收集)',
+      '测试: 类名覆盖率门禁 —— 模板新增类名忘重建会直接红, 防「局部没样式」',
+      '验证: 148 个可见元素 × 29 项计算样式与运行时版本 0 差异'
+    ]
+  },
+  {
     version: 'V10.26.1',
     date: '2026-11-23',
     highlight: '首屏提速: 导出组件按需加载(FCP 6.9s→3.6s) + PNG 省 3.1MB + 参考资料出仓',
@@ -661,7 +672,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.1'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.2'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

@@ -86,7 +86,7 @@ jobs:
       # V5.7 防御: 校验导出库与图片真实存在, 缺一即失败, 防止问题再次回归
       - name: Verify bundled web assets
         run: |
-          for f in tailwind.js xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js html-docx.js; do
+          for f in xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js html-docx.js html2canvas.min.js; do
             test -s "tcg_app/www/vendor/$f" || { echo "MISSING vendor/$f"; exit 1; }
           done
           # V10.25: 媒体已按车型名分子目录存放(vehicle_images/<车型名>/*.jpeg),
@@ -98,7 +98,7 @@ jobs:
           test -s tcg_app/www/media_library.json || { echo "MISSING www/media_library.json"; exit 1; }
           # V10.26.1: 导出库不再写在 demo.html <head>(首屏阻塞 1.8MB), 改为首次导出时
           #   由 js/04-export.js 的 ensureExportLibs() 按需注入。校验随之改为"两条都要":
-          #   ① 库文件确实打进包(离线可用, 上面 for 循环已校验 tailwind/其他 5 个);
+          #   ① 库文件确实打进包(离线可用, 上面 for 循环已校验其他 5 个);
           #   ② 装载清单确实在 js/04-export.js 里(否则导出功能静默失效)。
           for f in xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js html-docx.js html2canvas.min.js; do
             grep -q "'vendor/$f'" tcg_app/www/js/04-export.js || { echo "04-export 装载清单缺少 vendor/$f"; exit 1; }

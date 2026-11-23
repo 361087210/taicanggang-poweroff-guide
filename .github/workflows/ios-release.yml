@@ -79,7 +79,7 @@ jobs:
 
       - name: Verify bundled web assets
         run: |
-          for f in tailwind.js xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js html-docx.js; do
+          for f in xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js html-docx.js html2canvas.min.js; do
             test -s "tcg_app/www/vendor/$f" || { echo "MISSING vendor/$f"; exit 1; }
           done
           # V10.25: 媒体已按车型名分子目录存放(vehicle_images/<车型名>/*.jpeg),

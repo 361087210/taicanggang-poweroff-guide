@@ -99,6 +99,7 @@ const TEST_SUITES = [
   'test:v10256-decode',
   'test:v10257-media-library',
   'test:v10260-lazy-export',
+  'test:v10261-tailwind',
   'test:cross'
 ];
 
