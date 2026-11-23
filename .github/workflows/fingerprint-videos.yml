@@ -1,0 +1,74 @@
+# ============================================================
+# Fingerprint Videos — 视频内容指纹（sha256）
+# ------------------------------------------------------------
+# 为什么在 CI 跑: 视频不入仓库（存 GitHub Release / 飞书），本地机器下载 500MB 往往很慢；
+#   GitHub Runner 拉自家 Release 资产是内网速度，几分钟就能跑完。
+# 产物: docs/video_fingerprints.json（原始文件名 → sha256/size），并重建 manifest 与资源库索引。
+# 之后 audit:media 的 C8「共享视频无内容指纹」就能真正闭环：
+#   同名不同片、云端被替换 —— 都能靠 sha256 比对出来，而不是靠约定。
+# 触发: 手动 / 每周一 03:00 UTC 复查一次（若有人替换了同名视频，diff 里立刻可见）。
+# ============================================================
+name: Fingerprint Videos
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: write
+
+jobs:
+  fingerprint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Download video assets from Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/videos
+          # 只拉映射表里点名的资产，省流量、也避免把未引用的历史资产算进指纹
+          node -e "
+            const fs=require('fs');
+            const map=JSON.parse(fs.readFileSync('docs/media_release_map.json','utf8')).map||{};
+            fs.writeFileSync('/tmp/assets.txt', [...new Set(Object.values(map))].join('\n'));
+            console.log('待下载资产:', new Set(Object.values(map)).size);
+          "
+          while read -r a; do
+            [ -z "$a" ] && continue
+            gh release download media-videos --repo "$GITHUB_REPOSITORY" --pattern "$a" --dir /tmp/videos --clobber || echo "MISS $a"
+          done < /tmp/assets.txt
+          echo "已下载: $(ls /tmp/videos | wc -l) 个"
+          du -sh /tmp/videos
+
+      - name: Generate fingerprints (asset -> original file names)
+        run: node scripts/fingerprint_videos.js --dir /tmp/videos --release-map docs/media_release_map.json
+
+      - name: Regenerate manifest + library index
+        run: |
+          node scripts/gen_media_mapping.js
+          node scripts/gen_media_library.js
+
+      - name: Audit (informational)
+        run: node scripts/audit_media_consistency.js || true
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/video_fingerprints.json docs/vehicle_media_manifest.json \
+                  docs/vehicle_media_mapping.json docs/vehicle_media_mapping.csv media_library.json
+          if git diff --cached --quiet; then
+            echo "无变化, 跳过提交"
+          else
+            git commit -m "chore(media): 视频内容指纹更新 ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
+            git push
+          fi

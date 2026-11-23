@@ -33,6 +33,24 @@ function argOf(flag, dft) {
 
 const VIDEO_DIR = path.resolve(ROOT, argOf('--dir', 'vehicle_videos'));
 const CHECK_ONLY = process.argv.includes('--check');
+/**
+ * V10.26.4: --release-map <path>
+ * GitHub Release 里的视频文件名是 `tcgv_<hash>.mp4`（脱敏/去重后的名字），
+ * 而 manifest / 数据里引用的是**原始文件名**（如「通用断电视频.mp4」）。
+ * 传了映射表就把同一资产的指纹回填到所有原始名下，否则 manifest 永远填不上。
+ */
+const RELEASE_MAP = argOf('--release-map', '') ? path.resolve(ROOT, argOf('--release-map', '')) : '';
+function loadAliasMap() {
+  if (!RELEASE_MAP) return {};
+  try {
+    const j = JSON.parse(fs.readFileSync(RELEASE_MAP, 'utf8'));
+    const alias = {};                       // asset -> [原始名...]
+    for (const [orig, asset] of Object.entries(j.map || {})) (alias[asset] = alias[asset] || []).push(orig);
+    return alias;
+  } catch (e) {
+    console.error('[fingerprint] 读取 --release-map 失败:', e.message); process.exit(2);
+  }
+}
 
 function sha256File(p) {
   const h = crypto.createHash('sha256');
@@ -64,11 +82,18 @@ function main() {
   const next = { generatedAt: new Date().toISOString(), dir: path.relative(ROOT, VIDEO_DIR), videos: {} };
   const changed = [];
 
+  const alias = loadAliasMap();
   for (const f of files) {
     const abs = path.join(VIDEO_DIR, f);
     const sha = sha256File(abs);
     const size = fs.statSync(abs).size;
     next.videos[f] = { sha256: sha, size };
+    /* 资产名 -> 数据里的原始文件名（一一或多对一） */
+    (alias[f] || []).forEach(function (orig) {
+      next.videos[orig] = { sha256: sha, size: size, asset: f };
+      const old = prev.videos && prev.videos[orig];
+      if (old && old.sha256 && old.sha256 !== sha) changed.push(orig);
+    });
     const old = prev.videos && prev.videos[f];
     if (old && old.sha256 && old.sha256 !== sha) changed.push(f);
   }
@@ -78,6 +103,9 @@ function main() {
   }
 
   if (CHECK_ONLY) {
+    const prevVideoKeys = Object.keys(prev.videos || {}).filter(function (k) { return (prev.videos[k] || {}).sha256; });
+    const missing = prevVideoKeys.filter(function (k) { return !next.videos[k]; });
+    if (missing.length) { console.error('[fingerprint] --check: 本地目录缺少这些已入库指纹的视频: ' + missing.slice(0, 5).join(', ')); process.exit(1); }
     const a = JSON.stringify(next.videos), b = JSON.stringify((prev.videos || {}));
     if (a !== b) { console.error('[fingerprint] --check: 指纹与已入库文件不一致, 请重跑生成'); process.exit(1); }
     console.log(`[fingerprint] --check 通过: ${files.length} 个视频指纹一致`);
