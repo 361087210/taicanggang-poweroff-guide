@@ -40,6 +40,7 @@ const FILTERS = [
   { id: 'orphan',  label: '未归类/孤儿' },
   { id: 'photo',   label: '照片' },
   { id: 'video',   label: '视频' },
+  { id: 'lowres',  label: '低清' },
   /* V10.26.5: 车型信息与资源对不上（删车/改名/新增无素材） */
   { id: 'broken',  label: '断链' }
 ];
@@ -79,6 +80,7 @@ function filterAssets(assets, filter, query){
     if(filter === 'shared' && a.status !== 'shared') return false;
     if(filter === 'remote' && a.status !== 'remote') return false;
     if(filter === 'orphan' && a.status !== 'orphan') return false;
+    if(filter === 'lowres' && !a.lowRes) return false;   // V10.26.6: 分辨率不达标(照片宽<900)
     if(!q) return true;
     const hay = [a.vehicleText, a.path, a.kindLabel].join(' ').toLowerCase();
     return hay.indexOf(q) >= 0;
@@ -530,6 +532,7 @@ function rowHtml(a){
             : '') +
           (a.sizeText ? '<span class="text-[10px] text-gray-400">' + esc(a.sizeText) + '</span>' : '') +
           (a.sha256 ? '<span class="text-[10px] text-gray-400">已指纹</span>' : '') +
+          (a.lowRes ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-fuchsia-50 text-fuchsia-700">低清' + (a.resText ? ' ' + a.resText : '') + '</span>' : '') +
         '</div>' +
       '</div>' +
       '<button onclick="event.stopPropagation();MediaLibrary.preview(\'' + esc(a.path) + '\')" ' +
@@ -576,6 +579,7 @@ function bodyHtml(){
         (broken.filter(function(x){ return x.status === 'nomedia'; }).length) + ' 台无素材 · ' +
         (broken.filter(function(x){ return x.status === 'unowned'; }).length) + ' 个无主目录 · ' +
         (broken.filter(function(x){ return x.status === 'renamed'; }).length) + ' 条改名失配' +
+        ((_data.stats && _data.stats.lowRes) ? ' · 低清 ' + _data.stats.lowRes + ' 项' : '') +
         '<span class="underline ml-1">点此查看</span></button></div>'
       : '') +
     '<div class="px-4 mt-3 flex gap-2">' +

@@ -49,6 +49,11 @@ jobs:
       - name: Reverse-generate vehicles_data.js + media mapping/manifest
         run: |
           node scripts/gen_vehicles_data.js
+          # V10.26.6: 车型改名后, 媒体目录与引用必须跟着改名(幂等; 冲突只报告不动手)。
+          #   不迁移的话: 旧目录变"无主目录", 引用全部 404, 资源库只能标"改名失配"。
+          node scripts/migrate_vehicle_rename.js --apply
+          node scripts/migrate_vehicle_rename.js --json > /tmp/rename-plan.json
+          node -e "const p=require('/tmp/rename-plan.json');if((p.moves||[]).length){console.error('改名迁移未完成, 仍有',p.moves.length,'项待迁移');process.exit(1)};console.log('改名迁移: 无待处理项 ✓')"
           # V10.26.3: 云端 photoPaths 指向车型目录、而文件实际在 _共享/ 时回写引用(幂等)。
           #   不回写的话每次同步都会把 31 条 404 引用写回产物(audit C7「引用失配」)。
           node scripts/fix_shared_refs.js

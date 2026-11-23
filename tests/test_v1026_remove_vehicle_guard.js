@@ -98,11 +98,16 @@ section('G2 删除共享媒体车 → 弹「仅解除本车引用」且确认后
   check('G2d 共享媒体不影响他车(仅解除本车引用)', vehicles.some(v => v.id === 3) && vehicles.some(v => v.id === 1));
 }
 
-section('G3 删除独享媒体车 → 弹「将同时删除云端照片/视频」');
+section('G3 删除独享媒体车 → 弹「仅删车型信息，文件保留」');
 {
   const { ctx, vehicles, confirms } = makeCtx(makeManifest());
   vm.runInContext('confirmDeleteVehicle(4)', ctx);
-  check('G3a 弹确认且文案含「将同时删除云端照片/视频」', confirms.length === 1 && /将同时删除云端照片\/视频/.test(confirms[0].msg), JSON.stringify(confirms.map(c => c.msg)));
+  /* V10.26.6 订正: 旧文案宣称"将同时删除云端照片/视频", 但 removeVehicle 从不删文件。
+   *   媒体是车型信息的补充 —— 正确的不变量是「删除只动车型信息, 文件保留」,
+   *   所以断言改为: 文案要如实说明文件保留, 且不得再出现"会删除文件"的承诺。 */
+  check('G3a 弹确认且文案说明「文件会保留」',
+    confirms.length === 1 && /文件会保留/.test(confirms[0].msg) && !/将同时删除/.test(confirms[0].msg),
+    JSON.stringify(confirms.map(c => c.msg)));
   check('G3b 确认前不删', vehicles.some(v => v.id === 4));
   confirms[0].cb();
   check('G3c 确认后车辆真删', !vehicles.some(v => v.id === 4));

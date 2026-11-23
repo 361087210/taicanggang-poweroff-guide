@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.26.6',
+    date: '2026-11-23',
+    highlight: '画质回退无损 + 低清可观测 + 媒体缺失不崩 + 改名自愈 + 重名守卫',
+    features: [
+      '画质: 撤回 PNG 调色板压缩(恢复无损); 模糊真因是源图分辨率(多为 433px 宽)',
+      '清晰度: 资源库标注「低清 + 尺寸」(170 项)，新增「低清」筛选，推动 ≥1200px 补拍',
+      '韧性: 删除车型不删任何文件(文案已纠正)；缺图不影响列表/详情/导出；索引缺失有重试',
+      '强关联: 同步流水线自动执行改名迁移(幂等)并校验无待迁移项',
+      '增删改查: 显示名唯一校验(防媒体目录撞车)，编辑时排除自身'
+    ]
+  },
+  {
     version: 'V10.26.5',
     date: '2026-11-23',
     highlight: '车型↔资源强关联: 无主目录 / 改名失配 / 无素材车型 一律可见',
@@ -705,7 +717,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.5'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.6'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

@@ -274,7 +274,7 @@ const State={
   /**
    * 删除车辆: splice+持久化;未找到返回false
    * 需求3第一阶段删除保护: 删除前由调用方(confirmDeleteVehicle)经 State.mediaShare(id)
-   * 查唯一真源 manifest——共享媒体弹「仅解除本车引用」、独享媒体弹「将同时删除云端照片视频」,
+   * 查唯一真源 manifest——共享媒体弹「仅解除本车引用」、独享媒体弹「文件会保留，可在资源库清理」,
    * 无媒体/manifest 缺失则走通用确认。本方法保持纯同步删除语义, 签名不变。
    * @returns {boolean} 是否删除成功
    */

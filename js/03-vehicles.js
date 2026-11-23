@@ -868,6 +868,13 @@ function saveVehicle(){
   if(!display||!position){showToast('请填写显示名称和断电位置');return;}
   const size=document.getElementById('edit-size').value.trim();
   if(size&&!/^\d+\*\d+\*\d+$/.test(size)){showToast('尺寸格式错误，请使用数字*数字*数字格式');return;}
+  /* V10.26.6 强关联守卫: 显示名唯一。
+   * 为什么: 媒体目录名 = sanitize(display), 两台车同名 → 同一目录 → 照片/视频串档,
+   *   且资源库会把它们归到同一个 folder 上, 事后极难拆。改名撞名同样拦。 */
+  const _dup = (typeof VEHICLES!=='undefined'?VEHICLES:[]).find(function(x){
+    return x && x.display===display && (!state.isEditing || !state.editingVehicle || x.id!==state.editingVehicle.id);
+  });
+  if(_dup){showToast('已存在同名车型「'+display+'」，请改用其它名称');return;}
   const brand=document.getElementById('sel-brand').textContent.trim();
   const series=document.getElementById('sel-series').textContent.trim();
   const config=document.getElementById('sel-config').textContent.trim();
@@ -925,12 +932,15 @@ function saveVehicle(){
 
 function confirmDeleteVehicle(id){
   // 需求3第一阶段删除保护: 删除前查唯一真源 manifest(State.mediaShare),
-  // 共享媒体弹「仅解除本车引用」、独享媒体弹「将同时删除云端照片视频」,
+  // 共享媒体弹「仅解除本车引用」、独享媒体弹「仅删车型信息，文件保留」,
   // 无媒体/manifest 缺失回退通用不可撤销文案(保持旧确认语义)。
   const share=State.mediaShare(id);
   let msg='确定删除该车辆信息？此操作不可撤销。';
   if(share.shared.length>0){msg=`该媒体被 ${share.sharedVehicles.length} 车共用，仅解除本车引用`;}
-  else if(share.exclusive.length>0){msg='将同时删除云端照片/视频';}
+  /* V10.26.6 文案纠正: 删除车型**不会**删除任何照片/视频文件(仅解除引用)。
+   *   媒体是车型信息的补充: 文件留着不会影响其它车型, 也可在资源库「核对云端」里再清理;
+   *   旧文案写"将同时删除云端照片/视频", 与实际行为不符, 会让人不敢删/误以为已清理。 */
+  else if(share.exclusive.length>0){msg='仅删除车型信息，照片/视频文件会保留（可在资源库清理）';}
   showConfirm('删除车辆',msg,()=>{
     // A3状态守卫: 删除走State API(splice+持久化), 返回bool保持原idx>-1卫语句语义
     if(State.removeVehicle(id)){showToast('删除成功');renderBrandTags();renderVehicleList();goBack();}

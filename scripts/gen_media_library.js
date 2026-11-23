@@ -65,6 +65,42 @@ function detectRenamedRefs(refs, filesByFolder, reserved) {
   return out;
 }
 
+/**
+ * 读取本地图片像素尺寸(纯 Node, 只读文件头; 不引第三方依赖)
+ * 支持 PNG(IHDR) 与 JPEG(SOFn)。读不到返回 null。
+ * 为什么需要: 现场反馈"照片太模糊" —— 根因是**源图分辨率**低(多数 433×606),
+ *   在 2x/3x DPR 手机上被放大显示。编码再无损也救不回来, 只能把"低清"标出来推动补拍。
+ */
+function imageSize(absPath) {
+  try {
+    const fd = fs.openSync(absPath, 'r');
+    const head = Buffer.alloc(4096);
+    const n = fs.readSync(fd, head, 0, 4096, 0);
+    fs.closeSync(fd);
+    const b = head.subarray(0, n);
+    if (b.length > 24 && b[0] === 0x89 && b.toString('ascii', 1, 4) === 'PNG') {
+      return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
+    }
+    if (b[0] === 0xFF && b[1] === 0xD8) {
+      let i = 2;
+      while (i < b.length - 9) {
+        if (b[i] !== 0xFF) { i++; continue; }
+        const marker = b[i + 1];
+        const len = b.readUInt16BE(i + 2);
+        if (marker >= 0xC0 && marker <= 0xCF && marker !== 0xC4 && marker !== 0xC8 && marker !== 0xCC) {
+          return { height: b.readUInt16BE(i + 5), width: b.readUInt16BE(i + 7) };
+        }
+        i += 2 + len;
+      }
+    }
+    return null;
+  } catch (e) { return null; }
+}
+
+/* 清晰度阈值: 手机端 2x DPR 下, 照片宽度建议 >= 900px; 视频高度建议 >= 720 */
+const MIN_PHOTO_WIDTH = 900;
+const MIN_VIDEO_HEIGHT = 720;
+
 function main() {
   const manifest = readJson('docs/vehicle_media_manifest.json');
   let releaseMap = {};
@@ -137,6 +173,14 @@ function main() {
     if (a.status === 'remote') { a.sizeText = '云端'; return; }
     a.size = sizeOf(a.path);
     a.sizeText = humanSize(a.size);
+    if (a.kind === 'photo') {
+      const dim = imageSize(path.join(ROOT, a.path));
+      if (dim) {
+        a.width = dim.width; a.height = dim.height;
+        a.lowRes = dim.width < MIN_PHOTO_WIDTH;
+        if (a.lowRes) a.resText = dim.width + '×' + dim.height;
+      }
+    }
   });
 
   /* 排序: 缺失优先(最需要动作) → 未归类 → 共享 → 正常 → 远程 */
@@ -222,7 +266,8 @@ function main() {
     vehicles: (manifest.vehicles || []).length,
     vehiclesWithoutMedia: vehiclesWithoutMedia.length,
     unownedFolders: unownedFolders.length,
-    renamedRefs: renamedRefs.length
+    renamedRefs: renamedRefs.length,
+    lowRes: allItems.filter(a => a.lowRes).length
   };
 
   const out = {
@@ -255,6 +300,7 @@ function main() {
   console.log(`  资产 ${stats.total} = 照片 ${stats.photos} + 视频 ${stats.videos}` +
     ` | 正常 ${stats.ok} · 共享 ${stats.shared} · 未归类引用 ${stats.unfiled} · 远程 ${stats.remote} · 缺失 ${stats.missing}` +
     ` | 缺失涉及 ${stats.missingVehicles} 台 | 孤儿 ${stats.orphans} | 有指纹 ${stats.fingerprinted}/${stats.total}`);
+  console.log(`  清晰度: 低清素材 ${stats.lowRes} 项(阈值: 照片宽 <${MIN_PHOTO_WIDTH}px)`);
   console.log(`  车型↔资源: ${stats.vehicles} 台车型 · 无素材 ${stats.vehiclesWithoutMedia} 台` +
     ` · 无主目录 ${stats.unownedFolders} 个 · 改名失配 ${stats.renamedRefs} 条`);
 }

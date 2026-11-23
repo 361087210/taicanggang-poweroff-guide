@@ -104,6 +104,7 @@ const TEST_SUITES = [
   'test:v10263-shared-refs',
   'test:v10264-video-fp',
   'test:v10265-binding',
+  'test:v10266-independence',
   'test:cross'
 ];
 
