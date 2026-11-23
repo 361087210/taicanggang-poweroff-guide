@@ -100,8 +100,15 @@ jobs:
           if [ "$GITHUB_REF_NAME" = "main" ]; then
             grep -q '\[两端错配门禁\] PASS ref=main ' "$RUNNER_TEMP/gate.log" \
               || { echo "::error::门禁未产出 'PASS ref=main' 哨兵 —— 可能被跳过/降级, 视为失败"; exit 1; }
-            ! grep -q 'WARN 降级' "$RUNNER_TEMP/gate.log" \
-              || { echo "::error::门禁在 main 上降级为 WARN —— 判定未生效"; exit 1; }
+            # 唯一允许的降级理由: version_bumped_pending_tag(版本已升、tag 尚未推 = 发布窗口内瞬态,
+            # 见 scripts/check_two_end_sync.js 文档)。其余任何 WARN 降级仍判失败。
+            # 为什么必须放行它: 版本升号与打 tag 是两次推送, 之间必有几分钟 CI 跑在"已升未 tag"状态;
+            # 旧写法在这里必红, 于是每次发版都多一条假红 —— 红灯失去意义(与 §1.1 同一类问题)。
+            if grep -q 'WARN 降级' "$RUNNER_TEMP/gate.log"; then
+              grep -q 'version_bumped_pending_tag' "$RUNNER_TEMP/gate.log" \
+                || { echo "::error::门禁在 main 上降级为 WARN(非发布窗口) —— 判定未生效"; exit 1; }
+              echo "::notice::发布窗口内瞬态: 版本已升、等待 tag（version_bumped_pending_tag）"
+            fi
           fi
 
       # 防漏串门禁: 任何测试文件未被 CI 触达即 FAIL, 防止"新增套件忘了接链"重演

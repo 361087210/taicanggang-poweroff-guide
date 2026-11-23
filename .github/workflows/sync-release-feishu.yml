@@ -18,7 +18,10 @@ name: Sync Release to Feishu
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["Android CI Build & Release"]
+    # V10.25.9: 同时挂 iOS —— Android 构建先完成时 Release 里可能还没有 *_ios.ipa,
+    #   只挂 Android 会让飞书「发版产物/vX」永久缺 IPA(v10.25.8 实测缺)。
+    #   脚本本身幂等(delete_if_exists → 覆盖上传), 第二次跑只是补齐, 不会产生副本。
+    workflows: ["Android CI Build & Release", "iOS CI Build & Release"]
     types: [completed]
 
 permissions:
