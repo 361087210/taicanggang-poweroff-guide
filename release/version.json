@@ -1,8 +1,14 @@
 {
-  "version": "10.26.0",
-  "versionCode": 102600,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.0/tcg_poweroff_v10.26.0.apk",
+  "version": "10.26.1",
+  "versionCode": 102601,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.1/tcg_poweroff_v10.26.1.apk",
   "releaseNotes": [
+    "V10.26.1 首屏提速版。一句话总结: 把只在导出时才用的 1.8MB 组件(xlsx/jsPDF/autotable/html-docx/html2canvas)从 <head> 移出、改为首次导出按需注入, 模拟 4G 下 FCP 6.9s → 3.6s; 同时 12 张 PNG 重编码省 3.1MB、57MB 参考资料移出仓库归档 Release。",
+    "性能(首屏): 5 个导出库移出 <head>(此前没有 defer, 阻塞首屏), 改由 js/04-export.js 的 ensureExportLibs() 首次导出时幂等注入; sw.js 仍预缓存 → 离线导出不退化",
+    "性能(图片): 12 张 PNG 以调色板 PNG 重编码(同路径同扩展名, 数据零改动): 4.96MB → 1.89MB",
+    "工程(仓库): docs/参考资料 4 份手册(57MB)移出仓库, 归档 Release(refdocs-2026-11); 工作树 75MB → 18MB",
+    "CI(发版校验): 安卓发版对导出库的校验由「demo.html 里必须有 <script>」改为「js/04-export.js 装载清单含 5 个路径」+「demo.html 不得再引导出库」",
+    "测试(新增): test_v10260_lazy_export(33 断言); 订正 test_v106 A1(原断言绑死在 head 标签这一实现细节上)",
     "V10.26.0 资源库增强版。一句话总结: 在台账基础上接入飞书云端实测 —— 逐项标记「云端✓/云端✗」, 列出云端有但台账无引用的孤儿文件, 并让组长在 App 内直接上传/删除车型照片与视频。",
     "资源库(核对): 新增「核对云端」, 扫描 APP数据备份/vehicle_images|vehicle_videos 实际文件并与台账比对, 顶部显示云端照片/视频/无台账文件计数",
     "资源库(孤儿): 云端存在但台账无引用的文件进入「未归类/孤儿」筛选, 可预览/删除",

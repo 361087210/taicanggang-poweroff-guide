@@ -98,6 +98,7 @@ const TEST_SUITES = [
   'test:mirror-diag',
   'test:v10256-decode',
   'test:v10257-media-library',
+  'test:v10260-lazy-export',
   'test:cross'
 ];
 

@@ -42,7 +42,18 @@ console.log('\n--- A. 静态源码检查 ---');
 
 // ---- 问题1: 导出文档生成管线重构 ----
 console.log('-- 问题1: Word真OOXML + 中文PDF画布 --');
-check('A1 问题1: html2canvas本地化打包(vendor脚本引用)', /<script src="vendor\/html2canvas\.min\.js"><\/script>/.test(html));
+/* V10.26.0 订正: 断言"意图"而非"实现细节"。
+ * 原断言要求 demo.html 的 <head> 里有 `<script src="vendor/html2canvas.min.js">`;
+ * 该库(194KB)只服务导出链路, V10.26.0 起改为首次导出时按需注入(ensureExportLibs),
+ * head 里的标签被移除 —— 但"本地化打包、离线可用"这个意图没变, 因此改为:
+ *   ① vendor 实体存在; ② 被 04-export 的装载清单引用; ③ 被 sw.js 预缓存。
+ * 教训与 PENDING_ISSUES §1.5 同源: 修实现时别把断言改回去"迁就旧写法",
+ * 也不能让断言绑死在实现细节上。 */
+const _sw = fs.readFileSync(path.join(REPO, 'sw.js'), 'utf8');
+check('A1 问题1: html2canvas本地化打包(实体+按需装载清单+SW预缓存)',
+  fs.existsSync(path.join(REPO, 'vendor/html2canvas.min.js'))
+  && html.includes("'vendor/html2canvas.min.js'")
+  && _sw.includes("'./vendor/html2canvas.min.js'"));
 check('A2 问题1: 真OOXML docx生成器存在(标准包结构)',
   /async function generateDocxOOXML\(vehicles,photoMap\)/.test(html)
   && html.includes('[Content_Types].xml') && html.includes('word/document.xml')

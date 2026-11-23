@@ -2,7 +2,25 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [10.26.0] - 2026-11-23
+## [10.26.1] - 2026-11-23
+
+### 首屏提速：导出组件按需加载 + 图片瘦身 + 参考资料出仓
+
+> 一句话总结：只查一台车也要先下 1.8MB 导出套件的日子结束了 —— 模拟 4G 下 FCP **6.9s → 3.6s**。
+
+#### ⚡ 性能:
+- **导出组件按需加载**：`xlsx`(861KB)/`jsPDF`(356KB)/`autotable`/`html-docx`(406KB)/`html2canvas`(194KB) 从 `<head>` 移出（此前**没有 defer**，阻塞首屏），改由 `js/04-export.js` 的 `ensureExportLibs()` 首次导出时注入
+- **图片重编码**：12 张 PNG 用调色板 PNG 重编码（同路径同扩展名）：4.96MB → **1.89MB**
+
+#### 🧹 工程:
+- `docs/参考资料`（57MB）移出仓库 → Release [refdocs-2026-11](https://github.com/361087210/taicanggang-poweroff-guide/releases/tag/refdocs-2026-11)；工作树 **75MB → 18MB**
+- 安卓发版校验由「`demo.html` 里必须有导出库 `<script>`」改为「装载清单含 5 个路径」+「`demo.html` 不得再引导出库」
+
+#### 🧪 测试:
+- 新增 `tests/test_v10260_lazy_export.js`（33 断言）
+- 订正 `tests/test_v106_fixes.js` A1：原断言绑死在实现细节上，改为断言意图
+
+
 
 ### 资源库增强: 云端实测对账 + 组长上传/删除
 

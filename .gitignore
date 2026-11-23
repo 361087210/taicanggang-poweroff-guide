@@ -129,3 +129,6 @@ coverage/
 # 用户决策为「不入库, 仅本地保留」。故在此忽略, 保持工作树干净(文件仍在磁盘)。
 scripts/sync_skills_mirror.js
 scripts/check_skills_mirror_consistency.js
+
+# V10.26.0: 参考资料(约57MB)移出仓库, 归档到 Release(refdocs-2026-11); 见 docs/参考资料.md
+docs/参考资料/

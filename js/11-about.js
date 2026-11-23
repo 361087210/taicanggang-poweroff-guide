@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.26.1',
+    date: '2026-11-23',
+    highlight: '首屏提速: 导出组件按需加载(FCP 6.9s→3.6s) + PNG 省 3.1MB + 参考资料出仓',
+    features: [
+      '性能: 1.8MB 导出库移出 <head>, 首次导出时按需注入(幂等, 失败仍降级)',
+      '性能: 12 张 PNG 重编码, 4.96MB → 1.89MB',
+      '工程: 57MB 参考资料归档 Release(refdocs-2026-11), 工作树 75MB → 18MB',
+      'CI: 发版校验改为「装载清单 + 首屏不得含导出库」, 不再绑死 demo.html 标签',
+      '测试: 新增 33 断言; 订正 test_v106 A1 的实现细节断言'
+    ]
+  },
+  {
     version: 'V10.26.0',
     date: '2026-11-23',
     highlight: '资源库增强: 台账与飞书云端实际文件对账(云端✓/✗·无台账孤儿) + 组长上传/删除',
@@ -649,7 +661,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.0'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.1'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

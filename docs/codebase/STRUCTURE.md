@@ -16,7 +16,7 @@
 | `vendor/` | 本地化第三方库（tailwind/xlsx/jspdf/html-docx/html2canvas），零 CDN 外链 | `sw.js:30-35` |
 | `scripts/` | 构建/校验/同步/迁移脚本（Node + Python + shell） | `scripts/` 目录 |
 | `tests/` | 测试套件（48 JS + 1 PY + 共享 harness + mock server） | `tests/` 目录 |
-| `docs/` | 项目文档 + 媒体映射表/manifest + `参考资料/` + `codebase/`（本文档） | `docs/` 目录 |
+| `docs/` | 项目文档 + 媒体映射表/manifest + `codebase/`（本文档）；`参考资料/` 已于 V10.26.0 移出仓库（见 `docs/参考资料.md`） | `docs/` 目录 |
 | `web-data/` | **自动生成**的网页镜像静态数据（cron 每 15 分钟重写） | `.github/workflows/sync-web-data.yml:33-38`；`.codebase-scan.txt` 高 churn |
 | `vehicle_images/` | 车辆图片（运行时契约目录，**内部按车型名分子目录**，见「媒体路径约定」） | `sw.js` 未列；`config.xml`/CI 打包；`docs/codebase/.codebase-scan.txt` |
 | `vehicles_data.js` | 车辆数据（由 `web-data/vehicle_sync_data.json` 反向生成） | `scripts/gen_vehicles_data.js:1-17` |

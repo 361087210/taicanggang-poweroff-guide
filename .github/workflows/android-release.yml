@@ -96,7 +96,14 @@ jobs:
           echo "vehicle_images count: $IMG_COUNT (车型子目录 $SUBDIR_COUNT 个, 递归统计)"
           [ "$IMG_COUNT" -ge 100 ] || { echo "vehicle_images incomplete (<100)"; exit 1; }
           test -s tcg_app/www/media_library.json || { echo "MISSING www/media_library.json"; exit 1; }
-          grep -q "vendor/html-docx.js" tcg_app/www/demo.html || { echo "demo.html lost vendor refs"; exit 1; }
+          # V10.26.1: 导出库不再写在 demo.html <head>(首屏阻塞 1.8MB), 改为首次导出时
+          #   由 js/04-export.js 的 ensureExportLibs() 按需注入。校验随之改为"两条都要":
+          #   ① 库文件确实打进包(离线可用, 上面 for 循环已校验 tailwind/其他 5 个);
+          #   ② 装载清单确实在 js/04-export.js 里(否则导出功能静默失效)。
+          for f in xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js html-docx.js html2canvas.min.js; do
+            grep -q "'vendor/$f'" tcg_app/www/js/04-export.js || { echo "04-export 装载清单缺少 vendor/$f"; exit 1; }
+          done
+          ! grep -q '<script src="vendor/xlsx' tcg_app/www/demo.html || { echo "demo.html 又把导出库放回首屏"; exit 1; }
           echo "All export libraries and images verified."
 
       # V10.12: 构建期Secret注入——把demo.html里的__BUILD_SECRETS__标签写入/www/demo.html(首次读取后delete)

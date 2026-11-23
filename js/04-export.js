@@ -5,6 +5,67 @@
  * 源范围: demo.html L2930-L4130
  * 不变量: 函数名/签名100%保留,顶层function声明挂window供onclick裸调用
  * =========================================================== */
+/* ===========================================================
+ * 导出组件按需加载 (V10.26.0)
+ * -----------------------------------------------------------
+ * 为什么: xlsx 861KB + jsPDF 356KB + autotable + html-docx 406KB + html2canvas 194KB
+ *   合计约 1.8MB(未压缩), 此前写在 demo.html <head> 里且**没有 defer** ——
+ *   用户只想查一台车怎么断电, 却要先阻塞下载整个导出套件(实测模拟 4G 下 FCP 6.9s)。
+ *   这些库只被导出链路使用, 改为首次导出时按需注入。
+ * 约束:
+ *   ① 只注入同源脚本(CSP script-src 'self'), 不碰远程;
+ *   ② 幂等 + 并行: 多入口同时触发只会下载一次(按 src 去重);
+ *   ③ 失败不抛给调用方: 保留原有 window.XLSX / window.jspdf 判空降级路径,
+ *      离线且未缓存过组件时仍能走"库加载失败→降级方案"提示。
+ * =========================================================== */
+const EXPORT_VENDORS = [
+  'vendor/xlsx.full.min.js',
+  'vendor/jspdf.umd.min.js',
+  'vendor/jspdf.plugin.autotable.min.js',
+  'vendor/html-docx.js',
+  'vendor/html2canvas.min.js'
+];
+const _vendorLoading = {};   // src -> Promise
+let _exportLibsReady = false;
+
+/** 注入单个脚本(幂等) */
+function _loadVendor(src){
+  if(_vendorLoading[src]) return _vendorLoading[src];
+  _vendorLoading[src] = new Promise(function(resolve, reject){
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onload = function(){ resolve(src); };
+    s.onerror = function(){ reject(new Error('导出组件加载失败: ' + src)); };
+    document.head.appendChild(s);
+  });
+  return _vendorLoading[src];
+}
+
+/**
+ * 确保导出组件就绪(首次调用才真正下载)。
+ * @returns {Promise<boolean>} true=全部就绪; false=有组件失败(调用方走原降级路径)
+ */
+async function ensureExportLibs(){
+  if(_exportLibsReady) return true;
+  if(window.__exportLibsLoading) return window.__exportLibsLoading;
+  window.__exportLibsLoading = (async function(){
+    if(!_exportLibsReady) showToast('首次使用，正在加载导出组件…');
+    try{
+      /* 顺序执行: autotable 依赖 jspdf; 其余并行也无妨, 保守串行换取确定性 */
+      for(const src of EXPORT_VENDORS){ await _loadVendor(src); }
+      _exportLibsReady = true;
+      return true;
+    }catch(e){
+      console.warn('[导出]组件加载失败:', e && e.message);
+      return false;
+    }finally{
+      window.__exportLibsLoading = null;
+    }
+  })();
+  return window.__exportLibsLoading;
+}
+
 function generateExcel(vehicles){
   const data=vehicles.map(v=>({
     'ID':v.id,'品牌':v.brand,'车系':v.series,'配置':v.config,'显示名称':v.display,
@@ -1154,6 +1215,8 @@ async function exportData(format){
   if(n===0){showToast('请先选择要导出的车型');toggleExportList(true);return;}
   if(state.batchExporting)return; // 互斥保护: 导出进行中忽略重复点击
   const names={'word':'Word','pdf':'PDF','excel':'Excel','csv':'CSV','json':'JSON'};
+  /* V10.26.0: 导出组件按需加载(首次导出约 1.8MB, 之后走浏览器缓存/SW 预缓存) */
+  if(format==='excel'||format==='pdf'||format==='word'){ await ensureExportLibs(); }
   if((format==='excel'&&!window.XLSX)||(format==='pdf'&&!window.jspdf)||(format==='word'&&!window._htmlDocxReady&&typeof htmlDocx==='undefined')){
     showToast(names[format]+'库加载失败，正在使用降级方案...');
   }
@@ -1215,6 +1278,8 @@ async function exportSingle(format){
   if(!v)return;
   if(state.detailExporting)return; // 互斥保护
   const names={'word':'Word','pdf':'PDF','excel':'Excel'};
+  /* V10.26.0: 同上, 按需加载导出组件 */
+  if(format==='excel'||format==='pdf'||format==='word'){ await ensureExportLibs(); }
   if((format==='excel'&&!window.XLSX)||(format==='pdf'&&!window.jspdf)||(format==='word'&&!window._htmlDocxReady&&typeof htmlDocx==='undefined')){
     showToast(names[format]+'库加载失败，正在使用降级方案...');
   }
