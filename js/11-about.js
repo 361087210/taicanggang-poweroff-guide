@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.25.8',
+    date: '2026-11-23',
+    highlight: '资源库修复: 索引移到仓库根(docs/ 不在 Pages 发布白名单), 同步流水线自动重建',
+    features: [
+      '修复: media_library.json 位置从 docs/ 改到仓库根, deploy-pages 发布清单与触发路径同步补上',
+      '修复: 此前网页端点开资源库会报"索引加载失败"(线上 docs/ 路径 404); App 与网页端现在一致',
+      'CI: sync-web-data 每次同步后自动重建索引并提交, 数据变索引即变',
+      '功能不变: 314 条台账 / 五档计数 / 筛选搜索 / 预览 / 一键复制缺失清单'
+    ]
+  },
+  {
     version: 'V10.25.7',
     date: '2026-11-23',
     highlight: '资源库: 100 台车的照片/视频统一台账(搜索·筛选·预览·一键导缺失清单)',
@@ -613,7 +624,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.7'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.8'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

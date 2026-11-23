@@ -88,9 +88,9 @@ if (ML) {
 }
 
 /* ---------------- M5 索引契约 ---------------- */
-section('M5 docs/media_library.json 契约');
+section('M5 media_library.json(仓库根) 契约');
 let idx = null;
-try { idx = JSON.parse(src('docs/media_library.json')); } catch (e) { check('M5a 索引可解析', false, e.message); }
+try { idx = JSON.parse(src('media_library.json')); } catch (e) { check('M5a 索引可解析', false, e.message); }
 check('M5a 索引可解析', !!idx);
 if (idx) {
   check('M5b schemaVersion=1', idx.schemaVersion === 1);
@@ -105,7 +105,7 @@ if (idx) {
     check('M5h 文件里的 stats 与实算一致 total', idx.stats.total === recomputed.total, idx.stats.total + ' vs ' + recomputed.total);
     check('M5i 缺失数与 audit:media 口径一致(63)', recomputed.missing === 63, String(recomputed.missing));
   }
-  check('M5j 索引无 U+FFFD', src('docs/media_library.json').indexOf('\uFFFD') < 0);
+  check('M5j 索引无 U+FFFD', src('media_library.json').indexOf('\uFFFD') < 0);
 }
 
 /* ---------------- M6 接线 ---------------- */

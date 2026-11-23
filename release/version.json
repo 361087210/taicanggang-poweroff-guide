@@ -1,8 +1,12 @@
 {
-  "version": "10.25.7",
-  "versionCode": 102507,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.25.7/tcg_poweroff_v10.25.7.apk",
+  "version": "10.25.8",
+  "versionCode": 102508,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.25.8/tcg_poweroff_v10.25.8.apk",
   "releaseNotes": [
+    "V10.25.8 资源库修复版。一句话总结: v10.25.7 的资源库索引放错了目录(docs/ 不在 Pages 发布白名单, 线上 404), 本版把索引移到仓库根并让同步流水线自动重建, 网页端与 App 一致可用。",
+    "修复(资源库): 索引 media_library.json 改到仓库根(与 version.json / vehicles_data.js 同级), deploy-pages 增加该文件到发布清单与触发路径; 前端 INDEX_URL 同步修改 —— 此前 Web 端点开资源库会报索引加载失败",
+    "CI(自动化): sync-web-data 流水线在反向生成 vehicles_data/媒体映射后再跑 gen_media_library, 并把 media_library.json 纳入自动提交, 数据一变索引即刷新",
+    "说明: 资源库功能本体(筛选/预览/缺失清单导出/314 条台账)与 v10.25.7 一致, 本版只修发布路径与自动化",
     "V10.25.7 资源库版。一句话总结: 新增「资源库」页面 —— 把 100 台车的 265 张照片、49 个视频(含共享/云端/缺失)做成一份可搜索、可筛选、可预览、可导出缺失清单的台账, 并新增索引生成器把零散目录收敛成机器可读的单一事实源。",
     "新增(资源库): 我的 → 资源库 / 侧滑菜单入口; 顶部显示 资产·照片·视频·缺失·共享 五档计数; 支持按 缺失/共享/云端视频/未归类/照片/视频 筛选与关键字搜索(车型名或文件名)",
     "新增(资源库): 点击资产可预览(照片大图 / 视频播放 / 缺图提示), 显示车型、路径、大小、指纹状态, 一键复制路径与跳转车型详情",

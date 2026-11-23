@@ -50,12 +50,13 @@ jobs:
         run: |
           node scripts/gen_vehicles_data.js
           node scripts/gen_media_mapping.js
+          node scripts/gen_media_library.js
 
       - name: Commit & push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add web-data/ vehicles_data.js docs/vehicle_media_mapping.json docs/vehicle_media_mapping.csv docs/vehicle_media_manifest.json
+          git add web-data/ vehicles_data.js media_library.json docs/vehicle_media_mapping.json docs/vehicle_media_mapping.csv docs/vehicle_media_manifest.json
           if git diff --cached --quiet; then
             echo "无变化, 跳过提交"
           else

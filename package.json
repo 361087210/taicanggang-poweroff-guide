@@ -1,6 +1,6 @@
 {
   "name": "taicanggang-poweroff-guide",
-  "version": "10.25.7",
+  "version": "10.25.8",
   "private": true,
   "description": "太仓港商品车断电操作标准化指导平台（PWA + Cordova 安卓/iOS 双端）",
   "license": "Apache-2.0",

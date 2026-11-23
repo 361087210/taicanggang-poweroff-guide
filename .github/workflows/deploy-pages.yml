@@ -16,6 +16,7 @@ on:
       - 'feishu-api.js'
       - 'vehicles_data.js'
       - 'version.json'
+      - 'media_library.json'
       - 'icon-*.png'
       - 'icon.svg'
       - '.github/workflows/deploy-pages.yml'
@@ -50,6 +51,8 @@ jobs:
           cp feishu-api.js _publish/
           cp vehicles_data.js _publish/
           cp version.json _publish/
+          # V10.25.8: 资源库索引(docs/ 不在发布白名单, 故索引放根目录)
+          cp media_library.json _publish/ 2>/dev/null || true
           cp icon-*.png _publish/ 2>/dev/null || true
           cp icon.svg _publish/ 2>/dev/null || true
           cp -r css _publish/

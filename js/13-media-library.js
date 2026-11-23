@@ -3,10 +3,10 @@
  * ===========================================================
  * 解决什么: 照片/视频散在 vehicle_images/<车型目录>/、_共享/、_未归类/ 与
  *   GitHub Release 四处, 组长只能靠"翻车型详情"或跑脚本才知道缺什么。
- *   本模块把 docs/media_library.json(由 scripts/gen_media_library.js 生成)渲染成
+ *   本模块把 media_library.json(由 scripts/gen_media_library.js 生成)渲染成
  *   一页可搜索/可筛选/可预览/可导出缺失清单的台账, 且**离线可用**(索引随仓库发布)。
  *
- * 数据契约(docs/media_library.json):
+ * 数据契约(media_library.json, 仓库根/与 Pages 同路径):
  *   { stats:{...}, assets:[{path,kind,kindLabel,status,sizeText,vehicleText,missingFor?}],
  *     orphans:[{path,status:'orphan',...}] }
  *   status: ok 正常 / shared 共享 / unfiled 未归类引用 / remote 云端视频 / missing 缺失 / orphan 孤儿
@@ -17,7 +17,7 @@
 (function(){
 'use strict';
 
-const INDEX_URL = 'docs/media_library.json';
+const INDEX_URL = 'media_library.json';
 const PAGE_LIMIT = 400;          // 单次渲染上限(超出用筛选收窄, 防一次性建 DOM 卡顿)
 const STATUS_META = {
   missing: { label: '缺失', cls: 'bg-red-50 text-red-600' },

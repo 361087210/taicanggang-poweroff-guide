@@ -2,7 +2,24 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [10.25.7] - 2026-11-23
+## [10.25.8] - 2026-11-23
+
+### 修复资源库索引的发布路径
+
+> v10.25.7 把索引生成到 `docs/`，而 Pages 的发布白名单不含 `docs/` —— 网页端点开资源库会报"索引加载失败"（线上实测 404）。本版修掉。
+
+#### 🔴 修复:
+- `media_library.json` 移到**仓库根**（与 `version.json` / `vehicles_data.js` 同级），`deploy-pages` 的发布清单与触发路径同步补上
+- 前端 `INDEX_URL` 改为 `media_library.json`
+
+#### 🛠 自动化:
+- `sync-web-data` 流水线在生成 `vehicles_data` / 媒体映射后再跑 `gen_media_library`，并把 `media_library.json` 纳入自动提交
+
+#### ✅ 不变:
+- 资源库功能本体（314 条台账、五档计数、筛选/搜索、预览、一键复制缺失清单）与 v10.25.7 相同
+- 测试 `test_v10257_media_library`（39 断言，含生成器幂等与索引契约）全绿
+
+
 
 ### 新增「资源库」: 车型照片/视频统一台账 + 缺失清单导出
 

@@ -27,7 +27,9 @@ const path = require('path');
 const MP = require('../js/00-media-paths.js');
 
 const ROOT = path.resolve(__dirname, '..');
-const OUT = path.join(ROOT, 'docs', 'media_library.json');
+/* 输出到仓库根: Pages 的 _publish 白名单只收根文件与 css/js/vendor/vehicle_images/web-data,
+ * docs/ 不在其中(实测线上 docs/media_library.json 是 404)。 */
+const OUT = path.join(ROOT, 'media_library.json');
 
 const readJson = (p) => JSON.parse(fs.readFileSync(path.join(ROOT, p), 'utf8'));
 const isFile = (p) => { try { return fs.statSync(path.join(ROOT, p)).isFile(); } catch (e) { return false; } };
@@ -164,7 +166,7 @@ function main() {
   }
 
   fs.writeFileSync(OUT, JSON.stringify(out, null, 0), 'utf8');
-  console.log('[media-library] 已生成 docs/media_library.json');
+  console.log('[media-library] 已生成 media_library.json');
   console.log(`  资产 ${stats.total} = 照片 ${stats.photos} + 视频 ${stats.videos}` +
     ` | 正常 ${stats.ok} · 共享 ${stats.shared} · 未归类引用 ${stats.unfiled} · 远程 ${stats.remote} · 缺失 ${stats.missing}` +
     ` | 缺失涉及 ${stats.missingVehicles} 台 | 孤儿 ${stats.orphans} | 有指纹 ${stats.fingerprinted}/${stats.total}`);
