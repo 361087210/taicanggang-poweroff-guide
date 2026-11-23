@@ -100,6 +100,7 @@ const TEST_SUITES = [
   'test:v10257-media-library',
   'test:v10260-lazy-export',
   'test:v10261-tailwind',
+  'test:v10262-alias',
   'test:cross'
 ];
 

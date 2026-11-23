@@ -85,6 +85,7 @@
     "test:v10257-media-library": "node tests/test_v10257_media_library.js",
     "test:v10260-lazy-export": "node tests/test_v10260_lazy_export.js",
     "test:v10261-tailwind": "node tests/test_v10261_tailwind_static.js",
+    "test:v10262-alias": "node tests/test_v10262_brand_alias.js",
     "check:two-end": "node scripts/check_two_end_sync.js",
     "audit:media": "node scripts/audit_media_consistency.js",
     "build:tailwind": "node scripts/build_tailwind_css.js",

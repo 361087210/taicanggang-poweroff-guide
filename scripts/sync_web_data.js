@@ -497,6 +497,39 @@ function sanitizeApprovedUsers(raw){
   };
 }
 
+/* ---------- 字段归一(品牌别名) ---------- */
+/**
+ * 品牌写法别名表 —— **镜像侧归一**, 云端原件不动。
+ * 为什么需要: 现场多台设备各自持有本地数据, 同一品牌常出现「北汽BAIC / 北汽(BAIC)」
+ *   两种写法; 一旦有人用旧写法上传, `check_field_duplicates` 会把 CI 判红(已发生两次),
+ *   但把云端改成某一种写法后, 下台设备再上传又会改回去 —— 纯数据侧修不干净。
+ * 策略: 已知别名在**生成镜像时**归一到规范写法, 并显式告警(谁在用什么别名、几处),
+ *   既保证下游(vehicles_data / 映射 / manifest / 资源库索引)一致, 又留下可追的痕迹。
+ * 维护: 新增别名只加一行; 规范写法必须与 `check_field_duplicates` 的期望一致。
+ */
+const BRAND_ALIASES = {
+  '北汽BAIC': '北汽(BAIC)'
+};
+
+/**
+ * 归一车型的品牌写法(纯函数, 不改入参对象以外的任何东西)。
+ * @param {Array<Object>} vehicles
+ * @returns {{vehicles: Array<Object>, normalized: Array<{id:number,from:string,to:string}>}}
+ */
+function normalizeVehicleFields(vehicles){
+  const list = Array.isArray(vehicles) ? vehicles : [];
+  const normalized = [];
+  list.forEach(function(v){
+    if(!v || typeof v.brand !== 'string') return;
+    const to = BRAND_ALIASES[v.brand];
+    if(to && to !== v.brand){
+      normalized.push({ id: v.id, from: v.brand, to: to });
+      v.brand = to;
+    }
+  });
+  return { vehicles: list, normalized: normalized };
+}
+
 /* ---------- 主流程 ---------- */
 async function main(){
   const opt = parseArgs(process.argv);
@@ -504,6 +537,16 @@ async function main(){
   console.log(`[mirror] 模式: ${isLocal ? '本地('+opt.sourceDir+')' : '飞书'} · 输出: ${opt.out}`);
 
   const { vehicle, approved, feedback: rawFeedback } = isLocal ? buildFromLocal(opt) : await buildFromFeishu(opt);
+
+  /* 品牌别名归一(见 BRAND_ALIASES 注释): 保证下游产物一致, 并把别名用法打进日志 */
+  if(vehicle && Array.isArray(vehicle.vehicles)){
+    const norm = normalizeVehicleFields(vehicle.vehicles);
+    if(norm.normalized.length){
+      const detail = norm.normalized.slice(0, 5).map(function(x){ return 'id=' + x.id + ' ' + x.from + '→' + x.to; }).join(', ');
+      console.log('::warning::[mirror] 品牌写法已归一 ' + norm.normalized.length + ' 处: ' + detail);
+      console.log('[mirror] 品牌别名归一 ' + norm.normalized.length + ' 处(云端原件未改, 仅镜像侧规范化)');
+    }
+  }
 
   /* 反馈脱敏(输出侧白名单投影): 本地模式与飞书模式一视同仁。
    * 放在出库前而不是拉取后, 是为了杜绝"换个数据源就绕过脱敏"的漏网路径。 */
@@ -590,4 +633,4 @@ if (require.main === module) {
   main().catch(e => { console.error('::error::[mirror] 失败: ' + e.message); process.exit(1); });
 }
 
-module.exports = { pickNewestByName, feishuFindFile, _req, _reqText, _collectText };
+module.exports = { pickNewestByName, feishuFindFile, _req, _reqText, _collectText, normalizeVehicleFields, BRAND_ALIASES };
