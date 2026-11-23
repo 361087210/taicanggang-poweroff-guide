@@ -68,6 +68,8 @@ jobs:
           cp demo.html tcg_app/www/
           cp feishu-api.js tcg_app/www/
           cp vehicles_data.js tcg_app/www/
+          # V10.26.0: 资源库索引必须随包发布, 否则 App 内「资源库」报索引加载失败
+          cp media_library.json tcg_app/www/
           cp -r vendor tcg_app/www/vendor
           cp -r css tcg_app/www/css
           cp -r js tcg_app/www/js
@@ -86,6 +88,7 @@ jobs:
           SUBDIR_COUNT=$(find tcg_app/www/vehicle_images -mindepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
           echo "vehicle_images count: $IMG_COUNT (车型子目录 $SUBDIR_COUNT 个, 递归统计)"
           [ "$IMG_COUNT" -ge 100 ] || { echo "vehicle_images incomplete (<100)"; exit 1; }
+          test -s tcg_app/www/media_library.json || { echo "MISSING www/media_library.json"; exit 1; }
 
       # V10.12: 构建期 Secret 注入
       - name: Inject Feishu build secrets into www/demo.html (strict fail)
