@@ -15,6 +15,8 @@ on:
 
 permissions:
   contents: write
+  # 失败自动登记 issue / 成功自动关闭, 需要 issues: write
+  issues: write
 
 jobs:
   sync:
@@ -59,4 +61,66 @@ jobs:
           else
             git commit -m "chore: 自动同步数据 (web-data + vehicles_data + manifest) ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
             git push
+          fi
+
+      # 恢复即自动关单: 失败 issue 不再需要人肉收尾
+      - name: Close auto-filed failure issue on success
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TITLE='[auto] web-data 镜像同步失败（cron）'
+          JQ="map(select(.title==\"$TITLE\")) | .[0].number // empty"
+          ID=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 \
+                 --json number,title --jq "$JQ" || true)
+          if [ -n "${ID:-}" ]; then
+            gh issue close "$ID" --repo "$GITHUB_REPOSITORY" \
+              --comment "已恢复：本次同步成功（run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}）。"
+          else
+            echo "无待关闭的自动登记 issue"
+          fi
+
+  # 失败必须报到人眼前:
+  #   2026-11-09 → 2026-11-23 这条 cron 连续红了 49 次而无人察觉(镜像静默冻结两周)。
+  #   红着没人看的流水线等于没有流水线, 所以失败即开(或刷新)一张 issue。
+  notify-failure:
+    needs: sync
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Open or refresh the auto issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          TITLE='[auto] web-data 镜像同步失败（cron）'
+          BODY_FILE=$(mktemp)
+          cat > "$BODY_FILE" <<EOF
+          ## web-data 镜像同步失败（自动登记）
+
+          - 失败运行：$RUN_URL
+          - 失败步骤：\`Generate web-data mirror from Feishu\`（或其后任一校验/提交步骤）
+          - 影响：\`web-data/\` 镜像与 \`vehicles_data.js\` / 媒体映射都不再刷新，网页端会继续吃旧镜像。
+
+          ### 排查顺序
+          1. 打开上面的运行日志，搜 \`::error::[mirror]\`。熔断会把**本次实际取到的源文件（token / 修改时间）**、**本次车数**、**已有镜像的 syncedAt / 车数**一起打出来 —— 先据此判断是"取不到文件"还是"取到了陈旧副本"。
+          2. 0 车 / 车数回退：检查飞书「同步数据」目录是否存在同名重复文件、改名、移动或权限变更；确认是组长真实下架后，手工 \`--force\` 重跑一次并核对产物。
+          3. 凭证类报错（token/列目录）：核对 \`FEISHU_APP_ID\` / \`FEISHU_APP_SECRET\` / \`FEISHU_FOLDER_TOKEN\` 三个 secret 是否仍然有效。
+
+          修好后，下一次成功同步会自动关闭本 issue。
+
+          > 本 issue 由 workflow 自动创建/刷新：每 15 分钟失败只更新正文，不刷评论。
+          EOF
+          JQ="map(select(.title==\"$TITLE\")) | .[0].number // empty"
+          ID=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 \
+                 --json number,title --jq "$JQ" || true)
+          if [ -n "${ID:-}" ]; then
+            gh issue edit "$ID" --repo "$GITHUB_REPOSITORY" --body-file "$BODY_FILE"
+            echo "已刷新自动登记 issue #$ID"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body-file "$BODY_FILE" --label bug
           fi

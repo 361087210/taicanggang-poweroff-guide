@@ -226,6 +226,36 @@ function buildFromLocal(opt){
 
 /* ---------- 飞书模式 ---------- */
 const FEISHU_HOST = 'https://open.feishu.cn';
+/* 诊断用: 记录本次**实际取到**的源文件(名字 → 飞书文件元信息)。
+ * 熔断失败时把它打出来, 日志才能自解释"到底是没找到, 还是取到了陈旧副本"。 */
+const LAST_FOUND = {};
+function _fmtTime(ms){
+  const n = Number(ms);
+  if(!n) return '?';
+  try { return new Date(n).toISOString(); } catch(e){ return String(ms); }
+}
+/**
+ * 熔断退出: 统一打 GitHub Actions 错误注解(::error::) + 自解释诊断, 再非零退出。
+ * 为什么需要: 熔断原先只打普通日志, cron 从 2026-11-09 起连续红了两周也没人发现
+ *   —— 日志里的静默失败等于没失败。::error:: 让 Actions 把失败原因高亮进 run 摘要,
+ *   配合 `.github/workflows/sync-web-data.yml` 的失败开 issue。
+ * @param {string} reason - 熔断结论(与人读的原文案保持一致)
+ * @param {Object|null} prevMirror - 已有产物(web-data/vehicle_sync_data.json)
+ * @param {Object|null} vehicle - 本次拉到的源数据
+ * @param {string} [hint] - 处置建议
+ */
+function _abortGuard(reason, prevMirror, vehicle, hint){
+  const src = LAST_FOUND['vehicle_sync_data.json'];
+  const prevCount = (prevMirror && Array.isArray(prevMirror.vehicles)) ? prevMirror.vehicles.length : 0;
+  const newCount = (vehicle && Array.isArray(vehicle.vehicles)) ? vehicle.vehicles.length : 0;
+  console.error('::error::[mirror] ' + reason);
+  console.error('[mirror] 诊断:');
+  console.error('  本次取到的源文件: ' + (src ? (src.name + ' token=' + src.token + ' 修改时间=' + _fmtTime(src.modified_time)) : '未找到 vehicle_sync_data.json'));
+  console.error('  本次镜像: ' + newCount + ' 车 · 数据版本=' + ((vehicle && vehicle.version) || '?'));
+  console.error('  已有镜像: ' + prevCount + ' 车 · syncedAt=' + ((prevMirror && prevMirror.syncedAt) || '?') + ' · 数据版本=' + ((prevMirror && prevMirror.version) || '?'));
+  if(hint) console.error('  ' + hint);
+  process.exit(1);
+}
 async function feishuTenantToken(appId, appSecret){
   const j = await _req('POST', `${FEISHU_HOST}/open-apis/auth/v3/tenant_access_token/internal`, { 'Content-Type': 'application/json' }, { app_id: appId, app_secret: appSecret });
   if(j.code !== 0) throw new Error('获取 tenant_access_token 失败: ' + JSON.stringify(j));
@@ -283,6 +313,7 @@ async function feishuFindFile(token, folderToken, name, _depth){
 async function feishuDownloadJson(token, folderToken, name){
   const hit = await feishuFindFile(token, folderToken, name);
   if(!hit) return null;
+  LAST_FOUND[name] = { name: hit.name, token: hit.token, modified_time: hit.modified_time };
   const j = await _req('GET', `${FEISHU_HOST}/open-apis/drive/v1/files/${hit.token}/download`, { Authorization: 'Bearer ' + token });
   // 情况A: 返回下载信息信封 {code,data:{url}} → 抓取真实文件
   if(j && j.data && j.data.url){
@@ -368,6 +399,9 @@ async function buildFromFeishu(opt){
   if(!appId || !appSecret) throw new Error('飞书模式需要环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET');
   const token = await feishuTenantToken(appId, appSecret);
   const vehicle = await feishuDownloadJson(token, folderToken, 'vehicle_sync_data.json') || { vehicles: [], timestamp: new Date().toISOString(), version: 'feishu', vehicleCount: 0 };
+  const vHit = LAST_FOUND['vehicle_sync_data.json'];
+  console.log('[mirror] 车型源文件: ' + (vHit ? (vHit.name + ' token=' + vHit.token + ' 修改时间=' + _fmtTime(vHit.modified_time)) : '(未找到 vehicle_sync_data.json)')
+    + ' · 车型数=' + ((vehicle.vehicles || []).length) + ' · 数据版本=' + (vehicle.version || '?'));
   const approved = await feishuDownloadJson(token, folderToken, 'approved_users.json') || { users: [] };
   /* 反馈表: 优先从多维表格分页拉取(单一真源 = 安卓端写入的那张表)。
    * 旧实现从云盘整包下载 feedback_data.json, 那是全字段透传, 一旦有真实
@@ -502,9 +536,8 @@ async function main(){
   const prevMirror = readJsonSafe(path.join(opt.out, 'vehicle_sync_data.json'));
   const prevCount = (prevMirror && Array.isArray(prevMirror.vehicles)) ? prevMirror.vehicles.length : 0;
   if ((vehicle.vehicles || []).length === 0 && prevCount > 0 && !process.argv.includes('--force')) {
-    console.error(`[mirror] 拒绝写入: 新镜像 0 车但已有产物 ${prevCount} 车(疑似飞书目录里取不到 vehicle_sync_data.json)`);
-    console.error('[mirror] 已保留原镜像不覆盖; 确认飞书侧真的清空后加 --force 放行。');
-    process.exit(1);
+    _abortGuard(`拒绝写入: 新镜像 0 车但已有产物 ${prevCount} 车(疑似飞书目录里取不到 vehicle_sync_data.json)`,
+      prevMirror, vehicle, '确认飞书侧真的清空后加 --force 放行; 否则检查「同步数据」目录是否被改名/移动/权限变更。');
   }
 
   // P0 数据回退熔断(2026-10-06 补): 新镜像车型数**少于**已有产物 -> 拒绝写盘。
@@ -516,10 +549,8 @@ async function main(){
   // 合法的车型删减场景(组长确实要下架车型)需人工加 --force 放行。
   const newCount = (vehicle.vehicles || []).length;
   if (newCount > 0 && prevCount > 0 && newCount < prevCount && !process.argv.includes('--force')) {
-    console.error(`[mirror] 拒绝写入: 新镜像 ${newCount} 车 < 已有产物 ${prevCount} 车(疑似取到同名陈旧副本)`);
-    console.error('[mirror] 已保留原镜像不覆盖。若是组长确实下架了车型, 加 --force 放行;');
-    console.error('[mirror] 否则请检查飞书「同步数据」目录里是否存在同名重复的 vehicle_sync_data.json。');
-    process.exit(1);
+    _abortGuard(`拒绝写入: 新镜像 ${newCount} 车 < 已有产物 ${prevCount} 车(疑似取到同名陈旧副本)`,
+      prevMirror, vehicle, '若是组长确实下架了车型, 加 --force 放行; 否则检查飞书「同步数据」目录里是否有同名重复的 vehicle_sync_data.json。');
   }
 
   mkdirp(opt.out);
@@ -534,7 +565,7 @@ async function main(){
 
 // 仅在被直接执行时运行; 被 require 时不产生副作用(便于单元测试纯函数)
 if (require.main === module) {
-  main().catch(e => { console.error('[mirror] 失败:', e.message); process.exit(1); });
+  main().catch(e => { console.error('::error::[mirror] 失败: ' + e.message); process.exit(1); });
 }
 
 module.exports = { pickNewestByName, feishuFindFile };

@@ -95,6 +95,7 @@ const TEST_SUITES = [
   'test:v1039',
   'test:v1025-media-paths',
   'test:v1025-media-paths-e2e',
+  'test:mirror-diag',
   'test:cross'
 ];
 
