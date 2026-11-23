@@ -1,8 +1,14 @@
 {
-  "version": "10.25.6",
-  "versionCode": 102506,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.25.6/tcg_poweroff_v10.25.6.apk",
+  "version": "10.25.7",
+  "versionCode": 102507,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.25.7/tcg_poweroff_v10.25.7.apk",
   "releaseNotes": [
+    "V10.25.7 资源库版。一句话总结: 新增「资源库」页面 —— 把 100 台车的 265 张照片、49 个视频(含共享/云端/缺失)做成一份可搜索、可筛选、可预览、可导出缺失清单的台账, 并新增索引生成器把零散目录收敛成机器可读的单一事实源。",
+    "新增(资源库): 我的 → 资源库 / 侧滑菜单入口; 顶部显示 资产·照片·视频·缺失·共享 五档计数; 支持按 缺失/共享/云端视频/未归类/照片/视频 筛选与关键字搜索(车型名或文件名)",
+    "新增(资源库): 点击资产可预览(照片大图 / 视频播放 / 缺图提示), 显示车型、路径、大小、指纹状态, 一键复制路径与跳转车型详情",
+    "新增(资源库): 「复制缺失清单」一键把缺图清单(车型\t类型\t文件)复制出去, 直接发给补拍/补传的人, 免去跑脚本",
+    "工程(索引): 新增 scripts/gen_media_library.js 生成 docs/media_library.json(314 条台账 = 265 照片 + 49 视频, 缺失 63 / 共享 14 / 云端 49 / 孤儿 16), 路径规则复用 js/00-media-paths.js 单一真源; 支持 --check 做漂移门禁",
+    "测试(新增): test_v10257_media_library(39 断言): 纯函数筛选/统计/清单 + 索引契约(stats 与实算一致、无 U+FFFD、缺失数 63 与 audit 口径一致) + 接线 + 生成器幂等",
     "V10.25.6 数据同步修复版。一句话总结: 定位并修掉「自动同步反复把中文写坏」的真根因 —— 收流时逐块 toString 把一个多字节字符切成两半变成 U+FFFD; 同时把冻结两周的数据镜像真正跑通, 车型/账号/媒体映射全部刷新。",
     "修复(同步解码): _req/_reqText 收流改为 Buffer 整段拼接后一次性 UTF-8 解码(_collectText); 旧写法 res.on('data', c => d += c) 会在 TCP 分块边界切碎汉字 —— 同一份云端文件 python 读到 0 处损坏, node 却报 2~3 处且每次位置不同",
     "修复(数据): 同步流水线恢复, 镜像从 2026-11-09 的旧数据刷新到 2026-11-23(车型 100 / 品牌 12 / 账号 11 / 反馈 2), vehicles_data.js 与媒体映射/manifest 一并重新生成",

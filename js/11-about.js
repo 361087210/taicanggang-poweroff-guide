@@ -8,6 +8,19 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.25.7',
+    date: '2026-11-23',
+    highlight: '资源库: 100 台车的照片/视频统一台账(搜索·筛选·预览·一键导缺失清单)',
+    features: [
+      '新增 我的 → 资源库 / 侧滑菜单入口, 离线可用',
+      '五档计数: 资产 / 照片 / 视频 / 缺失 / 共享, 一眼看出还差多少素材',
+      '按 缺失·共享·云端视频·未归类·照片·视频 筛选, 支持车型名/文件名搜索',
+      '点开即预览(照片大图 / 视频播放), 显示路径·大小·指纹, 可复制路径或跳转车型',
+      '「复制缺失清单」一键导出(车型/类型/文件), 直接发给补拍的人',
+      '工程: 新增 scripts/gen_media_library.js → docs/media_library.json(314 条), 路径规则复用 00-media-paths 单一真源'
+    ]
+  },
+  {
     version: 'V10.25.6',
     date: '2026-11-23',
     highlight: '数据同步修复: 收流整段解码(修掉反复写坏中文的根因) + 镜像冻结两周后恢复刷新',
@@ -600,7 +613,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.6'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.7'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

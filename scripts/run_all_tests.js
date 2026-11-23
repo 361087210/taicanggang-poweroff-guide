@@ -97,6 +97,7 @@ const TEST_SUITES = [
   'test:v1025-media-paths-e2e',
   'test:mirror-diag',
   'test:v10256-decode',
+  'test:v10257-media-library',
   'test:cross'
 ];
 

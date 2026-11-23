@@ -136,7 +136,7 @@ function goBack(){
       target='screen-vehicles';
     }else if(screen==='screen-sync'){
       target='screen-data';
-    }else if(screen==='screen-members'||screen==='screen-password'||screen==='screen-feedback'||screen==='screen-about'){
+    }else if(screen==='screen-members'||screen==='screen-password'||screen==='screen-feedback'||screen==='screen-about'||screen==='screen-media-library'){
       target='screen-my';
     }else{
       target='screen-vehicles';
