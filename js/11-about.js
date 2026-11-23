@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.25.6',
+    date: '2026-11-23',
+    highlight: '数据同步修复: 收流整段解码(修掉反复写坏中文的根因) + 镜像冻结两周后恢复刷新',
+    features: [
+      '修复(同步解码): 收流改为 Buffer 整段拼接后一次性解码, 旧写法会在 TCP 分块边界把汉字切成 U+FFFD',
+      '修复(数据): 镜像从 11-09 刷新到 11-23, 车型 100 / 品牌 12 / 账号 11 / 反馈 2, vehicles_data 与媒体映射一并重生成',
+      '工程(诊断): 熔断带 ::error:: 注解与「源文件 token/修改时间 + 本次车数 + 已有镜像 syncedAt」, 失败可自解释',
+      'CI(闭环): 同步失败自动开 issue、恢复自动关闭; 补 labeler 配置并升 v7',
+      '测试(新增): 多字节分块解码回归 + 镜像熔断可诊断性回归'
+    ]
+  },
+  {
     version: 'V10.25.5',
     date: '2026-11-23',
     highlight: '自动化修复: 数据镜像流水线失败不再静默(自动开单/关单) + Labeler 配置补齐 + 工程元信息补全',
@@ -588,7 +600,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.5'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.6'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
