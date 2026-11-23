@@ -2,6 +2,24 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.25.5] - 2026-11-23
+
+### 自动化修复: 失败不再静默 + Labeler 复位 + 工程元信息补全
+
+> 一句话总结: 本版**不含业务代码变更**, App 行为与 V10.25.4 一致, 只把"红了没人知道"的两条流水线和工程元信息修好。
+
+#### 🔴 修复(CI 可观测性):
+- **数据镜像流水线静默了两周**: `Sync Web Data Mirror` 自 2026-11-09 起连续失败 49/50 次, `web-data/` 镜像与 `vehicles_data.js`、媒体映射全部冻结; 熔断只打普通日志、无人被告知。现熔断改打 `::error::` 注解 + 自解释诊断(本次实际取到的源文件 token/修改时间、本次车数、已有镜像 syncedAt/车数) + `--force` 处置提示
+- **失败自动开单、恢复自动关单**: `sync-web-data.yml` 增 `notify-failure` job, 失败开 issue(已存在则刷新正文, 不刷评论), 下一次成功自动关闭
+- **Labeler 长期必红**: 仓库从来没有 `.github/labeler.yml`(18 次运行 0 次成功)。补配置(只用已有标签) + `actions/labeler@v4 → v7`
+
+#### 🟢 新增(工程):
+- `package.json` 补 `name`/`version`/`private`/`description`/`license`/`engines`
+- 版本门禁对 `package.json` 增加**非阻断**漂移提示
+
+#### 🧪 测试:
+- 新增 `tests/test_v10255_mirror_diag.js`(21 断言): 本地模式实跑 CLI, 钉住"熔断必红 + 必带注解 + 必自解释 + 不得覆盖产物, `--force` 才是放行开关"
+
 ## [10.25.4] - 2026-11-10
 
 ### 媒体链路修复: 上传幂等作用域 + 不再降级顶层 + 客户端候选回退

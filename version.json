@@ -1,8 +1,14 @@
 {
-  "version": "10.25.4",
-  "versionCode": 102504,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.25.4/tcg_poweroff_v10.25.4.apk",
+  "version": "10.25.5",
+  "versionCode": 102505,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.25.5/tcg_poweroff_v10.25.5.apk",
   "releaseNotes": [
+    "V10.25.5 自动化修复版。一句话总结: 本版**不含业务代码变更**, 只修 CI 与工程元信息 —— 让持续红了半个月的数据镜像流水线开口说话、修好长期必红的 Labeler、补齐 package.json 元信息; App 包与上一版行为一致, 仅版本号前进。",
+    "CI(镜像同步): sync_web_data 的两道熔断(0 车 / 车数回退)改为打 ::error:: 注解 + 自解释诊断(实际取到的源文件 token/修改时间、本次车数、已有镜像 syncedAt/车数) + --force 处置提示, 失败不再只留一句静默日志",
+    "CI(告警闭环): sync-web-data 失败自动开 issue(已存在则刷新正文, 不刷评论), 恢复后自动关闭 —— 修掉「cron 连续失败 49 次无人发现、网页端镜像静默冻结两周」的根因",
+    "CI(Labeler): 补 .github/labeler.yml(只用仓库已有标签), actions/labeler v4 → v7; 该 workflow 此前 18 次运行 0 次成功",
+    "工程(元信息): package.json 补 name/version/private/description/license/engines; 版本一致性门禁对 package.json 增加非阻断漂移提示",
+    "测试(新增): test_v10255_mirror_diag, 21 断言, 用本地模式实跑 CLI 钉住「熔断必红 + 必带注解 + 必自解释 + 不得覆盖产物, --force 才是放行开关」",
     "V10.25.4 媒体链路修复版。一句话总结: 上传幂等键改为按车型目录作用域、子目录创建失败不再降级顶层、客户端新增候选路径回退, 从链路上消除「该传的没传」与「显示别人的图」; 补齐 3 条视频直链映射。",
     "媒体(幂等): 上传判重键由「裸文件名」改为「车型目录/文件名」, 修复 A 车型同名文件导致 B 车型被误判已上传而跳传",
     "媒体(防散乱): 车型子目录创建失败不再静默降级到顶层(改为重试+抛错, 保留下轮重试), 避免云端顶层散落",

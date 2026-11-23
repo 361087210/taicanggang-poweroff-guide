@@ -8,6 +8,19 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.25.5',
+    date: '2026-11-23',
+    highlight: '自动化修复: 数据镜像流水线失败不再静默(自动开单/关单) + Labeler 配置补齐 + 工程元信息补全',
+    features: [
+      'CI(镜像同步): 熔断改打 ::error:: 注解 + 自解释诊断(源文件 token/修改时间、本次车数、已有镜像 syncedAt/车数), 并提示 --force 处置',
+      'CI(告警闭环): sync-web-data 失败自动开 issue、恢复自动关闭 —— 修掉「连续失败 49 次无人察觉、镜像冻结两周」的根因',
+      'CI(Labeler): 补 .github/labeler.yml(仅用已有标签), actions/labeler v4 → v7; 此前 18 次运行 0 次成功',
+      '工程(元信息): package.json 补 name/version/private/description/license/engines, 版本门禁增加非阻断漂移提示',
+      '测试(新增): test_v10255_mirror_diag(21 断言, 本地模式实跑 CLI 验证熔断可诊断且不覆盖产物)',
+      '说明: 本版不含业务代码变更, App 行为与 V10.25.4 一致, 仅版本号前进'
+    ]
+  },
+  {
     version: 'V10.25.4',
     date: '2026-11-10',
     highlight: '媒体链路修复: 上传幂等按车型作用域 + 失败不再降级顶层 + 客户端候选路径回退',
@@ -575,7 +588,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.4'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.5'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
