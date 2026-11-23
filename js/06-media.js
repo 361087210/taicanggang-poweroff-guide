@@ -277,7 +277,9 @@ function _pinchDist(t){
  */
 function _tryHdUpgrade(img,fileName){
   if(!fileName||!img.naturalWidth)return;
-  if(img.naturalWidth>=700&&img.naturalHeight>=700)return; // 源已足够清晰
+  /* V10.27.1: 阈值 700→1600——旧内置图多为 433px、旧上传为 1280px,
+   * 都低于新上传标准(2560px), 统一探测云端高清版; 云端不更大时静默维持。 */
+  if(img.naturalWidth>=1600&&img.naturalHeight>=1600)return; // 源已足够清晰
   _fetchFeishuImageBlobUrl(fileName).then(blobUrl=>{
     if(!blobUrl)return;
     const probe=new Image();

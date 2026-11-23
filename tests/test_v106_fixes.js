@@ -127,7 +127,7 @@ const pipeStart = html.indexOf('async function _syncUploadPipeline()');
 const pipeEnd = html.indexOf('function doSyncUpload()');
 const pipeSrc = pipeStart >= 0 && pipeEnd > pipeStart ? html.substring(pipeStart, pipeEnd) : '';
 check('A22 问题4: 同步上传前先分离照片再写JSON(根因修复顺序,V10.7.0管线内断言)',
-  /const photoStat=await syncUploadVehiclePhotos\(token,VEHICLES\);/.test(html)
+  /(?:(?:const|let)\s+)?photoStat=await syncUploadVehiclePhotos\(token,VEHICLES\);/.test(html)
   && pipeSrc.indexOf('syncUploadVehiclePhotos(token,VEHICLES)') >= 0
   && pipeSrc.indexOf('syncUploadVehiclePhotos(token,VEHICLES)') < pipeSrc.indexOf("uploadJsonToDataFeishu(token,'vehicle_sync_data.json'"));
 check('A23 问题4: 照片/视频路径替换后持久化+同步合并后持久化(双钩子)',
