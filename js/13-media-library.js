@@ -142,7 +142,8 @@ function thumbHtml(a){
 
 function rowHtml(a){
   const st = STATUS_META[a.status] || STATUS_META.ok;
-  const title = a.kind === 'video' ? a.path.split('/').pop() : (a.vehicleText || a.path);
+  /* 标题用**文件名**(照片行的"车型名"已在下行显示, 旧版会连写两遍同样的字) */
+  const title = a.path.split('/').pop();
   return '<div class="flex items-center gap-3 p-2 bg-white rounded-xl active:bg-gray-50" ' +
     'data-ml-key="' + esc(a.path) + '">' +
       thumbHtml(a) +
@@ -202,21 +203,24 @@ function bodyHtml(){
       '共 ' + shown.length + ' 项' + (shown.length > cap.length ? '（显示前 ' + cap.length + ' 项，请用筛选收窄）' : '') +
       ' · 索引生成 ' + esc((_data.generatedAt || '').replace('T', ' ').slice(0, 16)) +
     '</div>' +
-    '<div class="px-4 mt-2 space-y-2 pb-28" id="ml-list">' + (cap.map(rowHtml).join('') || empty) + '</div>';
+    '<div class="px-4 mt-2 space-y-2 pb-6" id="ml-list">' + (cap.map(rowHtml).join('') || empty) + '</div>';
 }
 
 function render(){
   const el = document.getElementById('screen-media-library');
   if(!el) return;
   el.innerHTML = '' +
-    '<div class="pt-12 px-4 pb-3 flex items-center gap-3 sticky top-0 bg-gray-50 z-10">' +
+    /* 头部固定; 正文放进 .scroll-y flex-1 —— .screen 是 flex 列容器(overflow:hidden),
+     * 直接子项默认 flex-shrink:1, 带 overflow 的行会被压塌(实测筛选条高度 4px)。 */
+    '<div class="pt-12 px-4 pb-3 flex items-center gap-3 shrink-0 bg-gray-50">' +
       '<button onclick="showScreen(\'screen-my\')" class="w-8 h-8 flex items-center justify-center">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M15 18l-6-6 6-6"/></svg>' +
       '</button>' +
       '<div class="flex-1"><h2 class="text-base font-bold">资源库</h2>' +
         '<p class="text-[11px] text-gray-400 mt-0.5">车型照片 · 视频 · 缺失与共享台账</p></div>' +
       '<button onclick="MediaLibrary.refresh(true)" class="px-2 py-1 text-xs text-blue-600">刷新</button>' +
-    '</div>' + bodyHtml();
+    '</div>' +
+    '<div class="flex-1 scroll-y min-h-0 pb-24">' + bodyHtml() + '</div>';
 }
 
 /* ---------------- 预览弹层 ---------------- */

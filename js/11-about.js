@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.25.9',
+    date: '2026-11-23',
+    highlight: '资源库排版修复: 筛选条不再被 flex 压塌 + 列表标题改为文件名',
+    features: [
+      '修复: .screen 是 flex 列容器, 直接子项被 flex-shrink 压塌 —— 筛选条只剩 4px, 点不到',
+      '修复: 头部固定 + 正文进 .scroll-y flex-1 min-h-0, 滚动与安全区恢复正常',
+      '修复: 列表标题改为文件名, 车型名只在下行显示(旧版重复两遍)',
+      '验证: 无头 Chrome 逐屏截图(登录/车型/详情/资源库/缺失筛选/预览弹层/数据/我的/关于)'
+    ]
+  },
+  {
     version: 'V10.25.8',
     date: '2026-11-23',
     highlight: '资源库修复: 索引移到仓库根(docs/ 不在 Pages 发布白名单), 同步流水线自动重建',
@@ -624,7 +635,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.8'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.9'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
