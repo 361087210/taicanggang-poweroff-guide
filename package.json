@@ -81,6 +81,7 @@
     "test:v1025-media-paths": "node tests/test_v1025_media_paths.js",
     "test:v1025-media-paths-e2e": "node tests/test_v1025_media_paths_e2e.js",
     "test:mirror-diag": "node tests/test_v10255_mirror_diag.js",
+    "test:v10256-decode": "node tests/test_v10256_stream_decode.js",
     "check:two-end": "node scripts/check_two_end_sync.js",
     "audit:media": "node scripts/audit_media_consistency.js",
     "sync:photos": "node scripts/sync_photos_to_repo.js",

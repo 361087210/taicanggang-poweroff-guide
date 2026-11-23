@@ -40,6 +40,23 @@ const vm = require('vm');
 
 /* 用 https.request 而非 fetch: 沙箱代理会篡改 fetch(undici) 请求导致飞书返回
  * 1061002 params error; 裸 https.request 直连飞书正常(已验证)。 */
+/* 收流: **整段拼完再解码**, 绝不逐块 toString()。
+ * 为什么: res.on('data', c => d += c) 里的 c 是 Buffer, `+=` 会**逐块**调用 toString();
+ *   一个 3 字节的中文字符若正好被 TCP 分块切开, 两半各自变成 U+FFFD 替换符 ——
+ *   于是同一份云端文件, 每次运行"坏几处、坏在哪"都不一样(CI 那轮 2 处, 本地 3 处;
+ *   而同一时刻用 python 整段读取是 0 处)。
+ *   这就是历史上"自动同步把数据写坏"的根因: 不是飞书的数据坏了, 是我们在解码时切碎了它。
+ * @param {import('http').IncomingMessage} res
+ * @returns {Promise<string>}
+ */
+function _collectText(res){
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    res.on('data', c => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
+    res.on('error', reject);
+    res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+  });
+}
 function _req(method, urlStr, headers, body){
   return new Promise((resolve, reject) => {
     const u = new URL(urlStr);
@@ -54,9 +71,10 @@ function _req(method, urlStr, headers, body){
     };
     if(data) options.headers['Content-Type'] = 'application/json';
     const r = lib.request(options, res => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e){ reject(new Error('JSON解析失败: ' + d.slice(0,200))); } });
+      _collectText(res).then(d => {
+        try { resolve(JSON.parse(d)); }
+        catch(e){ reject(new Error('JSON解析失败: ' + d.slice(0,200))); }
+      }, reject);
     });
     r.on('error', reject);
     if(data) r.write(data);
@@ -71,7 +89,7 @@ function _reqText(urlStr, headers){
       hostname: u.hostname, port: u.port || (u.protocol === 'http:' ? 80 : 443),
       path: u.pathname + (u.search || ''), method: 'GET',
       headers: Object.assign({ 'User-Agent': 'tcg-mirror/1.0' }, headers || {})
-    }, res => { let d=''; res.on('data', c => d += c); res.on('end', () => resolve(d)); });
+    }, res => { _collectText(res).then(resolve, reject); });
     r.on('error', reject); r.end();
   });
 }
@@ -229,10 +247,14 @@ const FEISHU_HOST = 'https://open.feishu.cn';
 /* 诊断用: 记录本次**实际取到**的源文件(名字 → 飞书文件元信息)。
  * 熔断失败时把它打出来, 日志才能自解释"到底是没找到, 还是取到了陈旧副本"。 */
 const LAST_FOUND = {};
-function _fmtTime(ms){
-  const n = Number(ms);
-  if(!n) return '?';
-  try { return new Date(n).toISOString(); } catch(e){ return String(ms); }
+function _fmtTime(v){
+  if(v === null || v === undefined || v === '') return '?';
+  let n = Number(v);
+  if(!Number.isFinite(n) || n <= 0) return '?';
+  /* 飞书的 modified_time 是**秒**级时间戳(且常以字符串返回), 之前按毫秒解释
+   * 会打印成 1970-01-21 —— 诊断信息本身不能是错的。 */
+  if(n < 1e12) n *= 1000;
+  try { return new Date(n).toISOString(); } catch(e){ return String(v); }
 }
 /**
  * 熔断退出: 统一打 GitHub Actions 错误注解(::error::) + 自解释诊断, 再非零退出。
@@ -568,4 +590,4 @@ if (require.main === module) {
   main().catch(e => { console.error('::error::[mirror] 失败: ' + e.message); process.exit(1); });
 }
 
-module.exports = { pickNewestByName, feishuFindFile };
+module.exports = { pickNewestByName, feishuFindFile, _req, _reqText, _collectText };
