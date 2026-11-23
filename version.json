@@ -1,8 +1,14 @@
 {
-  "version": "10.26.4",
-  "versionCode": 102604,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.4/tcg_poweroff_v10.26.4.apk",
+  "version": "10.26.5",
+  "versionCode": 102605,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.5/tcg_poweroff_v10.26.5.apk",
   "releaseNotes": [
+    "V10.26.5 车型↔资源强关联版。一句话总结: 资源库现在能自动指出「车型与资源对不上」的三种情况 —— 删车残留的无主目录、改名后指向旧目录的引用、新增但还没有任何素材的车型(此前完全看不见); 并允许 App 内从 Pages 拉最新索引。",
+    "关联(索引): media_library 新增 vehicles[](每台车的照片/视频/缺失计数, 含 0 素材)、unownedFolders(有文件但无车型引用的目录)、renamedRefs(引用旧目录但文件在新目录)",
+    "关联(界面): 资源库顶部出现「车型与资源有 N 处对不上」提示并可点进「断链」筛选, 三类断链分别标注无主目录/改名失配/无素材",
+    "修复(改名可见性): 改名检测抽成纯函数 detectRenamedRefs 并接入索引 —— 此前改名只会表现为\"照片缺失\", 看不出是改名导致",
+    "修复(App 索引兜底): CSP connect-src 允许 https://361087210.github.io, 本地索引缺失/过期时可拉线上最新索引",
+    "测试(新增): test_v10265_vehicle_media_binding(22 断言): 车型 id 覆盖、无素材计数、无主目录实算一致、改名检测(含共享目录不算改名)、UI 接线、索引幂等",
     "V10.26.4 视频指纹版。一句话总结: 62 条视频引用里 59 条已有 sha256(此前 0 条), 两个共享视频(13 台 + 2 台)100% 覆盖 —— 同名换片从此可被发现; 指纹由 CI 下载 Release 资产生成(本地只有 50KB/s 下不完 449MB)。",
     "数据(视频指纹): docs/video_fingerprints.json 入库 92 条(46 个原始文件名 + 46 个资产名), manifest 覆盖率 46/49 = 94%",
     "工程(CI): 新增 Fingerprint Videos 工作流 —— 从 Release 拉映射表点名的资产 → 算 sha256 → 用 --release-map 把资产名回填到原始名 → 重建 manifest/索引 → 有变化才提交; 每周一复查一次(检测云端同名替换)",

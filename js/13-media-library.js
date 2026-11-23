@@ -26,7 +26,11 @@ const STATUS_META = {
   unfiled: { label: '未归类', cls: 'bg-violet-50 text-violet-700' },
   remote:  { label: '云端', cls: 'bg-blue-50 text-blue-600' },
   ok:      { label: '正常', cls: 'bg-green-50 text-green-700' },
-  orphan:  { label: '孤儿', cls: 'bg-gray-100 text-gray-600' }
+  orphan:  { label: '孤儿', cls: 'bg-gray-100 text-gray-600' },
+  /* V10.26.5: 车型 ↔ 资源 对不上的三类（统一进"断链"筛选） */
+  unowned: { label: '无主目录', cls: 'bg-orange-50 text-orange-700' },
+  renamed: { label: '改名失配', cls: 'bg-rose-50 text-rose-700' },
+  nomedia: { label: '无素材', cls: 'bg-slate-100 text-slate-600' }
 };
 const FILTERS = [
   { id: 'all',     label: '全部' },
@@ -35,7 +39,9 @@ const FILTERS = [
   { id: 'remote',  label: '云端视频' },
   { id: 'orphan',  label: '未归类/孤儿' },
   { id: 'photo',   label: '照片' },
-  { id: 'video',   label: '视频' }
+  { id: 'video',   label: '视频' },
+  /* V10.26.5: 车型信息与资源对不上（删车/改名/新增无素材） */
+  { id: 'broken',  label: '断链' }
 ];
 
 let _data = null;         // 最近一次加载的索引
@@ -446,6 +452,29 @@ async function loadCloudPreview(path){
 
 /* ---------------- 渲染 ---------------- */
 
+/**
+ * 「车型 ↔ 资源」断链行（V10.26.5，纯函数，供单测）
+ * 三个来源: 无主目录（删车/改名残留） / 改名失配（引用旧目录、文件在新目录） / 无素材车型
+ */
+function brokenRows(data){
+  const d = data || {};
+  const rows = [];
+  (d.unownedFolders || []).forEach(function(u){
+    rows.push({ path: 'vehicle_images/' + u.folder, title: u.folder, kind: 'photo', kindLabel: '无主目录', status: 'unowned',
+      sizeText: (u.files || 0) + ' 个文件', vehicleText: '无车型引用（删车或改名残留）', vehicles: [] });
+  });
+  (d.renamedRefs || []).forEach(function(r){
+    rows.push({ path: r.foundAt || r.declared, title: (r.fileName || ''), kind: 'photo', kindLabel: '改名失配', status: 'renamed',
+      sizeText: '', vehicleText: r.display + ' → 文件在「' + (r.foundFolder || '?') + '」',
+      vehicles: r.id ? [{ id: r.id, display: r.display }] : [] });
+  });
+  (d.vehiclesWithoutMedia || []).forEach(function(v){
+    rows.push({ path: 'vehicle_images/<' + v.folder + '>', title: v.display, kind: 'photo', kindLabel: '无素材', status: 'nomedia',
+      sizeText: '', vehicleText: '该车型还没有照片/视频', vehicles: v.id ? [{ id: v.id, display: v.display }] : [] });
+  });
+  return rows;
+}
+
 function esc(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
     return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
@@ -466,6 +495,11 @@ function chipHtml(f, st){
 
 function thumbHtml(a){
   const st = STATUS_META[a.status] || STATUS_META.ok;
+  /* V10.26.5: 断链行(无主目录/改名失配/无素材)没有可显示的图, 用文字占位, 别放坏 <img> */
+  if(a.status === 'unowned' || a.status === 'renamed' || a.status === 'nomedia'){
+    const txt = a.status === 'unowned' ? '目录' : (a.status === 'renamed' ? '改名' : '无素材');
+    return '<div class="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-[10px] shrink-0">' + txt + '</div>';
+  }
   if(a.kind === 'video'){
     return '<div class="w-14 h-14 rounded-lg bg-gradient-to-br from-slate-700 to-slate-500 flex items-center justify-center text-white text-lg shrink-0">▶</div>';
   }
@@ -479,8 +513,8 @@ function thumbHtml(a){
 
 function rowHtml(a){
   const st = STATUS_META[a.status] || STATUS_META.ok;
-  /* 标题用**文件名**(照片行的"车型名"已在下行显示, 旧版会连写两遍同样的字) */
-  const title = a.path.split('/').pop();
+  /* 标题: 断链行给 a.title(车型/目录名); 其余用**文件名**(车型名在下行显示, 避免连写两遍) */
+  const title = a.title || String(a.path || '').split('/').pop();
   return '<div class="flex items-center gap-3 p-2 bg-white rounded-xl active:bg-gray-50" ' +
     'data-ml-key="' + esc(a.path) + '">' +
       thumbHtml(a) +
@@ -513,7 +547,8 @@ function bodyHtml(){
   }
   const st = statsOf(_data.assets, _data.orphans.concat(_cloud ? _cloud.orphans : []));
   const all = (_data.assets || []).concat(_data.orphans || []).concat(_cloud ? _cloud.orphans : []);
-  const shown = filterAssets(all, _filter, _query);
+  const broken = brokenRows(_data);
+  const shown = _filter === 'broken' ? broken : filterAssets(all, _filter, _query);
   const cap = shown.slice(0, PAGE_LIMIT);
 
   const statCards = [
@@ -534,6 +569,15 @@ function bodyHtml(){
 
   return '' +
     '<div class="px-4 mt-2 flex gap-2">' + statCards + '</div>' +
+    (broken.length
+      ? '<div class="px-4 mt-2"><button onclick="MediaLibrary.setFilter(&quot;broken&quot;)" ' +
+        'class="w-full text-left px-3 py-2 rounded-xl bg-amber-50 text-amber-800 text-xs leading-relaxed">' +
+        '⚑ 车型与资源有 ' + broken.length + ' 处对不上：' +
+        (broken.filter(function(x){ return x.status === 'nomedia'; }).length) + ' 台无素材 · ' +
+        (broken.filter(function(x){ return x.status === 'unowned'; }).length) + ' 个无主目录 · ' +
+        (broken.filter(function(x){ return x.status === 'renamed'; }).length) + ' 条改名失配' +
+        '<span class="underline ml-1">点此查看</span></button></div>'
+      : '') +
     '<div class="px-4 mt-3 flex gap-2">' +
       '<input id="ml-search" value="' + esc(_query) + '" placeholder="搜索车型 / 文件名" ' +
         'oninput="MediaLibrary.setQuery(this.value)" ' +
@@ -792,7 +836,8 @@ window.MediaLibrary = {
   filterAssets: filterAssets,
   statsOf: statsOf,
   humanSize: humanSize,
-  missingListText: missingListText
+  missingListText: missingListText,
+  brokenRows: brokenRows
 };
 
 })();

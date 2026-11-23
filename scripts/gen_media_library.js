@@ -42,6 +42,29 @@ const humanSize = (n) => {
   return (i === 0 ? Math.round(v) : v.toFixed(1)) + u[i];
 };
 
+/**
+ * 改名失配检测（纯函数，供单测）
+ * @param {Array<{id:number,display:string,folder:string,fileName:string,declared:string}>} refs
+ *        已在"自己目录"找不到的照片引用
+ * @param {Map<string, Set<string>>} filesByFolder 目录 → 文件名集合
+ * @param {string[]} reserved 系统保留目录（_共享/_未归类）
+ * @returns {Array<Object>}
+ */
+function detectRenamedRefs(refs, filesByFolder, reserved) {
+  const out = [];
+  (refs || []).forEach(r => {
+    for (const [fd, names] of filesByFolder || []) {
+      if (fd === r.folder || (reserved || []).indexOf(fd) >= 0) continue;
+      if (names.has(r.fileName)) {
+        out.push({ id: r.id, display: r.display, fileName: r.fileName,
+          declared: r.declared, foundAt: MP.PHOTO_TOP + '/' + fd + '/' + r.fileName, foundFolder: fd });
+        return;
+      }
+    }
+  });
+  return out;
+}
+
 function main() {
   const manifest = readJson('docs/vehicle_media_manifest.json');
   let releaseMap = {};
@@ -56,6 +79,15 @@ function main() {
   ]);
 
   const byPath = new Map();
+  /* 车型维度计数（V10.26.5）: 资源库要能回答"这台车有几张图/缺几张"，
+   *   仅靠 assets 不行 —— 共享文件被去重后，单车型视角就丢了。 */
+  const perVehicle = new Map();
+  const bump = (v, kind, status) => {
+    let s = perVehicle.get(v.id);
+    if (!s) { s = { id: v.id, display: v.display, folder: MP.folderNameForVehicle(v), photos: 0, videos: 0, missing: 0 }; perVehicle.set(v.id, s); }
+    if (kind === 'photo') s.photos++; else s.videos++;
+    if (status === 'missing') s.missing++;
+  };
   const upsert = (relPath, kind, status, vehicle) => {
     let a = byPath.get(relPath);
     if (!a) {
@@ -80,6 +112,7 @@ function main() {
       const status = hit ? hit[0] : 'missing';
       const rel = hit ? hit[1] : `${MP.PHOTO_TOP}/${folder}/${p.fileName}`;
       const a = upsert(rel, 'photo', status, veh);
+      bump(veh, 'photo', status);
       if (status === 'missing' && a.missingFor) a.missingFor.push(veh);
       if (p.sha256 && !a.sha256) a.sha256 = p.sha256;
     });
@@ -87,9 +120,9 @@ function main() {
     (v.videos || []).forEach(p => {
       const local = `${MP.VIDEO_TOP}/${folder}/${p.fileName}`;
       const cdn = releaseMap[p.fileName] || '';
-      if (isFile(local)) { const a = upsert(local, 'video', 'ok', veh); if (p.sha256 && !a.sha256) a.sha256 = p.sha256; }
-      else if (cdn) { const a = upsert(cdn, 'video', 'remote', veh); if (p.sha256 && !a.sha256) a.sha256 = p.sha256; }
-      else { const a = upsert(local, 'video', 'missing', veh); if (a.missingFor) a.missingFor.push(veh); }
+      if (isFile(local)) { const a = upsert(local, 'video', 'ok', veh); bump(veh, 'video', 'ok'); if (p.sha256 && !a.sha256) a.sha256 = p.sha256; }
+      else if (cdn) { const a = upsert(cdn, 'video', 'remote', veh); bump(veh, 'video', 'remote'); if (p.sha256 && !a.sha256) a.sha256 = p.sha256; }
+      else { const a = upsert(local, 'video', 'missing', veh); bump(veh, 'video', 'missing'); if (a.missingFor) a.missingFor.push(veh); }
     });
   });
 
@@ -126,6 +159,51 @@ function main() {
     })
     .sort((a, b) => a.path.localeCompare(b.path, 'zh'));
 
+  /* ---------- 车型 ↔ 资源 双向关联（V10.26.5） ----------
+   * 需求: 任意一方变更后，另一方必须能看出"对不上"。
+   *   ① 车型删了/改名了 → 它的旧目录变成"无主目录"（此前隐形，只能靠归属门禁 CI 报）
+   *   ② 车型改名后引用还写旧目录 → "改名失配"（文件在别的车型目录里找到了）
+   *   ③ 新增车型没有素材 → 必须出现在"无素材车型"里（此前资源库根本看不到这台车）
+   */
+  const vehicleFolderMap = new Map();   // folder -> vehicle
+  (manifest.vehicles || []).forEach(v => vehicleFolderMap.set(MP.folderNameForVehicle(v), v));
+
+  const filesByFolder = new Map();      // folder -> Set(fileName)
+  MP.listMediaFiles(ROOT, MP.PHOTO_TOP).forEach(f => {
+    const parts = f.relPath.split('/');   // vehicle_images/<folder>/<...>/<file>
+    const folder = parts.length >= 4 ? parts[1] : '';
+    if (!folder) return;
+    if (!filesByFolder.has(folder)) filesByFolder.set(folder, new Set());
+    filesByFolder.get(folder).add(f.fileName);
+  });
+
+  /* 无主目录: 有文件、但不是任何车型目录 */
+  const reserved = [MP.SHARED_FOLDER, MP.ORPHAN_FOLDER];
+  const unownedFolders = Array.from(filesByFolder.keys())
+    .filter(fd => !reserved.includes(fd) && !vehicleFolderMap.has(fd))
+    .sort()
+    .map(fd => ({ folder: fd, files: filesByFolder.get(fd).size }));
+
+  /* 改名失配: 引用在自己的目录找不到, 但同名文件出现在**别的车型目录**里 */
+  const refs = [];
+  (manifest.vehicles || []).forEach(v => {
+    const folder = MP.folderNameForVehicle(v);
+    (v.photos || []).forEach(p => {
+      const own = `${MP.PHOTO_TOP}/${folder}/${p.fileName}`;
+      if (isFile(own)) return;   // 自己目录有 → 不是改名问题
+      refs.push({ id: v.id, display: v.display, folder: folder, fileName: p.fileName, declared: own });
+    });
+  });
+  const renamedRefs = detectRenamedRefs(refs, filesByFolder, reserved);
+
+  /* 车型汇总（含 0 素材） */
+  const vehiclesSummary = (manifest.vehicles || []).map(v => {
+    const s = perVehicle.get(v.id) || { id: v.id, display: v.display,
+      folder: MP.folderNameForVehicle(v), photos: 0, videos: 0, missing: 0 };
+    return Object.assign({}, s, { noMedia: (s.photos + s.videos) === 0 });
+  });
+  const vehiclesWithoutMedia = vehiclesSummary.filter(v => v.noMedia);
+
   /* 统计口径 = assets + orphans(与前端 statsOf 完全一致: 台账里一共有多少条) */
   const allItems = assets.concat(orphans);
   const cnt = (s) => allItems.filter(a => a.status === s).length;
@@ -141,7 +219,10 @@ function main() {
     missingVehicles: assets.reduce((n, a) => n + ((a.missingFor || []).length ? 1 : 0), 0),
     orphans: orphans.length,
     fingerprinted: allItems.filter(a => a.sha256).length,
-    vehicles: (manifest.vehicles || []).length
+    vehicles: (manifest.vehicles || []).length,
+    vehiclesWithoutMedia: vehiclesWithoutMedia.length,
+    unownedFolders: unownedFolders.length,
+    renamedRefs: renamedRefs.length
   };
 
   const out = {
@@ -150,7 +231,11 @@ function main() {
     note: '由 scripts/gen_media_library.js 生成, 勿手改。missing=全树无同名文件; shared=命中 _共享/; unfiled=命中 _未归类/; remote=视频在 Release/CDN',
     stats,
     assets,
-    orphans
+    orphans,
+    vehicles: vehiclesSummary,
+    vehiclesWithoutMedia,
+    unownedFolders,
+    renamedRefs
   };
 
   if (process.argv.includes('--check')) {
@@ -170,6 +255,10 @@ function main() {
   console.log(`  资产 ${stats.total} = 照片 ${stats.photos} + 视频 ${stats.videos}` +
     ` | 正常 ${stats.ok} · 共享 ${stats.shared} · 未归类引用 ${stats.unfiled} · 远程 ${stats.remote} · 缺失 ${stats.missing}` +
     ` | 缺失涉及 ${stats.missingVehicles} 台 | 孤儿 ${stats.orphans} | 有指纹 ${stats.fingerprinted}/${stats.total}`);
+  console.log(`  车型↔资源: ${stats.vehicles} 台车型 · 无素材 ${stats.vehiclesWithoutMedia} 台` +
+    ` · 无主目录 ${stats.unownedFolders} 个 · 改名失配 ${stats.renamedRefs} 条`);
 }
 
-main();
+if (require.main === module) main();
+
+module.exports = { detectRenamedRefs };

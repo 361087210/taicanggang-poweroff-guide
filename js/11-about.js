@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.26.5',
+    date: '2026-11-23',
+    highlight: '车型↔资源强关联: 无主目录 / 改名失配 / 无素材车型 一律可见',
+    features: [
+      '索引新增 vehicles[](含 0 素材车型)、unownedFolders、renamedRefs',
+      '资源库顶部提示「车型与资源有 N 处对不上」，点进「断链」筛选逐条看',
+      '改名不再只表现为"照片缺失"，而是明确标出文件实际所在目录',
+      'App 内允许从 Pages 拉最新索引(CSP 放行)，本地快照缺失/过期时有兜底'
+    ]
+  },
+  {
     version: 'V10.26.4',
     date: '2026-11-23',
     highlight: '视频内容指纹: 59/62 条引用已有 sha256，共享视频 100% 覆盖',
@@ -694,7 +705,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.4'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.5'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
