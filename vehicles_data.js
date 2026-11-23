@@ -1,4 +1,4 @@
-// 飞书云端同步于 2026-10-11T07:00:44.908Z
+// 飞书云端同步于 2026-11-23T07:08:58.031Z
 window.VEHICLES = [
   {
     "id": 1,
@@ -292,7 +292,9 @@ window.VEHICLES = [
     ],
     "remarks": "放干燥剂",
     "photos": 0,
-    "photoPaths": [],
+    "photoPaths": [
+      "vehicle_images/比亚迪鲨鱼皮卡（SHARK）/比亚迪鲨鱼皮卡（SHARK）_p1_4d3599e1.jpg"
+    ],
     "videos": 0
   },
   {
@@ -626,10 +628,19 @@ window.VEHICLES = [
       "vehicle_images/比亚迪元(元PLUS)/image25.jpeg",
       "vehicle_images/比亚迪元(元PLUS)/image3.jpeg"
     ],
-    "videos": 1,
-    "videoPaths": [
-      "vehicle_videos/比亚迪元(元PLUS)/通用断电视频.mp4"
-    ]
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "",
+      "",
+      ""
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
   },
   {
     "id": 18,
@@ -2087,10 +2098,19 @@ window.VEHICLES = [
       "vehicle_images/奇瑞瑞虎(瑞虎7_CSH_PLUGIN_HYBRID)/image118.jpeg",
       "vehicle_images/奇瑞瑞虎(瑞虎7_CSH_PLUGIN_HYBRID)/image119.jpeg"
     ],
-    "videos": 1,
-    "videoPaths": [
-      "vehicle_videos/奇瑞瑞虎(瑞虎7_CSH_PLUGIN_HYBRID)/通用断电视频.mp4"
-    ]
+    "photoSections": [
+      "exterior",
+      "exterior",
+      "exterior"
+    ],
+    "photoLabels": [
+      "",
+      "",
+      ""
+    ],
+    "keyPhotoRemark": "",
+    "videos": 0,
+    "videoPaths": []
   },
   {
     "id": 57,
@@ -3415,7 +3435,7 @@ window.VEHICLES = [
   {
     "id": 92,
     "brandId": "custom",
-    "brand": "北汽(BAIC)",
+    "brand": "北汽BAIC",
     "series": "北京BJ",
     "config": "请选择配置",
     "display": "北汽BAIC-BJ30e",
