@@ -196,6 +196,20 @@ function main() {
       console.log(`  提示(非阻断): web-data/meta.json 数据镜像版本为 v${mv}（数据版本, 非应用版本, 由 cron 每15分钟重写）`);
     }
   } catch (e) { /* meta.json 缺失/异常与本门禁无关, 静默跳过 */ }
+
+  /* 仅提示, 不阻断: package.json 的 version 只是包元信息(仓库 private, 不发布 npm),
+   * 不参与 App 版本/缓存名/下载地址任何一处。真要升版本时忘了同步它, 也不该让
+   * 发版门禁红掉 —— 但漂移要在日志里说清楚, 免得"package.json 写 10.25.4、实际发的是
+   * 10.26.0"这种归属错误(main 上曾长期没有 version 字段, 见 PR #5)。 */
+  try {
+    const pkg = JSON.parse(readText('package.json'));
+    const pv = String(pkg.version || '');
+    if (!pv) {
+      console.log('  提示(非阻断): package.json 缺 version 字段（建议与 version.json 保持同值）');
+    } else if (pv !== ver.version) {
+      console.log(`  提示(非阻断): package.json version=${pv} 与 version.json=${ver.version} 不一致（包元信息, 不参与发布, 但建议同值）`);
+    }
+  } catch (e) { /* package.json 异常与本门禁无关, 静默跳过 */ }
 }
 
 main();
