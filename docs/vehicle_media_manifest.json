@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-23T11:49:08.691Z",
+  "generatedAt": "2026-11-23T13:04:22.497Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -16,22 +16,22 @@
       "photos": [
         {
           "fileName": "image1.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "af66a21a784d59c8f6279ba0b660da132b65ab6276b64a6cd61206c973ac9a4f",
+          "size": 29531,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
         {
           "fileName": "image2.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "85da442c91afbd7511e1fe861a687fbcdf200b79804a710cccdc55eb87b9f924",
+          "size": 30908,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
         {
           "fileName": "image3.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "edf2485d5767217276c05fa20d131c88432fc06bd0f25c56c8ce5b99dba312b3",
+          "size": 35660,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -53,22 +53,22 @@
       "photos": [
         {
           "fileName": "image1.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "af66a21a784d59c8f6279ba0b660da132b65ab6276b64a6cd61206c973ac9a4f",
+          "size": 29531,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
         {
           "fileName": "image2.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "85da442c91afbd7511e1fe861a687fbcdf200b79804a710cccdc55eb87b9f924",
+          "size": 30908,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
         {
           "fileName": "image4.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "a87944d89c1d4a12440011a25d8c640b97d28787a0652328ba67beb3d3c0e1ac",
+          "size": 8188,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -132,8 +132,8 @@
         },
         {
           "fileName": "image4.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "a87944d89c1d4a12440011a25d8c640b97d28787a0652328ba67beb3d3c0e1ac",
+          "size": 8188,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -206,8 +206,8 @@
         },
         {
           "fileName": "image4.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "a87944d89c1d4a12440011a25d8c640b97d28787a0652328ba67beb3d3c0e1ac",
+          "size": 8188,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -390,8 +390,8 @@
       "photos": [
         {
           "fileName": "image4.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "a87944d89c1d4a12440011a25d8c640b97d28787a0652328ba67beb3d3c0e1ac",
+          "size": 8188,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -497,8 +497,8 @@
         },
         {
           "fileName": "image3.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "edf2485d5767217276c05fa20d131c88432fc06bd0f25c56c8ce5b99dba312b3",
+          "size": 35660,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -537,8 +537,8 @@
         },
         {
           "fileName": "image3.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "edf2485d5767217276c05fa20d131c88432fc06bd0f25c56c8ce5b99dba312b3",
+          "size": 35660,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -656,8 +656,8 @@
         },
         {
           "fileName": "image36.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "4dd67eb9744447e80abc44774f75cf8c35e9f7971cd177ae08dfe4f4ee32dcb9",
+          "size": 35583,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -775,8 +775,8 @@
         },
         {
           "fileName": "image36.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "4dd67eb9744447e80abc44774f75cf8c35e9f7971cd177ae08dfe4f4ee32dcb9",
+          "size": 35583,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -798,15 +798,15 @@
       "photos": [
         {
           "fileName": "image45.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "4618e8929de597da04dd5ccbe47b8fada77b31de86ab183243c0eac3ebef6850",
+          "size": 44036,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
         {
           "fileName": "image46.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "d672495e6091b91f5a8d551aa6e7cf53557426479de072621c9dd17158dcb03e",
+          "size": 47540,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -828,15 +828,15 @@
       "photos": [
         {
           "fileName": "image45.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "4618e8929de597da04dd5ccbe47b8fada77b31de86ab183243c0eac3ebef6850",
+          "size": 44036,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
         {
           "fileName": "image46.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "d672495e6091b91f5a8d551aa6e7cf53557426479de072621c9dd17158dcb03e",
+          "size": 47540,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -1177,8 +1177,8 @@
         },
         {
           "fileName": "image73.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "dd9535c9e69613601e3166d7c17d8d06de60367be14e5d19487c787af42873eb",
+          "size": 41847,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -1635,8 +1635,8 @@
         },
         {
           "fileName": "image109.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "7f6407bd8edfec3f2839cd13a8c19c76fdaeff55727aba02e1be93384d89aeb2",
+          "size": 20435,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -1672,8 +1672,8 @@
         },
         {
           "fileName": "image109.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "7f6407bd8edfec3f2839cd13a8c19c76fdaeff55727aba02e1be93384d89aeb2",
+          "size": 20435,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -1899,8 +1899,8 @@
         },
         {
           "fileName": "image130.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "f9a944ba9aab3fa4de260cf8ccad68c98ef677ddc2f140094ed9cc2abe046855",
+          "size": 22051,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -1936,8 +1936,8 @@
         },
         {
           "fileName": "image130.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "f9a944ba9aab3fa4de260cf8ccad68c98ef677ddc2f140094ed9cc2abe046855",
+          "size": 22051,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -2033,8 +2033,8 @@
       "photos": [
         {
           "fileName": "image139.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "bfb52ebdc62bf741bd4ff7caef2c8e2afb45cadf17d8e1c44f9d8777879d5422",
+          "size": 10358,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -2047,8 +2047,8 @@
         },
         {
           "fileName": "image141.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "159a60b1756714b4637c11cc79e423dc5d5c4f2ea37ab0b522e21a25b54c66ff",
+          "size": 23311,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -2070,8 +2070,8 @@
       "photos": [
         {
           "fileName": "image139.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "bfb52ebdc62bf741bd4ff7caef2c8e2afb45cadf17d8e1c44f9d8777879d5422",
+          "size": 10358,
           "mime": "image/jpeg",
           "qiniuKey": ""
         },
@@ -2084,8 +2084,8 @@
         },
         {
           "fileName": "image141.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "159a60b1756714b4637c11cc79e423dc5d5c4f2ea37ab0b522e21a25b54c66ff",
+          "size": 23311,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -2121,8 +2121,8 @@
         },
         {
           "fileName": "image73.jpeg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "dd9535c9e69613601e3166d7c17d8d06de60367be14e5d19487c787af42873eb",
+          "size": 41847,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -2292,15 +2292,15 @@
       "photos": [
         {
           "fileName": "image157.png",
-          "sha256": "",
-          "size": 0,
+          "sha256": "af7618deb6aaae636e9469ed26e3dece022a9db1276b7b12d1a5983982283d63",
+          "size": 314494,
           "mime": "image/png",
           "qiniuKey": ""
         },
         {
           "fileName": "image158.png",
-          "sha256": "",
-          "size": 0,
+          "sha256": "2284530ac059af11c8a21a4acfa1c98822b1e60d2ae2d246ac52a209b5237f6c",
+          "size": 305038,
           "mime": "image/png",
           "qiniuKey": ""
         }
@@ -2322,15 +2322,15 @@
       "photos": [
         {
           "fileName": "image157.png",
-          "sha256": "",
-          "size": 0,
+          "sha256": "af7618deb6aaae636e9469ed26e3dece022a9db1276b7b12d1a5983982283d63",
+          "size": 314494,
           "mime": "image/png",
           "qiniuKey": ""
         },
         {
           "fileName": "image158.png",
-          "sha256": "",
-          "size": 0,
+          "sha256": "2284530ac059af11c8a21a4acfa1c98822b1e60d2ae2d246ac52a209b5237f6c",
+          "size": 305038,
           "mime": "image/png",
           "qiniuKey": ""
         },
@@ -3132,6 +3132,41 @@
     }
   ],
   "assets": {
+    "af66a21a784d59c8f6279ba0b660da132b65ab6276b64a6cd61206c973ac9a4f": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        1,
+        2
+      ]
+    },
+    "85da442c91afbd7511e1fe861a687fbcdf200b79804a710cccdc55eb87b9f924": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        1,
+        2
+      ]
+    },
+    "edf2485d5767217276c05fa20d131c88432fc06bd0f25c56c8ce5b99dba312b3": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        1,
+        17,
+        20
+      ]
+    },
+    "a87944d89c1d4a12440011a25d8c640b97d28787a0652328ba67beb3d3c0e1ac": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        2,
+        4,
+        6,
+        15
+      ]
+    },
     "c2d8f5ecf46abf9047a17e3daf2c2ab6643c48d5d2cff3883013229cedc72cad": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -3391,6 +3426,14 @@
         23
       ]
     },
+    "4dd67eb9744447e80abc44774f75cf8c35e9f7971cd177ae08dfe4f4ee32dcb9": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        23,
+        26
+      ]
+    },
     "a817a105a4f663d70488a714b3f7feaa443134101445db71b09353ba53c5e5c5": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -3445,6 +3488,22 @@
       "releaseAsset": "",
       "vehicleIds": [
         26
+      ]
+    },
+    "4618e8929de597da04dd5ccbe47b8fada77b31de86ab183243c0eac3ebef6850": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        27,
+        28
+      ]
+    },
+    "d672495e6091b91f5a8d551aa6e7cf53557426479de072621c9dd17158dcb03e": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        27,
+        28
       ]
     },
     "160af2ea7f4f6157fe0d13dcaa9c22fffb6acca0241567199b3a057a74243897": {
@@ -3620,6 +3679,14 @@
       "releaseAsset": "",
       "vehicleIds": [
         38
+      ]
+    },
+    "dd9535c9e69613601e3166d7c17d8d06de60367be14e5d19487c787af42873eb": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        38,
+        66
       ]
     },
     "7e8b729f2b50559fd743b69a8938f81eb49d9911c1e36715c705bb66395cc234": {
@@ -3853,6 +3920,14 @@
         52
       ]
     },
+    "7f6407bd8edfec3f2839cd13a8c19c76fdaeff55727aba02e1be93384d89aeb2": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        52,
+        53
+      ]
+    },
     "6df2cfb9f178929ad64018e6e652ff6936ea6177a055641aaee7187f42e46c0b": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -3993,6 +4068,14 @@
         60
       ]
     },
+    "f9a944ba9aab3fa4de260cf8ccad68c98ef677ddc2f140094ed9cc2abe046855": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        60,
+        61
+      ]
+    },
     "94fc41102ff4a313bb60e705895110f87d863502b3bf55b62a4a549ddb8cadcf": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -4049,11 +4132,27 @@
         63
       ]
     },
+    "bfb52ebdc62bf741bd4ff7caef2c8e2afb45cadf17d8e1c44f9d8777879d5422": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        64,
+        65
+      ]
+    },
     "8a8fe733a62272f96b9320703e731b55ef7e00bb8842577b59504411d322141a": {
       "qiniuKey": "",
       "releaseAsset": "",
       "vehicleIds": [
         64
+      ]
+    },
+    "159a60b1756714b4637c11cc79e423dc5d5c4f2ea37ab0b522e21a25b54c66ff": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        64,
+        65
       ]
     },
     "38b126b9e79a284f23643bfbd7d77d4613511887511e58ec4c3fff5ee1439f29": {
@@ -4159,6 +4258,22 @@
       "releaseAsset": "",
       "vehicleIds": [
         70
+      ]
+    },
+    "af7618deb6aaae636e9469ed26e3dece022a9db1276b7b12d1a5983982283d63": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        71,
+        72
+      ]
+    },
+    "2284530ac059af11c8a21a4acfa1c98822b1e60d2ae2d246ac52a209b5237f6c": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        71,
+        72
       ]
     },
     "bdd3853eeb0ad302d0c01f569312cc3c9cb2bc6a7e8f6823f576cab349fe1149": {
@@ -4335,6 +4450,6 @@
     "vehicleCount": 100,
     "photoCount": 267,
     "videoCount": 62,
-    "totalBytes": 9363650
+    "totalBytes": 11353646
   }
 }

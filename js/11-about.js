@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.26.3',
+    date: '2026-11-23',
+    highlight: '修复 31 条「照片在 _共享/ 却引用车型目录」的 404，并在管线与 CI 双重卡口',
+    features: [
+      '同步管线自动回写失配引用(幂等), 不再被下一次同步覆盖回去',
+      'audit「引用失配」31 → 0, 可直接命中的照片 172 → 203',
+      '同步流水线提交前 + CI 各加一道 --verify, 有失配即红',
+      '真缺失仍 64 条(需业务补拍/补传)'
+    ]
+  },
+  {
     version: 'V10.26.2',
     date: '2026-11-23',
     highlight: '样式提速: 运行时 Tailwind(441KB) → 预编译静态 CSS(25KB)',
@@ -672,7 +683,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.2'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.3'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

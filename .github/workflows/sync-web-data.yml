@@ -49,6 +49,10 @@ jobs:
       - name: Reverse-generate vehicles_data.js + media mapping/manifest
         run: |
           node scripts/gen_vehicles_data.js
+          # V10.26.3: 云端 photoPaths 指向车型目录、而文件实际在 _共享/ 时回写引用(幂等)。
+          #   不回写的话每次同步都会把 31 条 404 引用写回产物(audit C7「引用失配」)。
+          node scripts/fix_shared_refs.js
+          node scripts/fix_shared_refs.js --verify
           node scripts/gen_media_mapping.js
           node scripts/gen_media_library.js
 

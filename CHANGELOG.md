@@ -2,7 +2,24 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [10.26.2] - 2026-11-23
+## [10.26.3] - 2026-11-23
+
+### 修复 31 条照片 404 引用（管线自动回写 + 双重卡口）
+
+> 迁移脚本把被多车型复用的照片挪进 `vehicle_images/_共享/`，却没回写引用 —— 云盘里看得到图、App 里 404；而每次云端同步又把"车型目录路径"写回产物。
+
+#### 🔴 修复:
+- 同步流水线在 `gen_vehicles_data` 之后自动执行 `fix_shared_refs.js`（**幂等**），把失配引用改写到 `vehicle_images/_共享/`
+- `audit:media` 的「引用失配」**31 → 0**，可直接命中的照片 **172 → 203**（真缺失仍 64 条，需业务补拍）
+
+#### 🛡 门禁:
+- 同步流水线**提交前**执行 `fix_shared_refs.js --verify`
+- `ci.yml` 新增独立 step「照片引用完整性」，退出码直接传播（不加 `|| true`）
+
+#### 🧪 测试:
+- 新增 `tests/test_v10263_shared_refs.js`（16 断言）：用**与 App 同一套**路径解析规则（`js/00-media-paths.js#resolveLocalFile`）验证 0 失配、管线顺序、CI 接线、幂等
+
+
 
 ### 样式提速：运行时 Tailwind → 预编译静态 CSS
 

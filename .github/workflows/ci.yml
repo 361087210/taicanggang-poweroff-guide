@@ -112,6 +112,11 @@ jobs:
           fi
 
       # 防漏串门禁: 任何测试文件未被 CI 触达即 FAIL, 防止"新增套件忘了接链"重演
+      # 照片引用完整性: 云端 photoPaths 指向车型目录、文件实际在 _共享/ 时必须已回写,
+      #   否则 App/网页端会 404（历史故障: 迁移进 _共享/ 却没回写引用, 31 条永久 404）。
+      - name: 照片引用完整性(共享目录回写校验)
+        run: node scripts/fix_shared_refs.js --verify
+
       - name: CI 覆盖率门禁(测试资产必须全部被触达)
         run: npm run test:ci-coverage
 

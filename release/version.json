@@ -1,8 +1,13 @@
 {
-  "version": "10.26.2",
-  "versionCode": 102602,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.2/tcg_poweroff_v10.26.2.apk",
+  "version": "10.26.3",
+  "versionCode": 102603,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.3/tcg_poweroff_v10.26.3.apk",
   "releaseNotes": [
+    "V10.26.3 引用修复版。一句话总结: 31 条「照片声明在车型目录、文件却在 _共享/」的 404 引用已在管线里自动回写(幂等), 并在同步流水线与 CI 各加一道校验, 不会再被下一次同步覆盖回来。",
+    "修复(照片引用): 同步流水线在生成 vehicles_data 后自动执行 fix_shared_refs(幂等), 把 31 条失配引用改写到 vehicle_images/_共享/; 之前每次同步都会把车型目录路径写回产物, 导致 App 端 404",
+    "CI(门禁): 同步流水线提交前 + CI 各加一道 fix_shared_refs --verify, 有失配即红, 防止再次退化",
+    "数据(对账): audit 的「引用失配」31 → 0, 能直接命中的照片 172 → 203; 真缺失仍为 64 条(需业务补拍/补传)",
+    "测试(新增): test_v10263_shared_refs(16 断言): 与 App 同一套路径解析规则验 0 失配、管线顺序、CI 接线、幂等",
     "V10.26.2 样式提速版。一句话总结: 把运行时 Tailwind(441KB JS, 官方明确不可用于生产) 换成预编译静态 CSS(25KB), 首屏再省 415KB; 并加「类名覆盖率」门禁, 新增模板类名忘重建会直接红。",
     "性能(样式): vendor/tailwind.js(Play CDN 运行时 JIT, 441KB) → css/tailwind.build.css(25KB, gzip 5KB), 首屏少下载 415KB JS, 也去掉浏览器里扫描 DOM 生成样式的开销",
     "工程(可复现): 新增 scripts/build_tailwind_css.js(npm run build:tailwind), 扫描 demo.html + js/**.js(模板字符串里的类名一并收集); 发版工作流的 vendor 校验同步去掉 tailwind",
