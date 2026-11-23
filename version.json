@@ -1,8 +1,13 @@
 {
-  "version": "10.26.3",
-  "versionCode": 102603,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.3/tcg_poweroff_v10.26.3.apk",
+  "version": "10.26.4",
+  "versionCode": 102604,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.4/tcg_poweroff_v10.26.4.apk",
   "releaseNotes": [
+    "V10.26.4 视频指纹版。一句话总结: 62 条视频引用里 59 条已有 sha256(此前 0 条), 两个共享视频(13 台 + 2 台)100% 覆盖 —— 同名换片从此可被发现; 指纹由 CI 下载 Release 资产生成(本地只有 50KB/s 下不完 449MB)。",
+    "数据(视频指纹): docs/video_fingerprints.json 入库 92 条(46 个原始文件名 + 46 个资产名), manifest 覆盖率 46/49 = 94%",
+    "工程(CI): 新增 Fingerprint Videos 工作流 —— 从 Release 拉映射表点名的资产 → 算 sha256 → 用 --release-map 把资产名回填到原始名 → 重建 manifest/索引 → 有变化才提交; 每周一复查一次(检测云端同名替换)",
+    "修复(脚本): fingerprint_videos 新增 --release-map(资产名→原始名反向映射), --check 会提示本地缺哪些已入库视频",
+    "测试(新增): test_v10264_video_fingerprints(20 断言): 指纹形态、映射生效、manifest 覆盖≥90%、共享视频 100%、C8 告警消失、工作流接线",
     "V10.26.3 引用修复版。一句话总结: 31 条「照片声明在车型目录、文件却在 _共享/」的 404 引用已在管线里自动回写(幂等), 并在同步流水线与 CI 各加一道校验, 不会再被下一次同步覆盖回来。",
     "修复(照片引用): 同步流水线在生成 vehicles_data 后自动执行 fix_shared_refs(幂等), 把 31 条失配引用改写到 vehicle_images/_共享/; 之前每次同步都会把车型目录路径写回产物, 导致 App 端 404",
     "CI(门禁): 同步流水线提交前 + CI 各加一道 fix_shared_refs --verify, 有失配即红, 防止再次退化",

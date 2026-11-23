@@ -103,7 +103,17 @@ try {
   const v1 = (m.vehicles.find(v => v.id === 1) || {});   // 视频断言仍定位到 1 号车
   const vd1 = (v1.videos || []).find(v => v.fileName === '比亚迪海豚_低配.mp4');
   check('M2i 视频有 releaseAsset(tcgv_*.mp4)', !!(vd1 && /^tcgv_[0-9a-f]+\.mp4$/.test(vd1.releaseAsset)), vd1 && vd1.releaseAsset);
-  check('M2j 视频 sha256 置空(云端资产本阶段无指纹)', !!(vd1 && vd1.sha256 === ''));
+  /* V10.26.4 订正: 原断言写死"视频 sha256 永远为空"——那是当时的实现局限, 不是需求。
+   * 现在 CI 会下载 Release 资产算出指纹(V10.26.4: 59/62 条引用已有 sha256), 正确的
+   * 不变量是: **有指纹文件就落到 manifest, 没有才置空**, 且形态必须合法。 */
+  let _fpj = null;
+  try { _fpj = JSON.parse(fs.readFileSync('docs/video_fingerprints.json', 'utf8')); } catch (e) { /* 允许缺失 */ }
+  const _fpRec = _fpj && _fpj.videos && _fpj.videos[vd1 && vd1.fileName];
+  if (_fpRec && _fpRec.sha256) {
+    check('M2j 视频 sha256 与指纹文件一致(有指纹则不置空)', vd1.sha256 === _fpRec.sha256 && /^[0-9a-f]{64}$/.test(vd1.sha256), (vd1 && vd1.sha256 || '').slice(0, 12));
+  } else {
+    check('M2j 无指纹文件时视频 sha256 置空', !!(vd1 && vd1.sha256 === ''));
+  }
 
   // assets 反向索引
   const assetKeys = Object.keys(m.assets || {});

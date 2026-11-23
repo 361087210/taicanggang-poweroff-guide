@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.26.4',
+    date: '2026-11-23',
+    highlight: '视频内容指纹: 59/62 条引用已有 sha256，共享视频 100% 覆盖',
+    features: [
+      '同名换片可被发现: 两个共享视频(13 台 / 2 台)指纹齐备, audit C8 告警消失',
+      '指纹由 CI 下载 Release 资产生成(本地网络下 449MB 不可行)',
+      'fingerprint_videos 新增 --release-map, 把资产名指纹回填到原始文件名',
+      '每周一自动复查, 云端被替换会在 diff 里立刻可见'
+    ]
+  },
+  {
     version: 'V10.26.3',
     date: '2026-11-23',
     highlight: '修复 31 条「照片在 _共享/ 却引用车型目录」的 404，并在管线与 CI 双重卡口',
@@ -683,7 +694,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.3'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.4'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
