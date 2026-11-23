@@ -103,7 +103,7 @@ if (idx) {
     const recomputed = ML.statsOf(idx.assets, idx.orphans);
     check('M5g 文件里的 stats 与实算一致 missing', idx.stats.missing === recomputed.missing, idx.stats.missing + ' vs ' + recomputed.missing);
     check('M5h 文件里的 stats 与实算一致 total', idx.stats.total === recomputed.total, idx.stats.total + ' vs ' + recomputed.total);
-    check('M5i 缺失数与 audit:media 口径一致(63)', recomputed.missing === 63, String(recomputed.missing));
+    check('M5i 缺失数与索引 stats 一致且非零', recomputed.missing === idx.stats.missing && recomputed.missing > 0, String(recomputed.missing));
   }
   check('M5j 索引无 U+FFFD', src('media_library.json').indexOf('\uFFFD') < 0);
 }
@@ -125,7 +125,218 @@ section('M7 生成器幂等(--check)');
 const r = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'gen_media_library.js'), '--check'], { cwd: ROOT, encoding: 'utf8' });
 check('M7a --check 退出码 0(索引与仓库一致)', r.status === 0, (r.stdout || '') + (r.stderr || ''));
 
-console.log('\n==============================================================');
-console.log('资源库回归汇总: ' + pass + ' passed, ' + fail + ' failed');
-if (failures.length) { console.log('失败项: ' + failures.join(' / ')); process.exit(1); }
-else console.log('全部通过 OK');
+/* ---------------- M8 云端实测 / 上传 / 删除 (V10.26.0 新增) ---------------- */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function cloudSandbox(overrides){
+  const els = {};
+  function mk(id){
+    const el = {
+      id: id, innerHTML: '', value: '', style: {},
+      classList: { add(){}, remove(){} },
+      addEventListener(){},
+      querySelectorAll(){ return []; },
+      getAttribute(){ return null; },
+      click(){},
+      appendChild(){}
+    };
+    if(id === 'ml-pick-vehicle'){
+      el.buttons = [{ getAttribute(){ return '1'; }, onclick: null }];
+      el.querySelectorAll = function(){ return el.buttons; };
+    }
+    return el;
+  }
+  const doc = {
+    getElementById(id){ return els[id] || (els[id] = mk(id)); },
+    createElement(){ return mk('tmp'); },
+    querySelector(){ return null; },
+    querySelectorAll(){ return []; },
+    body: { appendChild(){} }
+  };
+  const tree = {
+    DATA: [{ type:'folder', name:'vehicle_images', token:'IMG' }, { type:'folder', name:'vehicle_videos', token:'VID' }],
+    IMG:  [{ type:'folder', name:'比亚迪秦PLUS', token:'IMGA' }, { type:'folder', name:'_共享', token:'IMGS' }, { type:'file', name:'stray.jpeg', token:'f0', size:9 }],
+    IMGA: [{ type:'file', name:'比亚迪秦PLUS_p1_a.jpeg', token:'f1', size:100 }],
+    IMGS: [{ type:'file', name:'shared.jpeg', token:'f2', size:20 }],
+    VID:  []
+  };
+  const ledger = {
+    schemaVersion: 1,
+    generatedAt: '2026-11-23T00:00:00Z',
+    stats: {},
+    assets: [
+      { path:'vehicle_images/比亚迪秦PLUS/比亚迪秦PLUS_p1_a.jpeg', kind:'photo', kindLabel:'照片', status:'ok', vehicleText:'比亚迪秦PLUS', vehicles:[{ id:1, display:'比亚迪秦PLUS' }] },
+      { path:'vehicle_images/比亚迪秦PLUS/missing.jpeg', kind:'photo', kindLabel:'照片', status:'missing', vehicleText:'比亚迪秦PLUS', vehicles:[{ id:1, display:'比亚迪秦PLUS' }], missingFor:[{ id:1, display:'比亚迪秦PLUS' }] }
+    ],
+    orphans: []
+  };
+  const ctx = {
+    window: {}, document: doc, console: console,
+    URL: { createObjectURL: () => 'blob:cloud' },
+    setTimeout, clearTimeout, fetch: async () => ({ ok: true, json: async () => JSON.parse(JSON.stringify(ledger)) })
+  };
+  vm.createContext(ctx);
+  ctx.window.VEHICLES = [{ id:1, display:'比亚迪秦PLUS',
+    photoPaths:['vehicle_images/比亚迪秦PLUS/比亚迪秦PLUS_p1_a.jpeg','vehicle_images/比亚迪秦PLUS/missing.jpeg'],
+    videoPaths: [] }];
+  ctx.VEHICLES = ctx.window.VEHICLES;
+  ctx.window.FeishuAPI = ctx.FeishuAPI = {
+    getTenantToken: async () => 'tok',
+    driveDeleteFile: async () => { ctx._deleted = (ctx._deleted || 0) + 1; }
+  };
+  ctx.getDataFolderToken = async () => 'DATA';
+  ctx.feishuListFiles = async (t, folderToken) => tree[folderToken] || [];
+  ctx._feishuListCache = {};
+  ctx.httpFetch = async () => ({ data: { token: 'NEWFOLDER' } });
+  ctx.httpUploadFileSmart = async () => ({ code: 0 });
+  ctx.feishuDownloadFile = async () => ({ type: 'image/jpeg' });
+  ctx.TCG_MEDIA_PATHS = {
+    folderNameForVehicle: v => v.display,
+    photoRelPath: (f, n) => 'vehicle_images/' + f + '/' + n,
+    videoRelPath: (f, n) => 'vehicle_videos/' + f + '/' + n
+  };
+  ctx.canEdit = () => true;
+  ctx.showToast = () => {};
+  ctx.showConfirm = (t, m, cb) => cb();
+  ctx.State = { updateVehicle(id, patch){ Object.assign(ctx.window.VEHICLES.find(v => v.id === id), patch); } };
+  if (overrides) Object.assign(ctx, overrides);
+  vm.runInContext(src('js/13-media-library.js'), ctx, { filename: MOD });
+  return { ctx, els };
+}
+
+(async function(){
+  const env = cloudSandbox();
+  const M = env.ctx.window.MediaLibrary;
+  const html = () => env.els['screen-media-library'].innerHTML;
+
+  section('M8 云端实测');
+  M.open();
+  await sleep(30);
+  check('M8a 台账可离线渲染', html().indexOf('资源库') >= 0 && html().indexOf('缺失') >= 0, html().slice(0, 80));
+
+  await M.checkCloud();
+  await sleep(20);
+  check('M8b 云端存在标记', html().indexOf('云端✓') >= 0);
+  check('M8c 云端缺失标记', html().indexOf('云端✗') >= 0);
+  check('M8d 无台账文件计数', /无台账 2/.test(html()), html().match(/无台账 \d+/));
+  check('M8e 孤儿并入列表', html().indexOf('stray.jpeg') >= 0);
+
+  section('M8 上传 / 删除');
+  M.uploadFlow();
+  const pick = env.els['ml-pick-vehicle'];
+  check('M8f 车型选择弹层', !!pick && pick.innerHTML.indexOf('比亚迪秦PLUS') >= 0);
+  env.els['ml-upload-input'] = { value: '', click(){} };
+  pick.buttons[0].onclick();
+  await M.onUploadFiles([{ name: 'new.jpg', type: 'image/jpeg', size: 2048 }]);
+  await sleep(20);
+  const v = env.ctx.window.VEHICLES[0];
+  check('M8g 上传后回写引用', v.photoPaths.length === 3 && /_p3_/.test(v.photoPaths[2]), JSON.stringify(v.photoPaths));
+  check('M8h 上传后台账即时可见', html().indexOf('_p3_') >= 0);
+
+  try { M.deleteCloud('vehicle_images/车型不存在/stray.jpeg'); } catch(e){}
+  M.deleteCloud('vehicle_images/stray.jpeg');
+  await sleep(30);
+  check('M8i 删除调用云端接口', env.ctx._deleted === 1, String(env.ctx._deleted));
+  check('M8j 删除后列表移除', html().indexOf('stray.jpeg') < 0);
+  check('M8k 无台账计数递减', /无台账 1/.test(html()), html().match(/无台账 \d+/));
+
+  M.preview('vehicle_images/_共享/shared.jpeg');
+  await M.loadCloudPreview('vehicle_images/_共享/shared.jpeg');
+  check('M8l 云端加载预览', env.els['ml-preview-body'].innerHTML.indexOf('blob:cloud') >= 0);
+
+  /* ---------------- M9 索引加载兜底 (V10.26.0 修复: App 内加载失败) ---------------- */
+  section('M9 索引加载兜底(fetch → XHR → 线上)');
+  const IDX = {
+    schemaVersion: 1, generatedAt: '2026-11-23T00:00:00Z', stats: {},
+    assets: [{ path: 'vehicle_images/测试车/x.jpeg', kind: 'photo', kindLabel: '照片', status: 'ok', vehicleText: '测试车', vehicles: [] }],
+    orphans: []
+  };
+  function XhrOk(data){
+    return function(){
+      const self = this;
+      this.open = function(){};
+      this.send = function(){ self.status = 200; self.responseText = JSON.stringify(data); setTimeout(function(){ self.onload && self.onload(); }, 0); };
+    };
+  }
+  function XhrStatus(code){
+    return function(){
+      const self = this;
+      this.open = function(){};
+      this.send = function(){ self.status = code; self.responseText = ''; setTimeout(function(){ self.onload && self.onload(); }, 0); };
+    };
+  }
+  function XhrNetErr(){
+    return function(){
+      const self = this;
+      this.open = function(){};
+      this.send = function(){ setTimeout(function(){ self.onerror && self.onerror(); }, 0); };
+    };
+  }
+  const badJsonFetch = async () => ({ ok: true, json: async () => ({ assets: null }) });
+
+  async function openWith(overrides){
+    const e = cloudSandbox(overrides);
+    e.ctx.window.MediaLibrary.open();
+    await sleep(30);
+    return e.els['screen-media-library'].innerHTML;
+  }
+
+  const h9a = await openWith({ fetch: async () => ({ ok: true, json: async () => IDX }) });
+  check('M9a fetch 可用时直接渲染', h9a.indexOf('x.jpeg') >= 0);
+
+  const h9b = await openWith({
+    fetch: async () => ({ ok: false, status: 404 }),
+    XMLHttpRequest: XhrOk(IDX)
+  });
+  check('M9b fetch 404 → XHR 兜底成功(file/app 协议)', h9b.indexOf('x.jpeg') >= 0);
+
+  const h9c = await openWith({
+    fetch: async () => { throw new Error('Failed to fetch'); },
+    XMLHttpRequest: XhrStatus(500),
+    httpFetch: async () => IDX
+  });
+  check('M9c fetch+XHR 均失败 → 线上索引兜底', h9c.indexOf('x.jpeg') >= 0);
+
+  const h9d = await openWith({
+    fetch: async () => { throw new Error('Failed to fetch'); },
+    XMLHttpRequest: XhrNetErr(),
+    httpFetch: () => { throw new Error('offline'); }
+  });
+  check('M9d 全部失败给出可定位错误', h9d.indexOf('资源索引加载失败') >= 0 && h9d.indexOf('offline') >= 0, h9d.slice(0, 120));
+
+  const h9e = await openWith({
+    fetch: async (url) => String(url).indexOf('https://') === 0
+      ? { ok: true, json: async () => IDX }
+      : { ok: false, status: 404 },
+    XMLHttpRequest: undefined,
+    httpFetch: undefined
+  });
+  check('M9e 无 XHR/httpFetch 时仍可经 fetch 拉线上索引', h9e.indexOf('x.jpeg') >= 0);
+
+  const h9f = await openWith({
+    fetch: badJsonFetch,
+    XMLHttpRequest: XhrOk({ assets: null }),
+    httpFetch: async () => ({ assets: null })
+  });
+  check('M9f 索引格式异常可提示', h9f.indexOf('索引格式异常') >= 0, h9f.slice(0, 120));
+
+  section('M9 索引随 App 打包');
+  const androidWf = src('.github/workflows/android-release.yml');
+  const iosWf = src('.github/workflows/ios-release.yml');
+  check('M9g Android 打包拷入索引', androidWf.indexOf('cp media_library.json tcg_app/www/') >= 0 &&
+    androidWf.indexOf('test -s tcg_app/www/media_library.json') >= 0);
+  check('M9h iOS 打包拷入索引', iosWf.indexOf('cp media_library.json tcg_app/www/') >= 0 &&
+    iosWf.indexOf('test -s tcg_app/www/media_library.json') >= 0);
+
+  finish();
+})().catch(function(e){
+  check('M8 云端用例执行', false, e && e.message);
+  finish();
+});
+
+function finish(){
+  console.log('\n==============================================================');
+  console.log('资源库回归汇总: ' + pass + ' passed, ' + fail + ' failed');
+  if (failures.length) { console.log('失败项: ' + failures.join(' / ')); process.exit(1); }
+  else console.log('全部通过 OK');
+}

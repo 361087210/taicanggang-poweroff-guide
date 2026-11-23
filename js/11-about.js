@@ -8,6 +8,20 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.26.0',
+    date: '2026-11-23',
+    highlight: '资源库增强: 台账与飞书云端实际文件对账(云端✓/✗·无台账孤儿) + 组长上传/删除',
+    features: [
+      '资源库(核对): 新增「核对云端」按钮, 扫描 vehicle_images/vehicle_videos 实际文件, 逐项标记 云端✓/云端✗',
+      '资源库(孤儿): 云端存在但台账无引用的文件单独列出(状态=孤儿), 可预览/删除',
+      '资源库(上传): 组长选择车型后可批量上传照片/视频, 自动建目录、按车型命名并回写 photoPaths/videoPaths',
+      '资源库(删除): 组长可在预览中删除云端文件, 同步解除所有车型引用(不可恢复, 二次确认)',
+      '资源库(预览): 台账缺失/孤儿但云端存在时, 支持「云端加载」直接读取飞书文件预览',
+      '修复(App): media_library.json 随 APK/IPA 打包, 且索引加载支持 fetch → XHR → 线上三级兜底, 修掉 App 内「资源索引加载失败」',
+      '资源库(兼容): 保留 V10.25.8 索引移仓根/Pages 可访问, 以及 V10.25.7 台账/筛选/导出全部能力'
+    ]
+  },
+  {
     version: 'V10.25.9',
     date: '2026-11-23',
     highlight: '资源库排版修复: 筛选条不再被 flex 压塌 + 列表标题改为文件名',
@@ -635,7 +649,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.25.9'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.0'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
