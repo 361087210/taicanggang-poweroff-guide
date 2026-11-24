@@ -85,8 +85,8 @@ check('S1i 缩略图文案: 缺失(64x48 极小, 文案压到最短)',
 check('S1j _photoViewerMissingSvg 区分 missing / never 两种原因',
   /reason===\s*'never'/.test(mediaSrc) && /照片文件缺失/.test(mediaSrc) && /该车型暂未上传照片/.test(mediaSrc));
 check('S1k openPhotoViewer: 加载失败传 missing, 未登记传 never',
-  /_photoViewerMissingSvg\(v,labels\[index\],'missing'\)/.test(mediaSrc) &&
-  /_photoViewerMissingSvg\(v,labels\[index\],'never'\)/.test(mediaSrc));
+  /_photoViewerMissingSvg\(v,label,'missing'\)/.test(mediaSrc) &&
+  /_photoViewerMissingSvg\(v,label,'never'\)/.test(mediaSrc));
 
 // 接线回归: 模板里 onerror 必须仍指向这两个函数(改文案时最容易顺手改坏)
 check('S1l 详情格模板仍接线 imgLoadError(this)',

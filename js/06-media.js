@@ -128,10 +128,13 @@ function openPhotoViewer(index){
   state.photoZoom=1;
   const img=document.getElementById('photo-viewer-img');
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
-  const labels=['前脸照片','车尾照片','钥匙照片','断电位照片'];
-  document.getElementById('photo-viewer-label').textContent=labels[index]||`照片 ${index+1}`;
-  if(v&&v.photoPaths&&v.photoPaths[index]){
-    const photoPath=v.photoPaths[index];
+  /* V10.28.2: 照片列表走「基线 + 媒体登记表」合并视图, 与详情页格子同序 */
+  const meta=(typeof mediaViewMeta==='function')?mediaViewMeta(v,'photo'):{paths:(v&&v.photoPaths)||[],labels:[]};
+  const photoPaths=meta.paths;
+  const label=(meta.labels&&meta.labels[index])||`照片 ${index+1}`;
+  document.getElementById('photo-viewer-label').textContent=label;
+  if(v&&photoPaths[index]){
+    const photoPath=photoPaths[index];
     // V10.16: 本地图加载成功后,分辨率不足时后台探测飞书云端高清版热替换
     img.onload=()=>{
       const fn=(photoPath||'').split('/').pop();
@@ -144,13 +147,13 @@ function openPhotoViewer(index){
         if(ok)return;
         const fn=(photoPath||'').split('/').pop();
         imgFromFeishuCloud(img,fn).then(ok2=>{
-          if(!ok2)img.src=_photoViewerMissingSvg(v,labels[index],'missing');
+          if(!ok2)img.src=_photoViewerMissingSvg(v,label,'missing');
         });
       });
     });
   }else{
     // 该车型根本没登记这一张(与"登记了但文件丢了"是两回事, 文案必须区分)
-    img.src=_photoViewerMissingSvg(v,labels[index],'never');
+    img.src=_photoViewerMissingSvg(v,label,'never');
   }
   _pvReset();
   _pvBindGestures();
@@ -379,8 +382,9 @@ let _prefetchedVideos=new Set(); // 本次会话已调度预取的文件名(防�
 function prefetchVehicleVideo(){
   try{
     const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
-    if(!v||!v.videoPaths||!v.videoPaths.length)return;
-    const fileName=v.videoPaths[0].split('/').pop();
+    const videoPaths=(typeof mediaViewPaths==='function')?mediaViewPaths(v,'video'):((v&&v.videoPaths)||[]);
+    if(!videoPaths.length)return;
+    const fileName=videoPaths[0].split('/').pop();
     if(!fileName||_prefetchedVideos.has(fileName))return;
     _prefetchedVideos.add(fileName);
     const directUrl=mediaDirectUrl(fileName);
@@ -396,23 +400,25 @@ function prefetchVehicleVideo(){
 async function openVideoPlayer(videoIndex){
   videoIndex=videoIndex||0;
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
-  if(!v||!v.videoPaths||!v.videoPaths.length){
+  /* V10.28.2: 视频列表同样合并媒体登记表(资源库新上传的视频无需回写 payload) */
+  const videoPaths=(typeof mediaViewPaths==='function')?mediaViewPaths(v,'video'):((v&&v.videoPaths)||[]);
+  if(!v||!videoPaths.length){
     showToast('该车辆暂无视频');
     return;
   }
-  if(videoIndex>=v.videoPaths.length)videoIndex=0;
+  if(videoIndex>=videoPaths.length)videoIndex=0;
   _currentVideoIndex=videoIndex;
   const session=++_videoSession; // 开启新播放会话,旧会话的源链自动失效
   document.getElementById('video-player').classList.add('show');
   // V10.14.2: 更新播放器内视频导航信息
-  _updateVideoNav(v.videoPaths.length,videoIndex);
+  _updateVideoNav(videoPaths.length,videoIndex);
   const video=document.getElementById('video-element');
   // V10.18.0(反馈问题3): 播放器设置封面poster,避免未播放前黑屏/无封面(车型名可辨识)
   // V10.19.0: 封面生成收敛到 videoCoverDataUri(与详情页卡片共用同一真源,防漂移)
   const playLabel=(videoIndex===0?'断电教学视频':`补充视频${videoIndex}`);
   video.poster=videoCoverDataUri(v.display,playLabel);
   const cdnBase=`https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@${GITHUB_BRANCH}`;
-  const fileName=v.videoPaths[videoIndex].split('/').pop();
+  const fileName=videoPaths[videoIndex].split('/').pop();
   // V10.19.0: 该车型对应的官方资产原名(组长上传改名后由 videoBaseNames 留档),
   // 供云端源不可用时的官方片别名回退使用
   const canonicalName=(v.videoBaseNames&&v.videoBaseNames[videoIndex])||'';
@@ -454,13 +460,13 @@ async function openVideoPlayer(videoIndex){
     // 首帧体验极差。App(Cordova)内该路径可能命中打包资源,故予以保留。
     if(!_isWebStaticEnv()){
       // 源①: 本地APK内路径
-      tryPlaySource(video,v.videoPaths[videoIndex],()=>{
+      tryPlaySource(video,videoPaths[videoIndex],()=>{
         if(session!==_videoSession)return; // 用户已退出,终止源链
-        _playReleaseOrCloud(video,fileName,cdnBase,v.videoPaths[videoIndex],session,canonicalName);
+        _playReleaseOrCloud(video,fileName,cdnBase,videoPaths[videoIndex],session,canonicalName);
       },session);
       return;
     }
-    _playReleaseOrCloud(video,fileName,cdnBase,v.videoPaths[videoIndex],session,canonicalName);
+    _playReleaseOrCloud(video,fileName,cdnBase,videoPaths[videoIndex],session,canonicalName);
   };
 
   // 源⓪: V10.2 问题1修复——本地磁盘持久缓存命中,file://直读秒开
@@ -509,10 +515,11 @@ function _updateVideoNav(total,current){
  */
 function switchVideo(direction){
   const v=VEHICLES.find(x=>x.id===state.currentVehicleId);
-  if(!v||!v.videoPaths||v.videoPaths.length<=1)return;
+  const videoPaths=(typeof mediaViewPaths==='function')?mediaViewPaths(v,'video'):((v&&v.videoPaths)||[]);
+  if(!v||videoPaths.length<=1)return;
   let newIdx=_currentVideoIndex+direction;
-  if(newIdx<0)newIdx=v.videoPaths.length-1;
-  if(newIdx>=v.videoPaths.length)newIdx=0;
+  if(newIdx<0)newIdx=videoPaths.length-1;
+  if(newIdx>=videoPaths.length)newIdx=0;
   // 清理当前视频状态(复用closeVideoPlayer的清理逻辑,但不移除overlay)
   _videoSession++; // 使当前会话的所有异步回调失效
   const video=document.getElementById('video-element');

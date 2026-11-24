@@ -1764,6 +1764,13 @@ async function doSyncDownload(){
         _setSyncNewDot(false);
         renderBrandTags();
         renderVehicleList();
+        /* V10.28.2: 媒体登记表独立增量拉取(不与车型 payload 混写)。
+         * 资源库上传/删除只改登记表, 组员端须在这里并集合并, 才能看到组长新传的图。 */
+        if(typeof MediaLibrary !== 'undefined' && MediaLibrary && typeof MediaLibrary.mediaRegistryPull === 'function'){
+          try{
+            if(await MediaLibrary.mediaRegistryPull()) renderVehicleList();
+          }catch(e){ console.warn('[同步] 媒体登记表拉取失败', e); }
+        }
       }
     }else{
       showToast('飞书云端暂无同步数据，请等待组长上传');

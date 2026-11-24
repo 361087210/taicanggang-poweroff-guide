@@ -1664,6 +1664,36 @@ function mediaCosPhotoUrl(relPath){
   return mediaJoinUrl(cos,relPath);
 }
 
+/**
+ * V10.28.2 车型媒体视图(单一真源读取口)。
+ * 资源库上传/删除只写媒体登记表, 车型 photoPaths/videoPaths 是发版基线;
+ * 渲染一律走这里合并「基线 + 登记表」, 避免两套路径各说各话。
+ * MediaLibrary 加载失败(单测/极简页)时退化为只读基线, 不影响基本浏览。
+ * @param {object} v 车型
+ * @param {'photo'|'video'} kind
+ * @returns {string[]}
+ */
+function mediaViewPaths(v,kind){
+  try{
+    const M=window.MediaLibrary;
+    if(M&&typeof M.mediaPathsFor==='function')return M.mediaPathsFor(v,kind);
+  }catch(e){/* 退化为基线 */}
+  const k=kind==='video'?'videoPaths':'photoPaths';
+  return (v&&Array.isArray(v[k]))?v[k].slice():[];
+}
+
+/** 照片视图 + 对齐的板块/标签(视频只有 paths) */
+function mediaViewMeta(v,kind){
+  try{
+    const M=window.MediaLibrary;
+    if(M&&typeof M.mediaMetaFor==='function')return M.mediaMetaFor(v,kind);
+  }catch(e){/* 退化为基线 */}
+  const paths=mediaViewPaths(v,kind);
+  const secs=(kind!=='video'&&v&&Array.isArray(v.photoSections))?v.photoSections:[];
+  const labs=(kind!=='video'&&v&&Array.isArray(v.photoLabels))?v.photoLabels:[];
+  return {paths:paths,sections:paths.map(function(_,i){return secs[i]||'exterior';}),labels:paths.map(function(_,i){return labs[i]||'';})};
+}
+
 const MEDIA_PLAYBACK_SOURCES=(function(){
   const list=[];
   let cdn='';

@@ -156,7 +156,7 @@ section('C组: 渲染/业务分离(filterVehicles纯函数 + renderVehicleCards)
 // =============================================================
 {
   const sb = makeSandbox();
-  injectBlocks(sb.ctx, ['esc', 'State', 'filterVehicles', 'renderVehicleCard', 'renderVehicleCards', 'getFilteredVehicles']);
+  injectBlocks(sb.ctx, ['esc', 'State', '_mediaViewPaths', '_mediaViewMeta', 'filterVehicles', 'renderVehicleCard', 'renderVehicleCards', 'getFilteredVehicles']);
   sb.run('VEHICLES.push({id:1,display:"轿车A",pinyin:"jiaocheA",series:"S1",brand:"品牌X",brandId:"bx",position:"甲板",steps:["step1"],keyFrame:["k1"],keyContainer:["c1"],photoPaths:[],videoPaths:[]},{id:2,display:"越野B",pinyin:"yueyeB",series:"S2",brand:"品牌Y",brandId:"by",position:"舱内",steps:["step1"],keyFrame:["k1"],keyContainer:["c1"],photoPaths:[],videoPaths:[]},{id:3,display:"自定义C",pinyin:"zidingyiC",series:"S3",brand:"品牌Z",brandId:"custom_z",position:"甲板",steps:["step1"],keyFrame:["k1"],keyContainer:["c1"],photoPaths:[],videoPaths:[]})');
   check('C1 filterVehicles 全量(all)=3条', sb.run('filterVehicles("","all").length') === 3);
   check('C2 filterVehicles 关键词命中display', sb.run('filterVehicles("轿车","all").map(v=>v.id).join()') === '1');

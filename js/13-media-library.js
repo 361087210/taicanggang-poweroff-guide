@@ -260,6 +260,253 @@ function missingListText(assets){
   return lines.join('\n');
 }
 
+/* ============================================================
+ * 媒体登记表(运行时单一真源, V10.28.2)
+ * ------------------------------------------------------------
+ * 旧行为: 资源库上传直接 push 进车型 photoPaths/videoPaths, 再全量同步
+ *   vehicle_sync_data.json; 删除则 unlinkPathOf 后再全量同步。
+ *   两处都是"整份车型数据覆盖"——别的设备只改过别的车型, 也会被覆盖;
+ *   某设备旧快照再同步一次, 已删的图会"自己回来"(云端文件已无 → 永久缺失)。
+ * 现行为: 资源库只写登记表(新增行 / 删除墓碑), 车型 payload 一概不动;
+ *   所有渲染在读取时合并「车型基线 + 登记表」, 台账统计同口径。
+ *   登记表按 path 去重、按 at 取最新(LWW), 删除用墓碑表达 —— 因此可以
+ *   "下载→并集→上传"地增量同步, 不需要整份覆盖, 也不会把删除复活。
+ * 存储: localStorage(tcg_media_registry) + 云端 media_registry.json(可选,
+ *   离线/无飞书接口时静默降级, 仅影响跨设备可见性, 不影响本机浏览)。
+ * ============================================================ */
+const REGISTRY_KEY = 'tcg_media_registry';
+const REGISTRY_CLOUD_FILE = 'media_registry.json';
+let _regCache = null;
+let _regSyncTimer = null;
+
+function _regStore(){
+  if(_regCache) return _regCache;
+  let rows = {};
+  try{
+    const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem(REGISTRY_KEY) : null;
+    const obj = raw ? JSON.parse(raw) : null;
+    if(obj && obj.rows && typeof obj.rows === 'object') rows = obj.rows;
+  }catch(e){ rows = {}; }
+  _regCache = rows;
+  return _regCache;
+}
+
+function _regSave(){
+  try{
+    if(typeof localStorage === 'undefined') return false;
+    localStorage.setItem(REGISTRY_KEY, JSON.stringify({ version: 1, updatedAt: Date.now(), rows: _regStore() }));
+    return true;
+  }catch(e){ return false; }
+}
+
+/** 全部登记行(含墓碑); 兼容单测直接读取 */
+function registryRows(){ return _regStore(); }
+function registryRow(path){ return _regStore()[String(path || '')] || null; }
+/** 该路径是否已被登记表墓碑/清理(跨设备删除也以登记表为准) */
+function _regDead(path){
+  const r = registryRow(path);
+  return !!(r && (r.deletedAt || r.purgedAt));
+}
+
+/**
+ * 合并两份登记行(纯函数)。
+ * 同一路径取「at 较新」的一次变更; 时间相同则删除优先 —— 宁可少显示一张,
+ * 也不能让已删的图借合并复活。
+ */
+function registryMerge(localRows, remoteRows){
+  const out = {};
+  [localRows, remoteRows].forEach(function(rows){
+    Object.keys(rows || {}).forEach(function(p){
+      const r = rows[p];
+      if(!r || !r.path) return;
+      const cur = out[p];
+      const rt = Number(r.at) || 0, ct = cur ? (Number(cur.at) || 0) : -1;
+      const newer = !cur || rt > ct ||
+        (rt === ct && !!r.deletedAt && !cur.deletedAt);
+      if(newer) out[p] = r;
+    });
+  });
+  return out;
+}
+
+/** 登记一条上传资产; 写盘失败返回 null(调用方据此回滚已上传文件) */
+function registryAdd(row){
+  if(!row || !row.path) return null;
+  const rows = _regStore();
+  const rec = {
+    path: row.path,
+    kind: row.kind === 'video' ? 'video' : 'photo',
+    vehicleId: row.vehicleId,
+    display: row.display || '',
+    at: Date.now(),
+    source: row.source || 'upload'
+  };
+  const prev = rows[rec.path];
+  rows[rec.path] = rec;
+  if(_regSave()) return rec;
+  /* 写盘失败必须回滚内存, 否则调用方"回滚"后视图仍能看到一条没落盘的登记 */
+  if(prev) rows[rec.path] = prev; else delete rows[rec.path];
+  return null;
+}
+
+/** 删除 = 写墓碑(云端文件与车型 payload 都不动) */
+function registryTombstone(path, reason, owners, kind){
+  if(!path) return false;
+  const rows = _regStore();
+  const prev = rows[path] || {};
+  rows[path] = {
+    path: path,
+    kind: kind === 'video' ? 'video' : (prev.kind === 'video' ? 'video' : 'photo'),
+    vehicleId: prev.vehicleId,
+    display: prev.display || '',
+    vehicles: owners || prev.vehicles || [],
+    source: prev.source || 'upload',
+    at: Date.now(),
+    deletedAt: Date.now(),
+    deletedReason: reason || 'user'
+  };
+  return _regSave();
+}
+
+/** 恢复 = 摘掉墓碑(仍不写回车型 payload) */
+function registryRestore(path){
+  const rec = _regStore()[String(path || '')];
+  if(!rec) return false;
+  delete rec.deletedAt;
+  delete rec.deletedReason;
+  rec.at = Date.now();
+  return _regSave();
+}
+
+/** 彻底删除后保留一条"已清理"记录, 防止旧设备快照把路径又合并回来 */
+function registryPurge(path){
+  if(!path) return false;
+  const rows = _regStore();
+  const rec = rows[path] || { path: path, kind: 'photo' };
+  const now = Date.now();
+  rec.purgedAt = now;
+  rec.deletedAt = rec.deletedAt || now;
+  rec.at = now;
+  rows[path] = rec;
+  return _regSave();
+}
+
+/**
+ * 车型媒体视图(纯函数): 基线路径 + 登记表新增, 剔除墓碑。
+ * @param {object} v 车型
+ * @param {'photo'|'video'} kind
+ * @param {object} [rows] 登记行(默认读本机登记表)
+ * @returns {string[]}
+ */
+function mediaPathsFor(v, kind, rows){
+  const isVideo = kind === 'video';
+  const key = isVideo ? 'videoPaths' : 'photoPaths';
+  const base = (v && Array.isArray(v[key])) ? v[key] : [];
+  const all = rows || _regStore();
+  const dead = {};
+  const extra = [];
+  Object.keys(all).forEach(function(p){
+    const r = all[p];
+    if(!r || !r.path) return;
+    if((r.kind === 'video') !== isVideo) return;
+    if(r.deletedAt || r.purgedAt){ dead[p] = true; return; }
+    if(v && String(r.vehicleId) === String(v.id)) extra.push(p);
+  });
+  const out = [];
+  base.forEach(function(p){ if(p && !dead[p] && out.indexOf(p) < 0) out.push(p); });
+  extra.forEach(function(p){ if(out.indexOf(p) < 0) out.push(p); });
+  return out;
+}
+
+/**
+ * 车型照片/视频视图 + 对齐的板块/标签(纯函数)。
+ * photoSections/photoLabels 与路径按下标一一对应: 剔除墓碑后必须同步重排,
+ * 否则后面的照片会顶着前一张的板块与标签。
+ */
+function mediaMetaFor(v, kind, rows){
+  const isVideo = kind === 'video';
+  const key = isVideo ? 'videoPaths' : 'photoPaths';
+  const base = (v && Array.isArray(v[key])) ? v[key] : [];
+  const secs = (!isVideo && v && Array.isArray(v.photoSections)) ? v.photoSections : [];
+  const labs = (!isVideo && v && Array.isArray(v.photoLabels)) ? v.photoLabels : [];
+  const paths = mediaPathsFor(v, kind, rows);
+  const sections = paths.map(function(p){ const i = base.indexOf(p); return i >= 0 ? (secs[i] || 'exterior') : 'exterior'; });
+  const labels = paths.map(function(p){ const i = base.indexOf(p); return i >= 0 ? (labs[i] || '') : ''; });
+  return { paths: paths, sections: sections, labels: labels };
+}
+
+/** 登记表中"新增"的资产 → 台账行(纯函数, 已在基线里的不重复出) */
+function registryAssets(rows, vehicles){
+  const all = rows || _regStore();
+  const vs = Array.isArray(vehicles) ? vehicles : _vehicles();
+  const owned = {};
+  vs.forEach(function(v){
+    (v.photoPaths || []).concat(v.videoPaths || []).forEach(function(p){ if(p) owned[p] = true; });
+  });
+  return Object.keys(all).map(function(p){ return all[p]; }).filter(function(r){
+    return r && r.path && !r.deletedAt && !r.purgedAt && !owned[r.path] && _isMediaPath(r.path);
+  }).map(function(r){
+    const v = vs.find(function(x){ return String(x.id) === String(r.vehicleId); });
+    const isVideo = r.kind === 'video';
+    return {
+      path: r.path,
+      kind: isVideo ? 'video' : 'photo',
+      kindLabel: isVideo ? '视频' : '照片',
+      status: /^vehicle_(images|videos)\/_共享\//.test(r.path) ? 'shared' : 'ok',
+      vehicles: v ? [{ id: v.id, display: v.display }] : [],
+      vehicleText: v ? (v.display || '') : '',
+      sizeText: '',
+      cloudState: 'present',
+      registered: true
+    };
+  });
+}
+
+/**
+ * 登记表增量上云: 下载 → 并集 → 有变化才上传。
+ * 不做整份车型覆盖, 因此不会覆盖别的设备的改动, 墓碑也能传到其他设备。
+ */
+async function mediaRegistrySync(){
+  if(typeof downloadJsonFromDataFeishu !== 'function' || typeof uploadJsonToDataFeishu !== 'function') return false;
+  if(!window.FeishuAPI || typeof window.FeishuAPI.getTenantToken !== 'function') return false;
+  const token = await window.FeishuAPI.getTenantToken();
+  let remote = null;
+  try{ remote = await downloadJsonFromDataFeishu(token, REGISTRY_CLOUD_FILE); }catch(e){ remote = null; }
+  const remoteRows = (remote && remote.rows) ? remote.rows : {};
+  _regCache = registryMerge(_regStore(), remoteRows);
+  _regSave();
+  if(JSON.stringify(_regCache) !== JSON.stringify(remoteRows)){
+    await uploadJsonToDataFeishu(token, REGISTRY_CLOUD_FILE,
+      JSON.stringify({ version: 1, updatedAt: Date.now(), rows: _regCache }));
+  }
+  return true;
+}
+
+/** 拉取云端登记表(与车型同步同一时机调用); 有变化返回 true */
+async function mediaRegistryPull(){
+  if(typeof downloadJsonFromDataFeishu !== 'function') return false;
+  if(!window.FeishuAPI || typeof window.FeishuAPI.getTenantToken !== 'function') return false;
+  const token = await window.FeishuAPI.getTenantToken();
+  let remote = null;
+  try{ remote = await downloadJsonFromDataFeishu(token, REGISTRY_CLOUD_FILE); }catch(e){ return false; }
+  if(!remote || !remote.rows) return false;
+  const before = JSON.stringify(_regStore());
+  _regCache = registryMerge(_regStore(), remote.rows);
+  _regSave();
+  return JSON.stringify(_regCache) !== before;
+}
+
+/** 资源库变更后合并上云(3 秒防抖); 离线/非组长静默跳过 */
+function _scheduleRegistrySync(){
+  if(!_canEdit()) return;
+  if(typeof downloadJsonFromDataFeishu !== 'function' || typeof uploadJsonToDataFeishu !== 'function') return;
+  if(_regSyncTimer) clearTimeout(_regSyncTimer);
+  _regSyncTimer = setTimeout(function(){
+    _regSyncTimer = null;
+    mediaRegistrySync().catch(function(e){ console.warn('[资源库] 媒体登记表同步失败', e); });
+  }, 3000);
+}
+
 /* ---------------- 云端实测与资源管理 (V10.26.0) ---------------- */
 /* 台账(索引)是离线快照, 会滞后; 本段负责与飞书云端实际文件对账, 并提供组长上传/删除。
  * 对账结果只落在内存(_cloud), 不修改 docs/media_library.json —— 索引仍由生成脚本维护。 */
@@ -286,28 +533,6 @@ function _vehicles(){
 }
 
 function _isMediaPath(p){ return /^vehicle_(images|videos)\//.test(String(p || '')); }
-
-/**
- * 资源库增删后回写车型数据到飞书(3 秒防抖, 合并连续操作)。
- * 资源库与车型详情共用同一份 vehicle_sync_data.json; 只改本地会让
- * 组员端、cron 索引与导出都停在旧状态, 所以变更后必须走既有上传管线。
- * 沙箱/离线(无上传管线或非组长)时静默跳过, 不阻断本地操作。
- */
-let _syncTimer = null;
-function _scheduleVehicleSync(){
-  if(!_canEdit() || typeof _syncUploadPipeline !== 'function') return;
-  if(_syncTimer) clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(function(){
-    _syncTimer = null;
-    _toast('正在回写车型数据到飞书…');
-    Promise.resolve()
-      .then(function(){ return _syncUploadPipeline(); })
-      .then(function(r){
-        if(r && r.ok === false) _toast('车型数据回写失败: ' + (r.msg || '请稍后重试'));
-      })
-      .catch(function(e){ console.warn('[资源库] 车型数据回写失败', e); });
-  }, 3000);
-}
 
 function _splitPath(p){
   const m = /^(vehicle_(?:images|videos))\/([^/]+)\/(.+)$/.exec(String(p || ''));
@@ -478,8 +703,8 @@ function uploadFlow(){
       vs.map(function(v){
         return '<button data-ml-veh="' + v.id + '" class="w-full text-left px-3 py-2 rounded-xl bg-gray-50 text-sm text-gray-800">' +
           esc(v.display || ('车型' + v.id)) +
-          '<span class="text-[10px] text-gray-400 ml-2">' + ((v.photoPaths || []).length) + ' 照片 / ' +
-          ((v.videoPaths || []).length) + ' 视频</span></button>';
+          '<span class="text-[10px] text-gray-400 ml-2">' + mediaPathsFor(v, 'photo').length + ' 照片 / ' +
+          mediaPathsFor(v, 'video').length + ' 视频</span></button>';
       }).join('') +
     '</div></div>';
   el.querySelectorAll('[data-ml-veh]').forEach(function(btn){
@@ -543,8 +768,7 @@ async function onUploadFiles(fileList){
         }
         const topToken = await _ensureFolder(token, root, topName);
         const dirToken = await _ensureFolder(token, topToken, folderName);
-        const key = isVideo ? 'videoPaths' : 'photoPaths';
-        const seq = (v[key] || []).length + 1;
+        const seq = mediaPathsFor(v, isVideo ? 'video' : 'photo').length + 1;
         const ext = (/\.([a-z0-9]+)$/i.exec(file.name || '') || [])[1];
         /* 文件名用内容哈希(不是时间戳): 同一文件重复上传得到同一名字, 云端幂等 */
         const fileName = _safeBase(v.display) + (isVideo ? '_v' : '_p') + seq + '_' +
@@ -554,25 +778,17 @@ async function onUploadFiles(fileList){
         const rel = (MP && typeof MP.photoRelPath === 'function')
           ? (isVideo ? MP.videoRelPath(folderName, fileName) : MP.photoRelPath(folderName, fileName))
           : topName + '/' + folderName + '/' + fileName;
-        const prev = (v[key] || []).slice();
-        const cur = prev.slice();
-        cur.push(rel);
-        v[key] = cur;
-        try{
-          if(typeof State !== 'undefined' && State && typeof State.updateVehicle === 'function'){
-            State.updateVehicle(v.id, mediaPatchOf(v));
-          }else if(typeof persistVehicles === 'function') persistVehicles();
-        }catch(writeErr){
-          /* P1 失败回滚: 本地引用写失败 → 撤回内存改动并删掉刚上传的云端文件,
-           * 避免"云端有文件、台账没引用"的孤儿。 */
-          v[key] = prev;
+        /* 单一真源: 只登记到媒体登记表, 不写回车型 photoPaths/videoPaths。
+         * 序号按合并视图计算, 保证文件名不重复; 车型 payload 全程不动。 */
+        if(!registryAdd({ path: rel, kind: isVideo ? 'video' : 'photo', vehicleId: v.id, display: v.display, source: 'upload' })){
+          /* P1 失败回滚: 本地登记失败 → 删掉刚上传的云端文件, 避免孤儿 */
           try{
             const ft = res && res.data && res.data.file_token;
             if(ft && window.FeishuAPI && typeof window.FeishuAPI.driveDeleteFile === 'function'){
               await window.FeishuAPI.driveDeleteFile(ft);
             }
           }catch(e2){ console.warn('[资源库] 回滚删除失败', e2); }
-          throw writeErr;
+          throw new Error('媒体登记表写入失败');
         }
         hi[hash] = rel;
         _hashSave(hi);
@@ -605,7 +821,7 @@ async function onUploadFiles(fileList){
   _toast(ok
     ? ('上传完成 ' + ok + ' 个' + (skip ? ('，跳过重复 ' + skip + ' 个') : '') + (fail ? ('，失败 ' + fail + ' 个') : ''))
     : (skip ? ('这 ' + skip + ' 个文件之前已上传过，已跳过') : '上传失败'));
-  if(ok) _scheduleVehicleSync();
+  if(ok) _scheduleRegistrySync();
   render();
 }
 
@@ -613,10 +829,10 @@ async function onUploadFiles(fileList){
  * 媒体回收站（V10.28.0 / P0：删除必须可恢复）
  * ------------------------------------------------------------
  * 旧行为: deleteCloud 直接 driveDeleteFile 并解除引用, 弹窗写死"不可恢复"。
- * 现行为: 删除 = 移入回收站(只解引用 + 记台账), 云端文件保留;
- *   回收站里「恢复」重新挂回原车型,「彻底删除」才真正调 driveDeleteFile。
+ * 现行为: 删除 = 回收站记录 + 媒体登记表墓碑(渲染层隐藏), 云端文件保留;
+ *   回收站里「恢复」只摘墓碑,「彻底删除」才真正调 driveDeleteFile。
  * 记录独立存 localStorage(tcg_media_trash), 与车型数据解耦:
- *   车型被删后记录仍在, 恢复时若原车型不存在则只回台账(绝不跨车型猜测)。
+ *   车型被删后记录仍在; 墓碑随登记表增量上云, 其他设备也会同步隐藏。
  * ============================================================ */
 const TRASH_KEY = 'tcg_media_trash';
 let _trashStoreCache = null;
@@ -644,11 +860,17 @@ function isTrashed(path){ return !!path && trashEntries().some(function(t){ retu
 function isPurged(path){ return !!path && _trashStore().some(function(t){ return t.path === path && t.purged; }); }
 function trashRecord(path){ return trashEntries().find(function(t){ return t.path === path; }) || null; }
 
-/** 当前仍在引用该路径的车型 */
+/** 当前仍在引用该路径的车型(基线引用 + 登记表归属) */
 function _ownersOf(path){
-  return _vehicles().filter(function(v){
+  const out = _vehicles().filter(function(v){
     return (v.photoPaths || []).indexOf(path) >= 0 || (v.videoPaths || []).indexOf(path) >= 0;
   }).map(function(v){ return { id: v.id, display: v.display }; });
+  const reg = registryRow(path);
+  if(reg && reg.vehicleId != null && !out.some(function(o){ return String(o.id) === String(reg.vehicleId); })){
+    const v = _vehicles().find(function(x){ return String(x.id) === String(reg.vehicleId); });
+    out.push({ id: v ? v.id : reg.vehicleId, display: v ? v.display : (reg.display || '') });
+  }
+  return out;
 }
 
 /** 移入回收站(幂等); 只记台账, 不动云端文件 */
@@ -680,28 +902,15 @@ function markPurged(path){
   return rec || null;
 }
 
-/** 恢复: 重新挂回仍在的车型; 原车型已删则只回台账(无归属) */
+/** 恢复: 摘掉登记表墓碑即可重新可见; 车型 payload 全程不动 */
 function restoreFromTrash(path){
   const rec = trashRecord(path);
   if(!rec){ _toast('回收站中没有该文件'); return false; }
-  const key = rec.kind === 'video' ? 'videoPaths' : 'photoPaths';
-  let relinked = 0;
-  (rec.vehicles || []).forEach(function(info){
-    const v = _vehicles().find(function(x){ return String(x.id) === String(info.id); });
-    if(!v) return;
-    const arr = (v[key] || []).slice();
-    if(arr.indexOf(path) < 0){
-      arr.push(path); v[key] = arr;
-      if(typeof State !== 'undefined' && State && typeof State.updateVehicle === 'function'){
-        State.updateVehicle(v.id, mediaPatchOf(v));
-      }
-      relinked++;
-    }
-  });
+  registryRestore(path);
   dropTrash(path);
-  if(relinked) _scheduleVehicleSync();
+  _scheduleRegistrySync();
   render();
-  _toast(relinked ? ('已恢复并重新引用 ' + relinked + ' 台车型') : '已恢复（原车型已删除，资产回到台账）');
+  _toast('已恢复');
   return true;
 }
 
@@ -717,6 +926,8 @@ function purgeFromTrash(path){
     try{
       await window.FeishuAPI.driveDeleteFile(cf.token);
       markPurged(path);
+      /* 保留一条"已清理"墓碑, 防止旧设备的快照把它合并回来 */
+      registryPurge(path);
       if(_cloud){
         _cloud.orphans = (_cloud.orphans || []).filter(function(a){ return a.path !== path; });
         delete _cloud.byPath[path];
@@ -725,6 +936,7 @@ function purgeFromTrash(path){
         else _cloud.photos = Math.max(0, (_cloud.photos || 1) - 1);
       }
       render();
+      _scheduleRegistrySync();
       _toast('已彻底删除云端文件');
     }catch(e){
       _toast('彻底删除失败: ' + ((e && e.message) || e));
@@ -748,6 +960,7 @@ function trashVehicleMedia(id, display){
       const owners = _ownersOf(p);
       if(owners.length <= 1){
         moveToTrash(p, 'vehicle_cascade', pair[1], owners.length ? owners : [{ id: v.id, display: display || v.display }]);
+        registryTombstone(p, 'vehicle_cascade', owners.length ? owners : [{ id: v.id, display: display || v.display }], pair[1]);
         n++;
       }
     });
@@ -800,22 +1013,15 @@ function deleteCloud(path){
   const owners = _ownersOf(path);
   const doTrash = function(){
     moveToTrash(path, 'user', kind, owners);
-    let unlinked = false;
-    _vehicles().forEach(function(v){
-      if(unlinkPathOf(v, path)){
-        unlinked = true;
-        if(typeof State !== 'undefined' && State && typeof State.updateVehicle === 'function'){
-          State.updateVehicle(v.id, mediaPatchOf(v));
-        }
-      }
-    });
+    /* 只写墓碑: 渲染层据此隐藏, 车型 payload 不动 → 不会被旧快照同步回来 */
+    registryTombstone(path, 'user', owners, kind);
     closePreview();
     render();
-    if(unlinked) _scheduleVehicleSync();
+    _scheduleRegistrySync();
     _toast('已移入回收站，可在回收站恢复');
   };
   if(typeof showConfirm === 'function'){
-    showConfirm('移入回收站', '将把「' + name + '」移入回收站并解除所有车型引用；文件不会删除，可随时恢复。', doTrash);
+    showConfirm('移入回收站', '将把「' + name + '」移入回收站，并在所有车型中隐藏；文件不会删除，可随时恢复。', doTrash);
   }else if(window.confirm && window.confirm('将「' + name + '」移入回收站？')){
     doTrash();
   }else{
@@ -941,19 +1147,22 @@ function rowHtml(a){
     '</div>';
 }
 
-/* 静态索引(assets + orphans)与车型实时引用合并; 车型未加载时只用静态索引 */
+/* 静态索引(assets + orphans) + 车型实时引用 + 媒体登记表新增, 三者合并。
+ * 资源库上传只进登记表, 所以台账必须并入登记表, 否则刚上传的图"消失到下次发版"。 */
 function baseAssets(){
   const base = _data || {};
   const statics = (base.assets || []).concat(base.orphans || []);
   const vehicles = _vehicles();
+  /* 车型未加载(或本页无车型数据)时只读静态索引, 不能按引用关系过滤掉全部行 */
   if(!vehicles.length) return statics;
-  return mergeAssets(statics, liveAssetsOf(vehicles));
+  const live = liveAssetsOf(vehicles).concat(registryAssets(registryRows(), vehicles));
+  return mergeAssets(statics, live);
 }
 
 function allAssets(){
-  /* 回收站/永久删除的路径不再出现在台账与统计里 */
+  /* 回收站/永久删除/登记表墓碑的路径不再出现在台账与统计里 */
   const list = baseAssets().concat((_cloud && _cloud.orphans) || []).filter(function(a){
-    return a && a.path && !isTrashed(a.path) && !isPurged(a.path);
+    return a && a.path && !isTrashed(a.path) && !isPurged(a.path) && !_regDead(a.path);
   });
   if(_cloud && _cloud.byPath){
     list.forEach(function(a){
@@ -1522,6 +1731,19 @@ window.MediaLibrary = {
   moveToTrash: moveToTrash,
   loadCloudPreview: loadCloudPreview,
   setPage: setPage,
+  /* V10.28.2 媒体登记表(运行时单一真源) */
+  registryRows: registryRows,
+  registryRow: registryRow,
+  registryMerge: registryMerge,
+  registryAdd: registryAdd,
+  registryTombstone: registryTombstone,
+  registryRestore: registryRestore,
+  registryPurge: registryPurge,
+  registryAssets: registryAssets,
+  mediaPathsFor: mediaPathsFor,
+  mediaMetaFor: mediaMetaFor,
+  mediaRegistrySync: mediaRegistrySync,
+  mediaRegistryPull: mediaRegistryPull,
   /* 纯函数: 供单测直接引用 */
   filterAssets: filterAssets,
   statsOf: statsOf,

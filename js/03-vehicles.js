@@ -5,6 +5,21 @@
  * 源范围: demo.html L2124-L2929
  * 不变量: 函数名/签名100%保留,顶层function声明挂window供onclick裸调用
  * =========================================================== */
+/* V10.28.2 单一真源读取口: 正常页面由 00-bootstrap 提供 mediaViewPaths/Meta;
+ * 单测或极简页未加载时退化为车型基线, 保证渲染不抛错。 */
+function _mediaViewPaths(v,kind){
+  if(typeof mediaViewPaths==='function')return mediaViewPaths(v,kind);
+  const k=kind==='video'?'videoPaths':'photoPaths';
+  return (v&&Array.isArray(v[k]))?v[k].slice():[];
+}
+function _mediaViewMeta(v,kind){
+  if(typeof mediaViewMeta==='function')return mediaViewMeta(v,kind);
+  const paths=_mediaViewPaths(v,kind);
+  const secs=(kind!=='video'&&v&&Array.isArray(v.photoSections))?v.photoSections:[];
+  const labs=(kind!=='video'&&v&&Array.isArray(v.photoLabels))?v.photoLabels:[];
+  return {paths:paths,sections:paths.map((_,i)=>secs[i]||'exterior'),labels:paths.map((_,i)=>labs[i]||'')};
+}
+
 function renderBrandTags(){
   const c=document.getElementById('brand-tags');
   let html=`<button onclick="setBrandFilter('all')" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${state.brandFilter==='all'?'bg-blue-600 text-white':'bg-gray-100 text-gray-600'}">全部</button>`;
@@ -232,9 +247,10 @@ function renderVehicleCard(v,i,ml){
   const ptClass='pt-'+v.powerType;
   const statusClass=v.id%5===0?'status-done':'status-pending';
   const statusText=v.id%5===0?'已完成':'未开始';
-  const hasPhoto=v.photoPaths&&v.photoPaths.length>0;
+  const photoPaths=_mediaViewPaths(v,'photo'); // V10.28.2: 基线 + 资源库登记表
+  const hasPhoto=photoPaths.length>0;
   // V10.12: 用户可编辑字段全部 esc(); 资源 src= 保持原文
-  const thumbHtml=hasPhoto?`<div class="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"><img src="${v.photoPaths[0]}" data-src="${v.photoPaths[0]}" class="w-full h-full object-cover" alt="${esc(v.display)}" onerror="thumbImgError(this)"></div>`:'';
+  const thumbHtml=hasPhoto?`<div class="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"><img src="${photoPaths[0]}" data-src="${photoPaths[0]}" class="w-full h-full object-cover" alt="${esc(v.display)}" onerror="thumbImgError(this)"></div>`:'';
   return `<div onclick="openVehicleDetail(${v.id})" class="${ml} bg-white rounded-xl p-3 shadow-sm border border-gray-100 active:scale-98 transition-transform cursor-pointer mb-1.5 anim-up" style="animation-delay:${i*0.03}s">
     <div class="flex items-start gap-2">
       ${thumbHtml}
@@ -246,7 +262,7 @@ function renderVehicleCard(v,i,ml){
         <div class="text-xs text-gray-400 mt-0.5 truncate">${esc(v.position)}</div>
         <div class="flex items-center gap-1.5 mt-0.5">
           <span class="text-xs px-1.5 py-0.5 rounded-full ${statusClass}">${esc(statusText)}</span>
-          <span class="text-xs text-gray-400">${v.steps.length}步${hasPhoto?` · ${v.photoPaths.length}张图`:''}</span>
+          <span class="text-xs text-gray-400">${v.steps.length}步${hasPhoto?` · ${photoPaths.length}张图`:''}</span>
         </div>
       </div>
     </div>
@@ -263,7 +279,9 @@ function toggleBrand(bid){
 // V10.15.3: 照片部位标示不再按数组下标硬编码猜测(第0张=前脸/第1张=车尾...),
 // 改为优先读取车辆数据中的 photoLabels 配置;未配置时显示通用「照片N」,避免"胡乱标记"。
 function _photoLabel(v,i){
-  if(v&&v.photoLabels&&v.photoLabels[i])return v.photoLabels[i];
+  // V10.28.2: 标签随媒体视图一起重排(墓碑剔除后下标不能错位)
+  const labels=_mediaViewMeta(v,'photo').labels;
+  if(labels&&labels[i])return labels[i];
   return `照片 ${i+1}`;
 }
 function _renderVehicleDetail(id){
@@ -275,7 +293,9 @@ function _renderVehicleDetail(id){
   try{localStorage.setItem('tcg_recent_vehicles',JSON.stringify(state.recentVehicles));}catch(e){/* 持久化异常忽略 */} // V10.16: 最近查看重启保留
   document.getElementById('detail-index').textContent=`${state.currentVehicleIndex+1}/${VEHICLES.length}`;
   const ptClass='pt-'+v.powerType;
-  const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div data-media-path="${esc(src)}" onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}" onerror="imgLoadError(this)"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join('');
+  const photoMeta=_mediaViewMeta(v,'photo');
+  const photoPaths=photoMeta.paths;
+  const photosHtml=(photoPaths.length)?photoPaths.map((src,i)=>`<div data-media-path="${esc(src)}" onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}" onerror="imgLoadError(this)"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join('');
   // V10.14.2: 多视频支持——详情页视频区域从单视频改为多视频列表展示
   // V10.17.0 视频封面修复(反馈问题3): 旧版首帧无图且本地/CDN源失效时卡片全黑,
   // 仅剩播放键+纯色背景,用户误以为“视频坏了”。现双层封面策略:
@@ -283,7 +303,7 @@ function _renderVehicleDetail(id){
   //    onerror时静默摘除,不影响外层占位。
   //  ②SVG兜底封面(车辆名+播放标识): 源不可达时展示友车专属封面,
   //    不再黑屏;点击仍触发openVideoPlayer走四源回退链(App端可达时照常播放)。
-  const videoPaths=v.videoPaths||[];
+  const videoPaths=_mediaViewPaths(v,'video');
   const videoHtml=videoPaths.length?`
     <div class="space-y-2">
       ${videoPaths.map((vp,i)=>{
@@ -346,7 +366,7 @@ function _renderVehicleDetail(id){
       ${v.keyPhotoRemark?`<div class="mt-2 text-xs text-gray-500 bg-gray-50 rounded-lg px-2.5 py-1.5">车钥匙备注：${esc(v.keyPhotoRemark)}</div>`:''}
     </div></div>
     <!-- Photos -->
-    ${(v.photos>0||(v.photoPaths&&v.photoPaths.length))?`<div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2 min-w-0"><span class="text-sm font-bold text-gray-700 shrink-0">车辆照片</span><span data-media-summary="photo" class="text-[11px] text-gray-400 truncate"></span></div><button onclick="MediaLibrary.openForVehicle(${v.id})" class="text-[11px] text-blue-600 shrink-0">资源库 ›</button></div><div class="grid grid-cols-2 gap-2">${photosHtml}</div></div></div>`:''}
+    ${(photoPaths.length||v.photos>0)?`<div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2 min-w-0"><span class="text-sm font-bold text-gray-700 shrink-0">车辆照片</span><span data-media-summary="photo" class="text-[11px] text-gray-400 truncate"></span></div><button onclick="MediaLibrary.openForVehicle(${v.id})" class="text-[11px] text-blue-600 shrink-0">资源库 ›</button></div><div class="grid grid-cols-2 gap-2">${photosHtml}</div></div></div>`:''}
     <!-- Video -->
     <div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2 min-w-0"><span class="text-sm font-bold text-gray-700 shrink-0">${videoPaths.length>1?`视频演示(${videoPaths.length}个)`:videoPaths.length===1?'视频演示':'视频演示'}</span><span data-media-summary="video" class="text-[11px] text-gray-400 truncate"></span></div><button onclick="MediaLibrary.openForVehicle(${v.id})" class="text-[11px] text-blue-600 shrink-0">资源库 ›</button></div>${videoHtml}</div></div>
     <!-- Remarks -->
@@ -851,13 +871,12 @@ function loadEditMedia(v){
   editPhotos=[];
   editVideos=[];
   // V10.15.5 反馈2-2: 按 photoSections/photoLabels 元数据恢复各板块照片,保持扁平 photoPaths 兼容
-  if(v&&v.photoPaths){
-    const sections=v.photoSections||[];
-    const labels=v.photoLabels||[];
-    editPhotos=v.photoPaths.map((p,i)=>({name:'existing',data:p,section:sections[i]||'exterior',label:labels[i]||''}));
-  }
-  if(v&&v.videoPaths){
-    editVideos=v.videoPaths.map(p=>({name:'existing',data:p,size:0}));
+  // V10.28.2: 编辑看到的是「基线 + 资源库登记表」的合并视图
+  if(v&&(Array.isArray(v.photoPaths)||Array.isArray(v.videoPaths))){
+    const photoMeta=_mediaViewMeta(v,'photo');
+    const videoPaths=_mediaViewPaths(v,'video');
+    if(photoMeta.paths.length)editPhotos=photoMeta.paths.map((p,i)=>({name:'existing',data:p,section:photoMeta.sections[i]||'exterior',label:photoMeta.labels[i]||''}));
+    if(videoPaths.length)editVideos=videoPaths.map(p=>({name:'existing',data:p,size:0}));
   }
   PHOTO_SECTIONS.forEach(s=>renderPhotoPreview(s.key));
   renderVideoPreview();

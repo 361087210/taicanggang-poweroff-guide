@@ -208,7 +208,8 @@ check('E1 imgFromCosCloud 存在', !!F_COS_IMG);
   const b = viewer.indexOf('imgFromFeishuCloud');
   check('E4 查看器大图也先试 COS 再飞书', a > 0 && b > a, 'cos@' + a + ' feishu@' + b);
   check('E5 查看器缺图仍区分 missing/never',
-    /_photoViewerMissingSvg\(v,labels\[index\],'missing'\)/.test(viewer));
+    /_photoViewerMissingSvg\(v,label,'missing'\)/.test(viewer) &&
+    /_photoViewerMissingSvg\(v,label,'never'\)/.test(viewer));
 }
 {
   const thumb = extractFn(MEDIA, 'thumbImgError') || '';
