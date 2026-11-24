@@ -54,6 +54,9 @@ let _filter = 'all';
 let _query = '';
 let _page = 0;            // 当前页(0 基), 筛选/搜索时归零
 let _current = null;      // 预览中的资产
+let _focusPath = '';      // 详情页 → 资源库: 待定位高亮的资产路径
+let _vehicleFocus = null; // 资源库「只看这台车」 {id, display}
+let _indexPromise = null; // 索引加载中的 Promise(台账页与详情页装饰共用, 避免重复拉取)
 
 /* ---------------- 纯函数(供测试直接引用) ---------------- */
 
@@ -677,7 +680,8 @@ function rowHtml(a){
   const st = STATUS_META[a.status] || STATUS_META.ok;
   /* 标题: 断链行给 a.title(车型/目录名); 其余用**文件名**(车型名在下行显示, 避免连写两遍) */
   const title = a.title || String(a.path || '').split('/').pop();
-  return '<div class="flex items-center gap-3 p-2 bg-white rounded-xl active:bg-gray-50" ' +
+  return '<div class="flex items-center gap-3 p-2 bg-white rounded-xl active:bg-gray-50' +
+    (a.path === _focusPath ? ' ring-2 ring-blue-400' : '') + '" ' +
     'data-ml-key="' + esc(a.path) + '">' +
       thumbHtml(a) +
       '<div class="min-w-0 flex-1">' +
@@ -719,6 +723,162 @@ function allAssets(){
   return list;
 }
 
+/* ============================================================
+ * 车型详情页 ↔ 资源库 双向强关联 (V10.27.3)
+ * ------------------------------------------------------------
+ * 此前只有「资源库 → 车型」一个方向(资源库打开车型)。车型详情页仍直接
+ * 渲染 photoPaths/videoPaths, 用户看不出这张图在资源库里是什么状态
+ * (共享/云端/缺失/低清), 也无法从车型跳到对应资产 —— 两个视图各说各话。
+ * 本段补上「车型 → 资源库」: 详情页媒体卡片挂状态徽标, 点按定位到台账行;
+ * 台账页可按车型收窄, 也可从某条资产直接打开车型, 形成闭环。
+ * ============================================================ */
+
+/** 路径 → 合并后的资产(索引快照 + 车型实时引用) */
+function indexMap(){
+  const map = {};
+  baseAssets().forEach(function(a){ if(a && a.path) map[a.path] = a; });
+  return map;
+}
+
+/**
+ * 单车型的资源库汇总(纯函数, 供详情页标题与测试)。
+ * 只统计「当前车型确实引用」的资产, 口径与台账行一致。
+ */
+function vehicleSummary(id, list){
+  const assets = Array.isArray(list) ? list : baseAssets();
+  const out = { id: id, total: 0, photos: 0, videos: 0, ok: 0,
+    shared: 0, remote: 0, missing: 0, lowRes: 0 };
+  assets.forEach(function(a){
+    if(!a) return;
+    const owns = (a.vehicles || []).some(function(v){ return v && String(v.id) === String(id); });
+    if(!owns) return;
+    out.total++;
+    if(a.kind === 'video') out.videos++; else out.photos++;
+    if(a.status === 'missing') out.missing++;
+    else if(a.status === 'shared') out.shared++;
+    else if(a.status === 'remote') out.remote++;
+    else out.ok++;
+    if(a.lowRes) out.lowRes++;
+  });
+  return out;
+}
+
+/** 资产 → 详情页徽标文案/配色 */
+function badgeOf(a){
+  const meta = STATUS_META[a && a.status] || STATUS_META.ok;
+  const text = (a && a.status === 'new') ? '待入库' : meta.label;
+  let label = text;
+  if(a && a.lowRes) label += ' · 低清';
+  return { text: label, cls: meta.cls };
+}
+
+/** 详情页媒体卡片装饰: 叠加资源库状态徽标 + 板块汇总 + 跳转入口 */
+function decorateVehicleMedia(vehicle){
+  if(typeof document === 'undefined' || !document.getElementById) return;
+  const host = document.getElementById('detail-content');
+  if(!host || typeof host.querySelectorAll !== 'function') return;
+  const v = vehicle;
+  const paint = function(){
+    const map = indexMap();
+    host.querySelectorAll('[data-media-path]').forEach(function(tile){
+      if(tile.querySelector('[data-media-badge]')) return;
+      const p = tile.getAttribute('data-media-path');
+      const a = map[p];
+      if(!a) return;
+      const b = badgeOf(a);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('data-media-badge', '1');
+      btn.className = 'absolute top-1 left-1 z-10 px-1.5 py-0.5 rounded text-[10px] ' + b.cls;
+      btn.textContent = b.text;
+      btn.onclick = function(ev){
+        if(ev && ev.stopPropagation) ev.stopPropagation();
+        openPath(p);
+      };
+      tile.appendChild(btn);
+    });
+    if(v && v.id != null){
+      const ps = { total: 0, missing: 0, shared: 0, lowRes: 0 };
+      const vs = { total: 0, missing: 0, shared: 0, lowRes: 0 };
+      Object.keys(map).forEach(function(p){
+        const a = map[p];
+        if(!a || !(a.vehicles || []).some(function(x){ return x && String(x.id) === String(v.id); })) return;
+        const s = a.kind === 'video' ? vs : ps;
+        s.total++;
+        if(a.status === 'missing') s.missing++;
+        else if(a.status === 'shared') s.shared++;
+        if(a.lowRes) s.lowRes++;
+      });
+      const label = function(s){
+        const seg = [];
+        if(s.total) seg.push(s.total + ' 项');
+        if(s.missing) seg.push(s.missing + ' 缺失');
+        if(s.shared) seg.push(s.shared + ' 共享');
+        if(s.lowRes) seg.push(s.lowRes + ' 低清');
+        return seg.join(' · ');
+      };
+      const pEl = host.querySelector('[data-media-summary="photo"]');
+      if(pEl) pEl.textContent = label(ps);
+      const vEl = host.querySelector('[data-media-summary="video"]');
+      if(vEl) vEl.textContent = label(vs);
+    }
+  };
+  if(_data){ paint(); return; }
+  ensureIndex().then(paint).catch(function(){ /* 索引不可用时不打扰用户, 详情页照常可用 */ });
+}
+
+/** 从详情页跳到资源库并定位到该资产所在分页/行 */
+function openPath(path){
+  const p = String(path || '');
+  if(!p) return;
+  _focusPath = p;
+  _vehicleFocus = null;
+  _filter = 'all';
+  _query = '';
+  _page = 0;
+  if(typeof showScreen === 'function') showScreen('screen-media-library');
+  const go = function(){
+    const list = filterAssets(allAssets(), 'all', '');
+    const idx = list.findIndex(function(a){ return a && a.path === p; });
+    if(idx >= 0) _page = Math.floor(idx / PAGE_SIZE);
+    render();
+  };
+  if(_data){ go(); return; }
+  ensureIndex().then(go).catch(function(e){
+    _error = '资源索引加载失败：' + ((e && e.message) || e);
+    render();
+  });
+}
+
+/** 从详情页进入资源库并只看这台车的资产 */
+function openForVehicle(id){
+  const v = _vehicles().find(function(x){ return x && String(x.id) === String(id); });
+  _vehicleFocus = { id: id, display: (v && v.display) || ('#' + id) };
+  _focusPath = '';
+  _filter = 'all';
+  _query = '';
+  _page = 0;
+  if(typeof showScreen === 'function') showScreen('screen-media-library');
+  refresh(false);
+}
+
+function clearVehicleFocus(){
+  _vehicleFocus = null;
+  _page = 0;
+  render();
+}
+
+function _scrollToFocus(){
+  if(!_focusPath || typeof document === 'undefined' || !document.getElementById) return;
+  const box = document.getElementById('ml-list');
+  if(!box || typeof box.querySelectorAll !== 'function') return;
+  Array.prototype.forEach.call(box.querySelectorAll('[data-ml-key]'), function(row){
+    if(row.getAttribute('data-ml-key') === _focusPath && typeof row.scrollIntoView === 'function'){
+      try { row.scrollIntoView({ block: 'center' }); } catch(e){ /* 老 WebView 不支持对象参数 */ }
+    }
+  });
+}
+
 function pagerHtml(total, pages){
   if(total <= PAGE_SIZE) return '';
   function btn(label, to, disabled){
@@ -733,16 +893,31 @@ function pagerHtml(total, pages){
     '</div>';
 }
 
+/* 当前筛选/搜索/车型收窄后的完整列表(分页与总数都以此为准) */
+function filteredAssets(){
+  let list = _filter === 'broken' ? brokenRows(_data) : filterAssets(allAssets(), _filter, _query);
+  if(_vehicleFocus){
+    list = list.filter(function(a){
+      return (a.vehicles || []).some(function(x){ return x && String(x.id) === String(_vehicleFocus.id); });
+    });
+  }
+  return list;
+}
+
 /* 计数 + 列表 + 分页; 搜索时只重画这一段, 避免整页重建导致输入框失焦 */
 function listBlockHtml(){
   /* 「断链」是纯派生的诊断行(无主目录/改名失配/无素材), 不参与媒体分页索引 */
-  const shown = _filter === 'broken' ? brokenRows(_data) : filterAssets(allAssets(), _filter, _query);
+  const shown = filteredAssets();
   const pages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
   if(_page < 0) _page = 0;
   if(_page > pages - 1) _page = pages - 1;
   const cap = shown.slice(_page * PAGE_SIZE, _page * PAGE_SIZE + PAGE_SIZE);
   const empty = !cap.length
-    ? '<div class="text-center text-sm text-gray-400 py-8">没有匹配的资产' + (_query ? '（关键字：' + esc(_query) + '）' : '') + '</div>'
+    ? '<div class="text-center text-sm text-gray-400 py-8">' +
+      (_vehicleFocus
+        ? '这台车还没有媒体资产（可在资源库上传，或补拍后重新生成索引）'
+        : '没有匹配的资产' + (_query ? '（关键字：' + esc(_query) + '）' : '')) +
+      '</div>'
     : '';
   return '' +
     '<div id="ml-count" class="px-4 mt-2 text-[11px] text-gray-400">' +
@@ -796,6 +971,11 @@ function bodyHtml(){
         'class="flex-1 px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm outline-none">' +
       '<button onclick="MediaLibrary.exportMissing()" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-xs text-gray-600">复制缺失清单</button>' +
     '</div>' +
+    (_vehicleFocus
+      ? '<div class="px-4 mt-2"><button onclick="MediaLibrary.clearVehicleFocus()" ' +
+        'class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-[11px]">只看车型：' +
+        esc(_vehicleFocus.display) + ' ×</button></div>'
+      : '') +
     '<div class="px-4 mt-2 flex gap-2 overflow-x-auto pb-1">' + FILTERS.map(function(f){ return chipHtml(f, st); }).join('') + '</div>' +
     '<div class="px-4 mt-2 text-[11px] ' + (_cloudErr ? 'text-red-500' : 'text-gray-400') + '">' +
       (_cloudErr ? esc(_cloudErr)
@@ -825,6 +1005,8 @@ function render(){
       '<button onclick="MediaLibrary.refresh(true)" class="px-2 py-1 text-xs text-blue-600">刷新</button>' +
     '</div>' +
     '<div class="flex-1 scroll-y min-h-0 pb-24">' + bodyHtml() + '</div>';
+  /* 详情页跳转过来时, 把目标行滚到视口中间(高亮已在 rowHtml 里) */
+  if(_focusPath) setTimeout(_scrollToFocus, 0);
 }
 
 /* ---------------- 预览弹层 ---------------- */
@@ -953,16 +1135,30 @@ function loadIndex(){
     .catch(function(){ return _remoteJson(); });
 }
 
+/**
+ * 索引加载(去重): 详情页装饰与台账页共用同一份索引, 不允许并发重复拉取。
+ * @param {boolean} refetch 为 true 时强制重取(台账页「刷新」用)
+ */
+function ensureIndex(refetch){
+  if(_data && !refetch) return Promise.resolve(_data);
+  if(_indexPromise) return _indexPromise;
+  _indexPromise = loadIndex()
+    .then(function(j){
+      if(!j || !Array.isArray(j.assets)) throw new Error('索引格式异常');
+      _data = j; _indexPromise = null; return _data;
+    }, function(e){
+      _indexPromise = null; throw e;
+    });
+  return _indexPromise;
+}
+
 function refresh(force){
   if(_loading) return;
   if(_data && !force){ render(); return; }
   _loading = true; _error = '';
   render();
-  loadIndex()
-    .then(function(j){
-      if(!j || !Array.isArray(j.assets)) throw new Error('索引格式异常');
-      _data = j; _loading = false; render();
-    })
+  ensureIndex(!!force)
+    .then(function(){ _loading = false; render(); })
     .catch(function(e){
       _loading = false;
       _error = '资源索引加载失败：' + (e && e.message || e) + '（App 内本地索引缺失时会尝试线上索引，需联网一次）';
@@ -970,26 +1166,29 @@ function refresh(force){
     });
 }
 
-/* ---------------- 交互 ---------------- */
+/* 交互 */
 
 function setFilter(id){
   _filter = FILTERS.some(function(f){ return f.id === id; }) ? id : 'all';
   _page = 0;
+  _focusPath = '';
   render();
 }
 
 function setPage(n){
-  const shown = filterAssets(allAssets(), _filter, _query);
+  const shown = filteredAssets();
   const pages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
   const p = Math.max(0, Math.min(pages - 1, parseInt(n, 10) || 0));
   if(p === _page) return;
   _page = p;
+  _focusPath = '';
   render();
 }
 
 function setQuery(q){
   _query = String(q || '');
   _page = 0;
+  _focusPath = '';
   const body = document.getElementById('ml-body');
   if(!_data || !body){ render(); return; }
   /* 只重画计数/列表/分页, 避免输入时整页重建导致输入框失焦 */
@@ -1037,6 +1236,10 @@ function openVehicle(id){
 
 /* 页面进入时按需加载(showScreen 只加 class, 这里监听点击入口更稳) */
 function open(){
+  /* 从菜单进入 = 看全量台账, 清掉车型/资产定位的临时收窄 */
+  _vehicleFocus = null;
+  _focusPath = '';
+  _page = 0;
   if(typeof showScreen === 'function') showScreen('screen-media-library');
   refresh(false);
 }
@@ -1051,6 +1254,12 @@ window.MediaLibrary = {
   copyPath: copyPath,
   exportMissing: exportMissing,
   openVehicle: openVehicle,
+  /* V10.27.3 车型详情 ↔ 资源库双向联动 */
+  openForVehicle: openForVehicle,
+  openPath: openPath,
+  clearVehicleFocus: clearVehicleFocus,
+  decorateVehicleMedia: decorateVehicleMedia,
+  vehicleSummary: vehicleSummary,
   /* V10.26.0 云端实测与资源管理 */
   loadIndex: loadIndex,
   checkCloud: checkCloud,

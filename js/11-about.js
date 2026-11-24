@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.27.3',
+    date: '2026-11-24',
+    highlight: '车型详情 ↔ 资源库双向联动: 媒体状态徽标 + 点按定位台账行',
+    features: [
+      '详情页: 每张照片/视频叠加资源库状态徽标(正常/共享/云端/缺失/低清)',
+      '详情页: 照片/视频板块显示「N 项 · N 缺失 · N 共享 · N 低清」汇总',
+      '点按徽标: 自动翻到资源库对应分页并高亮该资产',
+      '板块「资源库 ›」: 只查看该车型的资产, 一键清除收窄',
+      '索引加载去重; 索引不可用时静默降级, 详情页照常可用'
+    ]
+  },
+  {
     version: 'V10.27.2',
     date: '2026-11-24',
     highlight: 'RUNBOOK + 严格规则集模板 + 覆盖率双口径 + 清掉写死数据量的脆弱断言',
@@ -740,7 +752,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.2'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.3'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

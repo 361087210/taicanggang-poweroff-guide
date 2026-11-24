@@ -275,7 +275,7 @@ function _renderVehicleDetail(id){
   try{localStorage.setItem('tcg_recent_vehicles',JSON.stringify(state.recentVehicles));}catch(e){/* 持久化异常忽略 */} // V10.16: 最近查看重启保留
   document.getElementById('detail-index').textContent=`${state.currentVehicleIndex+1}/${VEHICLES.length}`;
   const ptClass='pt-'+v.powerType;
-  const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}" onerror="imgLoadError(this)"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join('');
+  const photosHtml=(v.photoPaths&&v.photoPaths.length)?v.photoPaths.map((src,i)=>`<div data-media-path="${esc(src)}" onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl overflow-hidden cursor-pointer relative bg-gray-100"><img src="${src}" class="w-full h-full object-cover" alt="车辆照片${i+1}" onerror="imgLoadError(this)"><span class="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join(''):Array.from({length:v.photos},(_,i)=>`<div onclick="openPhotoViewer(${i})" class="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center cursor-pointer relative"><svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1" class="w-8 h-8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="absolute bottom-1 left-1 text-xs text-indigo-600 bg-white/70 px-1.5 rounded">${esc(_photoLabel(v,i))}</span></div>`).join('');
   // V10.14.2: 多视频支持——详情页视频区域从单视频改为多视频列表展示
   // V10.17.0 视频封面修复(反馈问题3): 旧版首帧无图且本地/CDN源失效时卡片全黑,
   // 仅剩播放键+纯色背景,用户误以为“视频坏了”。现双层封面策略:
@@ -297,7 +297,7 @@ function _renderVehicleDetail(id){
         const fallbackSvg=(typeof videoCoverDataUri==='function')
           ?videoCoverDataUri(v.display,label)
           :('data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><rect width="640" height="360" fill="#1e293b"/><circle cx="320" cy="160" r="46" fill="rgba(255,255,255,0.12)"/><polygon points="310,142 310,178 342,160" fill="#ffffff"/><text x="320" y="248" text-anchor="middle" fill="#94a3b8" font-size="18" font-family="sans-serif">'+String(v.display||'').replace(/[<>&'"]/g,'')+'</text><text x="320" y="276" text-anchor="middle" fill="#64748b" font-size="13" font-family="sans-serif">'+esc(label)+' · 点按播放</text></svg>'));
-        return `<div onclick="openVideoPlayer(${i})" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative overflow-hidden">
+        return `<div data-media-path="${esc(vp)}" onclick="openVideoPlayer(${i})" class="aspect-video rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center cursor-pointer relative overflow-hidden">
           <img src="${fallbackSvg}" class="absolute inset-0 w-full h-full object-cover" alt="${esc(label)}封面" onerror="this.style.display='none'">
           <video src="${esc(direct||vp)}" preload="metadata" muted playsinline controlslist="nodownload" class="absolute inset-0 w-full h-full object-cover" style="opacity:0;transition:opacity .3s;" onloadeddata="this.style.opacity=1;this.previousElementSibling&&(this.previousElementSibling.style.display='none')" onerror="this.style.display='none'"></video>
           <svg viewBox="0 0 24 24" fill="white" class="w-10 h-10 absolute drop-shadow"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
@@ -346,9 +346,9 @@ function _renderVehicleDetail(id){
       ${v.keyPhotoRemark?`<div class="mt-2 text-xs text-gray-500 bg-gray-50 rounded-lg px-2.5 py-1.5">车钥匙备注：${esc(v.keyPhotoRemark)}</div>`:''}
     </div></div>
     <!-- Photos -->
-    ${(v.photos>0||(v.photoPaths&&v.photoPaths.length))?`<div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="text-sm font-bold text-gray-700 mb-3">车辆照片</div><div class="grid grid-cols-2 gap-2">${photosHtml}</div></div></div>`:''}
+    ${(v.photos>0||(v.photoPaths&&v.photoPaths.length))?`<div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2 min-w-0"><span class="text-sm font-bold text-gray-700 shrink-0">车辆照片</span><span data-media-summary="photo" class="text-[11px] text-gray-400 truncate"></span></div><button onclick="MediaLibrary.openForVehicle(${v.id})" class="text-[11px] text-blue-600 shrink-0">资源库 ›</button></div><div class="grid grid-cols-2 gap-2">${photosHtml}</div></div></div>`:''}
     <!-- Video -->
-    <div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="text-sm font-bold text-gray-700 mb-3">${videoPaths.length>1?`视频演示(${videoPaths.length}个)`:videoPaths.length===1?'视频演示':'视频演示'}</div>${videoHtml}</div></div>
+    <div class="px-4 mt-3"><div class="bg-white rounded-2xl p-4 shadow-sm"><div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2 min-w-0"><span class="text-sm font-bold text-gray-700 shrink-0">${videoPaths.length>1?`视频演示(${videoPaths.length}个)`:videoPaths.length===1?'视频演示':'视频演示'}</span><span data-media-summary="video" class="text-[11px] text-gray-400 truncate"></span></div><button onclick="MediaLibrary.openForVehicle(${v.id})" class="text-[11px] text-blue-600 shrink-0">资源库 ›</button></div>${videoHtml}</div></div>
     <!-- Remarks -->
     ${v.remarks?`<div class="px-4 mt-3"><div class="bg-amber-50 rounded-2xl p-4 border border-amber-100"><div class="flex items-center gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" class="w-5 h-5"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg><span class="font-bold text-amber-900 text-sm">备注</span></div><div class="text-sm text-amber-800 mt-1">${esc(v.remarks)}</div></div></div>`:''}
     <!-- Export buttons -->
@@ -364,6 +364,10 @@ function _renderVehicleDetail(id){
       </div>
     </div>
   `;
+  /* 详情页媒体 ↔ 资源库强关联: 叠加资源库状态徽标/汇总, 并允许点按定位台账行 */
+  if(typeof MediaLibrary!=='undefined'&&MediaLibrary&&typeof MediaLibrary.decorateVehicleMedia==='function'){
+    MediaLibrary.decorateVehicleMedia(v);
+  }
 }
 
 function openVehicleDetail(id){
