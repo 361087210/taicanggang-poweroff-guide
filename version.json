@@ -1,8 +1,13 @@
 {
-  "version": "10.27.2",
-  "versionCode": 102702,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.2/tcg_poweroff_v10.27.2.apk",
+  "version": "10.27.3",
+  "versionCode": 102703,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.3/tcg_poweroff_v10.27.3.apk",
   "releaseNotes": [
+    "V10.27.3 车型↔资源库双向联动版。一句话总结: 车型详情页的每张照片/视频都叠加资源库状态徽标(正常/共享/云端/缺失/低清)并显示板块汇总, 点按可跳到资源库并定位该资产; 资源库侧新增「只看这台车」, 与既有「打开车型」形成闭环。",
+    "关联(详情页): 照片格子/视频卡挂 data-media-path, 渲染后由资源库索引补充状态徽标; 缺失项红色标注, 共享/云端/低清一眼可辨",
+    "关联(跳转): 徽标点按 → openPath 自动翻到资产所在分页并高亮该行; 板块标题「资源库 ›」→ openForVehicle 只显示该车型资产, 顶部可一键清除收窄",
+    "工程(索引): 索引加载去重(详情页装饰与台账页共用一次请求); 索引不可用时静默降级, 详情页照常可用",
+    "测试(新增): test_v10273_media_link(22 断言): 徽标/汇总/车型收窄/分页定位/接线/并发去重",
     "V10.27.2 运维与可信度版。一句话总结: 补上 RUNBOOK(回滚/数据恢复/故障处置/演练/值班路径)与严格分支规则集模板, 并让覆盖率门禁同时报\"可归因 98%\"和\"整体 80.45%\"两个口径; 同时清掉写死数据量的脆弱断言。",
     "运维: 新增 docs/RUNBOOK.md —— 线上拓扑、网页/App/数据三种回滚、常见故障(含 Pages 重复 artifact / 规则集拒推 / 媒体 404)处置、季度恢复演练、值班升级路径",
     "治理: 新增 .github/rulesets/branch-strict.json 与 tag-protect.json —— 自动化能满足必需检查后, 一键恢复\"强制 PR + 必过 CI/Secret Scan\"",
