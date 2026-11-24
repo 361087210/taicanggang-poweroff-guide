@@ -1,9 +1,10 @@
 {
-  "version": "10.27.3",
-  "versionCode": 102703,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.3/tcg_poweroff_v10.27.3.apk",
+  "version": "10.27.4",
+  "versionCode": 102704,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.4/tcg_poweroff_v10.27.4.apk",
   "releaseNotes": [
-    "V10.27.3 车型↔资源库双向联动版。一句话总结: 车型详情页的每张照片/视频都叠加资源库状态徽标(正常/共享/云端/缺失/低清)并显示板块汇总, 点按可跳到资源库并定位该资产; 资源库侧新增「只看这台车」, 与既有「打开车型」形成闭环。",
+    "V10.27.4 车型↔资源库双向联动正式发布版(功能同 10.27.3; 10.27.3 因发布说明文件缺失未出包)。详情页照片/视频叠加资源库状态徽标与汇总, 点按可定位台账行; 资源库可「只看这台车」。",
+    "发版修复: 补齐 docs/RELEASE_V10.27.4.md 发布说明文件, 修复 Android/iOS Release 流程因 body_path 缺失而失败",
     "关联(详情页): 照片格子/视频卡挂 data-media-path, 渲染后由资源库索引补充状态徽标; 缺失项红色标注, 共享/云端/低清一眼可辨",
     "关联(跳转): 徽标点按 → openPath 自动翻到资产所在分页并高亮该行; 板块标题「资源库 ›」→ openForVehicle 只显示该车型资产, 顶部可一键清除收窄",
     "工程(索引): 索引加载去重(详情页装饰与台账页共用一次请求); 索引不可用时静默降级, 详情页照常可用",
