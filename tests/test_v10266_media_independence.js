@@ -89,8 +89,11 @@ const missing = (idx.assets || []).filter(a => a.status === 'missing');
 check('I6a 缺失项都带 missingFor', missing.every(a => Array.isArray(a.missingFor) && a.missingFor.length > 0));
 check('I6b stats.missing 与明细一致', idx.stats.missing === missing.length, idx.stats.missing + ' vs ' + missing.length);
 check('I6c 缺失项 size 为 0（不伪造体积）', missing.every(a => !a.size));
-check('I6d 索引里仍有完整车型清单（缺媒体不影响车型可见）',
-  (idx.vehicles || []).length === 100, String((idx.vehicles || []).length));
+/* V10.26.8: 不写死 100 —— 按"索引车型数 == 镜像车型数"校验完整性, 数据增长也不会误红 */
+const _mirrorCount = (JSON.parse(src('web-data/vehicle_sync_data.json')).vehicles || []).length;
+check('I6d 索引车型清单与镜像一致（缺媒体不影响车型可见）',
+  (idx.vehicles || []).length === _mirrorCount,
+  '索引 ' + (idx.vehicles || []).length + ' / 镜像 ' + _mirrorCount);
 
 console.log('\n==============================================================');
 console.log('媒体独立性回归汇总: ' + pass + ' passed, ' + fail + ' failed');

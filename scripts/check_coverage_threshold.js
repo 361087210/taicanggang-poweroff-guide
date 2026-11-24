@@ -138,6 +138,13 @@ function main() {
   });
   log('  ' + '-'.repeat(62));
   log('  可归因合计: ' + cov + '/' + tot + ' = ' + agg.toFixed(2) + '%');
+  /* V10.26.8: 明确打出"整体(含不可归因)"口径 —— 否则 98% 容易被误读成"全项目 98%"。
+   *   两者差在 JSDOM 装载、c8 归因不到的 5 个文件, 属度量限制而非"没测"。 */
+  const _allLines = (summary.total && summary.total.lines) || {};
+  const _unattrShare = (typeof _allLines.total === 'number' && _allLines.total > 0 && tot > 0)
+    ? (100 - (tot / _allLines.total * 100)) : 0;
+  log('  整体口径(含不可归因): ' + (_allLines.pct || '?') + '%  其中不可归因占源码行 ' +
+      _unattrShare.toFixed(1) + '%（JSDOM 装载, 见 docs/codebase/TESTING.md）');
   log('  验收线 MIN_LINES_PCT: ' + MIN_LINES_PCT + '%');
   log('');
 

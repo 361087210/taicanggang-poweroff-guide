@@ -1,8 +1,14 @@
 {
-  "version": "10.26.7",
-  "versionCode": 102607,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.7/tcg_poweroff_v10.26.7.apk",
+  "version": "10.27.1",
+  "versionCode": 102701,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.1/tcg_poweroff_v10.27.1.apk",
   "releaseNotes": [
+    "V10.27.1 运维与可信度版。一句话总结: 补上 RUNBOOK(回滚/数据恢复/故障处置/演练/值班路径)与严格分支规则集模板, 并让覆盖率门禁同时报\"可归因 98%\"和\"整体 80.45%\"两个口径; 同时清掉写死数据量的脆弱断言。",
+    "运维: 新增 docs/RUNBOOK.md —— 线上拓扑、网页/App/数据三种回滚、常见故障(含 Pages 重复 artifact / 规则集拒推 / 媒体 404)处置、季度恢复演练、值班升级路径",
+    "治理: 新增 .github/rulesets/branch-strict.json 与 tag-protect.json —— 自动化能满足必需检查后, 一键恢复\"强制 PR + 必过 CI/Secret Scan\"",
+    "可信度: 覆盖率门禁现在同时打印「可归因 98.09%」与「整体 80.45%（其中不可归因占源码行 18.0%）」, 避免把子集口径误读成全项目",
+    "测试(健壮性): 去掉两处写死的数据量断言(真缺失 64 / 车型 100), 改为与索引明细/镜像车型数互证 —— 数据增长不再让 CI 误红",
+    "测试(新增): test_v10268_governance_docs(23 断言): RUNBOOK 内容覆盖、规则集模板合法性、双口径、动态断言、文档互链",
     "V10.26.7 工程治理版。一句话总结: 补齐行业标准里最缺的三块 —— 分支/tag 保护与协作规范、全局错误捕获与诊断上报、依赖与供应链治理(dependabot + action 固定 SHA)。",
     "治理(分支): main 开启规则集保护 —— 必须 PR、必过 CI(Web资产与安全校验)+Secret Scan、线性历史、禁 force push/删除; 管理员保留应急绕过(有记录)",
     "治理(tag): 发布 tag(v*) 禁止移动/删除 —— 打错了就发下一个 patch, 不再 tag -f(此前本项目发生过多次)",

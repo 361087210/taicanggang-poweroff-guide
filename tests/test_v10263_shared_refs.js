@@ -60,7 +60,12 @@ const misplaced = unresolved.filter(ref => {
 });
 check('R2b 引用失配为 0（文件在 _共享/_未归类 却仍指向车型目录）', misplaced.length === 0,
   misplaced.length + ' 条: ' + misplaced.slice(0, 5).join(' | '));
-check('R2c 真缺失数量与 audit 口径一致(64)', unresolved.length === 64, unresolved.length + ' 条');
+/* V10.26.8: 不再写死 64 —— 数据会随云端同步增长, 写死会让"数据变多"被误判成"回写坏了"。
+ *   正确的不变量: 索引里的 missing 明细数 == 用 App 同款解析规则算出的无法定位数。 */
+let _idxMissing = -1;
+try { _idxMissing = (JSON.parse(src('media_library.json')).assets || []).filter(a => a.status === 'missing').length; } catch (e) {}
+check('R2c 真缺失数与索引 missing 明细一致（动态口径，不写死）', _idxMissing === unresolved.length,
+  '索引 ' + _idxMissing + ' / 解析 ' + unresolved.length);
 
 section('R3 管线接线顺序');
 const wf = src('.github/workflows/sync-web-data.yml');

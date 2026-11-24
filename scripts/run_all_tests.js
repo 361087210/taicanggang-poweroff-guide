@@ -106,6 +106,7 @@ const TEST_SUITES = [
   'test:v10265-binding',
   'test:v10266-independence',
   'test:v10267-error-report',
+  'test:v10268-governance',
   'test:cross'
 ];
 
