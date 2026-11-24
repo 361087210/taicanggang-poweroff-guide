@@ -1613,14 +1613,79 @@ const MEDIA_DIRECT_ASSETS={
   '零跑零跑_零跑B10.mp4':'tcgv_e6e7f70cf0.mp4',
 };
 
+/* ================= V10.27.3: 播放源注册表 =================
+ * 为什么存在: 视频播放源从"只有 GitHub Release 一个"变成"对象存储 CDN 主 +
+ *   Release 备"之后, 若仍把 URL 拼装写死在 mediaDirectUrl 里, 换源就必须改
+ *   播放链路代码。而实测(见 docs/VIDEO_SOURCE_EVAL.md)不同源的尾部体验差
+ *   两个数量级(4MB 片段 1.9s / 29.6s / 108.0s), 换源应该是配置, 不是改代码。
+ * 配置方式: TCG_CONFIG.MEDIA_CDN_BASE = "https://cdn.example.com/media"
+ *   仅接受 https 绝对地址(前端不接受 http: 混合内容, 也不接受相对路径)。
+ * 未配置时: 注册表里只有 github 一个源, 行为与旧版逐字节等价。
+ */
+const MEDIA_PLAYBACK_SOURCES=(function(){
+  const list=[];
+  let cdn='';
+  try{ cdn=(window.TCG_CONFIG&&window.TCG_CONFIG.MEDIA_CDN_BASE)||''; }catch(e){ cdn=''; }
+  cdn=String(cdn||'').trim().replace(/\/+$/,'');
+  if(/^https:\/\//i.test(cdn)){
+    list.push({id:'cdn',label:'对象存储',build:function(asset){return cdn+'/'+asset;}});
+  }
+  list.push({id:'github',label:'GitHub Release',build:function(asset){return MEDIA_RELEASE_BASE+'/'+asset;}});
+  return list;
+})();
+
 /**
- * 查询视频的GitHub Release直链(V5.3.5)
+ * V10.27.3: 播放源健康记忆(30 分钟 TTL)
+ * 为什么需要: 主源整段失败(证书过期/CDN 节点故障)时, 若每个用户每次播放都
+ *   先撞一遍主源再回退, 就等于把"回退 ≤2s"变成"每个用户 2s 的税"。
+ * 记住"刚才这个源坏过", 30 分钟内直接把它排到最后; 一旦它成功一次立刻恢复
+ *   主源地位(故障恢复不需要等 TTL, 只要有一次播放命中成功)。
+ * 存储: localStorage 单键, 容量 1 条 JSON(几十字节), 读写失败都不抛。
+ */
+const MEDIA_SOURCE_HEALTH=(function(){
+  const KEY='tcg_media_src_fail_v1';
+  const TTL=30*60*1000;
+  let map={};
+  try{ map=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ map={}; }
+  function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(map)); }catch(e){/* 隐私模式/配额满: 只降级为不记忆 */} }
+  return {
+    /** 该源此刻是否可用(没坏过, 或坏的记录已过 TTL) */
+    isHealthy:function(id){ return !(map[id]&&(Date.now()-map[id])<TTL); },
+    /** 本源"整段失败"后调用 */
+    markFailed:function(id){ if(!id)return; map[id]=Date.now(); persist(); },
+    /** 本源成功播放后调用(立刻恢复主源优先) */
+    markOk:function(id){ if(!id||!map[id])return; delete map[id]; persist(); },
+    /** 测试与"我的→清除诊断"用 */
+    reset:function(){ map={}; try{ localStorage.removeItem(KEY); }catch(e){} }
+  };
+})();
+
+/**
+ * V10.27.3: 查询视频的候选播放源(按优先级排序, 已剔除冷源)
+ * @param {string} fileName - 视频文件名(如"通用断电视频.mp4")
+ * @returns {Array<{sourceId:string,label:string,url:string}>} 候选链; 未映射返回[]
+ */
+function mediaDirectUrls(fileName){
+  const asset=MEDIA_DIRECT_ASSETS[fileName];
+  if(!asset)return [];
+  const all=MEDIA_PLAYBACK_SOURCES.map(function(s){
+    return {sourceId:s.id,label:s.label,url:s.build(asset)};
+  });
+  /* 健康的保持注册顺序(主源在前), 坏过的整体挪到末尾但不删——
+   * 保留它们的意义: 全部源都被标记坏过时, 仍然要按顺序试一遍而不是直接空态。 */
+  const healthy=all.filter(function(c){return MEDIA_SOURCE_HEALTH.isHealthy(c.sourceId);});
+  const sick=all.filter(function(c){return !MEDIA_SOURCE_HEALTH.isHealthy(c.sourceId);});
+  return healthy.concat(sick);
+}
+
+/**
+ * 查询视频的首选直链(V5.3.5)
  * @param {string} fileName - 视频文件名(如"通用断电视频.mp4")
  * @returns {string|null} 直链URL, 未映射返回null走后续回退链
  */
 function mediaDirectUrl(fileName){
-  const asset=MEDIA_DIRECT_ASSETS[fileName];
-  return asset?`${MEDIA_RELEASE_BASE}/${asset}`:null;
+  const cands=mediaDirectUrls(fileName);
+  return cands.length?cands[0].url:null;
 }
 
 /**
@@ -1717,18 +1782,38 @@ function _mediaAliasByPrefix(normQuery){
  * @returns {string|null} 直链URL;已精确命中或无对应官方资产时返回null
  */
 function mediaDirectUrlAlias(fileName,canonicalName){
-  if(!fileName&&!canonicalName)return null;
-  if(MEDIA_DIRECT_ASSETS[fileName])return null; // 已能精确命中,无需别名
+  const cands=mediaDirectUrlsAlias(fileName,canonicalName);
+  return cands.length?cands[0].url:null;
+}
+
+/**
+ * V10.27.3: 别名解析的候选源链(与 mediaDirectUrls 同构)
+ * 为什么要候选而不是单串: 别名这条路径同样是"官方片直链", 主源(CDN)坏掉时
+ * 它也必须能回退, 否则"改名后的视频"会比"没改名的视频"少一层保障。
+ * @param {string} fileName - 视频文件名
+ * @param {string} [canonicalName] - 上传时留档的官方原名
+ * @returns {Array<{sourceId:string,label:string,url:string}>}
+ */
+function mediaDirectUrlsAlias(fileName,canonicalName){
+  if(!fileName&&!canonicalName)return [];
+  if(MEDIA_DIRECT_ASSETS[fileName])return []; // 已能精确命中,无需别名
+  let asset=null;
   // 优先用上传时留档的官方原名(精确、零误配);无留档才退回归一化猜测
   if(canonicalName&&MEDIA_DIRECT_ASSETS[canonicalName]){
-    return `${MEDIA_RELEASE_BASE}/${MEDIA_DIRECT_ASSETS[canonicalName]}`;
+    asset=MEDIA_DIRECT_ASSETS[canonicalName];
+  }else{
+    // 归一化精确命中 → 退化为唯一前缀命中(安全边界见 _mediaAliasByPrefix)
+    const nk=_normMediaKey(fileName);
+    if(!nk)return [];
+    if(MEDIA_ALIAS_REJECTED[nk])return []; // 归一化键碰撞: 任一份都不猜, 宁可漏不可错
+    asset=MEDIA_ALIAS_INDEX[nk]||_mediaAliasByPrefix(nk);
   }
-  // 归一化精确命中 → 退化为唯一前缀命中(安全边界见 _mediaAliasByPrefix)
-  const nk=_normMediaKey(fileName);
-  if(!nk)return null;
-  if(MEDIA_ALIAS_REJECTED[nk])return null; // 归一化键碰撞: 任一份都不猜, 宁可漏不可错
-  const asset=MEDIA_ALIAS_INDEX[nk]||_mediaAliasByPrefix(nk);
-  return asset?`${MEDIA_RELEASE_BASE}/${asset}`:null;
+  if(!asset)return [];
+  // 复用 mediaDirectUrls 的排序逻辑(按资产名而不是文件名)
+  const byAsset=Object.keys(MEDIA_DIRECT_ASSETS).filter(function(k){return MEDIA_DIRECT_ASSETS[k]===asset;});
+  if(byAsset.length)return mediaDirectUrls(byAsset[0]);
+  const all=MEDIA_PLAYBACK_SOURCES.map(function(s){return {sourceId:s.id,label:s.label,url:s.build(asset)};});
+  return all;
 }
 
 /**

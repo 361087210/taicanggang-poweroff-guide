@@ -55,6 +55,17 @@
      *  建议用仅含本收集箱仓库 contents:write 的 fine-grained PAT)。 */
     REGISTER_REPO: '361087210/tcg-registration-inbox',
     REGISTER_BRANCH: 'main',
-    REGISTER_DIR: 'registrations'
+    REGISTER_DIR: 'registrations',
+
+    /* ---------- 视频播放主源(可选, V10.27.3) ----------
+     * 留空 = 只用 GitHub Release(与旧版一致); 一旦填入对象存储的公开直链基址
+     * (必须是 https 绝对地址, 末尾斜杠可有可无), 它就成为**主播放源**,
+     * Release 自动降为备源: 主源失败 8 秒内(播放器超时)自动降级, 用户无感。
+     * 例: MEDIA_CDN_BASE: 'https://cdn.example.com/tcg/media'
+     * 资产命名沿用 Release 的内容哈希名(tcgv_<hash>.mp4), 同步时同一份文件
+     * 写两处, 因此两个源的 URL 只是"基址不同、文件名相同"。
+     * 为什么放在配置里而不是代码里: 换 CDN 服务商不该动播放链路
+     * (依据见 docs/VIDEO_SOURCE_EVAL.md: 不同源尾部体验差两个数量级)。 */
+    MEDIA_CDN_BASE: ''
   };
 })();

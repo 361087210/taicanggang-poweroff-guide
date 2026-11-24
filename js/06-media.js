@@ -559,12 +559,41 @@ function _isWebStaticEnv(){
  * @param {number} [session] - 播放会话号
  * @param {string} [canonicalName] - V10.19.0官方资产原名(上传改名后的留档)
  */
+/**
+ * V10.27.3: 按候选链逐个尝试, 失败才降级到下一个源
+ * 为什么不再"只试 mediaDirectUrl 一个": 主源从 GitHub Release 扩展成
+ *   "对象存储 CDN 主 + Release 备"之后, 单串 URL 会让主源故障直接落到飞书云端
+ *   (网页端无密钥 → 一路失败到空态)。候选链让"主源坏、备源好"仍能播出。
+ * 健康记忆: 每个源失败/成功都记账, 下次播放直接避开刚坏过的源(见 MEDIA_SOURCE_HEALTH)。
+ * @param {HTMLVideoElement} video - 播放器元素
+ * @param {Array<{sourceId:string,label:string,url:string}>} cands - 候选源链
+ * @param {number} idx - 当前尝试下标
+ * @param {Function} onAllFailed - 全部失败后的调用者回退逻辑
+ * @param {number} [session] - 播放会话号
+ * @param {string} fileName - 视频文件名(落盘缓存用)
+ */
+function _playCandidateChain(video,cands,idx,onAllFailed,session,fileName){
+  if(session!==undefined&&session!==_videoSession)return;
+  if(!cands||idx>=cands.length){onAllFailed();return;}
+  const cand=cands[idx];
+  tryPlaySource(video,cand.url,function(){
+    if(typeof MEDIA_SOURCE_HEALTH!=='undefined'&&MEDIA_SOURCE_HEALTH.markFailed)MEDIA_SOURCE_HEALTH.markFailed(cand.sourceId);
+    _playCandidateChain(video,cands,idx+1,onAllFailed,session,fileName);
+  },session,function(){
+    /* 成功即恢复主源优先: 故障恢复不必等 30 分钟 TTL */
+    if(typeof MEDIA_SOURCE_HEALTH!=='undefined'&&MEDIA_SOURCE_HEALTH.markOk)MEDIA_SOURCE_HEALTH.markOk(cand.sourceId);
+    cacheUrlToDisk(cand.url,fileName);
+  });
+}
+
 function _playReleaseOrCloud(video,fileName,cdnBase,videoPath,session,canonicalName){
-  // 源②: GitHub Release直链(V5.3.5, 免鉴权+Range流式秒开)
-  const directUrl=(typeof mediaDirectUrl==='function')?mediaDirectUrl(fileName):null;
-  if(directUrl){
-    // V10.2: 流式播放成功后异步抓取落盘,下次秒开
-    tryPlaySource(video,directUrl,()=>tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session,canonicalName),session,()=>{cacheUrlToDisk(directUrl,fileName);});
+  // 源②: 直链候选链(V10.27.3: 对象存储 CDN 主 → GitHub Release 备)
+  const cands=(typeof mediaDirectUrls==='function')?mediaDirectUrls(fileName):[];
+  if(cands.length){
+    // V10.2: 流式播放成功后异步抓取落盘,下次秒开(在 _playCandidateChain 内)
+    _playCandidateChain(video,cands,0,function(){
+      tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session,canonicalName);
+    },session,fileName);
   }else{
     // 未映射的视频(组长新上传)直接走飞书云端
     tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session,canonicalName);
@@ -594,12 +623,12 @@ function tryFeishuVideoSource(video,fileName,cdnBase,videoPath,session,canonical
      * 位置: 刻意放在飞书之后 —— 精确改名的新上传视频仍优先由飞书云端播出
      *   (组长新片不被旧官方片覆盖);仅当云端不可用(网页端/云目录丢失/弱网)
      *   才回退官方片,保证"至少有得看"。 */
-    const aliasUrl=(typeof mediaDirectUrlAlias==='function')?mediaDirectUrlAlias(fileName,canonicalName):null;
-    if(aliasUrl){
-      tryPlaySource(video,aliasUrl,()=>{
+    const aliasCands=(typeof mediaDirectUrlsAlias==='function')?mediaDirectUrlsAlias(fileName,canonicalName):[];
+    if(aliasCands.length){
+      _playCandidateChain(video,aliasCands,0,function(){
         if(session!==undefined&&session!==_videoSession)return;
         _tryCdnSource(video,fileName,cdnBase,videoPath,session);
-      },session,()=>{cacheUrlToDisk(aliasUrl,fileName);});
+      },session,fileName);
       return;
     }
     _tryCdnSource(video,fileName,cdnBase,videoPath,session);

@@ -64,6 +64,13 @@ vm.runInContext([
   aliasRej,
   aliasIdx,
   BOOT.match(/const MEDIA_ALIAS_KEYS=[^\n]*\n/)[0], // _mediaAliasByPrefix 依赖的有序键表
+  /* V10.27.3: 播放源改候选链后, 单串 mediaDirectUrl 只是"首选", 回退链要的是
+   * mediaDirectUrls/mediaDirectUrlsAlias。这里把注册表与健康记忆一并载入
+   * (未配置 MEDIA_CDN_BASE 时它们退化为单元素链, 与 10.27.2 行为一致)。 */
+  BOOT.slice(BOOT.indexOf('/* ================= V10.27.3: 播放源注册表'),
+             BOOT.indexOf('/**\n * 查询视频的首选直链(V5.3.5)')),
+  extractFn(BOOT, 'mediaDirectUrls'),
+  extractFn(BOOT, 'mediaDirectUrlsAlias'),
   extractFn(BOOT, 'mediaDirectUrl'),
   extractFn(BOOT, 'mediaDirectUrlAlias'),
   extractFn(BOOT, 'videoCoverDataUri'),
@@ -72,13 +79,18 @@ vm.runInContext([
   ';globalThis.__export={MEDIA_DIRECT_ASSETS:MEDIA_DIRECT_ASSETS,MEDIA_ALIAS_INDEX:MEDIA_ALIAS_INDEX,'
     + 'MEDIA_ALIAS_REJECTED:MEDIA_ALIAS_REJECTED,'
     + 'MEDIA_RELEASE_BASE:MEDIA_RELEASE_BASE,_normMediaKey:_normMediaKey,_mediaAliasByPrefix:_mediaAliasByPrefix,'
-    + 'mediaDirectUrl:mediaDirectUrl,mediaDirectUrlAlias:mediaDirectUrlAlias,videoCoverDataUri:videoCoverDataUri};'
+    + 'mediaDirectUrl:mediaDirectUrl,mediaDirectUrlAlias:mediaDirectUrlAlias,'
+    + 'mediaDirectUrls:mediaDirectUrls,mediaDirectUrlsAlias:mediaDirectUrlsAlias,'
+    + 'MEDIA_PLAYBACK_SOURCES:MEDIA_PLAYBACK_SOURCES,MEDIA_SOURCE_HEALTH:MEDIA_SOURCE_HEALTH,'
+    + 'videoCoverDataUri:videoCoverDataUri};'
 ].join('\n'), mediaCtx);
 const M = mediaCtx.__export;
 const MAP = M.MEDIA_DIRECT_ASSETS;
 const normKey = M._normMediaKey;
 const mediaDirectUrl = M.mediaDirectUrl;
 const mediaDirectUrlAlias = M.mediaDirectUrlAlias;
+const mediaDirectUrls = M.mediaDirectUrls;
+const mediaDirectUrlsAlias = M.mediaDirectUrlsAlias;
 const videoCoverDataUri = M.videoCoverDataUri;
 const RELEASE_BASE = 'https://github.com/361087210/taicanggang-poweroff-guide/releases/download/media-videos';
 
@@ -232,7 +244,9 @@ function buildSandbox(opts){
     playFromFeishuCloud: async () => !!opts.feishuHit,
     feishuCfgReady: () => !!opts.hasSecret,
     getFeishuCfg: () => ({ appId: 'x' }),
-    mediaDirectUrl, mediaDirectUrlAlias, videoCoverDataUri,
+    mediaDirectUrl, mediaDirectUrlAlias, mediaDirectUrls, mediaDirectUrlsAlias, videoCoverDataUri,
+    /* V10.27.3: 候选链需要健康记忆对象; 测试用内存桩, 不读写 localStorage */
+    MEDIA_SOURCE_HEALTH: { markFailed: () => {}, markOk: () => {} },
     __api: { attempted, missing, toasts, video, isDone: () => settledDone }
   };
   vm.createContext(sandbox);
@@ -241,6 +255,7 @@ function buildSandbox(opts){
     extractFn(MEDIA, '_isWebStaticEnv'),
     extractFn(MEDIA, 'tryPlaySource'),
     extractFn(MEDIA, '_tryCdnSource'),
+    extractFn(MEDIA, '_playCandidateChain'), // V10.27.3: 源② 候选链播放器
     extractFn(MEDIA, '_playReleaseOrCloud'),
     extractFn(MEDIA, 'tryFeishuVideoSource'),
     extractFn(MEDIA, 'openVideoPlayer')
@@ -492,9 +507,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       !/appSecret/.test(extractFn(MEDIA, '_isWebStaticEnv') || ''));
     check('S7c 未新增第三方依赖(媒体链路零依赖)',
       !/require\(|import\s+.*from/.test(MEDIA));
+    /* V10.27.3: 别名回退从单串 mediaDirectUrlAlias 改为候选链
+     * mediaDirectUrlsAlias —— 断言语义不变(仍是"官方别名"这一环), 只是它现在
+     * 也能在主源故障时降级; 顺序断言(精确直链先于飞书先于别名)一字未改。 */
     check('S7d 源链顺序: 官方精确直链 → 飞书 → 官方别名 → CDN',
       MEDIA.indexOf('_playReleaseOrCloud') < MEDIA.indexOf('tryFeishuVideoSource') &&
-      /mediaDirectUrlAlias\(fileName,canonicalName\)/.test(extractFn(MEDIA, 'tryFeishuVideoSource') || ''));
+      /mediaDirectUrlsAlias\(fileName,canonicalName\)/.test(extractFn(MEDIA, 'tryFeishuVideoSource') || ''));
     check('S7e demo.html 仍按序加载 00-bootstrap(别名表) 与 06-media',
       /00-bootstrap\.js[\s\S]*?06-media\.js/.test(HTML));
   }
