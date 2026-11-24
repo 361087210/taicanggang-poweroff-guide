@@ -2,6 +2,26 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.28.0] - 2026-11-24
+
+### 资源库「移出资源库」软/硬删除 + COS/GitHub/飞书同步清理
+
+#### ✨ 新增:
+- **软删除 / 硬删除二选一**：资源库预览与云端条目的入口统一为「移出资源库」。软删除仍走回收站（只写墓碑、文件保留、可恢复）；硬删除需二次确认，文案明确不可恢复
+- **清理队列**：硬删除在本地立刻隐藏并保留回收站审计记录（`hard_delete` + `purged`），同时把待清理项写入 `tcg_media_delete_queue`，并合并上传到飞书 `APP数据备份/media_delete_queue.json`。队列按路径幂等，下载→并集→上传，已完成的清理不会被旧请求重新打开
+- **离线补交**：离线或首次上传失败时，下次进入资源库自动补交队列，删除意图不会丢
+
+#### 🔧 工程:
+- `scripts/process_media_delete_queue.py`：消费队列 —— COS 签名删除（照片 key = 相对路径；视频 key = `media-library/baseline/<Release 资产名>`）→ 删除飞书云盘文件 → 照片 `git rm` / 视频删除 `media-videos` Release 资产并清理直链映射 → 重建 `media_library.json` 与映射 → 回写 `done/error` 状态
+- `.github/workflows/media-hard-delete.yml`：每 15 分钟定时 + 手动触发，`concurrency` 串行执行，清理结果自动提交回仓库
+- 安全：COS 与 GitHub 写权限只存在 CI Secrets，客户端仅有飞书凭据；脚本路径白名单限定 `vehicle_images/` 与 `vehicle_videos/`，COS 删除 404 视为已删除（幂等）
+
+#### ⚠️ 待配置:
+- 仓库 Secrets 需新增 `TCG_COS_SECRET_ID` / `TCG_COS_SECRET_KEY`；缺失时任务会明确报错并把条目留在队列里等下轮重试
+
+#### ✅ 测试:
+- 新增 `test:v10284-media-hard-delete`（41 断言）：队列合并/幂等、硬删除二次确认与落地顺序、UI 软/硬选项、工作流与脚本接线、COS 签名稳定、路径白名单、软删除语义未退化、Python 语法编译
+
 ## [10.27.11] - 2026-11-24
 
 ### 发版包体积修复：打包期照片压缩 + 体积预算门禁

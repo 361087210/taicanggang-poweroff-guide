@@ -8,6 +8,18 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.28.0',
+    date: '2026-11-24',
+    highlight: '资源库移出资源: 软删除 / 硬删除 + 云端自动清理',
+    features: [
+      '新增: 「移出资源库」改为软删除(回收站可恢复)与硬删除(彻底删除)两个平级选项, 硬删除需二次确认',
+      '新增: 硬删除写入飞书清理队列, 每 15 分钟工作流同步删除 COS 对象、飞书云盘文件与 GitHub 照片/视频资产',
+      '新增: 客户端队列按路径幂等, 离线或提交失败会在下次进入资源库时自动补交',
+      '安全: COS/GitHub 写权限仅存在 CI Secrets, 脚本路径白名单限定媒体目录',
+      '测试: 新增 test:v10284-media-hard-delete(41 断言)'
+    ]
+  },
+  {
     version: 'V10.27.11',
     date: '2026-11-24',
     highlight: '发版包体积修复: 打包期压缩照片 + 体积预算门禁',
@@ -818,7 +830,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.11'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.28.0'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
