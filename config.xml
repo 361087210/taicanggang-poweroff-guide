@@ -15,6 +15,9 @@
     <access origin="https://api.github.com" />
     <access origin="https://raw.githubusercontent.com" />
     <access origin="https://cdn.jsdelivr.net" />
+    <!-- V10.28.1: 腾讯云 COS 公有读桶(视频/照片国内源)。
+         不加会导致 Cordova 原生 WebView 直接拦截 COS 直链, 网页端无感、App 全挂。 -->
+    <access origin="https://*.myqcloud.com" />
     <access origin="https://localhost" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />

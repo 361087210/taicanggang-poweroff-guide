@@ -7,11 +7,11 @@
  * =========================================================== */
 function imgLoadError(img){
   img.onerror=null;
-  // V5.3: 先从飞书云端回退拉取; V10.20.1: 都没命中则**明确告知文件缺失**(诚实空态)
-  const fn=(img.getAttribute('src')||'').split('/').pop();
-  imgFromFeishuCloud(img,fn).then(ok=>{
-    if(!ok)showPhotoMissing(img);
-  });
+  const src=img.getAttribute('src')||''; // V10.28.1: 本地→COS→飞书→缺失
+  ((typeof imgFromCosCloud==='function')?imgFromCosCloud(img,src):Promise.resolve(false))
+    .then(ok=>{ if(ok)return;
+      imgFromFeishuCloud(img,src.split('/').pop()).then(ok2=>{ if(!ok2)showPhotoMissing(img); });
+    });
 }
 
 /**
@@ -138,11 +138,14 @@ function openPhotoViewer(index){
       _tryHdUpgrade(img,fn);
     };
     /* V10.25.3: 先走候选路径(原路径 → _共享/同名 → 顶层/同名),
-     * 全失败再回退飞书云端, 最后才显示"照片缺失"的诚实空态。 */
+     * 全失败再 COS 国内源(V10.28.1) → 飞书云端, 最后才是"照片缺失"的诚实空态。 */
     loadPhotoWithFallback(img,photoPath,()=>{
-      const fn=(photoPath||'').split('/').pop();
-      imgFromFeishuCloud(img,fn).then(ok=>{
-        if(!ok)img.src=_photoViewerMissingSvg(v,labels[index],'missing');
+      imgFromCosCloud(img,photoPath).then(ok=>{
+        if(ok)return;
+        const fn=(photoPath||'').split('/').pop();
+        imgFromFeishuCloud(img,fn).then(ok2=>{
+          if(!ok2)img.src=_photoViewerMissingSvg(v,labels[index],'missing');
+        });
       });
     });
   }else{
@@ -725,6 +728,31 @@ let _feishuImgCache={}; // fileName -> objectURL
  * 若将来有人想加回灰图, 请先改测试 tests/test_v1037_honest_empty_state.js。 */
 
 /**
+ * 从 COS 公有读桶拉取单张照片(V10.28.1)
+ * 为什么在飞书之前: 飞书云端要换 token + 全量下载, 国内节点 COS 直链能直接出图;
+ *   但 COS 只上传了部分照片, 未命中必须**安静地**返回 false 交给飞书, 不能提示用户。
+ * @param {HTMLImageElement} img - 目标图片元素
+ * @param {string} relPath - 三段式相对路径(vehicle_images/<车型目录>/<文件名>)
+ * @returns {Promise<boolean>} 是否命中(不存在/403/网络错误均视为未命中)
+ */
+function imgFromCosCloud(img,relPath){
+  return new Promise(function(resolve){
+    let url='';
+    try{ url=(typeof mediaCosPhotoUrl==='function')?mediaCosPhotoUrl(relPath):''; }catch(e){ url=''; }
+    /* 绝对 URL 说明这张图本来就是远端直链且刚失败, 重试同一条没有意义 */
+    if(!url||mediaIsAbsoluteUrl(relPath)){ resolve(false); return; }
+    const prevOnload=img.onload;
+    img.onerror=function(){ img.onerror=null; resolve(false); };
+    img.onload=function(ev){
+      img.onerror=null;
+      if(typeof prevOnload==='function')prevOnload.call(img,ev);
+      resolve(true);
+    };
+    img.src=url;
+  });
+}
+
+/**
  * 从飞书云端拉取单张照片并注入img元素
  * @param {HTMLImageElement} img - 目标图片元素
  * @param {string} fileName - 照片文件名(如 image1.jpeg)
@@ -746,9 +774,8 @@ async function imgFromFeishuCloud(img,fileName){
   }
 }
 
-/** 列表缩略图加载失败: 先试候选路径(车型目录 → _共享 → 顶层), 再试飞书云端,
- * 都未命中才显示"缺失"(诚实空态, 不再塞灰图)。
- * V10.25.3: 原实现直接跳云端, 导致"文件就在 _共享/ 里"的图被误报缺失。 */
+/** 列表缩略图加载失败: 先试候选路径(车型目录 → _共享 → 顶层), 再试 COS/飞书云端,
+ * 都未命中才显示"缺失"(诚实空态, 不再塞灰图)。 */
 function thumbImgError(img){
   img.onerror=null;
   const orig=img.getAttribute('data-src')||img.getAttribute('src')||'';
@@ -760,7 +787,10 @@ function thumbImgError(img){
   let i=0;
   function next(){
     if(i>=cands.length){
-      imgFromFeishuCloud(img,fn).then(ok=>{ if(!ok)showThumbMissing(img); });
+      (typeof imgFromCosCloud==='function'?imgFromCosCloud(img,orig):Promise.resolve(false)).then(ok=>{
+        if(ok)return;
+        imgFromFeishuCloud(img,fn).then(ok2=>{ if(!ok2)showThumbMissing(img); });
+      });
       return;
     }
     img.onerror=function(){ next(); };
