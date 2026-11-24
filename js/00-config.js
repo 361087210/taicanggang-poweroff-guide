@@ -66,6 +66,17 @@
      * 写两处, 因此两个源的 URL 只是"基址不同、文件名相同"。
      * 为什么放在配置里而不是代码里: 换 CDN 服务商不该动播放链路
      * (依据见 docs/VIDEO_SOURCE_EVAL.md: 不同源尾部体验差两个数量级)。 */
-    MEDIA_CDN_BASE: ''
+    MEDIA_CDN_BASE: '',
+
+    /* ---------- COS 国内源(V10.28.1, 腾讯云对象存储公有读桶) ----------
+     * 与 MEDIA_CDN_BASE 的区别: 这里是本项目自己的桶, 路径契约固定
+     * (docs/dev/20-媒体资源与COS播放源交接.md 20.8):
+     *   media-library/baseline/<tcgv_*.mp4>   视频(与 GitHub Release 同名同字节)
+     *   vehicle_images/<车型目录>/<文件名>      照片(与仓库三段式路径一致)
+     * 留空 = 不启用, 行为与旧版一致; 非 https 一律忽略(避免混合内容)。
+     * 为什么会多一个而不是复用 CDN: CDN 是"任意换成第三方"的通用挂钩,
+     *   COS 需要固定路径前缀与照片域, 把两者混在一个常量里, 换任意一方都会
+     *   悄悄改变另一方的 URL。 */
+    MEDIA_COS_BASE: 'https://tcg-poweroff-guide-1539213542.cos.ap-shanghai.myqcloud.com'
   };
 })();

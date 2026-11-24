@@ -1621,16 +1621,66 @@ const MEDIA_DIRECT_ASSETS={
  * 配置方式: TCG_CONFIG.MEDIA_CDN_BASE = "https://cdn.example.com/media"
  *   仅接受 https 绝对地址(前端不接受 http: 混合内容, 也不接受相对路径)。
  * 未配置时: 注册表里只有 github 一个源, 行为与旧版逐字节等价。
+ * V10.28.1: 新增 COS 国内源(MEDIA_COS_BASE), 位于 CDN 之后、GitHub 之前。
  */
+
+/** 是否 http(s) 绝对 URL(绝对 URL 只直通, 绝不再拼基址) */
+function mediaIsAbsoluteUrl(v){ return /^https?:\/\//i.test(String(v||'')); }
+
+/**
+ * 相对路径按 / 分段编码, 且**幂等**: 已含 %XX 的段先解码再编码。
+ * 为什么不能直接 encodeURIComponent: 历史 photoPaths 可能已编码过,
+ *   再编一次会变成 %2520 这类双重编码 → COS/GitHub 404。
+ */
+function mediaEncodeRelPath(relPath){
+  return String(relPath||'').split('/').map(function(seg){
+    if(!seg)return seg;
+    if(/%[0-9A-Fa-f]{2}/.test(seg)){
+      try{ return encodeURIComponent(decodeURIComponent(seg)); }catch(e){ return seg; }
+    }
+    return encodeURIComponent(seg);
+  }).join('/');
+}
+
+/**
+ * 媒体 URL 拼接(视频/照片共用): 绝对 URL 直通; 相对路径只编码一次。
+ * @param {string} base - https 基址(末尾斜杠可有可无)
+ * @param {string} rel  - 相对路径或绝对 URL
+ * @returns {string} 结果; 基址非法或 rel 为空返回 ''
+ */
+function mediaJoinUrl(base,rel){
+  const b=String(base||'').trim().replace(/\/+$/,'');
+  const p=String(rel||'').trim();
+  if(!p)return '';
+  if(mediaIsAbsoluteUrl(p))return p;
+  if(!/^https:\/\//i.test(b))return '';
+  return b+'/'+mediaEncodeRelPath(p).replace(/^\/+/,'');
+}
+
+/** COS 照片直链(relPath 形如 vehicle_images/<车型目录>/<文件名>) */
+function mediaCosPhotoUrl(relPath){
+  let cos='';
+  try{ cos=(window.TCG_CONFIG&&window.TCG_CONFIG.MEDIA_COS_BASE)||''; }catch(e){ cos=''; }
+  return mediaJoinUrl(cos,relPath);
+}
+
 const MEDIA_PLAYBACK_SOURCES=(function(){
   const list=[];
   let cdn='';
   try{ cdn=(window.TCG_CONFIG&&window.TCG_CONFIG.MEDIA_CDN_BASE)||''; }catch(e){ cdn=''; }
   cdn=String(cdn||'').trim().replace(/\/+$/,'');
   if(/^https:\/\//i.test(cdn)){
-    list.push({id:'cdn',label:'对象存储',build:function(asset){return cdn+'/'+asset;}});
+    list.push({id:'cdn',label:'对象存储',build:function(asset){return mediaJoinUrl(cdn,asset);}});
   }
-  list.push({id:'github',label:'GitHub Release',build:function(asset){return MEDIA_RELEASE_BASE+'/'+asset;}});
+  /* V10.28.1: COS 国内源。路径前缀固定为 media-library/baseline/ —— 与上传脚本
+   * 及 docs/dev/20 的目录契约一致; 资产名与 Release 完全相同(同名同字节)。 */
+  let cos='';
+  try{ cos=(window.TCG_CONFIG&&window.TCG_CONFIG.MEDIA_COS_BASE)||''; }catch(e){ cos=''; }
+  cos=String(cos||'').trim().replace(/\/+$/,'');
+  if(/^https:\/\//i.test(cos)){
+    list.push({id:'cos',label:'COS 国内源',build:function(asset){return mediaJoinUrl(cos+'/media-library/baseline',asset);}});
+  }
+  list.push({id:'github',label:'GitHub Release',build:function(asset){return mediaJoinUrl(MEDIA_RELEASE_BASE,asset);}});
   return list;
 })();
 
