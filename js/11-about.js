@@ -8,6 +8,16 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.27.10',
+    date: '2026-11-24',
+    highlight: '发版包体积修复: 打包期压缩照片 + 体积预算门禁',
+    features: [
+      '修复: v10.27.9 安装包因原图被打包而超过飞书单文件 20MB 上限, 飞书同步失败',
+      '新增: 打包时对超过 800KB 或最长边超过 1600px 的照片生成压缩副本, 仓库原图保留',
+      '新增: 打包照片总量超过 18MB 直接让构建失败, 并列出最大的 5 张'
+    ]
+  },
+  {
     version: 'V10.27.9',
     date: '2026-11-24',
     highlight: '媒体资源治理: 回收站 + COS 国内源 + 媒体单一真源',
@@ -807,7 +817,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.9'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.10'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
