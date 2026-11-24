@@ -4,7 +4,18 @@
     <description>太仓港商品车断电操作标准化指导平台</description>
     <author email="dev@taicanggang.com" href="https://github.com/361087210/taicanggang-poweroff-guide">Taicanggang Dev Team</author>
     <content src="demo.html" />
-    <access origin="*" />
+    <!-- 网络安全加固: 原 origin="*" 允许 WebView 请求任意域。
+         收敛为业务实际依赖的域名(飞书开放平台/云盘、GitHub 版本与镜像、
+         jsDelivr 静态资源、本机回环), 避免数据外发面无限扩大。 -->
+    <access origin="https://open.feishu.cn" />
+    <access origin="https://*.feishu.cn" />
+    <access origin="https://feishu.cn" />
+    <access origin="https://361087210.github.io" />
+    <access origin="https://github.com" />
+    <access origin="https://api.github.com" />
+    <access origin="https://raw.githubusercontent.com" />
+    <access origin="https://cdn.jsdelivr.net" />
+    <access origin="https://localhost" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
     <allow-intent href="tel:*" />
@@ -31,7 +42,7 @@
         <preference name="StatusBarBackgroundColor" value="#1e3a5f" />
         <preference name="StatusBarStyle" value="lightcontent" />
         <edit-config file="app/src/main/AndroidManifest.xml" mode="merge" target="/manifest/application">
-            <application android:usesCleartextTraffic="true" android:requestLegacyExternalStorage="true" android:allowBackup="false" />
+            <application android:usesCleartextTraffic="false" android:requestLegacyExternalStorage="true" android:allowBackup="false" />
         </edit-config>
         <config-file parent="/*" target="AndroidManifest.xml">
             <uses-permission android:name="android.permission.INTERNET" />
