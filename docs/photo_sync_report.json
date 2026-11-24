@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-10T10:07:33.388Z",
+  "generatedAt": "2026-11-24T12:42:57.546Z",
   "source": "feishu:APP数据备份/vehicle_images",
-  "count": 9,
+  "count": 10,
   "photos": [
     {
       "name": "比亚迪元YUAN-PRO-EV_p1_9ec9c3e2.jpeg",
@@ -84,6 +84,15 @@
       "relPath": "vehicle_images/比亚迪元YUAN-PRO-EV/比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg",
       "syncedAt": "2026-11-10T10:07:32.280Z",
       "releaseAsset": "比亚迪元YUAN-PRO-EV_p9_59ba10a5.jpeg"
+    },
+    {
+      "name": "比亚迪鲨鱼皮卡（SHARK）_p1_4d3599e1.jpg",
+      "bytes": 4657434,
+      "sha256": "f039a9631f291580282c9753dc4e5f63455cf637e519db45af0eacef2c9eb6ea",
+      "feishuToken": "L6s2b1xl3oe9mzxS2MCcDp7Nnfe",
+      "relPath": "vehicle_images/比亚迪鲨鱼皮卡（SHARK）/比亚迪鲨鱼皮卡（SHARK）_p1_4d3599e1.jpg",
+      "syncedAt": "2026-11-24T12:42:56.153Z",
+      "releaseAsset": "比亚迪鲨鱼皮卡（SHARK）_p1_4d3599e1.jpg"
     }
   ]
 }
