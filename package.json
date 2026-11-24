@@ -102,6 +102,7 @@
     "test:v10278-feishu-upload-retry": "node tests/test_v10278_feishu_upload_retry.js",
     "test:v10280-media-trash": "node tests/test_v10280_media_trash.js",
     "test:v10281-cos": "node tests/test_v10281_cos_source.js",
+    "test:v10282-single-source": "node tests/test_v10282_media_single_source.js",
     "test:media-source-bench": "node tests/test_media_source_bench.js",
     "check:two-end": "node scripts/check_two_end_sync.js",
     "audit:media": "node scripts/audit_media_consistency.js",

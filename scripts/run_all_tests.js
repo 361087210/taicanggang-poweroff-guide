@@ -116,6 +116,7 @@ const TEST_SUITES = [
   'test:v10278-feishu-upload-retry',
   'test:v10280-media-trash',
   'test:v10281-cos',
+  'test:v10282-single-source',
   'test:media-source-bench',
   'test:cross'
 ];

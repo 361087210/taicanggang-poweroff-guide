@@ -86,7 +86,7 @@ const upBlock = upStart >= 0 && upEnd > upStart ? MEDIA_SRC.slice(upStart, upEnd
 check('T7a 上传前计算内容哈希', !!upBlock && upBlock.indexOf('await _fileContentHash(file)') >= 0);
 check('T7b 文件名不再拼接 Date.now()', !!upBlock && upBlock.indexOf("file.size + ':' + Date.now()") < 0);
 check('T7c 命中已传哈希时跳过', !!upBlock && upBlock.indexOf('skip++') >= 0 && upBlock.indexOf('hi[hash]') >= 0);
-check('T8a 写库失败撤回内存引用', !!upBlock && upBlock.indexOf('v[key] = prev') >= 0);
+check('T8a 写库失败不改车型引用(只登记表回滚)', !!upBlock && upBlock.indexOf('v[key] = prev') < 0 && upBlock.indexOf('registryAdd(') >= 0);
 check('T8b 写库失败删除刚上传文件', !!upBlock && upBlock.indexOf('回滚删除失败') >= 0);
 
 section('T9 车型删除级联');

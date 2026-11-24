@@ -175,6 +175,14 @@ function cloudSandbox(overrides){
     URL: { createObjectURL: () => 'blob:cloud' },
     setTimeout, clearTimeout, fetch: async () => ({ ok: true, json: async () => JSON.parse(JSON.stringify(ledger)) })
   };
+  /* V10.28.2: 上传改走媒体登记表(localStorage), 沙箱需要可写存储 */
+  const lsMem = {};
+  ctx.localStorage = {
+    getItem: k => (Object.prototype.hasOwnProperty.call(lsMem, k) ? lsMem[k] : null),
+    setItem: (k, v) => { lsMem[k] = String(v); },
+    removeItem: k => { delete lsMem[k]; }
+  };
+  ctx.window.localStorage = ctx.localStorage;
   vm.createContext(ctx);
   ctx.window.VEHICLES = [{ id:1, display:'比亚迪秦PLUS',
     photoPaths:['vehicle_images/比亚迪秦PLUS/比亚迪秦PLUS_p1_a.jpeg','vehicle_images/比亚迪秦PLUS/missing.jpeg'],
@@ -230,7 +238,12 @@ function cloudSandbox(overrides){
   await M.onUploadFiles([{ name: 'new.jpg', type: 'image/jpeg', size: 2048 }]);
   await sleep(20);
   const v = env.ctx.window.VEHICLES[0];
-  check('M8g 上传后回写引用', v.photoPaths.length === 3 && /_p3_/.test(v.photoPaths[2]), JSON.stringify(v.photoPaths));
+  /* V10.28.2 单一真源: 上传只登记, 不再回写车型 payload; 渲染时合并 */
+  const regRow = Object.keys(M.registryRows()).find(p => /_p3_/.test(p));
+  const viewPaths = M.mediaPathsFor(v, 'photo');
+  check('M8g 上传写入登记表且不写回引用',
+    v.photoPaths.length === 2 && !!regRow && viewPaths.length === 3 && /_p3_/.test(viewPaths[2]),
+    JSON.stringify({ payload: v.photoPaths, reg: regRow, merged: viewPaths }));
   check('M8h 上传后台账即时可见', html().indexOf('_p3_') >= 0);
 
   try { M.deleteCloud('vehicle_images/车型不存在/stray.jpeg'); } catch(e){}
