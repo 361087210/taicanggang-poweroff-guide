@@ -1,0 +1,106 @@
+{
+  "generatedAt": "2026-11-24T07:36:13.193Z",
+  "maxBytes": 4194304,
+  "repeat": 3,
+  "concurrency": 2,
+  "results": [
+    {
+      "label": "github:tcgv_54a5a92db2.mp4",
+      "runs": [
+        {
+          "err": null,
+          "dnsMs": 11.77976,
+          "connectMs": 220.880756,
+          "tlsMs": 414.156904,
+          "ttfbMs": 608.270424,
+          "bytes": 4194304,
+          "status": 206,
+          "contentRange": "bytes 0-4194303/16304541",
+          "totalMs": 1938.917019
+        },
+        {
+          "err": null,
+          "dnsMs": 2.091894,
+          "connectMs": 182.860567,
+          "tlsMs": 338.366536,
+          "ttfbMs": 510.214463,
+          "bytes": 4194304,
+          "status": 206,
+          "contentRange": "bytes 0-4194303/16304541",
+          "totalMs": 29575.459562
+        },
+        {
+          "err": null,
+          "dnsMs": 12.95771,
+          "connectMs": 481.498033,
+          "tlsMs": 707.260644,
+          "ttfbMs": 1186.381417,
+          "bytes": 4194304,
+          "status": 206,
+          "contentRange": "bytes 0-4194303/16304541",
+          "totalMs": 107957.801068
+        }
+      ],
+      "error": null,
+      "summary": {
+        "samples": 3,
+        "ttfbMedian": 608.270424,
+        "ttfbP95": 1186.381417,
+        "speedMedian": 141817.03554622183,
+        "speedP05": 38851.32856085231,
+        "rangeOk": true,
+        "http": "206",
+        "concSpeed": 1717574
+      }
+    },
+    {
+      "label": "feishu:tcg_poweroff_v10.27.2.apk",
+      "runs": [
+        {
+          "err": null,
+          "dnsMs": 2.722628,
+          "connectMs": 34.655302,
+          "tlsMs": 49.794042,
+          "ttfbMs": 629.291303,
+          "bytes": 4194304,
+          "status": 206,
+          "contentRange": "bytes 0-4194303/16502308",
+          "totalMs": 1014.555127
+        },
+        {
+          "err": null,
+          "dnsMs": 2.329891,
+          "connectMs": 35.940373,
+          "tlsMs": 46.697714,
+          "ttfbMs": 443.351384,
+          "bytes": 4194304,
+          "status": 206,
+          "contentRange": "bytes 0-4194303/16502308",
+          "totalMs": 862.216323
+        },
+        {
+          "err": null,
+          "dnsMs": 2.109047,
+          "connectMs": 10.196549,
+          "tlsMs": 19.906004,
+          "ttfbMs": 630.760439,
+          "bytes": 4194304,
+          "status": 206,
+          "contentRange": "bytes 0-4194303/16502308",
+          "totalMs": 1020.214564
+        }
+      ],
+      "error": null,
+      "summary": {
+        "samples": 3,
+        "ttfbMedian": 629.291303,
+        "ttfbP95": 630.760439,
+        "speedMedian": 4134131.1954160575,
+        "speedP05": 4111197.9264001176,
+        "rangeOk": true,
+        "http": "206",
+        "concSpeed": 7914261
+      }
+    }
+  ]
+}
