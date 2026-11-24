@@ -1,0 +1,63 @@
+name: Media Hard Delete
+
+# 资源库「硬删除」后台清理作业（V10.28.4）
+# App 把待删项写入飞书 APP数据备份/media_delete_queue.json，本工作流定时消费:
+#   COS 对象 → 飞书云盘文件 → GitHub 照片/Release 视频资产 → 重建索引 → 回写队列状态
+# 说明: 队列为空时脚本直接退出，不产生提交，也不会打扰飞书。
+
+on:
+  schedule:
+    # 每 15 分钟消费一次；GitHub 定时任务高峰期可能顺延几分钟
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# 串行执行: 两个清理任务并发会同时 git rm/提交, 造成非快进或重复删除
+concurrency:
+  group: media-hard-delete
+  cancel-in-progress: false
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # 写权限来自 SYNC_TOKEN(fine-grained PAT, Contents 读写)；缺失时退回默认 token
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+
+      - name: Process delete queue (COS / Feishu / GitHub)
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+          # COS 写权限只存在于 CI Secrets, 客户端永远拿不到
+          TCG_COS_SECRET_ID: ${{ secrets.TCG_COS_SECRET_ID }}
+          TCG_COS_SECRET_KEY: ${{ secrets.TCG_COS_SECRET_KEY }}
+          TCG_COS_BUCKET: tcg-poweroff-guide-1539213542
+          TCG_COS_REGION: ap-shanghai
+          # 删 Release 资产需要 repo contents: write
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN || secrets.GH_TOKEN }}
+        run: python3 scripts/process_media_delete_queue.py
+
+      - name: Commit media deletions
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "无变化, 跳过提交"
+          else
+            git commit -m "chore(media): 硬删除资源并从 COS/飞书/GitHub 同步清理"
+            git push
+          fi

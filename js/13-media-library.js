@@ -915,6 +915,63 @@ function restoreFromTrash(path){
 }
 
 /** 彻底删除: 必须拿到云端句柄, 否则拒绝(避免只删记录、留死文件) */
+/**
+ * 硬删除: 二次确认后立即隐藏, 并排队清理 COS / GitHub / 飞书云盘。
+ * 顺序要点: 先写队列再做任何网络操作 —— 队列是唯一可靠通道,
+ * 飞书删除只是"顺手提前", 失败也不影响后台作业最终把文件清掉。
+ */
+function hardDelete(path){
+  if(!_canEdit()){ _toast('仅组长可硬删除'); return; }
+  const cf = _cloud && _cloud.byPath && _cloud.byPath[path];
+  const asset = allAssets().find(function(a){ return a.path === path; });
+  const kind = (asset && asset.kind) || (_videoLike(path) ? 'video' : 'photo');
+  const name = (cf && cf.name) || String(path).split('/').pop();
+  const doPurge = function(){ runHardDelete(path, kind); };
+  if(typeof showConfirm === 'function'){
+    showConfirm('彻底删除',
+      '「' + name + '」将从资源库彻底删除，不可恢复；COS、GitHub 与飞书云盘会在后台同步清理（约 15 分钟内）。',
+      doPurge);
+  }else if(window.confirm && window.confirm('彻底删除「' + name + '」？此操作不可恢复。')){
+    doPurge();
+  }else{
+    _toast('需要确认后才能彻底删除');
+  }
+}
+
+/** 硬删除落地: 队列 + 回收站审计记录 + 墓碑, 并尽力立刻删飞书文件 */
+function runHardDelete(path, kind){
+  const owners = _ownersOf(path);
+  const cf = _cloud && _cloud.byPath && _cloud.byPath[path];
+  enqueueHardDelete(path, kind, owners);
+  /* 审计: 回收站保留一条 purged 记录(不可恢复, 但能看到"谁在何时彻底删了什么") */
+  moveToTrash(path, 'hard_delete', kind, owners);
+  markPurged(path);
+  registryPurge(path);
+  _cloudForget(path);
+  closeDeleteChoice();
+  closePreview();
+  render();
+  _toast('已彻底删除，云端清理任务已排队');
+  _scheduleRegistrySync();
+  _scheduleDeleteQueueSync();
+  if(cf && cf.token && window.FeishuAPI && typeof window.FeishuAPI.driveDeleteFile === 'function'){
+    window.FeishuAPI.driveDeleteFile(cf.token).catch(function(e){
+      /* 失败没关系: 队列里还有这条请求, 工作流会按路径再删一次 */
+      console.warn('[资源库] 飞书文件即时删除失败, 已留给后台队列', e && e.message);
+    });
+  }
+}
+
+/** 云端实测结果里移除一个路径(不影响后端, 只对齐本次会话的计数) */
+function _cloudForget(path){
+  if(!_cloud) return;
+  _cloud.orphans = (_cloud.orphans || []).filter(function(a){ return a.path !== path; });
+  delete _cloud.byPath[path];
+  const sp = _splitPath(path);
+  if(sp && sp.top === 'vehicle_videos') _cloud.videos = Math.max(0, (_cloud.videos || 1) - 1);
+  else _cloud.photos = Math.max(0, (_cloud.photos || 1) - 1);
+}
+
 function purgeFromTrash(path){
   if(!_canEdit()){ _toast('仅组长可彻底删除'); return; }
   const rec = trashRecord(path);
@@ -928,13 +985,7 @@ function purgeFromTrash(path){
       markPurged(path);
       /* 保留一条"已清理"墓碑, 防止旧设备的快照把它合并回来 */
       registryPurge(path);
-      if(_cloud){
-        _cloud.orphans = (_cloud.orphans || []).filter(function(a){ return a.path !== path; });
-        delete _cloud.byPath[path];
-        const sp = _splitPath(path);
-        if(sp && sp.top === 'vehicle_videos') _cloud.videos = Math.max(0, (_cloud.videos || 1) - 1);
-        else _cloud.photos = Math.max(0, (_cloud.photos || 1) - 1);
-      }
+      _cloudForget(path);
       render();
       _scheduleRegistrySync();
       _toast('已彻底删除云端文件');
@@ -994,9 +1045,14 @@ function trashRowHtml(t){
 
 function trashHtml(){
   const list = trashEntries();
+  const purged = _trashStore().filter(function(t){ return t && t.purged; }).length;
+  const pending = deleteQueuePending().length;
   return '<div class="px-4 mt-3">' +
     '<div class="rounded-xl bg-amber-50 text-amber-800 text-[11px] leading-relaxed px-3 py-2">' +
-      '回收站只解除引用，<b>不删除云端文件</b>；「彻底删除」才会真正删文件。共 ' + list.length + ' 项。' +
+      '回收站只解除引用，<b>不删除云端文件</b>；「彻底删除」才会真正删文件，' +
+      '并按队列同步清理 COS / GitHub / 飞书云盘。共 ' + list.length + ' 项' +
+      (purged ? ('，已彻底删除 ' + purged + ' 项') : '') +
+      (pending ? ('，待云端清理 ' + pending + ' 项') : '') + '。' +
     '</div>' +
     '<div class="mt-2 space-y-2">' +
       (list.length ? list.map(trashRowHtml).join('')
@@ -1004,29 +1060,225 @@ function trashHtml(){
     '</div></div>';
 }
 
-function deleteCloud(path){
-  if(!_canEdit()){ _toast('仅组长可删除资源'); return; }
+/* ============================================================
+ * 移出资源库: 软删除 / 硬删除（V10.28.4）
+ * ------------------------------------------------------------
+ * 软删除 = 回收站（只解除引用并隐藏, 文件保留, 可随时恢复）;
+ * 硬删除 = 本地立刻隐藏 + 保留回收站审计记录, 并把待清理项写入删除队列
+ *   （localStorage tcg_media_delete_queue → 飞书 media_delete_queue.json）。
+ *   队列由 .github/workflows/media-hard-delete.yml 定时消费:
+ *     COS 对象删除 → 飞书云盘文件删除 → GitHub 照片 git rm / 视频 Release 资产删除
+ *     → 重建 media_library.json → 回写队列状态（done/error）。
+ * 为什么客户端不直接删 COS/GitHub:
+ *   这两处的写权限都在 CI Secrets, 客户端只有飞书凭据; 队列让"删除"变成一次
+ *   幂等的后台作业 —— 弱网、离线、App 被杀都不会丢删除意图, 也不会重复删。
+ * ============================================================ */
+const DELETE_QUEUE_KEY = 'tcg_media_delete_queue';
+const DELETE_QUEUE_CLOUD_FILE = 'media_delete_queue.json';
+let _delQCache = null;
+let _delQTimer = null;
+let _delChoicePath = '';
+let _delChoiceName = '';
+
+function _delQStore(){
+  if(_delQCache) return _delQCache;
+  try{
+    const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem(DELETE_QUEUE_KEY) : null;
+    const list = raw ? JSON.parse(raw) : [];
+    _delQCache = Array.isArray(list) ? list.filter(function(x){ return x && x.path; }) : [];
+  }catch(e){ _delQCache = []; }
+  return _delQCache;
+}
+function _delQSave(){
+  try{
+    if(typeof localStorage !== 'undefined') localStorage.setItem(DELETE_QUEUE_KEY, JSON.stringify(_delQStore()));
+    return true;
+  }catch(e){ return false; }
+}
+
+/** 队列全部条目(按请求时间升序, 便于按序消费) */
+function deleteQueueItems(){
+  return _delQStore().slice().sort(function(a, b){ return (Number(a.at) || 0) - (Number(b.at) || 0); });
+}
+/** 待消费条目: pending(新请求) 或 error(上次失败待重试) */
+function deleteQueuePending(){
+  return deleteQueueItems().filter(function(it){ return it.status !== 'done'; });
+}
+
+/**
+ * 队列合并(纯函数): 同一路径只留一条, 状态优先 done > error > pending, 同状态取较新。
+ * 用于「下载云端 → 并集 → 上传」, 避免两台设备同时删除时互相覆盖,
+ * 也避免已完成的清理被旧请求重新打开。
+ */
+function deleteQueueMerge(localList, remoteList){
+  const norm = function(x){ return String(x || '').trim().toLowerCase(); };
+  const rank = function(it){
+    return it && it.status === 'done' ? 3 : (it && it.status === 'error' ? 2 : 1);
+  };
+  const byId = {};
+  [localList, remoteList].forEach(function(list){
+    (Array.isArray(list) ? list : []).forEach(function(it){
+      if(!it || !it.path) return;
+      const p = it.path;
+      const cur = byId[p];
+      if(!cur || rank(it) > rank(cur) ||
+         (rank(it) === rank(cur) && (Number(it.at) || 0) >= (Number(cur.at) || 0))){
+        byId[p] = it;
+      }
+    });
+  });
+  /* norm 仅用于兜底去重(路径大小写/空白差异), 正常路径互不相同 */
+  const seen = {};
+  return Object.keys(byId).map(function(p){ return byId[p]; }).filter(function(it){
+    const k = norm(it.path);
+    if(seen[k]) return false;
+    seen[k] = true;
+    return true;
+  });
+}
+
+/**
+ * 写入一条硬删除请求(幂等: 同一路径只保留一条, 重新删除会把已完成项重置为 pending)。
+ * @param {string} path 媒体路径(vehicle_images/... 或 vehicle_videos/...)
+ * @param {'photo'|'video'} kind
+ * @param {Array} owners 受影响车型(审计用)
+ */
+function enqueueHardDelete(path, kind, owners){
+  if(!path) return null;
+  const list = _delQStore();
+  const isVideo = kind === 'video' || (!kind && _videoLike(path));
+  const rec = {
+    path: path,
+    kind: isVideo ? 'video' : 'photo',
+    name: String(path).split('/').pop(),
+    owners: owners || [],
+    status: 'pending',
+    tries: 0,
+    at: Date.now()
+  };
+  const i = list.findIndex(function(it){ return it.path === path; });
+  if(i >= 0) list[i] = rec; else list.push(rec);
+  _delQSave();
+  return rec;
+}
+
+/**
+ * 队列增量上云: 下载 → 并集 → 有变化才上传。
+ * 离线/未配置飞书接口时静默失败, 本机队列保留, 下次进入资源库再试。
+ */
+async function deleteQueueSync(){
+  if(typeof downloadJsonFromDataFeishu !== 'function' || typeof uploadJsonToDataFeishu !== 'function') return false;
+  if(!window.FeishuAPI || typeof window.FeishuAPI.getTenantToken !== 'function') return false;
+  const token = await window.FeishuAPI.getTenantToken();
+  let remote = null;
+  try{ remote = await downloadJsonFromDataFeishu(token, DELETE_QUEUE_CLOUD_FILE); }catch(e){ remote = null; }
+  const remoteItems = (remote && Array.isArray(remote.items)) ? remote.items : [];
+  const merged = deleteQueueMerge(_delQStore(), remoteItems);
+  _delQCache = merged;
+  _delQSave();
+  if(JSON.stringify(merged) !== JSON.stringify(remoteItems)){
+    await uploadJsonToDataFeishu(token, DELETE_QUEUE_CLOUD_FILE,
+      JSON.stringify({ version: 1, updatedAt: Date.now(), items: merged }));
+  }
+  return true;
+}
+
+/** 硬删除后合并上云(3 秒防抖); 离线/非组长静默跳过 */
+function _scheduleDeleteQueueSync(){
+  if(!_canEdit()) return;
+  if(_delQTimer) clearTimeout(_delQTimer);
+  _delQTimer = setTimeout(function(){
+    _delQTimer = null;
+    deleteQueueSync().catch(function(e){ console.warn('[资源库] 删除队列同步失败', e); });
+  }, 3000);
+}
+
+/** 进入资源库时补一次: 上次离线排队/提交失败的请求在这里补交 */
+function flushDeleteQueue(){
+  if(!deleteQueuePending().length) return Promise.resolve(false);
+  return deleteQueueSync().catch(function(e){
+    console.warn('[资源库] 删除队列补交失败', e);
+    return false;
+  });
+}
+
+/* ---------------- 软/硬删除选择弹层 ---------------- */
+
+function ensureDeleteChoice(){
+  let el = document.getElementById('ml-delete-choice');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'ml-delete-choice';
+  el.className = 'modal-overlay';
+  el.innerHTML = '<div class="modal-sheet" style="max-height:78vh">' +
+    '<div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">' +
+      '<div class="text-sm font-medium">移出资源库</div>' +
+      '<button onclick="MediaLibrary.closeDeleteChoice()" class="text-gray-400 text-xl leading-none">×</button>' +
+    '</div>' +
+    '<div class="p-4">' +
+      '<div class="text-sm text-gray-800 break-all" id="ml-del-name"></div>' +
+      '<div class="text-[11px] text-gray-400 mt-1 break-all" id="ml-del-path"></div>' +
+      '<div class="mt-4 space-y-2">' +
+        '<button onclick="MediaLibrary.softDeleteChosen()" ' +
+          'class="w-full py-3 px-3 rounded-xl bg-blue-50 text-left text-sm text-blue-700">' +
+          '<b>软删除</b><span class="block text-[11px] text-blue-500 mt-0.5">移入回收站，只解除引用；文件保留，可随时恢复</span></button>' +
+        '<button onclick="MediaLibrary.hardDeleteChosen()" ' +
+          'class="w-full py-3 px-3 rounded-xl bg-red-50 text-left text-sm text-red-700">' +
+          '<b>硬删除</b><span class="block text-[11px] text-red-400 mt-0.5">彻底删除；COS、GitHub 与飞书云盘同步清理，不可恢复</span></button>' +
+      '</div>' +
+    '</div></div>';
+  el.addEventListener('click', function(e){ if(e.target === el) closeDeleteChoice(); });
+  document.body.appendChild(el);
+  return el;
+}
+
+/** 「移出资源库」入口: 软/硬两个选项平级, 不设默认 */
+function openDeleteChoice(path){
+  if(!_canEdit()){ _toast('仅组长可移出资源库'); return; }
+  if(!path){ _toast('未选择资源'); return; }
   const cf = _cloud && _cloud.byPath && _cloud.byPath[path];
+  _delChoicePath = path;
+  _delChoiceName = (cf && cf.name) || String(path).split('/').pop();
+  const el = ensureDeleteChoice();
+  const n = document.getElementById('ml-del-name');
+  const p = document.getElementById('ml-del-path');
+  if(n) n.textContent = _delChoiceName;
+  if(p) p.textContent = path;
+  el.classList.add('show');
+}
+
+function closeDeleteChoice(){
+  const el = document.getElementById('ml-delete-choice');
+  if(el) el.classList.remove('show');
+  _delChoicePath = '';
+  _delChoiceName = '';
+}
+
+function softDeleteChosen(){
+  const path = _delChoicePath;
+  closeDeleteChoice();
+  if(path) deleteCloud(path);
+}
+
+function hardDeleteChosen(){
+  const path = _delChoicePath;
+  closeDeleteChoice();
+  if(path) hardDelete(path);
+}
+
+/** 软删除: 只写墓碑(渲染层隐藏), 云端文件保留; 车型 payload 全程不动 */
+function deleteCloud(path){
+  if(!_canEdit()){ _toast('仅组长可移出资源库'); return; }
   const asset = allAssets().find(function(a){ return a.path === path; });
   const kind = (asset && asset.kind) || (_videoLike(path) ? 'video' : 'photo');
-  const name = (cf && cf.name) || String(path).split('/').pop();
   const owners = _ownersOf(path);
-  const doTrash = function(){
-    moveToTrash(path, 'user', kind, owners);
-    /* 只写墓碑: 渲染层据此隐藏, 车型 payload 不动 → 不会被旧快照同步回来 */
-    registryTombstone(path, 'user', owners, kind);
-    closePreview();
-    render();
-    _scheduleRegistrySync();
-    _toast('已移入回收站，可在回收站恢复');
-  };
-  if(typeof showConfirm === 'function'){
-    showConfirm('移入回收站', '将把「' + name + '」移入回收站，并在所有车型中隐藏；文件不会删除，可随时恢复。', doTrash);
-  }else if(window.confirm && window.confirm('将「' + name + '」移入回收站？')){
-    doTrash();
-  }else{
-    _toast('需要确认后才能删除');
-  }
+  moveToTrash(path, 'user', kind, owners);
+  /* 只写墓碑: 渲染层据此隐藏, 车型 payload 不动 → 不会被旧快照同步回来 */
+  registryTombstone(path, 'user', owners, kind);
+  closePreview();
+  render();
+  _scheduleRegistrySync();
+  _toast('已移入回收站，可在回收站恢复');
 }
 
 async function loadCloudPreview(path){
@@ -1051,8 +1303,8 @@ async function loadCloudPreview(path){
         ? '<video src="' + url + '" controls autoplay playsinline class="w-full rounded-lg bg-black"></video>'
         : '<img src="' + url + '" class="w-full rounded-lg" alt="">') +
       '<div class="mt-3 text-xs text-gray-500 break-all">路径：' + esc(path) + '</div>' +
-      '<div class="mt-3"><button onclick="MediaLibrary.deleteCloud(\'' + esc(path) + '\')" ' +
-        'class="w-full py-2 rounded-xl bg-red-50 text-sm text-red-600">删除云端文件</button></div>';
+      '<div class="mt-3"><button onclick="MediaLibrary.openDeleteChoice(\'' + esc(path) + '\')" ' +
+        'class="w-full py-2 rounded-xl bg-red-50 text-sm text-red-600">移出资源库（软删除 / 硬删除）</button></div>';
   }catch(e){
     _toast('云端读取失败: ' + ((e && e.message) || e));
   }
@@ -1528,8 +1780,8 @@ function preview(path){
         : '') +
     '</div>' +
     (cf && _canEdit()
-      ? '<div class="mt-2"><button onclick="MediaLibrary.deleteCloud(\'' + esc(a.path) + '\')" ' +
-        'class="w-full py-2 rounded-xl bg-red-50 text-sm text-red-600">删除云端文件（并解除引用）</button></div>'
+      ? '<div class="mt-2"><button onclick="MediaLibrary.openDeleteChoice(\'' + esc(a.path) + '\')" ' +
+        'class="w-full py-2 rounded-xl bg-red-50 text-sm text-red-600">移出资源库（软删除 / 硬删除）</button></div>'
       : '');
   el.classList.add('show');
 }
@@ -1696,6 +1948,8 @@ function open(){
   _page = 0;
   if(typeof showScreen === 'function') showScreen('screen-media-library');
   refresh(false);
+  /* 上次离线/失败的硬删除请求, 进入资源库时补交一次 */
+  flushDeleteQueue();
 }
 
 window.MediaLibrary = {
@@ -1720,6 +1974,18 @@ window.MediaLibrary = {
   uploadFlow: uploadFlow,
   onUploadFiles: onUploadFiles,
   deleteCloud: deleteCloud,
+  /* V10.28.4 移出资源库: 软删除 / 硬删除 + 清理队列 */
+  openDeleteChoice: openDeleteChoice,
+  closeDeleteChoice: closeDeleteChoice,
+  softDeleteChosen: softDeleteChosen,
+  hardDeleteChosen: hardDeleteChosen,
+  hardDelete: hardDelete,
+  deleteQueueItems: deleteQueueItems,
+  deleteQueuePending: deleteQueuePending,
+  deleteQueueMerge: deleteQueueMerge,
+  enqueueHardDelete: enqueueHardDelete,
+  deleteQueueSync: deleteQueueSync,
+  flushDeleteQueue: flushDeleteQueue,
   /* V10.28.0 回收站: 删除可恢复 */
   toggleTrash: toggleTrash,
   restoreFromTrash: restoreFromTrash,
