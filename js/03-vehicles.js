@@ -946,6 +946,13 @@ function confirmDeleteVehicle(id){
    *   旧文案写"将同时删除云端照片/视频", 与实际行为不符, 会让人不敢删/误以为已清理。 */
   else if(share.exclusive.length>0){msg='仅删除车型信息，照片/视频文件会保留（可在资源库清理）';}
   showConfirm('删除车辆',msg,()=>{
+    // V10.28.0: 独享媒体先移入回收站(只解除引用、云端文件保留), 共享媒体保持不动
+    try{
+      const v=VEHICLES.find(x=>String(x.id)===String(id));
+      if(v&&window.MediaLibrary&&typeof MediaLibrary.trashVehicleMedia==='function'){
+        MediaLibrary.trashVehicleMedia(id,v.display);
+      }
+    }catch(e){ console.warn('[车型] 媒体入回收站失败:',e&&e.message); }
     // A3状态守卫: 删除走State API(splice+持久化), 返回bool保持原idx>-1卫语句语义
     if(State.removeVehicle(id)){showToast('删除成功');renderBrandTags();renderVehicleList();goBack();}
   });
