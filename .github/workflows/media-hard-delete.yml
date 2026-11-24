@@ -10,6 +10,11 @@ on:
     # 每 15 分钟消费一次；GitHub 定时任务高峰期可能顺延几分钟
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      probe:
+        description: '只验证 COS 凭据连通性(不消费队列)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -36,7 +41,17 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Probe COS credentials
+        if: ${{ inputs.probe }}
+        env:
+          TCG_COS_SECRET_ID: ${{ secrets.TCG_COS_SECRET_ID }}
+          TCG_COS_SECRET_KEY: ${{ secrets.TCG_COS_SECRET_KEY }}
+          TCG_COS_BUCKET: tcg-poweroff-guide-1539213542
+          TCG_COS_REGION: ap-shanghai
+        run: python3 scripts/process_media_delete_queue.py --probe
+
       - name: Process delete queue (COS / Feishu / GitHub)
+        if: ${{ !inputs.probe }}
         env:
           FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
           FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
@@ -51,6 +66,7 @@ jobs:
         run: python3 scripts/process_media_delete_queue.py
 
       - name: Commit media deletions
+        if: ${{ !inputs.probe }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
