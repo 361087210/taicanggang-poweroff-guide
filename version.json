@@ -1,12 +1,13 @@
 {
-  "version": "10.27.10",
-  "versionCode": 102710,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.10/tcg_poweroff_v10.27.10.apk",
+  "version": "10.27.11",
+  "versionCode": 102711,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.11/tcg_poweroff_v10.27.11.apk",
   "releaseNotes": [
-    "V10.27.10 发版包体积修复版。一句话总结: v10.27.9 的 APK/IPA 因仓库里一张 4.4MB 手机原图被打进包, 双双越过飞书单文件约 20MB 上限, 飞书同步预上传失败; 本版改为打包期生成压缩副本(仓库仍保留原图), 并加体积预算门禁。",
+    "V10.27.11 发版包体积修复版。一句话总结: v10.27.9 的 APK/IPA 因仓库里一张 4.4MB 手机原图被打进包, 双双越过飞书单文件约 20MB 上限, 飞书同步预上传失败; 本版改为打包期生成压缩副本(仓库仍保留原图), 并加体积预算门禁。",
     "修复(发版包体积): 新增 scripts/shrink_bundled_photos.js —— 打包时对超过 800KB 或最长边超过 1600px 的 jpg 生成压缩副本(quality 80), 仓库原图保持不变(COS/资源库仍用原图)",
     "新增(门禁): 打包照片总量超过 18MB 直接让构建失败并列出最大的 5 张, 避免以后回流大图又把安装包推过飞书 20MB 上限",
-    "接线: Android / iOS 两条发布工作流都在拷贝 vehicle_images 之后、校验资产之前执行瘦身",
+    "接线: Android / iOS 两条发布工作流都在拷贝 vehicle_images 之后、校验资产之前执行瘦身, 并自动安装 ImageMagick",
+    "说明: 10.27.10 首次打 tag 时因发布镜像未预装 ImageMagick 构建失败, tag 受保护不可移动, 故直接升 10.27.11 重新发版(10.27.10 未产出安装包)",
     "实测: 打包照片 20MB -> 14.09MB; 预计 APK 约 15MB / IPA 约 17MB, 回到飞书单文件上限以内",
     "测试: 新增 test:v10283-package-photo-budget(15 断言): 工作流接线顺序 / dry-run 不改文件 / 预算超限退出 1 / 压缩后最长边不超 1600 / 全量副本回到 18MB 预算内",
     "V10.27.8 发版同步韧性版。一句话总结: 发 v10.27.7 时 Android 那条同步红了 —— 上传返回空响应, upload_all 直接 .json() 抛 JSONDecodeError, 整个进程退出。APK 15.7MB 正好走单请求上传这条路, 一次抖动就白跑一轮。",

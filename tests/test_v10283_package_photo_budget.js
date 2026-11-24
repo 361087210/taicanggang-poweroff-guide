@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * test_v10283_package_photo_budget.js - 打包期照片瘦身（V10.27.10）
+ * test_v10283_package_photo_budget.js - 打包期照片瘦身（V10.27.11）
  * ============================================================
  * 背景: v10.27.9 发版时 APK 21.2MB / IPA 23.3MB 越过飞书单文件约 20MB 上限，
  *   "Sync Release to Feishu" 预上传失败（1061043 file size beyond limit）。
@@ -79,7 +79,7 @@ function mkTmp() {
     check(`W ${name}: 拷贝 vehicle_images 后调用瘦身脚本`, cpAt > 0 && shrinkAt > cpAt);
     check(`W ${name}: 瘦身发生在 Verify bundled web assets 之前`,
       shrinkAt > 0 && shrinkAt < yml.indexOf('Verify bundled web assets'));
-    // v10.27.10 首发踩坑: ubuntu/macOS 镜像都没预装 ImageMagick, 构建在瘦身脚本处失败
+    // v10.27.10 首发踩坑(10.27.11 修复): ubuntu/macOS 镜像都没预装 ImageMagick, 构建在瘦身脚本处失败
     const ensureAt = yml.indexOf('name: Ensure ImageMagick');
     check(`W ${name}: 瘦身前确保 ImageMagick 已安装`, ensureAt > 0 && ensureAt < shrinkAt);
   }

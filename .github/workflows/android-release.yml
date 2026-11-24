@@ -65,7 +65,7 @@ jobs:
           npm install -g cordova@12
           cordova --version
 
-      # V10.27.10: 打包期照片瘦身依赖 ImageMagick; ubuntu-latest 镜像不保证预装, 缺了就装
+      # V10.27.11: 打包期照片瘦身依赖 ImageMagick; ubuntu-latest 镜像不保证预装, 缺了就装
       - name: Ensure ImageMagick
         run: |
           command -v mogrify >/dev/null && command -v identify >/dev/null && { mogrify -version | head -1; exit 0; }
@@ -88,7 +88,7 @@ jobs:
           cp -r css tcg_app/www/css
           cp -r js tcg_app/www/js
           cp -r vehicle_images tcg_app/www/vehicle_images
-          # V10.27.10: 仓库保留原图(资源库/COS 仍用原图), 只压缩打包副本。
+          # V10.27.11: 仓库保留原图(资源库/COS 仍用原图), 只压缩打包副本。
           # 飞书云空间单文件约 20MB, 未压缩的手机原图会把 APK 推过上限导致同步失败。
           node scripts/shrink_bundled_photos.js tcg_app/www/vehicle_images
           mkdir -p tcg_app/scripts
