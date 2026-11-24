@@ -23,7 +23,7 @@ process_media_delete_queue.py — 资源库「硬删除」后台清理作业（V
   export FEISHU_APP_ID=... FEISHU_APP_SECRET=...
   export TCG_COS_SECRET_ID=... TCG_COS_SECRET_KEY=...
   export GH_TOKEN=ghp_xxx              # 需要 repo contents:write
-  python scripts/process_media_delete_queue.py [--dry-run] [--max-items N]
+  python scripts/process_media_delete_queue.py [--dry-run] [--probe] [--max-items N]
 
 退出码: 0 = 无待处理/全部成功; 1 = 至少一条失败(下轮自动重试)
 """
@@ -208,6 +208,57 @@ def cos_delete(key):
             raise RuntimeError('COS 删除返回 HTTP %s' % e.code)
 
 
+def cos_probe():
+    """自检 COS 凭据/策略/桶连通性: 对一个必然不存在的 key 发 DELETE。
+
+    不删除任何真实对象, 只读回 HTTP 状态与 COS 错误码, 用于密钥补全后首次核验:
+      404 NoSuchKey        → 正常(凭据可用 + 有 DeleteObject 权限)
+      403 AccessDenied     → 凭据可用但子用户策略缺 cos:DeleteObject
+      403 SignatureDoesNotMatch / InvalidAccessKeyId → 密钥不对
+      404 NoSuchBucket     → 桶名或地域不对
+    """
+    secret_id = env('TCG_COS_SECRET_ID')
+    secret_key = env('TCG_COS_SECRET_KEY')
+    key = '_probe/never-exists.txt'
+    log('[probe] bucket=%s region=%s key=%s' % (COS_BUCKET, COS_REGION, key))
+    log('[probe] 密钥注入: id=%s key=%s' % ('有' if secret_id else '缺', '有' if secret_key else '缺'))
+    if not secret_id or not secret_key:
+        log('[probe] FAIL 缺少 TCG_COS_SECRET_ID / TCG_COS_SECRET_KEY')
+        return 1
+    url = 'https://%s/%s' % (COS_HOST, urllib.parse.quote(key, safe='/~'))
+    req = urllib.request.Request(url, headers={
+        'Host': COS_HOST,
+        'Authorization': cos_signature(secret_id, secret_key, 'DELETE', key, COS_HOST),
+    }, method='DELETE')
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            log('[probe] HTTP %s (对象本不存在却删除成功, 请检查桶/版本控制)' % r.status)
+            return 1
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', 'replace')[:800]
+        code = ''
+        m = re.search(r'<Code>([^<]+)</Code>', body)
+        if m:
+            code = m.group(1)
+        log('[probe] HTTP %s Code=%s' % (e.code, code or '(无)'))
+        log(body)
+        if e.code == 404 and code in ('NoSuchKey', 'NoSuchObject', ''):
+            log('[probe] PASS 凭据可用, DeleteObject 权限正常')
+            return 0
+        if e.code == 403 and code == 'AccessDenied':
+            log('[probe] FAIL 凭据可用, 但子用户策略缺少 cos:DeleteObject')
+        elif e.code == 403:
+            log('[probe] FAIL 密钥不正确(SignatureDoesNotMatch / InvalidAccessKeyId)')
+        elif e.code == 404:
+            log('[probe] FAIL 桶名或地域不对(NoSuchBucket)')
+        else:
+            log('[probe] FAIL 未预期响应')
+        return 1
+    except Exception as e:
+        log('[probe] FAIL 请求异常: %s' % e)
+        return 1
+
+
 # ---------------------------------------------------------------- GitHub
 def gh_api(path, method='GET'):
     token = env('GH_TOKEN') or env('GITHUB_TOKEN')
@@ -386,8 +437,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry-run', action='store_true', help='只打印计划, 不删不改不写回')
     ap.add_argument('--max-items', type=int, default=30, help='单次最多处理条数(默认 30)')
+    ap.add_argument('--probe', action='store_true', help='只自检 COS 凭据连通性, 不读队列不删文件')
     args = ap.parse_args()
     dry = args.dry_run
+
+    if args.probe:
+        return cos_probe()
 
     feishu = Feishu()
     if not feishu.ready():
