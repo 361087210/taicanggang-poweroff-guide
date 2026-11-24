@@ -415,6 +415,47 @@ function _quickHash(s){
   return ('0000000' + h.toString(16)).slice(-8);
 }
 
+/**
+ * 文件内容哈希（P1 上传判重的基础）
+ * 只采样首尾各 1MB + 总字节数参与摘要：大视频不必整读进内存，且同一文件
+ * 每次得到同一个名字 —— 旧实现把 Date.now() 放进哈希，导致重复上传永远
+ * 判不重、云端堆同样内容的多份文件。
+ */
+async function _fileContentHash(file){
+  try{
+    const size = file.size || 0;
+    const chunk = 1024 * 1024;
+    const head = await file.slice(0, Math.min(chunk, size)).arrayBuffer();
+    const tail = size > chunk ? await file.slice(Math.max(0, size - chunk), size).arrayBuffer() : new ArrayBuffer(0);
+    const bytes = new Uint8Array(head.byteLength + tail.byteLength + 8);
+    bytes.set(new Uint8Array(head), 0);
+    bytes.set(new Uint8Array(tail), head.byteLength);
+    new DataView(bytes.buffer).setFloat64(head.byteLength + tail.byteLength, size, true);
+    if(typeof crypto !== 'undefined' && crypto && crypto.subtle && crypto.subtle.digest){
+      const d = await crypto.subtle.digest('SHA-256', bytes.buffer);
+      return Array.prototype.slice.call(new Uint8Array(d), 0, 4).map(function(b){
+        return ('0' + b.toString(16)).slice(-2);
+      }).join('');
+    }
+    let h = 5381;
+    for(let i = 0; i < bytes.length; i++) h = ((h * 33) ^ bytes[i]) >>> 0;
+    return ('0000000' + h.toString(16)).slice(-8);
+  }catch(e){
+    return _quickHash((file.name || '') + ':' + (file.size || 0));
+  }
+}
+
+/** 内容哈希 → 已上传路径（仅本机记忆，用于跳过重复上传） */
+function _hashIndex(){
+  try{
+    const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('tcg_media_hashes') : null;
+    return raw ? (JSON.parse(raw) || {}) : {};
+  }catch(e){ return {}; }
+}
+function _hashSave(map){
+  try{ if(typeof localStorage !== 'undefined') localStorage.setItem('tcg_media_hashes', JSON.stringify(map || {})); }catch(e){}
+}
+
 function uploadFlow(){
   if(!_canEdit()){ _toast('仅组长可上传资源'); return; }
   const vs = _vehicles();
@@ -480,7 +521,7 @@ async function onUploadFiles(fileList){
   if(!files.length) return;
   if(!_data) _data = { assets: [], orphans: [] };
   _toast('正在上传 ' + files.length + ' 个文件…');
-  let ok = 0, fail = 0;
+  let ok = 0, fail = 0, skip = 0;
   try{
     const token = await window.FeishuAPI.getTenantToken();
     const root = await _dataRoot(token);
@@ -488,29 +529,53 @@ async function onUploadFiles(fileList){
     const MP = _mp();
     const folderName = (MP && typeof MP.folderNameForVehicle === 'function')
       ? MP.folderNameForVehicle(v) : _safeBase(v.display);
+    const hi = _hashIndex();
     for(const file of files){
       const isVideo = /^video\//.test(file.type || '') || /\.(mp4|mov|m4v|webm|avi|mkv)$/i.test(file.name || '');
       const topName = isVideo ? 'vehicle_videos' : 'vehicle_images';
       try{
+        /* P1 判重: 同名同内容(首尾采样哈希)已传过 → 直接跳过, 不再上传第二份 */
+        const hash = await _fileContentHash(file);
+        const seen = hi[hash];
+        if(seen && !isTrashed(seen) && !isPurged(seen)){
+          skip++;
+          continue;
+        }
         const topToken = await _ensureFolder(token, root, topName);
         const dirToken = await _ensureFolder(token, topToken, folderName);
         const key = isVideo ? 'videoPaths' : 'photoPaths';
         const seq = (v[key] || []).length + 1;
         const ext = (/\.([a-z0-9]+)$/i.exec(file.name || '') || [])[1];
+        /* 文件名用内容哈希(不是时间戳): 同一文件重复上传得到同一名字, 云端幂等 */
         const fileName = _safeBase(v.display) + (isVideo ? '_v' : '_p') + seq + '_' +
-          _quickHash(file.name + ':' + file.size + ':' + Date.now()) + '.' +
-          (ext ? ext.toLowerCase() : (isVideo ? 'mp4' : 'jpg'));
+          hash + '.' + (ext ? ext.toLowerCase() : (isVideo ? 'mp4' : 'jpg'));
         const res = await httpUploadFileSmart({ token: token, fileName: fileName, folderToken: dirToken, blob: file });
         if(!res || res.code !== 0) throw new Error((res && res.msg) || '飞书拒绝上传');
         const rel = (MP && typeof MP.photoRelPath === 'function')
           ? (isVideo ? MP.videoRelPath(folderName, fileName) : MP.photoRelPath(folderName, fileName))
           : topName + '/' + folderName + '/' + fileName;
-        const cur = (v[key] || []).slice();
+        const prev = (v[key] || []).slice();
+        const cur = prev.slice();
         cur.push(rel);
         v[key] = cur;
-        if(typeof State !== 'undefined' && State && typeof State.updateVehicle === 'function'){
-          State.updateVehicle(v.id, mediaPatchOf(v));
-        }else if(typeof persistVehicles === 'function') persistVehicles();
+        try{
+          if(typeof State !== 'undefined' && State && typeof State.updateVehicle === 'function'){
+            State.updateVehicle(v.id, mediaPatchOf(v));
+          }else if(typeof persistVehicles === 'function') persistVehicles();
+        }catch(writeErr){
+          /* P1 失败回滚: 本地引用写失败 → 撤回内存改动并删掉刚上传的云端文件,
+           * 避免"云端有文件、台账没引用"的孤儿。 */
+          v[key] = prev;
+          try{
+            const ft = res && res.data && res.data.file_token;
+            if(ft && window.FeishuAPI && typeof window.FeishuAPI.driveDeleteFile === 'function'){
+              await window.FeishuAPI.driveDeleteFile(ft);
+            }
+          }catch(e2){ console.warn('[资源库] 回滚删除失败', e2); }
+          throw writeErr;
+        }
+        hi[hash] = rel;
+        _hashSave(hi);
         if(!_cloud) _cloud = { at: Date.now(), photos: 0, videos: 0, byPath: {}, orphans: [] };
         if(!_cloud.byPath) _cloud.byPath = {};
         _cloud.byPath[rel] = { name: fileName, token: '', size: file.size || 0, folder: folderName };
@@ -537,31 +602,121 @@ async function onUploadFiles(fileList){
     render();
     return;
   }
-  _toast(ok ? ('上传完成 ' + ok + ' 个' + (fail ? '，失败 ' + fail + ' 个' : '')) : '上传失败');
+  _toast(ok
+    ? ('上传完成 ' + ok + ' 个' + (skip ? ('，跳过重复 ' + skip + ' 个') : '') + (fail ? ('，失败 ' + fail + ' 个') : ''))
+    : (skip ? ('这 ' + skip + ' 个文件之前已上传过，已跳过') : '上传失败'));
   if(ok) _scheduleVehicleSync();
   render();
 }
 
-function deleteCloud(path){
-  if(!_canEdit()){ _toast('仅组长可删除云端资源'); return; }
+/* ============================================================
+ * 媒体回收站（V10.28.0 / P0：删除必须可恢复）
+ * ------------------------------------------------------------
+ * 旧行为: deleteCloud 直接 driveDeleteFile 并解除引用, 弹窗写死"不可恢复"。
+ * 现行为: 删除 = 移入回收站(只解引用 + 记台账), 云端文件保留;
+ *   回收站里「恢复」重新挂回原车型,「彻底删除」才真正调 driveDeleteFile。
+ * 记录独立存 localStorage(tcg_media_trash), 与车型数据解耦:
+ *   车型被删后记录仍在, 恢复时若原车型不存在则只回台账(绝不跨车型猜测)。
+ * ============================================================ */
+const TRASH_KEY = 'tcg_media_trash';
+let _trashStoreCache = null;
+let _trashMode = false;
+
+function _videoLike(path){ return /\.(mp4|mov|m4v|webm|avi|mkv)$/i.test(String(path || '')); }
+
+function _trashStore(){
+  if(_trashStoreCache) return _trashStoreCache;
+  try{
+    const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem(TRASH_KEY) : null;
+    const list = raw ? JSON.parse(raw) : [];
+    _trashStoreCache = Array.isArray(list) ? list.filter(Boolean) : [];
+  }catch(e){ _trashStoreCache = []; }
+  return _trashStoreCache;
+}
+function _trashSave(){
+  try{
+    if(typeof localStorage !== 'undefined') localStorage.setItem(TRASH_KEY, JSON.stringify(_trashStore()));
+  }catch(e){}
+}
+function trashEntries(){ return _trashStore().filter(function(t){ return t && !t.purged; }); }
+function trashCount(){ return trashEntries().length; }
+function isTrashed(path){ return !!path && trashEntries().some(function(t){ return t.path === path; }); }
+function isPurged(path){ return !!path && _trashStore().some(function(t){ return t.path === path && t.purged; }); }
+function trashRecord(path){ return trashEntries().find(function(t){ return t.path === path; }) || null; }
+
+/** 当前仍在引用该路径的车型 */
+function _ownersOf(path){
+  return _vehicles().filter(function(v){
+    return (v.photoPaths || []).indexOf(path) >= 0 || (v.videoPaths || []).indexOf(path) >= 0;
+  }).map(function(v){ return { id: v.id, display: v.display }; });
+}
+
+/** 移入回收站(幂等); 只记台账, 不动云端文件 */
+function moveToTrash(path, reason, kind, owners){
+  if(!path) return null;
+  const list = _trashStore();
+  const hit = list.find(function(t){ return t.path === path && !t.purged; });
+  if(hit) return hit;
+  const rec = {
+    path: path,
+    kind: kind || (_videoLike(path) ? 'video' : 'photo'),
+    reason: reason || 'user',
+    at: Date.now(),
+    name: String(path).split('/').pop(),
+    vehicles: owners || _ownersOf(path)
+  };
+  list.push(rec); _trashSave();
+  return rec;
+}
+function dropTrash(path){
+  const list = _trashStore();
+  const i = list.findIndex(function(t){ return t.path === path; });
+  if(i >= 0){ list.splice(i, 1); _trashSave(); }
+}
+function markPurged(path){
+  const list = _trashStore();
+  const rec = list.find(function(t){ return t.path === path && !t.purged; });
+  if(rec){ rec.purged = true; rec.purgedAt = Date.now(); _trashSave(); }
+  return rec || null;
+}
+
+/** 恢复: 重新挂回仍在的车型; 原车型已删则只回台账(无归属) */
+function restoreFromTrash(path){
+  const rec = trashRecord(path);
+  if(!rec){ _toast('回收站中没有该文件'); return false; }
+  const key = rec.kind === 'video' ? 'videoPaths' : 'photoPaths';
+  let relinked = 0;
+  (rec.vehicles || []).forEach(function(info){
+    const v = _vehicles().find(function(x){ return String(x.id) === String(info.id); });
+    if(!v) return;
+    const arr = (v[key] || []).slice();
+    if(arr.indexOf(path) < 0){
+      arr.push(path); v[key] = arr;
+      if(typeof State !== 'undefined' && State && typeof State.updateVehicle === 'function'){
+        State.updateVehicle(v.id, mediaPatchOf(v));
+      }
+      relinked++;
+    }
+  });
+  dropTrash(path);
+  if(relinked) _scheduleVehicleSync();
+  render();
+  _toast(relinked ? ('已恢复并重新引用 ' + relinked + ' 台车型') : '已恢复（原车型已删除，资产回到台账）');
+  return true;
+}
+
+/** 彻底删除: 必须拿到云端句柄, 否则拒绝(避免只删记录、留死文件) */
+function purgeFromTrash(path){
+  if(!_canEdit()){ _toast('仅组长可彻底删除'); return; }
+  const rec = trashRecord(path);
+  if(!rec){ _toast('回收站中没有该文件'); return; }
   const cf = _cloud && _cloud.byPath && _cloud.byPath[path];
-  if(!cf || !cf.token){ _toast('未找到云端文件，请先点「核对云端」'); return; }
-  const doDelete = async function(){
+  if(!cf || !cf.token){ _toast('请先点「核对云端」取得文件句柄，再彻底删除'); return; }
+  const name = cf.name || rec.name || path;
+  const doPurge = async function(){
     try{
       await window.FeishuAPI.driveDeleteFile(cf.token);
-      let unlinked = false;
-      _vehicles().forEach(function(v){
-        if(unlinkPathOf(v, path)){
-          unlinked = true;
-          if(typeof State !== 'undefined' && State && typeof State.updateVehicle === 'function'){
-            State.updateVehicle(v.id, mediaPatchOf(v));
-          }
-        }
-      });
-      if(_data){
-        _data.assets = (_data.assets || []).filter(function(a){ return a.path !== path; });
-        _data.orphans = (_data.orphans || []).filter(function(a){ return a.path !== path; });
-      }
+      markPurged(path);
       if(_cloud){
         _cloud.orphans = (_cloud.orphans || []).filter(function(a){ return a.path !== path; });
         delete _cloud.byPath[path];
@@ -569,18 +724,100 @@ function deleteCloud(path){
         if(sp && sp.top === 'vehicle_videos') _cloud.videos = Math.max(0, (_cloud.videos || 1) - 1);
         else _cloud.photos = Math.max(0, (_cloud.photos || 1) - 1);
       }
-      closePreview();
       render();
-      if(unlinked) _scheduleVehicleSync();
-      _toast('已删除云端文件并解除引用');
+      _toast('已彻底删除云端文件');
     }catch(e){
-      _toast('删除失败: ' + ((e && e.message) || e));
+      _toast('彻底删除失败: ' + ((e && e.message) || e));
     }
   };
   if(typeof showConfirm === 'function'){
-    showConfirm('删除云端文件', '将删除「' + cf.name + '」并解除所有车型引用，不可恢复。', doDelete);
-  }else if(window.confirm && window.confirm('确认删除「' + cf.name + '」？')){
-    doDelete();
+    showConfirm('彻底删除', '「' + name + '」将从云端永久删除，不可恢复。', doPurge);
+  }else if(window.confirm && window.confirm('永久删除「' + name + '」？')){
+    doPurge();
+  }
+}
+
+/** 车型删除级联: 独享媒体入回收站, 共享媒体保持不动 */
+function trashVehicleMedia(id, display){
+  const v = _vehicles().find(function(x){ return String(x.id) === String(id); });
+  if(!v) return 0;
+  let n = 0;
+  [['photoPaths', 'photo'], ['videoPaths', 'video']].forEach(function(pair){
+    (v[pair[0]] || []).forEach(function(p){
+      if(!_isMediaPath(p)) return;
+      const owners = _ownersOf(p);
+      if(owners.length <= 1){
+        moveToTrash(p, 'vehicle_cascade', pair[1], owners.length ? owners : [{ id: v.id, display: display || v.display }]);
+        n++;
+      }
+    });
+  });
+  return n;
+}
+
+function toggleTrash(){
+  _trashMode = !_trashMode;
+  _page = 0;
+  render();
+}
+
+function trashRowHtml(t){
+  const reason = t.reason === 'vehicle_cascade' ? '车型删除级联' : '手动删除';
+  const vs = (t.vehicles || []).map(function(x){ return x && (x.display || x.id); }).filter(Boolean).join('、');
+  const when = new Date(t.at || Date.now());
+  return '<div class="bg-white rounded-xl p-3 flex items-start gap-2">' +
+    '<div class="flex-1 min-w-0">' +
+      '<div class="text-[13px] font-medium text-gray-800 truncate">' + esc(t.name || t.path) + '</div>' +
+      '<div class="text-[11px] text-gray-400 mt-0.5 truncate">' + esc(t.path) + '</div>' +
+      '<div class="text-[11px] text-gray-400 mt-0.5">' + reason +
+        (vs ? (' · ' + esc(vs)) : '') + ' · ' + when.toLocaleString() + '</div>' +
+    '</div>' +
+    '<button onclick="MediaLibrary.restoreFromTrash(\'' + esc(t.path) + '\')" ' +
+      'class="px-2 py-1 text-xs text-blue-600 shrink-0">恢复</button>' +
+    '<button onclick="MediaLibrary.purgeFromTrash(\'' + esc(t.path) + '\')" ' +
+      'class="px-2 py-1 text-xs text-red-500 shrink-0">彻底删除</button>' +
+  '</div>';
+}
+
+function trashHtml(){
+  const list = trashEntries();
+  return '<div class="px-4 mt-3">' +
+    '<div class="rounded-xl bg-amber-50 text-amber-800 text-[11px] leading-relaxed px-3 py-2">' +
+      '回收站只解除引用，<b>不删除云端文件</b>；「彻底删除」才会真正删文件。共 ' + list.length + ' 项。' +
+    '</div>' +
+    '<div class="mt-2 space-y-2">' +
+      (list.length ? list.map(trashRowHtml).join('')
+        : '<div class="text-center text-sm text-gray-400 py-8">回收站是空的</div>') +
+    '</div></div>';
+}
+
+function deleteCloud(path){
+  if(!_canEdit()){ _toast('仅组长可删除资源'); return; }
+  const cf = _cloud && _cloud.byPath && _cloud.byPath[path];
+  const asset = allAssets().find(function(a){ return a.path === path; });
+  const kind = (asset && asset.kind) || (_videoLike(path) ? 'video' : 'photo');
+  const name = (cf && cf.name) || String(path).split('/').pop();
+  const owners = _ownersOf(path);
+  const doTrash = function(){
+    moveToTrash(path, 'user', kind, owners);
+    let unlinked = false;
+    _vehicles().forEach(function(v){
+      if(unlinkPathOf(v, path)){
+        unlinked = true;
+        if(typeof State !== 'undefined' && State && typeof State.updateVehicle === 'function'){
+          State.updateVehicle(v.id, mediaPatchOf(v));
+        }
+      }
+    });
+    closePreview();
+    render();
+    if(unlinked) _scheduleVehicleSync();
+    _toast('已移入回收站，可在回收站恢复');
+  };
+  if(typeof showConfirm === 'function'){
+    showConfirm('移入回收站', '将把「' + name + '」移入回收站并解除所有车型引用；文件不会删除，可随时恢复。', doTrash);
+  }else if(window.confirm && window.confirm('将「' + name + '」移入回收站？')){
+    doTrash();
   }else{
     _toast('需要确认后才能删除');
   }
@@ -714,7 +951,10 @@ function baseAssets(){
 }
 
 function allAssets(){
-  const list = baseAssets().concat((_cloud && _cloud.orphans) || []);
+  /* 回收站/永久删除的路径不再出现在台账与统计里 */
+  const list = baseAssets().concat((_cloud && _cloud.orphans) || []).filter(function(a){
+    return a && a.path && !isTrashed(a.path) && !isPurged(a.path);
+  });
   if(_cloud && _cloud.byPath){
     list.forEach(function(a){
       if(a && _isMediaPath(a.path)) a.cloudState = _cloud.byPath[a.path] ? 'present' : 'absent';
@@ -934,6 +1174,7 @@ function bodyHtml(){
     return '<div class="mx-4 mt-4 p-3 rounded-xl bg-red-50 text-red-600 text-sm">' + esc(_error) +
       '<button onclick="MediaLibrary.refresh(true)" class="ml-2 underline">重试</button></div>';
   }
+  if(_trashMode) return trashHtml();
   if(!_data){
     return '<div class="mx-4 mt-6 text-center text-sm text-gray-400">' + (_loading ? '正在加载资源索引…' : '点击刷新加载') + '</div>';
   }
@@ -980,7 +1221,8 @@ function bodyHtml(){
     '<div class="px-4 mt-2 text-[11px] ' + (_cloudErr ? 'text-red-500' : 'text-gray-400') + '">' +
       (_cloudErr ? esc(_cloudErr)
         : (_cloud
-            ? '云端实测：照片 ' + _cloud.photos + ' · 视频 ' + _cloud.videos + ' · 无台账 ' + (_cloud.orphans || []).length +
+            ? '云端实测：照片 ' + _cloud.photos + ' · 视频 ' + _cloud.videos + ' · 无台账 ' +
+              (_cloud.orphans || []).filter(function(a){ return a && !isTrashed(a.path) && !isPurged(a.path); }).length +
               ' · ' + new Date(_cloud.at).toTimeString().slice(0, 5)
             : '台账为仓库索引快照，可能滞后；点右上「核对云端」与飞书实际文件对账')) +
     '</div>' +
@@ -1002,6 +1244,9 @@ function render(){
         '<p class="text-[11px] text-gray-400 mt-0.5">车型照片 · 视频 · 缺失与共享台账</p></div>' +
       '<button onclick="MediaLibrary.checkCloud()" class="px-2 py-1 text-xs text-emerald-600">' + (_cloudBusy ? '核对中…' : '核对云端') + '</button>' +
       (_canEdit() ? '<button onclick="MediaLibrary.uploadFlow()" class="px-2 py-1 text-xs text-blue-600">上传</button>' : '') +
+      '<button onclick="MediaLibrary.toggleTrash()" class="px-2 py-1 text-xs ' +
+        (_trashMode ? 'text-amber-600 font-medium' : 'text-gray-500') + '">回收站' +
+        (trashCount() ? (' ' + trashCount()) : '') + '</button>' +
       '<button onclick="MediaLibrary.refresh(true)" class="px-2 py-1 text-xs text-blue-600">刷新</button>' +
     '</div>' +
     '<div class="flex-1 scroll-y min-h-0 pb-24">' + bodyHtml() + '</div>';
@@ -1266,6 +1511,15 @@ window.MediaLibrary = {
   uploadFlow: uploadFlow,
   onUploadFiles: onUploadFiles,
   deleteCloud: deleteCloud,
+  /* V10.28.0 回收站: 删除可恢复 */
+  toggleTrash: toggleTrash,
+  restoreFromTrash: restoreFromTrash,
+  purgeFromTrash: purgeFromTrash,
+  trashVehicleMedia: trashVehicleMedia,
+  trashCount: trashCount,
+  trashEntries: trashEntries,
+  isTrashed: isTrashed,
+  moveToTrash: moveToTrash,
   loadCloudPreview: loadCloudPreview,
   setPage: setPage,
   /* 纯函数: 供单测直接引用 */

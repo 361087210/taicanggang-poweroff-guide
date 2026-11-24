@@ -114,6 +114,7 @@ const TEST_SUITES = [
   'test:v10276-pages-retry',
   'test:v10277-feishu-dedupe',
   'test:v10278-feishu-upload-retry',
+  'test:v10280-media-trash',
   'test:media-source-bench',
   'test:cross'
 ];

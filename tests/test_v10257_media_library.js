@@ -236,7 +236,9 @@ function cloudSandbox(overrides){
   try { M.deleteCloud('vehicle_images/车型不存在/stray.jpeg'); } catch(e){}
   M.deleteCloud('vehicle_images/stray.jpeg');
   await sleep(30);
-  check('M8i 删除调用云端接口', env.ctx._deleted === 1, String(env.ctx._deleted));
+  /* V10.28.0: 删除改为软删除(移入回收站), 不再直接调云端删除接口 */
+  check('M8i 删除只入回收站、不删云端文件', !env.ctx._deleted && M.isTrashed('vehicle_images/stray.jpeg'),
+    'deleted=' + env.ctx._deleted + ' trashed=' + M.isTrashed('vehicle_images/stray.jpeg'));
   check('M8j 删除后列表移除', html().indexOf('stray.jpeg') < 0);
   check('M8k 无台账计数递减', /无台账 1/.test(html()), html().match(/无台账 \d+/));
 

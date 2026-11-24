@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-23T14:15:11.190Z",
+  "generatedAt": "2026-11-24T12:50:49.193Z",
   "qiniu": {
     "bucket": "tcg-media",
     "cdnBase": "",
@@ -244,8 +244,8 @@
       "photos": [
         {
           "fileName": "比亚迪鲨鱼皮卡（SHARK）_p1_4d3599e1.jpg",
-          "sha256": "",
-          "size": 0,
+          "sha256": "f039a9631f291580282c9753dc4e5f63455cf637e519db45af0eacef2c9eb6ea",
+          "size": 4657434,
           "mime": "image/jpeg",
           "qiniuKey": ""
         }
@@ -3237,6 +3237,13 @@
         6
       ]
     },
+    "f039a9631f291580282c9753dc4e5f63455cf637e519db45af0eacef2c9eb6ea": {
+      "qiniuKey": "",
+      "releaseAsset": "",
+      "vehicleIds": [
+        8
+      ]
+    },
     "e5e0b585d758dc8de6915cb7cf499a523acff18159f83b049b66f4c1f98eef5a": {
       "qiniuKey": "",
       "releaseAsset": "",
@@ -4450,6 +4457,6 @@
     "vehicleCount": 100,
     "photoCount": 267,
     "videoCount": 62,
-    "totalBytes": 15322055
+    "totalBytes": 19979489
   }
 }
