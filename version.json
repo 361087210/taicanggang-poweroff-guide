@@ -1,8 +1,15 @@
 {
-  "version": "10.26.6",
-  "versionCode": 102606,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.6/tcg_poweroff_v10.26.6.apk",
+  "version": "10.26.7",
+  "versionCode": 102607,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.26.7/tcg_poweroff_v10.26.7.apk",
   "releaseNotes": [
+    "V10.26.7 工程治理版。一句话总结: 补齐行业标准里最缺的三块 —— 分支/tag 保护与协作规范、全局错误捕获与诊断上报、依赖与供应链治理(dependabot + action 固定 SHA)。",
+    "治理(分支): main 开启规则集保护 —— 必须 PR、必过 CI(Web资产与安全校验)+Secret Scan、线性历史、禁 force push/删除; 管理员保留应急绕过(有记录)",
+    "治理(tag): 发布 tag(v*) 禁止移动/删除 —— 打错了就发下一个 patch, 不再 tag -f(此前本项目发生过多次)",
+    "治理(协作): 新增 CODEOWNERS / PR 模板(自检清单) / CONTRIBUTING(分支、提交、发版、数据、可观测性规范)",
+    "可观测(前端): 新增 js/17-error-report.js —— 捕获 window.onerror + unhandledrejection, 本地环形缓冲 20 条(落盘前掩码手机号/邮箱/身份证), 每小时最多自动上报 1 条到飞书反馈表; 我的页新增「复制诊断信息」",
+    "供应链: 新增 dependabot.yml(npm 每周分组 + actions 每月); 16 条 workflow 的 34 处 action 引用全部固定到 commit SHA(防 tag 漂移)",
+    "说明: 18 个依赖漏洞均来自 cordova 构建链(dev 期, 不进客户端运行包), cordova 已是最新 13.0.0; 后续由 dependabot 逐条升级",
     "V10.26.6 清晰度与韧性版。一句话总结: 把调色板压缩造成的画质损失退回无损(12 张 PNG), 同时把\"太模糊\"的真因量化出来 —— 170 项素材源分辨率不足(照片多为 433px 宽); 另加媒体缺失韧性(媒体只是补充, 丢了不影响车型功能)、改名自愈与增删改查守卫。",
     "修复(画质): 撤回 12 张 PNG 的调色板压缩(1.89MB → 4.96MB), 恢复无损; 根因是**源图分辨率**低(433×606 在 2x/3x 屏上被放大), 不是编码问题",
     "新增(清晰度可观测): 资源库索引记录每张照片的宽高, 低于 900px 标「低清」并给尺寸; 顶部提示低清数量(当前 170 项), 支持「低清」筛选 —— 推动按 ≥1200px 补拍",

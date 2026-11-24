@@ -24,12 +24,12 @@ jobs:
       # fetch-depth: 0 —— **两端错配门禁必需**: 默认浅克隆(depth 1)拿不到 tag 与
       #   merge-base, 门禁会退化成恒 exit 2(等于不存在)。见 scripts/check_two_end_sync.js
       - name: 检出代码
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
       - name: 配置 Node 22
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '22'
 
