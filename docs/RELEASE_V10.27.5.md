@@ -1,4 +1,4 @@
-# V10.27.3 播放源可配置版
+# V10.27.5 播放源可配置版
 
 > 一句话：把"视频从哪儿播"从写死的单一 GitHub Release，改成**可配置的候选链**
 > （对象存储 CDN 主 → Release 备），并给每个源加 30 分钟健康记忆。
@@ -33,7 +33,7 @@ const MEDIA_PLAYBACK_SOURCES = [
 - 开启方式：`js/00-config.js` 里 `MEDIA_CDN_BASE: 'https://cdn.example.com/tcg/media'`；
 - 只接受 **https 绝对地址**（`http:` 混合内容会被浏览器拦、相对路径无法确认域名），
   非法值被静默忽略并保持单源；
-- **未配置时行为与 10.27.2 逐字节一致**（候选链退化为单元素数组），
+- **未配置时行为与 10.27.4 逐字节一致**（候选链退化为单元素数组），
   这意味着本版即使不发新配置也零风险。
 
 ### 2. 候选链回退（`js/06-media.js`）
@@ -54,7 +54,7 @@ const MEDIA_PLAYBACK_SOURCES = [
 
 ## 测试
 
-`tests/test_v10273_playback_sources.js`（**31 断言**），全部跑真实源码（`node:vm`）：
+`tests/test_v10275_playback_sources.js`（**31 断言**），全部跑真实源码（`node:vm`）：
 
 - **A** 未配置 CDN：单源、URL 与旧格式逐字符相同（向后兼容）；
 - **B/C** 配置与非法配置：CDN 在前、尾部斜杠归一化、`http:`/相对路径/空白被拒绝；
@@ -65,7 +65,7 @@ const MEDIA_PLAYBACK_SOURCES = [
 
 ## 验证
 
-- 全量套件 **76/76** 通过（新增本版 1 套）；
+- 全量套件 **77/77** 通过（新增本版 1 套）；
 - `check:version-consistency`、`check:two-end`、`secret-scan` 全绿；
 - 无头 Chrome 启动 demo.html 首屏无报错（未配置 CDN 路径与旧版一致）。
 

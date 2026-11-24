@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.27.5',
+    date: '2026-11-24',
+    highlight: '播放源可配置: 对象存储 CDN 主 + Release 备, 带源健康记忆',
+    features: [
+      '视频播放源改为注册表 + 候选链: 填 MEDIA_CDN_BASE 即启用 CDN 主源',
+      '主源失败自动降级备源, 不再直接掉进无密钥的飞书源',
+      '源健康记忆 30 分钟: 坏源靠后, 成功一次即恢复主源优先',
+      '不配置 CDN 时行为与上版完全一致(单源, 零风险)'
+    ]
+  },
+  {
     version: 'V10.27.4',
     date: '2026-11-24',
     highlight: '车型详情 ↔ 资源库双向联动: 媒体状态徽标 + 点按定位台账行',
@@ -753,7 +764,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.4'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.5'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * ============================================================
- * test_v10273_playback_sources.js — 播放源候选链与健康记忆
+ * test_v10275_playback_sources.js — 播放源候选链与健康记忆
  * ============================================================
  * 为什么要有这一版测试：
  *   视频从"只有一个 GitHub Release 源"扩展成"对象存储 CDN 主 + Release 备"后，
@@ -52,7 +52,10 @@ function extractFn(code, name) {
   return code.slice(m.index, j);
 }
 
-const registryStart = BOOT.indexOf('/* ================= V10.27.3: 播放源注册表');
+/* 标记里带版本号, 发版升号时会被一起改掉（本轮就踩到: 源码 V10.27.3 / 断言 V10.27.5
+ * 导致切片为空、ctx 里根本没有注册表）。这里用正则只认"播放源注册表"这个稳定语义。 */
+const _regMark = /\/\* =+ V\d+(?:\.\d+)*: 播放源注册表/.exec(BOOT);
+const registryStart = _regMark ? _regMark.index : -1;
 const registryEnd = BOOT.indexOf('/**\n * 查询视频的首选直链(V5.3.5)');
 /* mediaDirectUrl 的文档注释被切在 registry 之外, 但函数体要一并加载(旧调用点仍在用它) */
 const REGISTRY = BOOT.slice(registryStart, registryEnd) + (extractFn(BOOT, 'mediaDirectUrl') || '');
@@ -98,7 +101,7 @@ function buildCtx(opts) {
 }
 
 /* ---------------- A. 向后兼容：没配 CDN 时与旧版一致 ---------------- */
-section('A. 未配置 CDN：行为必须与 V10.27.2 完全一致');
+section('A. 未配置 CDN：行为必须与 V10.27.4 完全一致');
 
 {
   const ctx = buildCtx();

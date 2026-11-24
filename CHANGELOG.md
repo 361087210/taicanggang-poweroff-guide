@@ -2,6 +2,29 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.27.5] - 2026-11-24
+
+### 播放源可配置：CDN 主 + Release 备，带源健康记忆
+
+#### ✨ 新增:
+- `MEDIA_PLAYBACK_SOURCES` 注册表（`js/00-bootstrap.js`）：播放源从"写死一个 URL"变成"有序候选链"。在 `js/00-config.js` 填 `MEDIA_CDN_BASE` 即启用对象存储为主源，Release 自动降为备源；留空则与 10.27.4 **逐字节一致**（零风险）
+- 只接受 `https:` 绝对地址：`http:`（混合内容会被浏览器拦）、相对路径、空白一律忽略并保持单源
+- 源健康记忆 `MEDIA_SOURCE_HEALTH`：失败源 30 分钟内排到候选链末尾，成功一次立刻恢复主源优先；全部源都坏过时仍按序试一遍而不是直接空态
+
+#### 🔄 变更:
+- 源② 从"单串直链"改为候选链 `_playCandidateChain()`：主源 onerror / 8 秒停滞 → 自动降级备源 → 才进入别名 / 飞书 / CDN 回退；只有成功源的 URL 写入落盘缓存
+- 别名回退（改名后的视频）同样走候选链，不再比未改名视频少一层保障
+- 每次源尝试都带会话守卫：关闭播放器后不再续拉流
+
+#### 🧪 测试:
+- 新增 `tests/test_v10275_playback_sources.js`（31 断言）：向后兼容、非法配置拒绝、健康记忆 TTL、**候选链假播放器实跑**（真回退而非文本断言）、接线守卫（改回单串会被 G2 抓）
+- 全量 77/77
+
+#### 📄 文档:
+- `docs/VIDEO_SOURCE_EVAL.md`：三源评估（实测、加权矩阵、一票否决、12 问清单、迁移 5 步、CI 阈值）
+- `scripts/bench_media_sources.js` + `docs/media_source_bench.json`：可复现基准与留痕
+- `docs/RELEASE_V10.27.5.md`
+
 ## [10.27.4] - 2026-11-24
 
 ### 发版修复（功能同 10.27.3）
