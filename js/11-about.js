@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.27.7',
+    date: '2026-11-24',
+    highlight: '发版产物唯一性: 飞书不再出现同名副本',
+    features: [
+      '修复: Android/iOS 两个同步任务并发上传导致的同名副本(构建时间接近时必然发生)',
+      '修复: 副本清不掉 —— 覆盖前删除"全部"同名文件, 而不是只删一条',
+      '修复: 终验改为"在且唯一", 副本不再被报成完成',
+      '清理: v10.27.1 / v10.27.2 / v10.27.5 的存量副本已清, 各目录恢复 4 件'
+    ]
+  },
+  {
     version: 'V10.27.6',
     date: '2026-11-24',
     highlight: 'Pages 部署可靠性: 等工件可见 + 失败重试一次',
@@ -774,7 +785,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.6'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.7'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

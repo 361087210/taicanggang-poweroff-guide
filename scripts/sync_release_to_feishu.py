@@ -98,6 +98,32 @@ def list_children(token, folder_token):
     return files
 
 
+def list_children_all(token, folder_token):
+    """列出目录子项, **按名字分组保留全部同名项**(list_children 用 name 做键会把副本吞掉)。
+
+    V10.27.7: 飞书允许同名文件共存, 而覆盖式上传在"两个同步任务并发"时会各传一份,
+    产生[同名副本](v10.27.2 曾一对四)。用 dict 聚合时副本只会剩一条,
+    于是 delete_if_exists 每次只删一条、副本永远清不干净 —— 这里改成 name -> [全部项]。
+    """
+    groups, page_token = {}, None
+    while True:
+        params = {"folder_token": folder_token, "page_size": 200}
+        if page_token:
+            params["page_token"] = page_token
+        resp = requests.get(f"{FEISHU_API}/drive/v1/files", headers={"Authorization": f"Bearer {token}"},
+                            params=params, timeout=30)
+        d = resp.json()
+        if d.get("code") != 0:
+            raise Exception(f"列出文件失败(folder={folder_token}): code={d.get('code')} {d.get('msg')}")
+        data = d.get("data") or {}
+        for f in data.get("files", []):
+            groups.setdefault(f.get("name"), []).append(f)
+        if not data.get("has_more"):
+            break
+        page_token = data.get("page_token")
+    return groups
+
+
 def get_or_create_folder(token, parent_token, name):
     children = list_children(token, parent_token)
     existing = children.get(name)
@@ -114,19 +140,28 @@ def get_or_create_folder(token, parent_token, name):
 
 
 def delete_if_exists(token, folder_token, name):
-    """同名文件先删后传,保证幂等"""
-    children = list_children(token, folder_token)
-    old = children.get(name)
-    if not old or old.get("type") != "file":
-        return False
-    qps_gate()
-    resp = requests.delete(f"{FEISHU_API}/drive/v1/files/{old['token']}",
-                           headers={"Authorization": f"Bearer {token}"},
-                           params={"type": "file"}, timeout=30)
-    d = resp.json()
-    if d.get("code") != 0:
-        print(f"  [WARN] 删除旧文件[{name}]失败: {d.get('msg')}(将继续上传,可能出现同名副本)")
-    return True
+    """同名文件先删后传,保证幂等。删除**全部**同名文件(含并发留下的副本)。
+
+    V10.27.7: 旧实现只删一条 —— 一旦目录里已经有两个同名文件,
+    每次同步删一个补一个, 副本数量永远不降。返回值改为删除条数。
+    """
+    olds = [f for f in list_children_all(token, folder_token).get(name, []) if f.get("type") == "file"]
+    if not olds:
+        return 0
+    if len(olds) > 1:
+        print(f"  [清理] {name} 有 {len(olds)} 个同名文件(历史并发遗留), 全部删除后重传")
+    deleted = 0
+    for old in olds:
+        qps_gate()
+        resp = requests.delete(f"{FEISHU_API}/drive/v1/files/{old['token']}",
+                               headers={"Authorization": f"Bearer {token}"},
+                               params={"type": "file"}, timeout=30)
+        d = resp.json()
+        if d.get("code") != 0:
+            print(f"  [WARN] 删除旧文件[{name}]失败: {d.get('msg')}(将继续上传,可能出现同名副本)")
+        else:
+            deleted += 1
+    return deleted
 
 
 def upload_all_once(token, folder_token, path, name):
@@ -258,17 +293,20 @@ def main():
         results.append((name, os.path.getsize(path), d.get("file_token", "")))
         print(f"  [OK] {'覆盖' if deleted else '新增'} {name} → file_token={str(d.get('file_token'))[:16]}...")
 
-    # 终验: 重新列举目标目录
+    # 终验: 重新列举目标目录 —— "在" 且 "唯一"(V10.27.7 起同名副本也算失败)
     print(f"\n=== 云端目录终验 (v{APP_VERSION}) ===")
-    final = list_children(token, ver_folder)
+    groups = list_children_all(token, ver_folder)
     ok = True
     for name, size, _ in results:
-        hit = final.get(name)
-        if hit and hit.get("type") == "file":
-            print(f"  ✓ {name}")
-        else:
+        got = [f for f in groups.get(name, []) if f.get("type") == "file"]
+        if not got:
             ok = False
             print(f"  ✗ {name} 未在云端发现!")
+        elif len(got) > 1:
+            ok = False
+            print(f"  ✗ {name} 有 {len(got)} 份同名副本(应唯一)")
+        else:
+            print(f"  ✓ {name}")
     print(f"\n[{'完成 ✔' if ok else '存在缺失 ✗'}] 共 {len(results)} 个产物 → 飞书 {DATA_FOLDER_NAME}/{RELEASE_FOLDER_NAME}/v{APP_VERSION}/")
     sys.exit(0 if ok else 1)
 

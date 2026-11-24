@@ -112,6 +112,7 @@ const TEST_SUITES = [
   'test:v10273-media-link',
   'test:v10275-playback',
   'test:v10276-pages-retry',
+  'test:v10277-feishu-dedupe',
   'test:media-source-bench',
   'test:cross'
 ];

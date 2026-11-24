@@ -1,8 +1,13 @@
 {
-  "version": "10.27.6",
-  "versionCode": 102706,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.6/tcg_poweroff_v10.27.6.apk",
+  "version": "10.27.7",
+  "versionCode": 102707,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.7/tcg_poweroff_v10.27.7.apk",
   "releaseNotes": [
+    "V10.27.7 发版产物唯一性修复版。一句话总结: 飞书「发版产物」里同一个 APK/IPA 出现两份 —— 根因是 Android 与 iOS 构建完成时间接近, 两个同步任务并发覆盖上传; 更隐蔽的是副本清不掉(list_children 用文件名做键, 副本被聚合成一条, 每次只删一条再传一条), 而终验只查\"名字能查到\"所以一直显示完成。",
+    "修复(产生): 同步任务加 concurrency(release-feishu-sync, 不取消进行中的任务), 两个构建完成事件串行执行",
+    "修复(自愈): 覆盖前删除**全部**同名文件(list_children_all 按名字分组保留全部项), 存量副本下次该版本重跑时自动清掉",
+    "修复(判定): 终验改为\"在且唯一\" —— 同名副本算失败, 不再把脏数据报成完成 ✔",
+    "清理(存量): v10.27.1(重复 IPA)、v10.27.2(4 个产物全一对二)、v10.27.5(重复 IPA) 已手工清理, 现各 4 件",
     "V10.27.6 Pages 部署可靠性修复版。一句话总结: 发 v10.27.5 时 Pages 连续 4 次部署失败(上传成功但 deploy-pages 报 \"No artifacts named github-pages\"), 根因是工件元数据的秒级可见性延迟, 而该 action 只查一次; 现在先等 15 秒再部署, 并保留一次重试。",
     "修复(部署): deploy-pages 前加等待步骤(工件元数据最终一致); 首次失败不再中断 —— continue-on-error + 一次重试, 重试仍失败才算红, 避免把偶发竞态记成发布失败",
     "兜底(页面地址): environment.url 优先取重试步骤的输出, 首次成功时回落到首次输出",

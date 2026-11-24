@@ -82,10 +82,19 @@ check('E2 RUNBOOK 说明 V10.27.6 起已自动化(等 + 重试), 不必每次手
 /* ---------------- F. 版本一致 ---------------- */
 section('F. 版本');
 
+
+/* 版本断言只校验"不倒退 + 编码自洽", 不写死当前版本号 ——
+ * 否则下一个版本升号时这里必红(本轮就踩了: v10.27.6 的套件在 10.27.7 时 F2 红)。 */
+function vnum(v) { return String(v).split('.').map(Number).reduce((a, b) => a * 100 + b, 0); }
+function code(v) { const [a, b, c] = String(v).split('.').map(Number); return a * 10000 + b * 100 + c; }
+
 const vj = JSON.parse(read('version.json'));
-check('F1 version.json 已升到 10.27.6', vj.version === '10.27.6', vj.version);
-check('F2 versionCode 为数字且单调递增', typeof vj.versionCode === 'number' && vj.versionCode === 102706, String(vj.versionCode));
-check('F3 本版发布说明已写入 releaseNotes',
+check('F1 版本不低于 10.27.6(本版已发布, 允许继续升号)',
+  vnum(vj.version) >= vnum('10.27.6'), vj.version);
+check('F2 versionCode 为数字且与 version 自洽',
+  typeof vj.versionCode === 'number' && vj.versionCode === code(vj.version),
+  vj.version + ' vs ' + String(vj.versionCode));
+check('F3 发布说明里有 10.27.6 这一版(历史不被抹掉)',
   Array.isArray(vj.releaseNotes) && vj.releaseNotes.some((n) => /10\.27\.6/.test(n)));
 
 console.log('\n  结果: ' + pass + ' 通过, ' + fail + ' 失败');

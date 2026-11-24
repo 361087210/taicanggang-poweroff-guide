@@ -10,7 +10,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts"))
 from sync_release_to_feishu import (
     get_token, list_children, get_or_create_folder,
-    upload_file, delete_if_exists, DATA_FOLDER_NAME, RELEASE_FOLDER_NAME,
+    upload_file, delete_if_exists, list_children_all, DATA_FOLDER_NAME, RELEASE_FOLDER_NAME,
     QPS_INTERVAL, qps_gate, APP_VERSION
 )
 
@@ -39,16 +39,28 @@ def sync_to_root(token, root_token, assets_dir):
         results.append((name, os.path.getsize(path), d.get("file_token", "")))
         print(f"  [OK] {'覆盖' if deleted else '新增'} {name} ({os.path.getsize(path):,} B)")
 
-    # 终验
-    final = list_children(token, ver_folder)
+    # 终验: 既要"都在", 也要"都只有一份"
+    # V10.27.7: 旧版只看"名字能查到" —— list_children 用 name 做键, 同名副本被吞成一条,
+    # 所以 v10.27.2 那对四副本、v10.27.1/v10.27.5 的重复 IPA 一直显示"完成 ✔"。
+    groups = list_children_all(token, ver_folder)
     ok = True
     for name, _, _ in results:
-        if final.get(name) and final[name].get("type") == "file":
-            print(f"    ✓ {name}")
-        else:
+        got = [f for f in groups.get(name, []) if f.get("type") == "file"]
+        if not got:
             ok = False
             print(f"    ✗ {name} 缺失!")
-    print(f"  {'完成 ✔' if ok else '存在缺失 ✗'} 共 {len(results)} 个产物")
+        elif len(got) > 1:
+            # 并发窗口里别人又传了一份 —— 当作失败, 让 workflow 红灯/下轮自我修复
+            ok = False
+            print(f"    ✗ {name} 有 {len(got)} 份副本(应唯一)")
+        else:
+            print(f"    ✓ {name}")
+    extra = [n for n, fs in groups.items()
+             if len([f for f in fs if f.get("type") == "file"]) > 1]
+    if extra:
+        ok = False
+        print(f"  [副本] 目录里仍有重名文件: {', '.join(sorted(set(extra)))}")
+    print(f"  {'完成 ✔' if ok else '存在问题 ✗'} 共 {len(results)} 个产物")
     return ok
 
 
