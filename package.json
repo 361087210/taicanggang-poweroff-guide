@@ -5,7 +5,7 @@
   "description": "太仓港商品车断电操作标准化指导平台（PWA + Cordova 安卓/iOS 双端）",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=18"
+    "node": "^20.19.0 || ^22.13.0 || >=24.0.0"
   },
   "dependencies": {
     "cordova": "^13.0.0"

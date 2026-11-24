@@ -177,7 +177,8 @@ section('P3 计算字段不可被入参覆盖');
   const c = makeCtx();
   const v = c.State.addVehicle(Object.assign({}, BASE,
     { id: 9999, brandId: 'HACK', photos: 99, videos: 99, pinyin: 'HACK' }));
-  check('P3a id 不被覆盖(自增语义)', v.id === 1, v.id);
+  /* 安全加固: 主键改为"时间戳*1000+随机"防碰撞, 不再有"从1开始自增"的字面量 */
+  check('P3a id 不被入参覆盖(生成值)', v.id !== 9999 && Number.isSafeInteger(v.id) && v.id > 0, v.id);
   check('P3b brandId 不被覆盖', v.brandId === 'b1', v.brandId);
   check('P3c photos 计数不被覆盖', v.photos === 1, v.photos);
   check('P3d videos 计数不被覆盖', v.videos === 1, v.videos);

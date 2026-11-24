@@ -132,13 +132,15 @@ section('B组: State守卫行为(副本/增删改/防提权)');
   check('B1 State.vehicles 返回副本(外部改动不污染)', sb.run('(function(){const c=State.vehicles;c.push({id:999});return VEHICLES.length===1&&c.length===2;})()'));
   check('B2 State.users 返回副本', sb.run('(function(){const c=State.users;c.pop();return USERS.length===1&&c.length===0;})()'));
   const created = sb.run('State.addVehicle({brand:"品牌Y",series:"S2",config:"C",display:"越野B",size:"5米",position:"舱内",steps:[],keyFrame:[],keyContainer:[],remarks:"",photoPaths:["a.jpg"],videoPaths:[]})');
-  check('B3 addVehicle id自增+brandId映射+兜底字段', created.id === 2 && created.brandId === 'by' && created.powerType === '纯电' && Array.isArray(created.steps) && created.steps.length === 1 && created.pinyin === '越野B');
+  /* 安全加固: 主键改为"时间戳*1000+随机"防多设备碰撞, 不再断言具体数值,
+   * 只校验安全整数、单调大于已有 maxId, 且本机不重复。 */
+  check('B3 addVehicle id防碰撞+brandId映射+兜底字段', Number.isSafeInteger(created.id) && created.id > 1 && created.brandId === 'by' && created.powerType === '纯电' && Array.isArray(created.steps) && created.steps.length === 1 && created.pinyin === '越野B');
   check('B4 addVehicle photos/videos计数+持久化1次', created.photos === 1 && created.videos === 0 && sb.stubs.persists === 1);
   check('B5 addVehicle 究竟入列(VEHICLES.length=2)', sb.run('VEHICLES.length') === 2);
-  const up = sb.run('State.updateVehicle(2,{display:"越野B2"})');
+  const up = sb.run('State.updateVehicle(' + created.id + ',{display:"越野B2"})');
   check('B6 updateVehicle 合并+持久化', up && up.display === '越野B2' && sb.stubs.persists === 2);
   check('B7 updateVehicle 未命中→null(不抛错)', sb.run('State.updateVehicle(999,{x:1})') === null);
-  check('B8 removeVehicle 命中→true并出列+持久化', sb.run('(function(){const ok=State.removeVehicle(2);return ok&&VEHICLES.length===1&&VEHICLES[0].id===1;})()') && sb.stubs.persists === 3);
+  check('B8 removeVehicle 命中→true并出列+持久化', sb.run('(function(){const ok=State.removeVehicle(' + created.id + ');return ok&&VEHICLES.length===1&&VEHICLES[0].id===1;})()') && sb.stubs.persists === 3);
   check('B9 removeVehicle 未命中→false', sb.run('State.removeVehicle(999)') === false);
   check('B10 replaceVehicles 原地整体替换(引用不变)', sb.run('(function(){const ref=VEHICLES;const n=State.replaceVehicles([{id:7},{id:8}]);return ref===VEHICLES&&n===2&&VEHICLES[1].id===8;})()'));
   check('B11 pushVehicle 追加不持久化(调用方统一persist)', sb.run('(function(){State.pushVehicle({id:9});return VEHICLES.length===3;})()') && sb.stubs.persists === 3);

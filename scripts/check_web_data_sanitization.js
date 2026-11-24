@@ -29,6 +29,7 @@
  *   E. 明文手机号取值(全产物): 值中出现未掩码的 11 位手机号形态
  *   F. linkKey 形态: 出现时必须为 64 位 hex(PBKDF2-HMAC-SHA256 派生)
  *   G. 脱敏哨兵: users / feedback 产物必须携带 sanitized === true
+ *   H. 姓名脱敏: 账号表 name 为 2-4 个汉字(真实姓名形态)且不在角色标签白名单 → 视为未脱敏
  *
  * 运行: node scripts/check_web_data_sanitization.js [web-data目录]
  * 退出码: 0 = 通过(目录不存在时按"跳过"处理); 1 = 发现未脱敏/可疑内容
@@ -48,6 +49,11 @@ const FEEDBACK_FIELD_ALLOWLIST = ['反馈ID', '问题板块', '问题描述', '�
 /* 反馈产物为嵌套结构: item 包装层允许的键 —— 与生成侧 sanitizeFeedback 的输出对象一致 */
 const FEEDBACK_ITEM_ALLOWLIST = ['fields', 'record_id', 'created_time'];
 const APPROVED_FIELD_ALLOWLIST = ['id', 'name', 'linkKey', 'role', 'status', 'created'];
+/* 姓名脱敏口径(与 scripts/sync_web_data.js 的 maskPersonName 对齐):
+ * 2-4 个汉字的真实姓名必须已掩码(如 "成**"), 角色标签白名单原样放行。
+ * 目的: 防止真实姓名随公开 GitHub Pages 镜像外泄。 */
+const NAME_LABEL_ALLOWLIST = ['组长', '管理员', '组员', '跨网络组员', '测试', '测试员'];
+const CJK_PERSON_NAME_RE = /^[\u4e00-\u9fa5]{2,4}$/;
 const SENSITIVE_FIELD_RE = /(联系方式|设备信息|提交人|手机|电话|邮箱|邮件|微信|QQ|IMEI|设备型号|系统版本|平台|APP版本|角色|姓名|账号|IP|定位|地址)/i;
 const CREDENTIAL_FIELD_RE = /(password|passwd|pwd|pw_?ts|token|secret|salt)/i;
 const PLAIN_PHONE_FIELD_RE = /^(phone|mobile|tel|telephone)$/i;
@@ -160,6 +166,14 @@ if (users) {
   if (Array.isArray(users.users)) {
     if (users.sanitized !== true) add('missing-sentinel', 'approved_users.web.json', 'sanitized', users.sanitized);
     checkRecordKeys(users.users, APPROVED_FIELD_ALLOWLIST, 'approved_users.web.json', 'users');
+    /* H: 真实姓名未脱敏(2-4 汉字且不在角色标签白名单) */
+    users.users.forEach((u, i) => {
+      if (!u || typeof u !== 'object') return;
+      const name = u.name;
+      if (typeof name === 'string' && CJK_PERSON_NAME_RE.test(name) && NAME_LABEL_ALLOWLIST.indexOf(name) === -1) {
+        add('unmasked-name', 'approved_users.web.json', 'users[' + i + '].name', name);
+      }
+    });
   } else {
     add('bad-shape', 'approved_users.web.json', 'users', 'not an array');
   }
