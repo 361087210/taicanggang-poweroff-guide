@@ -192,9 +192,15 @@ const State={
    * @returns {object} 新建车辆对象(含id/pinyin/photos/videos计数)
    */
   addVehicle(data){
-    const maxId=VEHICLES.reduce((m,v)=>Math.max(m,v.id),0);
+    /* 主键防碰撞: 旧版 maxId+1 在两台组长设备离线各新增时必然撞号,
+     * 同步合并后 Object.assign 互相覆盖(串档), 媒体归属也会错配。
+     * 改为"毫秒时间戳*1000 + 随机数"(约 1.8e15, 小于 MAX_SAFE_INTEGER,
+     * 与既有 13 位数字 ID 完全兼容), 再与 maxId+1 取大保证单调递增、
+     * 不与本机已有 ID 重复。 */
+    const maxId=VEHICLES.reduce((m,v)=>Math.max(m,Number(v.id)||0),0);
+    const newId=Math.max(Date.now()*1000+Math.floor(Math.random()*1000),maxId+1);
     const brandObj=BRANDS.find(b=>b.name===data.brand);
-    const v={id:maxId+1,brandId:brandObj?brandObj.id:'custom',brand:data.brand,series:data.series,config:data.config,display:data.display,powerType:data.powerType||'纯电',size:data.size,position:data.position,steps:data.steps&&data.steps.length?data.steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:data.keyFrame&&data.keyFrame.length?data.keyFrame:['钥匙数量绑扎检查完'],keyContainer:data.keyContainer&&data.keyContainer.length?data.keyContainer:['车辆进箱无需收钥匙'],remarks:data.remarks,photos:data.photoPaths.length,photoPaths:data.photoPaths,videos:data.videoPaths.length,videoPaths:data.videoPaths,pinyin:getPinyin(data.display),photoSections:data.photoSections,photoLabels:data.photoLabels,keyPhotoRemark:data.keyPhotoRemark};
+    const v={id:newId,brandId:brandObj?brandObj.id:'custom',brand:data.brand,series:data.series,config:data.config,display:data.display,powerType:data.powerType||'纯电',size:data.size,position:data.position,steps:data.steps&&data.steps.length?data.steps:['打开主驾驶车门，确认全部车窗关闭，取出车钥匙'],keyFrame:data.keyFrame&&data.keyFrame.length?data.keyFrame:['钥匙数量绑扎检查完'],keyContainer:data.keyContainer&&data.keyContainer.length?data.keyContainer:['车辆进箱无需收钥匙'],remarks:data.remarks,photos:data.photoPaths.length,photoPaths:data.photoPaths,videos:data.videoPaths.length,videoPaths:data.videoPaths,pinyin:getPinyin(data.display),photoSections:data.photoSections,photoLabels:data.photoLabels,keyPhotoRemark:data.keyPhotoRemark};
     /* 透传: 调用方传入但字面量未列出的字段一并保留(追加在末尾, 不改变既有键序)。
      * 只用 "字面量里没有的键" 判断, 因此 id/brandId/photos/videos/pinyin 等
      * 计算字段不会被入参覆盖。语义与 updateVehicle 的 Object.assign 对齐。

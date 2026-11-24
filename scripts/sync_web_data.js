@@ -156,7 +156,8 @@ const SENSITIVE_FIELD_RE = /(联系方式|设备信息|提交人|手机|电话|�
  * 允许出库的判定标准: 网页端账号链路**必需**且不可识别到个人。
  *   - id     : 账号主键(09-web-sync.js 换设备登录重建/存活守卫/差集时用)
  *   - name   : 组员显示名(09-web-sync.js 状态传播 / 组长端列表展示);
- *              命中手机号形态时强制掩码 —— 保留可辨识性, 去掉号码本体
+ *              命中手机号形态时强制掩码; 本次加固起真实姓名(2-4 个汉字)同样
+ *              掩码为"姓氏+"**"", 防止真实姓名随公开镜像外泄(角色标签白名单除外)
  *   - linkKey: 网页账号连接键 = PBKDF2(password, LINK_SALT|phone)。
  *              ⚠️ 熵来自密码: 拿不到密码就无法由公开镜像反推手机号;
  *              客户端在拿到明文密码的瞬间派生并透传, 本脚本只透传不重算。
@@ -189,6 +190,24 @@ function maskPhoneLike(s){
     out = str.slice(0, 3) + '****' + str.slice(-2);
   }
   return out;
+}
+
+/* 角色标签白名单: 这些不是个人姓名, 掩码后会丢失业务语义, 原样保留 */
+const NAME_LABEL_ALLOWLIST = ['组长', '管理员', '组员', '跨网络组员', '测试', '测试员'];
+
+/**
+ * 姓名脱敏: 手机号形态走 maskPhoneLike; 2-4 个汉字的真实姓名保留姓氏首字,
+ * 其余字符掩码为 *(成佃亚 → 成**)。角色标签(组长/组员等)原样保留。
+ * 背景: web-data/ 发布在公开 GitHub Pages, 真实姓名属个人信息, 不应出库。
+ * @param {*} s - 原始显示名
+ * @returns {string} 脱敏后的显示名
+ */
+function maskPersonName(s){
+  const str = maskPhoneLike(s);
+  if(!str) return '';
+  if(NAME_LABEL_ALLOWLIST.indexOf(str) !== -1) return str;
+  if(/^[\u4e00-\u9fa5]{2,4}$/.test(str)) return str.charAt(0) + '*'.repeat(str.length - 1);
+  return str;
 }
 
 /** Bitable 字段值归一: 多选/单选等数组形态展平为字符串(与 10-feedback.js _flat 同义) */
@@ -470,7 +489,7 @@ function sanitizeApprovedUsers(raw){
       if(SENSITIVE_FIELD_RE.test(k) || CREDENTIAL_FIELD_RE.test(k) || PLAIN_PHONE_FIELD_RE.test(k)) continue;
       let v = u[k];
       if(v === undefined || v === null) continue;
-      if(k === 'name') v = maskPhoneLike(v);
+      if(k === 'name') v = maskPersonName(v);
       if(k === 'linkKey'){
         // 只接受 PBKDF2 派生 64 位 hex 形态; 其它值一律不输出
         v = /^[0-9a-f]{64}$/i.test(String(v)) ? String(v).toLowerCase() : '';

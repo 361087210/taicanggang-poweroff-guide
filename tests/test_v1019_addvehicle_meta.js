@@ -103,7 +103,8 @@ const v3 = State.addVehicle({
   steps: [], keyFrame: [], keyContainer: [], remarks: '', photoPaths: [], videoPaths: [],
   id: 999, brandId: 'hack', photos: 99, videos: 99, pinyin: 'hack'
 });
-check('S3b id 不被入参覆盖', v3.id === 3, String(v3.id));
+/* 安全加固: 主键改为防碰撞生成, 语义是"忽略入参 id 且单调大于已有 maxId" */
+check('S3b id 不被入参覆盖(生成值且大于已有 maxId)', v3.id !== 999 && Number.isSafeInteger(v3.id) && v3.id > 2, String(v3.id));
 check('S3c brandId 不被入参覆盖(未知品牌→custom)', v3.brandId === 'custom', String(v3.brandId));
 check('S3d photos/videos 计数不被入参覆盖', v3.photos === 0 && v3.videos === 0, v3.photos + '/' + v3.videos);
 check('S3e pinyin 不被入参覆盖', v3.pinyin === 'PY:X', String(v3.pinyin));
