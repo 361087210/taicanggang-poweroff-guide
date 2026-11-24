@@ -1,8 +1,14 @@
 {
-  "version": "10.27.8",
-  "versionCode": 102708,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.8/tcg_poweroff_v10.27.8.apk",
+  "version": "10.27.9",
+  "versionCode": 102709,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.9/tcg_poweroff_v10.27.9.apk",
   "releaseNotes": [
+    "V10.27.9 媒体资源治理版。一句话总结: 按对照审查清单把三块 P0/P1 差距补齐 —— 删除可恢复(回收站)、COS 国内源接入、资源库改为媒体单一真源。",
+    "新增(回收站): 资源库删除改为软删除 —— 只写回收站记录与墓碑, 云端文件保留; 可「恢复」或「彻底删除」, 归属车型与类型随记录保存",
+    "新增(COS 国内源): MEDIA_COS_BASE 接入腾讯云对象存储公有读桶, 照片/视频按 CDN → COS → GitHub → 飞书 的顺序分流, 未命中安静回退",
+    "重构(单一真源): 资源库上传/删除只写媒体登记表(本地 + 云端 media_registry.json), 不再整份覆盖车型数据; 渲染统一合并「车型基线 + 登记表」, 多端修改不再互相覆盖",
+    "修复(同步): 下载改为增量拉取登记表并合并(下载→并集→上传), 旧快照回传不再把已删文件带回来",
+    "测试: 新增 test:v10282-single-source(36 断言), 并同步更新 test:v10257/v10280/v10281/v1013/v1037 断言到新语义",
     "V10.27.8 发版同步韧性版。一句话总结: 发 v10.27.7 时 Android 那条同步红了 —— 上传返回空响应, upload_all 直接 .json() 抛 JSONDecodeError, 整个进程退出。APK 15.7MB 正好走单请求上传这条路, 一次抖动就白跑一轮。",
     "修复(解析): 新增 safe_json() —— 非 JSON 响应变成带 http 码与响应片段的普通异常, 不再抛 JSONDecodeError",
     "修复(重试): 单请求上传(<=16MB)对空响应/5xx 重试 2 次, 两次都失败才抛, 并带上最后一次原因",

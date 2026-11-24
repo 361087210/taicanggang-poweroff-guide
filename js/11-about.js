@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.27.9',
+    date: '2026-11-24',
+    highlight: '媒体资源治理: 回收站 + COS 国内源 + 媒体单一真源',
+    features: [
+      '新增: 资源库删除可恢复 —— 回收站记录 + 墓碑, 云端文件保留, 支持恢复/彻底删除',
+      '新增: COS 国内源直链(公有读桶), 照片与视频按 CDN → COS → GitHub → 飞书 分流',
+      '重构: 资源库上传/删除只写媒体登记表, 不再整份覆盖车型数据; 渲染时合并「车型基线 + 登记表」',
+      '修复: 同步改为增量合并登记表(下载→并集→上传), 旧快照回传不会让已删文件"复活"'
+    ]
+  },
+  {
     version: 'V10.27.8',
     date: '2026-11-24',
     highlight: '发版同步韧性: 上传遇空响应/网关错误自动重试',
@@ -796,7 +807,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.8'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.9'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
