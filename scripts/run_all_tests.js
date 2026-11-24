@@ -117,6 +117,7 @@ const TEST_SUITES = [
   'test:v10280-media-trash',
   'test:v10281-cos',
   'test:v10282-single-source',
+  'test:v10283-package-photo-budget',
   'test:media-source-bench',
   'test:cross'
 ];

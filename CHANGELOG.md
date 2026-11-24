@@ -2,6 +2,22 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.27.10] - 2026-11-24
+
+### 发版包体积修复：打包期照片压缩 + 体积预算门禁
+
+#### 🐛 修复:
+- v10.27.9 的 APK 21.2MB / IPA 23.3MB 越过飞书云空间单文件约 20MB 上限，`Sync Release to Feishu` 预上传失败（1061043 file size beyond limit）。根因是仓库里一张 4.4MB 手机原图被原样打进 `www/vehicle_images`
+
+#### ✨ 新增:
+- `scripts/shrink_bundled_photos.js`：打包时对超过 800KB 或最长边超过 1600px 的 jpg 生成压缩副本（quality 80），**仓库原图保持不变**（资源库/COS 仍用原图）
+- 体积预算门禁：打包照片总量超过 18MB 直接让构建失败，并列出最大的 5 张，避免以后回流大图再次顶穿飞书上限
+- Android / iOS 两条发布工作流都在拷贝 `vehicle_images` 之后、校验资产之前执行瘦身
+
+#### ✅ 测试:
+- 新增 `test:v10283-package-photo-budget`（13 断言）：工作流接线顺序 / dry-run 不改文件 / 预算超限退出 1 / 压缩后最长边不超 1600 / 全量副本回到 18MB 预算内
+- 实测打包照片 20MB → 14.09MB
+
 ## [10.27.9] - 2026-11-24
 
 ### 媒体资源治理：回收站 + COS 国内源 + 媒体单一真源
