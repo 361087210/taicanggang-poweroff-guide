@@ -1,8 +1,13 @@
 {
-  "version": "10.27.7",
-  "versionCode": 102707,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.7/tcg_poweroff_v10.27.7.apk",
+  "version": "10.27.8",
+  "versionCode": 102708,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.8/tcg_poweroff_v10.27.8.apk",
   "releaseNotes": [
+    "V10.27.8 发版同步韧性版。一句话总结: 发 v10.27.7 时 Android 那条同步红了 —— 上传返回空响应, upload_all 直接 .json() 抛 JSONDecodeError, 整个进程退出。APK 15.7MB 正好走单请求上传这条路, 一次抖动就白跑一轮。",
+    "修复(解析): 新增 safe_json() —— 非 JSON 响应变成带 http 码与响应片段的普通异常, 不再抛 JSONDecodeError",
+    "修复(重试): 单请求上传(<=16MB)对空响应/5xx 重试 2 次, 两次都失败才抛, 并带上最后一次原因",
+    "修复(分片): upload_prepare / upload_finish 同样走 post_json(同一类风险)",
+    "说明: Android/iOS 两条同步只要有一条成功, 目录就是全的; 本版让\"偶发一次网络抖动\"不再需要人工重跑",
     "V10.27.7 发版产物唯一性修复版。一句话总结: 飞书「发版产物」里同一个 APK/IPA 出现两份 —— 根因是 Android 与 iOS 构建完成时间接近, 两个同步任务并发覆盖上传; 更隐蔽的是副本清不掉(list_children 用文件名做键, 副本被聚合成一条, 每次只删一条再传一条), 而终验只查\"名字能查到\"所以一直显示完成。",
     "修复(产生): 同步任务加 concurrency(release-feishu-sync, 不取消进行中的任务), 两个构建完成事件串行执行",
     "修复(自愈): 覆盖前删除**全部**同名文件(list_children_all 按名字分组保留全部项), 存量副本下次该版本重跑时自动清掉",

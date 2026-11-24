@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.27.8',
+    date: '2026-11-24',
+    highlight: '发版同步韧性: 上传遇空响应/网关错误自动重试',
+    features: [
+      '修复: 上传返回空体时不再抛 JSONDecodeError 让整个同步进程退出',
+      '新增: 单请求上传(≤16MB)失败重试 2 次，两次都失败才报错并附原因',
+      '新增: 分片上传的预上传/完成同样安全解析',
+      '说明: Android / iOS 两条同步只要一条成功，飞书目录就是完整的'
+    ]
+  },
+  {
     version: 'V10.27.7',
     date: '2026-11-24',
     highlight: '发版产物唯一性: 飞书不再出现同名副本',
@@ -785,7 +796,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.7'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.8'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

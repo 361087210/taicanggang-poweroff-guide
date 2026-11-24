@@ -164,18 +164,45 @@ def delete_if_exists(token, folder_token, name):
     return deleted
 
 
+def safe_json(resp, what):
+    """响应体可能不是 JSON(V10.27.8 实测: 上传被网关中断, 返回空体 → resp.json() 抛
+    JSONDecodeError, 整个发版同步直接红)。把非 JSON 也变成带上下文的普通异常,
+    好让上层的重试逻辑能接手。"""
+    try:
+        return resp.json()
+    except ValueError:
+        body = (resp.text or "")[:200].replace("\n", " ")
+        raise Exception(f"{what} 响应非 JSON(http={getattr(resp, 'status_code', '?')}): {body!r}")
+
+
+def post_json(url, what, **kwargs):
+    """POST 并安全解析 JSON —— 网络抖动返回空体时不要抛 JSONDecodeError。"""
+    return safe_json(requests.post(url, **kwargs), what)
+
+
 def upload_all_once(token, folder_token, path, name):
+    """单请求上传(<=16MB)。网络抖动时会返回空体/非 2xx, 这里重试 2 次再放弃 ——
+    APK 15.7MB 正好落在这条路径上, 偶发一次就把整个发版同步拖红不值得。"""
     size = os.path.getsize(path)
-    qps_gate()
-    with open(path, "rb") as f:
-        resp = requests.post(
-            f"{FEISHU_API}/drive/v1/files/upload_all",
-            headers={"Authorization": f"Bearer {token}"},
-            data={"file_name": name, "parent_type": "explorer",
-                  "parent_node": folder_token, "size": str(size)},
-            files={"file": (name, f, "application/octet-stream")},
-            timeout=600)
-    return resp.json()
+    last = None
+    for attempt in range(1, 3):
+        qps_gate()
+        try:
+            with open(path, "rb") as f:
+                resp = requests.post(
+                    f"{FEISHU_API}/drive/v1/files/upload_all",
+                    headers={"Authorization": f"Bearer {token}"},
+                    data={"file_name": name, "parent_type": "explorer",
+                          "parent_node": folder_token, "size": str(size)},
+                    files={"file": (name, f, "application/octet-stream")},
+                    timeout=600)
+            if getattr(resp, "status_code", 200) >= 500:
+                raise Exception(f"服务端 {resp.status_code}")
+            return safe_json(resp, f"上传[{name}]")
+        except Exception as e:  # 网络/网关/非 JSON 一律重试
+            last = e
+            print(f"  [WARN] 上传[{name}] 第 {attempt} 次失败: {str(e)[:160]}")
+    raise Exception(f"上传[{name}] 连续 2 次失败: {str(last)[:200]}")
 
 
 def upload_multipart(token, folder_token, path, name):
@@ -185,12 +212,12 @@ def upload_multipart(token, folder_token, path, name):
         raise Exception(f"文件超过500MB上限: {name}")
     for session in range(2):  # 1061021事务过期允许整段重传1次
         qps_gate()
-        prep = requests.post(f"{FEISHU_API}/drive/v1/files/upload_prepare",
-                             headers={"Authorization": f"Bearer {token}",
-                                      "Content-Type": "application/json; charset=utf-8"},
-                             json={"file_name": name, "parent_type": "explorer",
-                                   "parent_node": folder_token, "size": size},
-                             timeout=60).json()
+        prep = post_json(f"{FEISHU_API}/drive/v1/files/upload_prepare", f"分片预上传[{name}]",
+                         headers={"Authorization": f"Bearer {token}",
+                                  "Content-Type": "application/json; charset=utf-8"},
+                         json={"file_name": name, "parent_type": "explorer",
+                               "parent_node": folder_token, "size": size},
+                         timeout=60)
         if prep.get("code") != 0:
             raise Exception(f"预上传失败[{name}]: {prep.get('msg')}")
         p = prep["data"]
@@ -236,11 +263,11 @@ def upload_multipart(token, folder_token, path, name):
                 continue
             raise Exception(f"分片事务两次过期,上传失败: {name}")
         qps_gate()
-        fin = requests.post(f"{FEISHU_API}/drive/v1/files/upload_finish",
-                            headers={"Authorization": f"Bearer {token}",
-                                     "Content-Type": "application/json; charset=utf-8"},
-                            json={"upload_id": upload_id, "block_num": block_num},
-                            timeout=60).json()
+        fin = post_json(f"{FEISHU_API}/drive/v1/files/upload_finish", f"分片完成[{name}]",
+                        headers={"Authorization": f"Bearer {token}",
+                                 "Content-Type": "application/json; charset=utf-8"},
+                        json={"upload_id": upload_id, "block_num": block_num},
+                        timeout=60)
         if fin.get("code") != 0:
             raise Exception(f"完成上传失败[{name}]: {fin.get('msg')}")
         return fin["data"]

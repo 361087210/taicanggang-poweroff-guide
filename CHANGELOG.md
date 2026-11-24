@@ -2,6 +2,23 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.27.8] - 2026-11-24
+
+### 发版同步韧性：上传遇空响应/网关错误自动重试
+
+#### 🐛 修复:
+- 发 v10.27.7 时 Android 那条 `Sync Release to Feishu` 红了：`requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)`。上传请求返回**空体**（网关中断），而 `upload_all_once` 直接 `.json()` → 异常 → 整个同步进程退出。APK 15.7MB 正好走单请求上传这条路，一次抖动就白跑一轮
+- 新增 `safe_json()`：非 JSON 响应转成带 `http=` 与响应片段的普通异常，不再抛 `JSONDecodeError`
+- 单请求上传（≤16MB）对空响应 / 5xx **重试 2 次**，两次都失败才抛并附最后一次原因
+- 分片上传的 `upload_prepare` / `upload_finish` 同样走 `post_json()`（同一类风险）
+
+#### 📝 说明:
+- Android/iOS 两条同步只要有一条成功，飞书目录就是完整的；本版让"偶发一次网络抖动"不再需要人工重跑
+- `docs/RUNBOOK.md` 补充该症状与处置
+
+#### ✅ 测试:
+- 新增 `test_v10278_feishu_upload_retry`（17 断言）：safe_json 捕获范围、http 码与片段、重试 2 次、5xx 判定、qps 节流、分片路径无裸 `.json()`、RUNBOOK 互链、版本自洽
+
 ## [10.27.7] - 2026-11-24
 
 ### 飞书发版产物唯一性：同名副本的根治
