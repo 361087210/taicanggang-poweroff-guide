@@ -107,6 +107,7 @@ const TEST_SUITES = [
   'test:v10266-independence',
   'test:v10267-error-report',
   'test:v10268-governance',
+  'test:v10272-ci-pr-secrets',
   'test:cross'
 ];
 

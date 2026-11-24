@@ -34,13 +34,17 @@ jobs:
           node-version: '22'
 
       # V10.12: 构建期Secret注入前置校验——CI Secrets中若已配置FEISHU_*就校验注入脚本就绪;
-      # Pull Requests from fork 无Secrets权限→FEISHU_STRICT=0跳过,不阻断回归测试
-      - name: Secret注入基线校验(缺Secrets权限时降级不阻断)
+      # 这一步在 CI 里只校验"注入脚本本身能用、仓库里没有明文密钥", 不注入真实值。
+      # 真实注入在 android-release.yml / ios-release.yml 里做(那边要求 secrets 齐全, 少了直接失败)。
+      # 因此这里一律 FEISHU_STRICT=0: PR(尤其 dependabot 的 PR 来自同仓库分支而非 fork)拿不到
+      # secrets, 旧写法只对 fork 降级, 导致所有依赖升级 PR 恒红(2026-11 实测 #20~#25 全红,
+      # 18 个漏洞因此无法落地) —— CI 不该因为"没有密钥"这种正常状态而失败。
+      - name: Secret注入基线校验(CI 不注入真实密钥, 缺失仅告警)
         env:
           FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
           FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
           FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
-          FEISHU_STRICT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true && '0' || '' }}
+          FEISHU_STRICT: '0'
         run: node scripts/inject_build_secrets.js --check
 
       - name: 综合校验(文件/语法/标记/JSON/凭证泄露)

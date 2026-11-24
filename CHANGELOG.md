@@ -2,6 +2,18 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.27.2] - 2026-11-24
+
+### 修通依赖升级的 CI：没有密钥不该算失败
+
+#### 🔴 修复:
+- `ci.yml` 的「Secret注入基线校验」原本只在 **fork PR** 时降级，而 dependabot 的 PR 来自**同仓库分支**——拿不到 secrets 却仍按严格模式校验，于是 6 个依赖升级 PR 全红
+- 后果是 18 个依赖漏洞（9 high）的升级 PR 永远合不进来：门禁把"正常状态"判成了失败
+- 现改为 CI 内一律 `FEISHU_STRICT=0`（缺失仅告警）。真实注入仍只发生在 `android-release.yml` / `ios-release.yml`，那边缺 secrets 依旧直接失败
+
+#### 🧪 测试:
+- 新增 `tests/test_v10272_ci_pr_secrets.js`（15 断言）：钉住 CI 不依赖 secrets、真实构建未被降级、降级不等于删掉校验、dependabot 回路仍在
+
 ## [10.27.1] - 2026-11-24
 
 ### 运维与可信度：RUNBOOK、严格规则集模板、覆盖率双口径

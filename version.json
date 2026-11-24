@@ -1,9 +1,9 @@
 {
-  "version": "10.27.1",
-  "versionCode": 102701,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.1/tcg_poweroff_v10.27.1.apk",
+  "version": "10.27.2",
+  "versionCode": 102702,
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.27.2/tcg_poweroff_v10.27.2.apk",
   "releaseNotes": [
-    "V10.27.1 运维与可信度版。一句话总结: 补上 RUNBOOK(回滚/数据恢复/故障处置/演练/值班路径)与严格分支规则集模板, 并让覆盖率门禁同时报\"可归因 98%\"和\"整体 80.45%\"两个口径; 同时清掉写死数据量的脆弱断言。",
+    "V10.27.2 运维与可信度版。一句话总结: 补上 RUNBOOK(回滚/数据恢复/故障处置/演练/值班路径)与严格分支规则集模板, 并让覆盖率门禁同时报\"可归因 98%\"和\"整体 80.45%\"两个口径; 同时清掉写死数据量的脆弱断言。",
     "运维: 新增 docs/RUNBOOK.md —— 线上拓扑、网页/App/数据三种回滚、常见故障(含 Pages 重复 artifact / 规则集拒推 / 媒体 404)处置、季度恢复演练、值班升级路径",
     "治理: 新增 .github/rulesets/branch-strict.json 与 tag-protect.json —— 自动化能满足必需检查后, 一键恢复\"强制 PR + 必过 CI/Secret Scan\"",
     "可信度: 覆盖率门禁现在同时打印「可归因 98.09%」与「整体 80.45%（其中不可归因占源码行 18.0%）」, 避免把子集口径误读成全项目",
