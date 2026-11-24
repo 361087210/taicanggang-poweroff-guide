@@ -19,18 +19,20 @@ permissions:
   issues: write
   # main 分支保护要求走 PR: 自动同步改为"自动分支 + 自动合并", 需要 PR 写权限
   pull-requests: write
+  # GITHUB_TOKEN 创建的 PR 不会自动触发 workflow, 需显式派发 CI/Secret Scan 补齐必需检查
+  actions: write
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7
         with:
           persist-credentials: true
 
       - name: Setup Node
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -89,6 +91,11 @@ jobs:
             PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --state open \
                    --json number --jq '.[0].number // empty')
           fi
+          # GitHub 不会为 GITHUB_TOKEN 创建的 PR 自动触发 workflow(防递归),
+          #   必需检查 "Web资产与安全校验" / "scan" 会永远缺失 → 自动合并被 BLOCK。
+          #   显式在自动分支上派发两个 workflow, 让检查落到同一个 head SHA 上。
+          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
+          gh workflow run secret-scan.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
           gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --auto --delete-branch
 
       # 恢复即自动关单: 失败 issue 不再需要人肉收尾
