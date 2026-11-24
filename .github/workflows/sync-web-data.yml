@@ -17,19 +17,29 @@ permissions:
   contents: write
   # 失败自动登记 issue / 成功自动关闭, 需要 issues: write
   issues: write
-  # main 分支保护要求走 PR: 自动同步改为"自动分支 + 自动合并", 需要 PR 写权限
-  pull-requests: write
-  # GITHUB_TOKEN 创建的 PR 不会自动触发 workflow, 需显式派发 CI/Secret Scan 补齐必需检查
-  actions: write
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      # 直推 main 依赖 owner 身份的 fine-grained PAT:
+      #   1) ruleset「保护分支」要求线性历史, admin(RepositoryRole) 有 always bypass;
+      #   2) GITHUB_TOKEN 推送的事件不会触发后续 workflow, deploy-pages 拿不到新数据。
+      # 缺少密钥时明确报错, 不允许静默跳过 —— 静默跳过等于镜像停更无人察觉。
+      - name: Preflight (require SYNC_TOKEN)
+        env:
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          if [ -z "${SYNC_TOKEN:-}" ]; then
+            echo "::error::缺少 secrets.SYNC_TOKEN: 请创建 fine-grained PAT(仅本仓库, Contents: Read and write) 并保存为仓库 Secret SYNC_TOKEN。"
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
           persist-credentials: true
+          token: ${{ secrets.SYNC_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -65,9 +75,7 @@ jobs:
           node scripts/gen_media_mapping.js
           node scripts/gen_media_library.js
 
-      - name: Commit & sync via auto-merge PR if changed
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit & push if changed
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -78,25 +86,7 @@ jobs:
             exit 0
           fi
           git commit -m "chore: 自动同步数据 (web-data + vehicles_data + manifest) ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
-          # main 已启用分支保护(必须走 PR + 必需状态检查), 机器人不能直接 push。
-          # 改为推到固定自动分支 → 复用/新建 PR → 开启自动合并, 检查全绿后由 GitHub 合并。
-          BRANCH="auto/sync-web-data"
-          git push --force origin "HEAD:refs/heads/$BRANCH"
-          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --state open \
-                 --json number --jq '.[0].number // empty')
-          if [ -z "$PR" ]; then
-            gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$BRANCH" \
-              --title "chore: 自动同步数据镜像" \
-              --body "由 \`Sync Web Data Mirror\` 工作流自动生成，仅包含 web-data/ 与 vehicles_data.js、媒体映射/manifest 生成物。合并前需通过必需检查。"
-            PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --state open \
-                   --json number --jq '.[0].number // empty')
-          fi
-          # GitHub 不会为 GITHUB_TOKEN 创建的 PR 自动触发 workflow(防递归),
-          #   必需检查 "Web资产与安全校验" / "scan" 会永远缺失 → 自动合并被 BLOCK。
-          #   显式在自动分支上派发两个 workflow, 让检查落到同一个 head SHA 上。
-          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
-          gh workflow run secret-scan.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
-          gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --auto --delete-branch
+          git push origin HEAD:main
 
       # 恢复即自动关单: 失败 issue 不再需要人肉收尾
       - name: Close auto-filed failure issue on success
