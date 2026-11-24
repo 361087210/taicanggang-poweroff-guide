@@ -67,6 +67,7 @@ node scripts/gen_media_library.js
 | 症状 | 先查 | 处置 |
 |---|---|---|
 | Pages 部署失败 `Multiple artifacts named "github-pages"` | 是否**重跑**过失败的部署 job | 不要重跑；用 `workflow_dispatch` 触发一次**全新**部署 |
+| Pages 部署失败 `No artifacts named "github-pages" were found`（上传那步其实是 success） | 工件元数据可见性延迟 | **V10.27.6 起已自动化**：部署前 `sleep 15` + 首次失败自动重试一次。若两者都失败，再 `workflow_dispatch` 全新部署；连续两次全红才当故障排查 |
 | 同步流水线红：`push declined due to repository rule violations` | 分支保护规则集 | 见 §3（机器人令牌 / 规则集） |
 | 同步流水线红：`改名迁移未完成` | `migrate_vehicle_rename --json` | 有冲突（目标目录已存在）→ 人工确认后合并文件再 `--apply` |
 | 现场照片 404 | 资源库「断链」筛选 | 改名失配 → 跑 `migrate_vehicle_rename --apply`；无主目录 → 确认归属后移动文件 |

@@ -2,6 +2,23 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.27.6] - 2026-11-24
+
+### Pages 部署可靠性：等工件可见 + 失败重试一次
+
+#### 🐛 修复:
+- **部署竞态**：发 v10.27.5 时 Pages 连续 4 次失败，上传步骤 success（工件 ID / 字节数 / finalize 全正常），紧接着 `deploy-pages` 报 `No artifacts named "github-pages" were found`；事后用 API 查同一个 run，工件明明在。根因是工件元数据的秒级可见性延迟，而 `deploy-pages` 只查一次
+- 部署前加等待步骤（`sleep 15`），让元数据先可见
+- 首次部署失败不再中断（`continue-on-error: true`），自动重试一次；只有重试仍失败才算红 —— 偶发竞态不再被记成"发布失败"
+
+#### 🔧 其他:
+- `environment.url` 优先取重试步骤输出，首次成功时回落到首次输出
+- `docs/RUNBOOK.md` 补充这条症状的处置说明（含"V10.27.6 起已自动化"）
+- 站点内容与 10.27.5 **完全一致**（本版只改 CI），因门禁要求"共享文件变更必须升版"而单独发一版
+
+#### ✅ 测试:
+- 新增 `test_v10276_pages_deploy_retry`（19 断言）：步骤顺序、等待真的 sleep、`continue-on-error`、重试条件与独立 id、url 兜底表达式、action 仍固定 SHA、权限未被削弱、发布白名单未被放宽、RUNBOOK 互链、版本一致
+
 ## [10.27.5] - 2026-11-24
 
 ### 播放源可配置：CDN 主 + Release 备，带源健康记忆

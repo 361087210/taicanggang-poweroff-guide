@@ -8,6 +8,16 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.27.6',
+    date: '2026-11-24',
+    highlight: 'Pages 部署可靠性: 等工件可见 + 失败重试一次',
+    features: [
+      '修复: 部署前等待工件元数据可见(此前连续 4 次报 No artifacts named github-pages)',
+      '首次部署失败不再中断, 自动重试一次; 重试仍失败才算红',
+      '站点内容与 V10.27.5 一致, 本版仅改 CI'
+    ]
+  },
+  {
     version: 'V10.27.5',
     date: '2026-11-24',
     highlight: '播放源可配置: 对象存储 CDN 主 + Release 备, 带源健康记忆',
@@ -764,7 +774,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.5'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.6'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

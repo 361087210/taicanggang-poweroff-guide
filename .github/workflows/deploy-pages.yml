@@ -35,7 +35,7 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment_retry.outputs.page_url || steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -78,6 +78,19 @@ jobs:
         with:
           path: './_publish'
 
+      # V10.27.6: 工件元数据有秒级可见性延迟, 而 deploy-pages 只查一次就失败
+      # (报 "No artifacts named github-pages", 但 artifacts 接口随后就能查到)。
+      # 2026-11-24 发 v10.27.5 时连续 4 次撞上, 所以先等一会再部署。
+      - name: 等待工件元数据可见(Pages 部署竞态)
+        run: sleep 15
+
       - name: Deploy to GitHub Pages
         id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+        continue-on-error: true
+
+      # 仍失败时补一次(首次失败发生在"查工件元数据"这一步, 尚未创建部署, 重试安全)
+      - name: Deploy to GitHub Pages (重试一次)
+        id: deployment_retry
+        if: steps.deployment.outcome != 'success'
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

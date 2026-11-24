@@ -111,6 +111,7 @@ const TEST_SUITES = [
   'test:v10272-ci-pr-secrets',
   'test:v10273-media-link',
   'test:v10275-playback',
+  'test:v10276-pages-retry',
   'test:media-source-bench',
   'test:cross'
 ];
