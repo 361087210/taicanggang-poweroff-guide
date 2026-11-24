@@ -1,0 +1,32 @@
+# 依赖更新策略（行业标准最小集）
+version: 2
+updates:
+  # npm 依赖：每周一次，安全更新优先；按组提交减少 PR 噪音
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    groups:
+      dev-tooling:
+        patterns: ["c8", "jsdom"]
+        update-types: ["minor", "patch"]
+      cordova-chain:
+        patterns: ["cordova", "cordova-*"]
+        update-types: ["patch"]
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  # GitHub Actions：每月检查一次，保持 action 版本不落后
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "ci"]
+    commit-message:
+      prefix: "chore(ci)"

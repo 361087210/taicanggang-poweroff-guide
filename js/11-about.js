@@ -8,18 +8,15 @@
 
 const VERSION_HISTORY = [
   {
-    version: 'V10.27.0',
-    date: '2026-11-23',
-    highlight: '资源库 50 条/页分页 + 车型信息双向强关联(改车即改库, 改库即改车)',
+    version: 'V10.26.7',
+    date: '2026-11-24',
+    highlight: '工程治理: 分支/tag 保护 + 全局错误捕获与诊断上报 + 依赖供应链治理',
     features: [
-      '资源库: 分页渲染(首屏 DOM 304KB → 44KB), 筛选/搜索自动回第 1 页',
-      '资源库: 保留「断链」与「低清」筛选, 分页与诊断视图共存',
-      '车型→资源库: 车型改图后资源库即时出现「新增」行, 删图后旧行自动消失',
-      '资源库→车型: 上传/删除同步路径、photos/videos 计数与照片板块/标签, 3 秒防抖回写飞书',
-      '清晰度: 照片上云归一 2560px/0.9, 查看器高清升级阈值 1600, 低清项在资源库可筛出',
-      '健壮性: 媒体上传失败不阻断车型信息同步; 拉取保留待传媒体; 缺图缺视频只占位不报错',
-      '增删改查: 沿用 V10.26.6 同名拦截与删除语义(仅删车型信息, 文件保留)',
-      'CI: media_library.json 漂移门禁 + 资源库回归断言'
+      '分支保护: main 必须走 PR, 必过 CI 与 Secret Scan, 线性历史, 禁 force push',
+      '发布 tag 不可移动/删除: 打错就发下一个 patch 版本',
+      '可观测: 捕获未处理异常, 本地缓冲 20 条(PII 掩码), 每小时最多自动上报 1 条',
+      '我的 → 复制诊断信息: 白屏/报错时一键导出给开发',
+      '供应链: dependabot 分组更新 + 34 处 action 引用固定到 commit SHA'
     ]
   },
   {
@@ -732,7 +729,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.27.0'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.26.7'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
