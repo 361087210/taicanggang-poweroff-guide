@@ -74,6 +74,7 @@
     "test:v1035": "node tests/test_v1035_reset_member_pass.js",
     "test:two-end-gate": "node tests/test_v1034_two_end_gate.js",
     "test:zero-guard": "node tests/test_v1035_zero_guard.js",
+    "test:sync-idempotent": "node tests/test_sync_idempotent.js",
     "test:photo-sync": "node tests/test_v1036_photo_sync.js",
     "test:honest-empty": "node tests/test_v1037_honest_empty_state.js",
     "test:v1038": "node tests/test_v1038_account_cancel.js",

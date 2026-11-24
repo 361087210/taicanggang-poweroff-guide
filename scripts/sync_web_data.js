@@ -234,6 +234,9 @@ function mkdirp(p){ fs.mkdirSync(p, { recursive: true }); }
 function readJsonSafe(p){
   try{ return JSON.parse(fs.readFileSync(p, 'utf8')); }catch(e){ return null; }
 }
+/* 幂等写盘: 内容与已有文件逐字节一致则不写, 返回是否真的发生变化。
+ * 目的: cron 每 15 分钟跑一次, 数据没变就不该产生提交 ——
+ *   否则每轮都换 SHA, 连带 CI/CodeQL/Pages 全部重跑。 */
 function writeJson(outDir, name, obj){
   const f = path.join(outDir, name);
   const text = JSON.stringify(obj, null, 2);
@@ -248,8 +251,11 @@ function writeJson(outDir, name, obj){
     process.exitCode = 1;
     throw new Error('镜像含编码损坏, 已中止写盘');
   }
+  let prevText = null;
+  try{ prevText = fs.readFileSync(f, 'utf8'); }catch(e){ /* 首次生成 */ }
+  if (prevText === text) return false;
   fs.writeFileSync(f, text, 'utf8');
-  return f;
+  return true;
 }
 
 /* ---------- 本地模式 ---------- */
@@ -396,7 +402,7 @@ async function feishuListBitableRecords(token, appToken, tableId){
  * @param {Object} raw - 原始反馈数据 { items: [{record_id, fields}] }
  * @returns {{items:Array, timestamp:string, sanitized:boolean, fieldAllowlist:string[], droppedFields:string[]}}
  */
-function sanitizeFeedback(raw){
+function sanitizeFeedback(raw, ts){
   const items = (raw && Array.isArray(raw.items)) ? raw.items : [];
   const dropped = [];
   const droppedSet = new Set();
@@ -426,7 +432,9 @@ function sanitizeFeedback(raw){
   }
   return {
     items: out,
-    timestamp: new Date().toISOString(),
+    /* 用源数据自身的时间戳, 而不是"此刻": 否则内容一字未改也会每轮换个值,
+     *   幂等失效 -> 每 15 分钟一个空提交。 */
+    timestamp: ts || new Date().toISOString(),
     sanitized: true,
     fieldAllowlist: FEEDBACK_FIELD_ALLOWLIST.slice(),
     droppedFields: dropped
@@ -476,7 +484,7 @@ async function buildFromFeishu(opt){
  * @param {Array<Object>|Object} raw - 原始账号数组或 {users:[...]}
  * @returns {{users:Array, timestamp:string, sanitized:boolean, fieldAllowlist:string[], droppedFields:string[]}}
  */
-function sanitizeApprovedUsers(raw){
+function sanitizeApprovedUsers(raw, ts){
   const src = Array.isArray(raw) ? raw : ((raw && Array.isArray(raw.users)) ? raw.users : []);
   const dropped = [];
   const droppedSet = new Set();
@@ -509,7 +517,8 @@ function sanitizeApprovedUsers(raw){
   }
   return {
     users,
-    timestamp: new Date().toISOString(),
+    /* 同 sanitizeFeedback: 用源数据时间戳, 避免无变化也换值导致空提交 */
+    timestamp: ts || new Date().toISOString(),
     sanitized: true,
     fieldAllowlist: APPROVED_FIELD_ALLOWLIST.slice(),
     droppedFields: dropped
@@ -569,14 +578,14 @@ async function main(){
 
   /* 反馈脱敏(输出侧白名单投影): 本地模式与飞书模式一视同仁。
    * 放在出库前而不是拉取后, 是为了杜绝"换个数据源就绕过脱敏"的漏网路径。 */
-  const feedback = sanitizeFeedback(rawFeedback);
+  const feedback = sanitizeFeedback(rawFeedback, (rawFeedback && rawFeedback.timestamp) || (vehicle && vehicle.timestamp));
 
   /* 账号脱敏(输出侧白名单投影): 本地模式与飞书模式一视同仁。
    * 与反馈镜像同构——放在出库前而不是拉取后, 杜绝"换个数据源就绕过脱敏"。
    * P0: 旧 buildApprovedWeb 曾把 name(明文手机号)/password(pbkdf2 哈希)/phoneH
    * 整包透传进公开的 web-data/(实测 curl 可取原文)。字段白名单自 v10.19.1 起生效
    * (name/password 不再出库); phoneH→linkKey 去盐化在 v10.19.2。 */
-  const approvedWeb = sanitizeApprovedUsers(approved.users || []);
+  const approvedWeb = sanitizeApprovedUsers(approved.users || [], (approved && approved.timestamp) || (vehicle && vehicle.timestamp));
 
   // 数据更新通知(网页端 60s 轮询据此自动镜像对齐)
   const notice = {
@@ -584,9 +593,10 @@ async function main(){
     version: vehicle.version || 'mirror'
   };
 
+  const now = new Date().toISOString();
   const meta = {
-    syncedAt: new Date().toISOString(),     // 09-web-sync.js 探测激活的充要条件
-    generatedAt: new Date().toISOString(),
+    syncedAt: now,      // 数据**真正变化**的时间(数据无变化时沿用上一次, 见下方幂等处理)
+    generatedAt: now,
     source: isLocal ? 'local' : 'feishu',
     /* P0 脱敏: 连接键已改 linkKey=PBKDF2(password, LINK_SALT|phone),
      * 熵来自密码, 无需也不输出任何盐值——盐(LINK_SALT)公开无妨。 */
@@ -638,13 +648,31 @@ async function main(){
   }
 
   mkdirp(opt.out);
-  writeJson(opt.out, 'vehicle_sync_data.json', vehicle);
-  writeJson(opt.out, 'approved_users.web.json', approvedWeb);
-  writeJson(opt.out, 'feedback_data.json', feedback);
-  writeJson(opt.out, 'data_update_notice.json', notice);
+  /* 幂等: 四份数据产物任一变化才算"数据变了"。
+   * 全都没变时沿用旧 syncedAt/generatedAt, 并且 meta.json 也逐字节不变 ——
+   *   这样工作流 `git diff --cached` 为空, 不会每 15 分钟产生一次空提交。
+   * "本轮确实巡检过"的信号放在运行日志里(以及 Actions 运行历史), 不落盘:
+   *   落盘就必然每轮改一个字段, 幂等立刻失效。 */
+  const dataChanged = [
+    writeJson(opt.out, 'vehicle_sync_data.json', vehicle),
+    writeJson(opt.out, 'approved_users.web.json', approvedWeb),
+    writeJson(opt.out, 'feedback_data.json', feedback),
+    writeJson(opt.out, 'data_update_notice.json', notice)
+  ].some(Boolean);
+  if (!dataChanged) {
+    const prevMeta = readJsonSafe(path.join(opt.out, 'meta.json'));
+    if (prevMeta && prevMeta.syncedAt) {
+      meta.syncedAt = prevMeta.syncedAt;
+      meta.generatedAt = prevMeta.generatedAt || prevMeta.syncedAt;
+    }
+  }
   writeJson(opt.out, 'meta.json', meta);
-  console.log(`[mirror] 已生成 web-data/ 镜像: 车型${(vehicle.vehicles||[]).length} / 账号${approvedWeb.users.length} / 反馈${(feedback.items||[]).length}`);
-  console.log(`[mirror] meta.syncedAt=${meta.syncedAt} (网页层将据此激活)`);
+  if (dataChanged) {
+    console.log(`[mirror] 已生成 web-data/ 镜像: 车型${(vehicle.vehicles||[]).length} / 账号${approvedWeb.users.length} / 反馈${(feedback.items||[]).length}`);
+    console.log(`[mirror] meta.syncedAt=${meta.syncedAt} (网页层将据此激活)`);
+  } else {
+    console.log(`[mirror] 数据无变化: 保持 syncedAt=${meta.syncedAt} (本轮核对 ${now}, 不产生提交)`);
+  }
 }
 
 // 仅在被直接执行时运行; 被 require 时不产生副作用(便于单元测试纯函数)
