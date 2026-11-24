@@ -18,6 +18,7 @@
 | [🏗️ 架构文档](docs/ARCHITECTURE.md) | 分层架构、模块划分、数据流、冲突策略、错误与安全设计 |
 | [🛠️ CI/CD 使用说明](docs/CICD使用说明.md) | 双流水线 + Secrets 配置 + 构建号策略 + 发布流程 |
 | [📖 开发文档](docs/DEVELOPMENT.md) | 本地运行、模块约定与开发流程 |
+| [📚 媒体资源与 COS 播放源交接](docs/dev/20-媒体资源与COS播放源交接.md) | 小程序端媒体库 × COS 播放源的交接与复刻手册（跨端参考，非本项目架构） |
 | [🧪 测试矩阵](docs/TEST_MATRIX.md) | 各版本测试项与断言覆盖矩阵 |
 | [📌 待办与已知问题](docs/PENDING_ISSUES.md) | 尚未闭环的议题 |
 | [🔒 安全策略](SECURITY.md) | 凭证保护、零明文与脱敏策略 |
