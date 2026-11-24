@@ -295,6 +295,15 @@ function main() {
     return;
   }
 
+  /* 幂等: 内容(除 generatedAt)没变就不写盘。
+   *   否则 cron 每 15 分钟刷一次 generatedAt -> 空提交 -> 连带全量 CI/CodeQL/Pages。 */
+  let prev = null;
+  try { prev = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) { /* 首次生成 */ }
+  if (prev && JSON.stringify(Object.assign({}, prev, { generatedAt: '' }))
+            === JSON.stringify(Object.assign({}, out, { generatedAt: '' }))) {
+    console.log('[media-library] 内容无变化, 跳过写盘 ✓');
+    return;
+  }
   fs.writeFileSync(OUT, JSON.stringify(out, null, 0), 'utf8');
   console.log('[media-library] 已生成 media_library.json');
   console.log(`  资产 ${stats.total} = 照片 ${stats.photos} + 视频 ${stats.videos}` +
