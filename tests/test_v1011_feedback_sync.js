@@ -77,7 +77,7 @@ check('A23 组长判定双保险(state+isLeader函数)', src.feedback.includes('
  * 提交人姓名一起推上公网。现改为"分页拉取 + 输出侧字段白名单(默认拒绝)"。
  */
 check('A24 定义反馈字段白名单常量(含问题描述)', src.mirror.includes('FEEDBACK_FIELD_ALLOWLIST') && src.mirror.includes("'问题描述'"));
-check('A25 出库前统一调用 sanitizeFeedback(本地/飞书同源, 杜绝绕过)', src.mirror.includes('const feedback = sanitizeFeedback(rawFeedback)'));
+check('A25 出库前统一调用 sanitizeFeedback(本地/飞书同源, 杜绝绕过)', /const feedback = sanitizeFeedback\(rawFeedback[,)]/.test(src.mirror));
 check('A26 反馈表分页拉取(page_token 循环, 不漏后续页)', /function feishuListBitableRecords/.test(src.mirror) && src.mirror.includes('page_token'));
 check('A27 FEEDBACK_APP_TOKEN 取自 TCG_CONFIG 且不硬编码',
   src.mirror.includes('TCG_CONFIG.BASE_APP_TOKEN') && !/const FEEDBACK_APP_TOKEN\s*=\s*['"]/.test(src.mirror));

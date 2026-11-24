@@ -89,6 +89,7 @@ const TEST_SUITES = [
   'test:v10195',
   'test:v1035',
   'test:zero-guard',
+  'test:sync-idempotent',
   'test:photo-sync',
   'test:honest-empty',
   'test:v1038',
