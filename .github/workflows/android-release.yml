@@ -65,6 +65,14 @@ jobs:
           npm install -g cordova@12
           cordova --version
 
+      # V10.27.10: 打包期照片瘦身依赖 ImageMagick; ubuntu-latest 镜像不保证预装, 缺了就装
+      - name: Ensure ImageMagick
+        run: |
+          command -v mogrify >/dev/null && command -v identify >/dev/null && { mogrify -version | head -1; exit 0; }
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq imagemagick
+          mogrify -version | head -1
+
       # V5.7 关键修复: 打包 vendor 导出库(html-docx/jspdf/xlsx)与车辆图片
       # 此前 CI 遗漏两者, 导致 APK 内 Word/PDF/Excel 导出与图片展示全部失效
       - name: Prepare build environment

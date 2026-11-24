@@ -13,9 +13,10 @@
 - `scripts/shrink_bundled_photos.js`：打包时对超过 800KB 或最长边超过 1600px 的 jpg 生成压缩副本（quality 80），**仓库原图保持不变**（资源库/COS 仍用原图）
 - 体积预算门禁：打包照片总量超过 18MB 直接让构建失败，并列出最大的 5 张，避免以后回流大图再次顶穿飞书上限
 - Android / iOS 两条发布工作流都在拷贝 `vehicle_images` 之后、校验资产之前执行瘦身
+- 两条工作流新增 `Ensure ImageMagick` 步骤（Ubuntu 用 apt、macOS 用 brew），构建镜像未预装时自动安装
 
 #### ✅ 测试:
-- 新增 `test:v10283-package-photo-budget`（13 断言）：工作流接线顺序 / dry-run 不改文件 / 预算超限退出 1 / 压缩后最长边不超 1600 / 全量副本回到 18MB 预算内
+- 新增 `test:v10283-package-photo-budget`（15 断言）：工作流接线顺序（含 ImageMagick 安装）/ dry-run 不改文件 / 预算超限退出 1 / 压缩后最长边不超 1600 / 全量副本回到 18MB 预算内
 - 实测打包照片 20MB → 14.09MB
 
 ## [10.27.9] - 2026-11-24

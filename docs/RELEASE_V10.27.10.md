@@ -32,11 +32,14 @@
 Android / iOS 两条发布工作流都在 `cp -r vehicle_images` 之后、`Verify bundled web assets`
 之前执行瘦身，校验步骤看到的仍是完整图片数量（文件名不变）。
 
+构建镜像不保证预装 ImageMagick，因此两条工作流都新增 `Ensure ImageMagick` 步骤
+（Ubuntu 用 apt、macOS 用 brew），缺依赖时先装再瘦身，避免构建在瘦身脚本处直接失败。
+
 ## 实测
 
 - 打包照片：20MB → 14.09MB
 - 预计 APK 约 15MB、IPA 约 17MB，回到飞书单文件上限以内
-- 新测试 `test:v10283-package-photo-budget`：13 断言全过
+- 新测试 `test:v10283-package-photo-budget`：15 断言全过
 
 ## 验证
 

@@ -60,6 +60,13 @@ jobs:
           brew install cocoapods || true
           pod --version
 
+      # V10.27.10: 打包期照片瘦身依赖 ImageMagick; macOS 镜像不保证预装, 缺了就装
+      - name: Ensure ImageMagick
+        run: |
+          command -v mogrify >/dev/null && command -v identify >/dev/null && { mogrify -version | head -1; exit 0; }
+          brew install imagemagick
+          mogrify -version | head -1
+
       # 与 Android 同构构建目录 tcg_app/, 共用 www 源码
       - name: Prepare build environment
         run: |
