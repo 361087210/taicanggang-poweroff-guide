@@ -499,8 +499,8 @@ def main():
         return 0
     if args.enqueue:
         enqueue_paths(feishu, data_folder['token'], args.enqueue, dry)
-        if dry:
-            return 0
+        # 只入队: 消费需要 COS/GitHub 凭据, 由后续步骤(或下一轮定时任务)负责
+        return 0
     qf = feishu.child(data_folder['token'], QUEUE_NAME, 'file')
     if not qf:
         log('[queue] 没有 %s, 无事可做' % QUEUE_NAME)
