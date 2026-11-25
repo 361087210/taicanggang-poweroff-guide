@@ -2,7 +2,7 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [10.28.1] - 2026-11-25
+## [10.28.2] - 2026-11-25
 
 ### 更新提示修复：直链兜底命名、写死旧资产、安装包体积回写
 
@@ -12,6 +12,10 @@
 - **直链三级回退的第 3 级命名过期**：`resolveApkUrl` 兜底仍按 V5.3 时代的 `taicanggang-V{ver}-b{build}.apk` 拼地址，而实际产物早已是 `tcg_poweroff_v{ver}.apk`。只有 `version.json` 同时缺 `downloadUrl` 与 `apkUrl` 才会走到，但一旦走到必 404。改为与 CI 产物一致的命名
 - **写死的 v5.7 资产兜底**：`downloadAndInstallApk` 在解不出直链时会跳到一个早已不存在的 `v5.7` 资产地址；现在不再跳到坏链接，改为明确提示并把按钮恢复为可重试
 - **`apkSize` 从不回写**：更新弹窗读取 `version.json` 的 `apkSize`，但发版流程只回写 `downloadUrl/version/versionCode`，界面因此永远只显示「直链下载已就绪」。Android 发版现在按实际 APK 字节回写（如 `16.7MB`）
+
+#### ⚠️ 发版事故与处置:
+- v10.28.1 打 tag 后 Android 工作流立即失败：新增的 `apkSize` 回写步骤用了顶格书写的 heredoc，打断了 YAML 块结构，工作流文件整体无法解析（GitHub 连 name 都读不到，run 里 0 个 job）
+- tag 受保护不可移动，按既定规则不发 10.28.1，改为升 **10.28.2** 重发；该步骤改写为纯 `sed`（无 heredoc），并在推送前用 `js-yaml` 本地校验 + 模拟插入验证
 
 #### ✅ 测试:
 - `test:v10285-update-prompt` 由 19 断言扩到 **26 断言**：新增直链三级回退（L1/L2/L3 + 过滤 V5.3 断链 + 无版本返回 null）、`apkSize` 回写接线、写死旧资产已移除

@@ -236,23 +236,17 @@ jobs:
           sed -i "s|\"downloadUrl\": \".*\"|\"downloadUrl\": \"https://github.com/361087210/taicanggang-poweroff-guide/releases/download/${TAG}/tcg_poweroff_v${APP_VERSION}.apk\"|" version.json
           sed -i "s|\"versionCode\": [0-9]*|\"versionCode\": ${VERSION_CODE}|" version.json
           sed -i "s|\"version\": \"[0-9.]*\"|\"version\": \"${APP_VERSION}\"|" version.json
-          # V10.28.1: 回写真实安装包体积 —— 更新弹窗读 version.json 的 apkSize,
+          # V10.28.2: 回写真实安装包体积 —— 更新弹窗读 version.json 的 apkSize,
           #   此前从不写, 界面一直只显示「直链下载已就绪」
           APK_FILE="release/tcg_poweroff_v${APP_VERSION}.apk"
           if [ -f "$APK_FILE" ]; then
-            APK_SIZE=$(python3 -c "print('%.1fMB' % ($(stat -c%s "$APK_FILE")/1000000))")
-            APK_SIZE="$APK_SIZE" python3 - <<'PY'
-import os, re
-p = 'version.json'
-s = open(p, encoding='utf-8').read()
-size = os.environ['APK_SIZE']
-if '"apkSize"' in s:
-    s = re.sub(r'"apkSize":\s*"[^"]*"', '"apkSize": "%s"' % size, s, count=1)
-else:
-    s = re.sub(r'("versionCode":\s*[0-9]+,)', r'\1\n  "apkSize": "%s",' % size, s, count=1)
-open(p, 'w', encoding='utf-8').write(s)
-print('apkSize ->', size)
-PY
+            APK_SIZE=$(awk -v b="$(stat -c%s "$APK_FILE")" 'BEGIN{printf "%.1fMB", b/1000000}')
+            if grep -q '"apkSize"' version.json; then
+              sed -i "s|\"apkSize\": \"[^\"]*\"|\"apkSize\": \"${APK_SIZE}\"|" version.json
+            else
+              sed -i "s|\"versionCode\": ${VERSION_CODE},|\"versionCode\": ${VERSION_CODE},\n  \"apkSize\": \"${APK_SIZE}\",|" version.json
+            fi
+            echo "apkSize -> $APK_SIZE"
           else
             echo "::warning::未找到 $APK_FILE, 跳过 apkSize 回写"
           fi

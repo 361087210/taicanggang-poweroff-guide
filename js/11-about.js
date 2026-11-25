@@ -8,14 +8,15 @@
 
 const VERSION_HISTORY = [
   {
-    version: 'V10.28.1',
+    version: 'V10.28.2',
     date: '2026-11-25',
     highlight: '更新提示修复: 直链兜底命名 + 写死旧资产 + 安装包体积回写',
     features: [
       '修复: 直链三级回退的最后一级仍按 V5.3 时代的 taicanggang-V{ver}-b{build}.apk 命名拼地址, 实际产物已是 tcg_poweroff_v{ver}.apk, 缺 downloadUrl 时必 404',
       '修复: 应用内安装删掉写死的 v5.7 资产兜底(该资产已不存在), 解不出直链时明确提示并恢复按钮',
       '修复: 发版流程回写 version.json 的 apkSize, 弹窗不再永远只显示「直链下载已就绪」',
-      '测试: 新增 test:v10285-update-prompt(19 断言), 固化版本比较/多源取最高/跳过语义与直链三级回退'
+      '发版: v10.28.1 的 tag 指向了工作流语法损坏的提交(Android 构建无法启动), tag 不可移动, 故升 10.28.2 重新发版',
+      '测试: 新增 test:v10285-update-prompt(26 断言), 固化版本比较/多源取最高/跳过语义与直链三级回退'
     ]
   },
   {
@@ -841,7 +842,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.28.1'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.28.2'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 
