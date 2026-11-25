@@ -1,8 +1,15 @@
 {
-  "version": "10.28.0",
-  "versionCode": 102800,
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.28.0/tcg_poweroff_v10.28.0.apk",
+  "version": "10.28.1",
+  "versionCode": 102801,
+  "apkSize": "16.7MB",
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.28.1/tcg_poweroff_v10.28.1.apk",
   "releaseNotes": [
+    "V10.28.1 更新提示修复版。一句话总结: 对着《开发文档》逐条核对了更新提示逻辑, 修掉两处会导致「下载链接 404」的兜底, 并让 CI 真正回写安装包体积。",
+    "修复(直链兜底): resolveApkUrl 第 3 级回退仍按 V5.3 时代的 taicanggang-V{ver}-b{build}.apk 命名拼地址, 而实际产物早已是 tcg_poweroff_v{ver}.apk —— 一旦 version.json 缺 downloadUrl/apkUrl(换源、手工改、旧版本), 弹窗下载必 404; 现改为与 CI 产物一致的命名",
+    "修复(写死兜底): downloadAndInstallApk 里还留着写死的 v5.7 资产地址(该 Release 资产已不存在), 解不出直链时不再跳到坏链接, 改为明确提示并把按钮恢复为可重试",
+    "修复(体积显示): 更新弹窗读 version.json 的 apkSize, 但发版流程从不回写 —— 界面永远只显示「直链下载已就绪」; Android 发版现在按实际 APK 字节回写, 如 16.7MB",
+    "测试(新增): test:v10285-update-prompt(19 断言) 固化版本比较、多源取最高、跳过语义与接线契约, 并把直链三级回退补齐为可执行断言",
+    "说明: 本版不改业务功能, App 行为与 V10.28.0 一致, 仅修更新提示链路",
     "V10.28.0 资源库硬删除版。一句话总结: 「移出资源库」现在分软删除(回收站, 可恢复)与硬删除(彻底删除); 硬删除把待清理项写入飞书队列, 由新增的每 15 分钟工作流把 COS、飞书云盘与 GitHub(照片文件/Release 视频资产)一起清掉, 并重建索引。",
     "新增(交互): 资源库预览/云端条目点「移出资源库」→ 软删除与硬删除两个平级选项; 硬删除需二次确认, 文案明确不可恢复",
     "新增(队列): 客户端只写本地队列 + 飞书 APP数据备份/media_delete_queue.json(下载→并集→上传, 按路径幂等); 离线或提交失败, 下次进入资源库自动补交",

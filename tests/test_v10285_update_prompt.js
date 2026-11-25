@@ -45,6 +45,7 @@ try {
     console: { debug() {}, warn() {}, log() {} },
     atob, TextDecoder, Uint8Array,
     setTimeout, clearTimeout,          /* fetchWithTimeout 的超时计时器 */
+    GITHUB_REPO: '361087210/taicanggang-poweroff-guide',
     UPDATE_SOURCES: [], UPDATE_API_SOURCE: '',
     DEFAULT_FEISHU_CONFIG: {},
     downloadJsonFromFeishu: null, httpFetch: null
@@ -52,7 +53,8 @@ try {
   vm.createContext(sandboxObj);
   vm.runInContext(
     block('function versionNewer(', '/**\n * 获取最新版本信息') + '\r\n' +
-    block('async function fetchUpdateInfo(', 'async function checkUpdate('),
+    block('async function fetchUpdateInfo(', 'async function checkUpdate(') + '\r\n' +
+    block('function resolveApkUrl(', '\nfunction downloadApkDirect('),
     sandboxObj, { filename: SOURCE });
   sandbox = sandboxObj;
 } catch (e) {
@@ -136,6 +138,20 @@ function runFetch(canned) {
     boot.indexOf('cdn.jsdelivr.net/gh/') < boot.indexOf('raw.githubusercontent.com/') &&
     boot.indexOf('api.github.com/repos/') > boot.indexOf('raw.githubusercontent.com/') &&
     src.indexOf('downloadJsonFromFeishu(cfg,') > src.indexOf('UPDATE_API_SOURCE+'));
+  const androidWf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'android-release.yml'), 'utf8');
+  check('U3f 发版回写 apkSize(否则弹窗永远只显示"直链下载已就绪")',
+    androidWf.indexOf('"apkSize"') >= 0 && /stat -c%s/.test(androidWf));
+
+  section('U4 resolveApkUrl 直链三级回退');
+  const rap = (o) => vm.runInContext('resolveApkUrl(' + JSON.stringify(o) + ')', sandbox);
+  check('U4a L1 优先 downloadUrl', rap({ version: '10.28.1', downloadUrl: 'https://x/a.apk' }) === 'https://x/a.apk');
+  check('U4b L2 兼容 apkUrl', rap({ version: '10.28.1', apkUrl: 'https://x/b.apk' }) === 'https://x/b.apk');
+  check('U4c L2 过滤 V5.3 断链', String(rap({ version: '10.28.1', apkUrl: 'https://h/releases/download/V5.3/x.apk' })).indexOf('/download/V5.3/') < 0);
+  check('U4d L3 兜底与 CI 产物命名一致(tcg_poweroff_v{ver}.apk)',
+    rap({ version: '10.28.1' }) === 'https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.28.1/tcg_poweroff_v10.28.1.apk',
+    rap({ version: '10.28.1' }));
+  check('U4e 无任何版本字段时返回 null', rap({}) === null);
+  check('U4f 不再写死 v5.7 资产地址', src.indexOf('/download/v5.7/') < 0);
 
   console.log('\n========== 结果 ==========');
   console.log(pass + ' passed, ' + fail + ' failed');
