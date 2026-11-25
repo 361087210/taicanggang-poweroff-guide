@@ -105,6 +105,7 @@
     "test:v10282-single-source": "node tests/test_v10282_media_single_source.js",
     "test:v10283-package-photo-budget": "node tests/test_v10283_package_photo_budget.js",
     "test:v10284-media-hard-delete": "node tests/test_v10284_media_hard_delete.js",
+    "test:v10285-update-prompt": "node tests/test_v10285_update_prompt.js",
     "test:media-source-bench": "node tests/test_media_source_bench.js",
     "check:two-end": "node scripts/check_two_end_sync.js",
     "audit:media": "node scripts/audit_media_consistency.js",
