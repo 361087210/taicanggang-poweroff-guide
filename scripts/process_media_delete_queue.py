@@ -173,13 +173,17 @@ class Feishu(object):
 
 
 # ---------------------------------------------------------------- COS
-def cos_signature(secret_id, secret_key, method, key, host, now=None):
-    """腾讯云 COS 请求签名(q-sign-algorithm=sha1, 只签 host 头)。"""
+def cos_signature(secret_id, secret_key, method, key, host, now=None, uri=None):
+    """腾讯云 COS 请求签名(q-sign-algorithm=sha1, 只签 host 头)。
+
+    uri 为参与签名的路径形态, 默认按百分号编码; 含非 ASCII 的 key 需要传原始路径,
+    见 cos_delete 里的两种形态试探。
+    """
     start = int(now if now is not None else time.time()) - 60
     end = start + 900
     key_time = '%d;%d' % (start, end)
     sign_key = hmac.new(secret_key.encode(), key_time.encode(), hashlib.sha1).hexdigest()
-    uri = '/' + urllib.parse.quote(key, safe='/~')
+    uri = uri if uri is not None else '/' + urllib.parse.quote(key, safe='/~')
     http_string = '%s\n%s\n\nhost=%s\n' % (method.lower(), uri, host)
     string_to_sign = 'sha1\n%s\n%s\n' % (key_time, hashlib.sha1(http_string.encode()).hexdigest())
     signature = hmac.new(sign_key.encode(), string_to_sign.encode(), hashlib.sha1).hexdigest()
@@ -189,26 +193,42 @@ def cos_signature(secret_id, secret_key, method, key, host, now=None):
 
 
 def cos_delete(key):
-    """删除一个 COS 对象; 404 视为已删除(幂等)。缺密钥抛错由调用方记 error。"""
+    """删除一个 COS 对象; 404 视为已删除(幂等)。缺密钥抛错由调用方记 error。
+
+    请求路径一律发百分号编码形式(HTTP 请求行不能带非 ASCII), 但签名用的 Uri 形态
+    因 key 而异: 纯 ASCII 路径两种形态相同; 含中文等非 ASCII 时 COS 按解码后的路径
+    校验, 必须先按原始路径签。两种都试, 401/403 签名不匹配才继续换形态。
+    """
     secret_id = env('TCG_COS_SECRET_ID')
     secret_key = env('TCG_COS_SECRET_KEY')
     if not secret_id or not secret_key:
         raise RuntimeError('缺少 COS 密钥(TCG_COS_SECRET_ID / TCG_COS_SECRET_KEY)')
-    url = 'https://%s/%s' % (COS_HOST, urllib.parse.quote(key, safe='/~'))
-    req = urllib.request.Request(url, headers={
-        'Host': COS_HOST,
-        'Authorization': cos_signature(secret_id, secret_key, 'DELETE', key, COS_HOST),
-    }, method='DELETE')
-    try:
-        with urllib.request.urlopen(req, timeout=60) as r:
-            if r.status not in (200, 204):
-                raise RuntimeError('COS 删除返回 HTTP %s' % r.status)
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
+    encoded = '/' + urllib.parse.quote(key, safe='/~')
+    raw = '/' + key
+    forms = [raw, encoded] if raw != encoded else [encoded]
+    url = 'https://%s%s' % (COS_HOST, encoded)
+    last = ''
+    for i, uri in enumerate(forms):
+        req = urllib.request.Request(url, headers={
+            'Host': COS_HOST,
+            'Authorization': cos_signature(secret_id, secret_key, 'DELETE', key, COS_HOST, uri=uri),
+        }, method='DELETE')
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                if r.status not in (200, 204):
+                    raise RuntimeError('COS 删除返回 HTTP %s' % r.status)
             return
-        body = e.read().decode('utf-8', 'replace')[:400]
-        m = re.search(r'<Code>([^<]+)</Code>', body)
-        raise RuntimeError('COS 删除返回 HTTP %s %s' % (e.code, m.group(1) if m else body[:120]))
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return
+            body = e.read().decode('utf-8', 'replace')[:400]
+            m = re.search(r'<Code>([^<]+)</Code>', body)
+            code = m.group(1) if m else body[:120]
+            last = 'COS 删除返回 HTTP %s %s' % (e.code, code)
+            if e.code == 403 and code == 'SignatureDoesNotMatch' and i + 1 < len(forms):
+                continue
+            raise RuntimeError(last)
+    raise RuntimeError(last or 'COS 删除失败')
 
 
 def cos_probe():
