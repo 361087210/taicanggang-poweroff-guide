@@ -16,11 +16,17 @@
 - `.github/workflows/media-hard-delete.yml`：每 15 分钟定时 + 手动触发，`concurrency` 串行执行，清理结果自动提交回仓库
 - 安全：COS 与 GitHub 写权限只存在 CI Secrets，客户端仅有飞书凭据；脚本路径白名单限定 `vehicle_images/` 与 `vehicle_videos/`，COS 删除 404 视为已删除（幂等）
 
-#### ⚠️ 待配置:
-- 仓库 Secrets 需新增 `TCG_COS_SECRET_ID` / `TCG_COS_SECRET_KEY`；缺失时任务会明确报错并把条目留在队列里等下轮重试
+#### 🔧 运维自检:
+- `--probe`：对 `_probe/verify-<时间戳>.txt` 做 PUT → HEAD → DELETE → HEAD，删除后必须 404 才算通过；工作流加 `workflow_dispatch.inputs.probe` 开关，密钥不落本地
+- `--enqueue PATH...`：把路径写进与 App 相同的队列（同路径重置为 pending），配 `workflow_dispatch.inputs.enqueue`，用于运维补删与真实链路验证
+- 修复：非 ASCII 路径（中文车型目录）签名必须用原始路径形态，否则 COS 返回 403 `SignatureDoesNotMatch`；失败信息一并带出 COS 错误码
+
+#### ⚙️ 配置:
+- 仓库 Secrets 需有 `TCG_COS_SECRET_ID` / `TCG_COS_SECRET_KEY`（已配置并验证）；缺失时任务会明确报错并把条目留在队列里等下轮重试
+- 真实验证：硬删孤儿图 `image28.jpeg` → GitHub 删除 + 索引孤儿 16 → 15 + 队列 `done`；COS 探针 `PUT 200 → HEAD 200 → DELETE 204 → HEAD 404` 通过
 
 #### ✅ 测试:
-- 新增 `test:v10284-media-hard-delete`（41 断言）：队列合并/幂等、硬删除二次确认与落地顺序、UI 软/硬选项、工作流与脚本接线、COS 签名稳定、路径白名单、软删除语义未退化、Python 语法编译
+- 新增 `test:v10284-media-hard-delete`（51 断言）：队列合并/幂等、硬删除二次确认与落地顺序、UI 软/硬选项、工作流与脚本接线、COS 签名稳定、路径白名单、软删除语义未退化、Python 语法编译
 
 ## [10.27.11] - 2026-11-24
 
