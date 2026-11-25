@@ -15,6 +15,11 @@ on:
         description: '只验证 COS 凭据连通性(不消费队列)'
         type: boolean
         default: false
+      enqueue:
+        description: '先把这些路径写进清理队列再消费(空格分隔, 仅 vehicle_images/ 与 vehicle_videos/)'
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -40,6 +45,16 @@ jobs:
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '22'
+
+      - name: Enqueue hard-delete paths
+        if: ${{ inputs.enqueue }}
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+          ENQUEUE_PATHS: ${{ inputs.enqueue }}
+        # 走环境变量传参, 避免把输入直接拼进 shell
+        run: python3 scripts/process_media_delete_queue.py --enqueue $ENQUEUE_PATHS
 
       - name: Probe COS credentials
         if: ${{ inputs.probe }}

@@ -23,7 +23,7 @@ process_media_delete_queue.py — 资源库「硬删除」后台清理作业（V
   export FEISHU_APP_ID=... FEISHU_APP_SECRET=...
   export TCG_COS_SECRET_ID=... TCG_COS_SECRET_KEY=...
   export GH_TOKEN=ghp_xxx              # 需要 repo contents:write
-  python scripts/process_media_delete_queue.py [--dry-run] [--probe] [--max-items N]
+  python scripts/process_media_delete_queue.py [--dry-run] [--probe] [--enqueue PATH...] [--max-items N]
 
 退出码: 0 = 无待处理/全部成功; 1 = 至少一条失败(下轮自动重试)
 """
@@ -435,12 +435,53 @@ def rebuild_indexes(dry):
         log('  重建 %s 完成' % label)
 
 
+def enqueue_paths(feishu, data_folder_token, paths, dry):
+    """把待删路径写进飞书清理队列(与 App 写同一个文件), 供运维验证/补删使用。"""
+    now = int(time.time() * 1000)
+    items = []
+    for p in paths:
+        p = (p or '').strip().lstrip('/')
+        if not p:
+            continue
+        if not p.startswith(('vehicle_images/', 'vehicle_videos/')):
+            raise RuntimeError('路径不在媒体目录白名单内: %s' % p)
+        items.append({'path': p, 'kind': 'video' if p.startswith('vehicle_videos/') else 'photo',
+                      'owners': [], 'at': now, 'status': 'pending', 'tries': 0, 'source': 'cli'})
+    if not items:
+        raise RuntimeError('没有可入队的路径')
+    state = {'schemaVersion': 1, 'updatedAt': now, 'items': []}
+    old = feishu.child(data_folder_token, QUEUE_NAME, 'file')
+    if old:
+        try:
+            state = json.loads(feishu.download(old['token']).decode('utf-8'))
+        except Exception as e:
+            log('[enqueue] 现有队列无法解析, 将新建: %s' % e)
+    by_path = {it.get('path'): it for it in (state.get('items') or []) if it.get('path')}
+    for it in items:
+        # 与 App 一致: 同路径覆盖并重置为 pending
+        by_path[it['path']] = it
+    state['items'] = list(by_path.values())
+    state['updatedAt'] = now
+    log('[enqueue] 入队 %d 条, 队列共 %d 条: %s'
+        % (len(items), len(by_path), ', '.join(it['path'] for it in items)))
+    if dry:
+        log('[enqueue] [dry] 不写回')
+        return
+    if old:
+        feishu.delete(old['token'])
+    feishu.upload(data_folder_token, QUEUE_NAME,
+                  json.dumps(state, ensure_ascii=False, indent=2).encode('utf-8'))
+    log('[enqueue] 已写回 %s' % QUEUE_NAME)
+
+
 # ---------------------------------------------------------------- 主流程
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry-run', action='store_true', help='只打印计划, 不删不改不写回')
     ap.add_argument('--max-items', type=int, default=30, help='单次最多处理条数(默认 30)')
     ap.add_argument('--probe', action='store_true', help='只自检 COS 凭据连通性, 不读队列不删文件')
+    ap.add_argument('--enqueue', nargs='+', metavar='PATH',
+                    help='先把路径写进飞书清理队列再消费(与 App 写同一文件)')
     args = ap.parse_args()
     dry = args.dry_run
 
@@ -456,6 +497,10 @@ def main():
     if not data_folder:
         log('[queue] 未找到「%s」目录, 无事可做' % DATA_FOLDER_NAME)
         return 0
+    if args.enqueue:
+        enqueue_paths(feishu, data_folder['token'], args.enqueue, dry)
+        if dry:
+            return 0
     qf = feishu.child(data_folder['token'], QUEUE_NAME, 'file')
     if not qf:
         log('[queue] 没有 %s, 无事可做' % QUEUE_NAME)
