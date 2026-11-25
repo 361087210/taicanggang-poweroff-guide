@@ -16,7 +16,7 @@ on:
         type: boolean
         default: false
       enqueue:
-        description: '先把这些路径写进清理队列再消费(空格分隔, 仅 vehicle_images/ 与 vehicle_videos/)'
+        description: '先把这些路径写进清理队列(仅入队, 由后续步骤消费; 空格分隔, 限 vehicle_images/ 与 vehicle_videos/)'
         type: string
         required: false
         default: ''
