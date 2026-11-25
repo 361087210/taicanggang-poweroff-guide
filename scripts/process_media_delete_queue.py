@@ -192,12 +192,17 @@ def cos_signature(secret_id, secret_key, method, key, host, now=None, uri=None):
             % (secret_id, key_time, key_time, signature))
 
 
-def cos_delete(key):
-    """删除一个 COS 对象; 404 视为已删除(幂等)。缺密钥抛错由调用方记 error。
+def _cos_code(body):
+    m = re.search(r'<Code>([^<]+)</Code>', body or '')
+    return m.group(1) if m else (body or '')[:120]
+
+
+def _cos_send(method, key, body=None):
+    """签名发一个 COS 请求, 返回 (http_status, 响应文本); 签名不匹配时换 Uri 形态重试。
 
     请求路径一律发百分号编码形式(HTTP 请求行不能带非 ASCII), 但签名用的 Uri 形态
     因 key 而异: 纯 ASCII 路径两种形态相同; 含中文等非 ASCII 时 COS 按解码后的路径
-    校验, 必须先按原始路径签。两种都试, 401/403 签名不匹配才继续换形态。
+    校验, 必须先按原始路径签。
     """
     secret_id = env('TCG_COS_SECRET_ID')
     secret_key = env('TCG_COS_SECRET_KEY')
@@ -207,82 +212,83 @@ def cos_delete(key):
     raw = '/' + key
     forms = [raw, encoded] if raw != encoded else [encoded]
     url = 'https://%s%s' % (COS_HOST, encoded)
-    last = ''
     for i, uri in enumerate(forms):
-        req = urllib.request.Request(url, headers={
+        req = urllib.request.Request(url, data=body, headers={
             'Host': COS_HOST,
-            'Authorization': cos_signature(secret_id, secret_key, 'DELETE', key, COS_HOST, uri=uri),
-        }, method='DELETE')
+            'Authorization': cos_signature(secret_id, secret_key, method, key, COS_HOST, uri=uri),
+        }, method=method)
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
-                if r.status not in (200, 204):
-                    raise RuntimeError('COS 删除返回 HTTP %s' % r.status)
-            return
+                return r.status, r.read().decode('utf-8', 'replace')
         except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return
-            body = e.read().decode('utf-8', 'replace')[:400]
-            m = re.search(r'<Code>([^<]+)</Code>', body)
-            code = m.group(1) if m else body[:120]
-            last = 'COS 删除返回 HTTP %s %s' % (e.code, code)
-            if e.code == 403 and code == 'SignatureDoesNotMatch' and i + 1 < len(forms):
+            text = e.read().decode('utf-8', 'replace')[:600]
+            if e.code == 403 and _cos_code(text) == 'SignatureDoesNotMatch' and i + 1 < len(forms):
                 continue
-            raise RuntimeError(last)
-    raise RuntimeError(last or 'COS 删除失败')
+            return e.code, text
+    return 403, ''
+
+
+def cos_delete(key):
+    """删除一个 COS 对象; 404 视为已删除(幂等)。缺密钥抛错由调用方记 error。"""
+    status, body = _cos_send('DELETE', key)
+    if status in (200, 204, 404):
+        return
+    raise RuntimeError('COS 删除返回 HTTP %s %s' % (status, _cos_code(body)))
 
 
 def cos_probe():
-    """自检 COS 凭据/策略/桶连通性: 对一个必然不存在的 key 发 DELETE。
+    """自检 COS 全链路: 写一个临时对象 → 读回 → 删除 → 确认已删。
 
-    不删除任何真实对象, 只读回 HTTP 状态与 COS 错误码, 用于密钥补全后首次核验:
-      204 (或 404 NoSuchKey) → 正常(凭据可用 + 有 DeleteObject 权限)
-      403 AccessDenied     → 凭据可用但子用户策略缺 cos:DeleteObject
-      403 SignatureDoesNotMatch / InvalidAccessKeyId → 密钥不对
-      404 NoSuchBucket     → 桶名或地域不对
+    只碰 `_probe/` 前缀下自己创建的临时 key, 不读取也不删除任何业务对象。
+    需要策略里有 cos:PutObject / cos:HeadObject / cos:DeleteObject:
+      任意一步 403 AccessDenied  → 对应动作没授权
+      403 InvalidAccessKeyId / SignatureDoesNotMatch → 密钥不对
+      404 NoSuchBucket           → 桶名或地域不对
     """
     secret_id = env('TCG_COS_SECRET_ID')
     secret_key = env('TCG_COS_SECRET_KEY')
-    key = '_probe/never-exists.txt'
+    key = '_probe/verify-%d.txt' % int(time.time())
+    payload = b'tcg-media-hard-delete-probe'
     log('[probe] bucket=%s region=%s key=%s' % (COS_BUCKET, COS_REGION, key))
     log('[probe] 密钥注入: id=%s key=%s' % ('有' if secret_id else '缺', '有' if secret_key else '缺'))
     if not secret_id or not secret_key:
         log('[probe] FAIL 缺少 TCG_COS_SECRET_ID / TCG_COS_SECRET_KEY')
         return 1
-    url = 'https://%s/%s' % (COS_HOST, urllib.parse.quote(key, safe='/~'))
-    req = urllib.request.Request(url, headers={
-        'Host': COS_HOST,
-        'Authorization': cos_signature(secret_id, secret_key, 'DELETE', key, COS_HOST),
-    }, method='DELETE')
-    try:
-        with urllib.request.urlopen(req, timeout=30) as r:
-            # COS 的 DELETE 是幂等的: 对象不存在也返回 204(部分配置返回 404),
-            # 能拿到 2xx 就说明签名被接受且 DeleteObject 权限通过
-            log('[probe] HTTP %s' % r.status)
-            log('[probe] PASS 凭据可用, DeleteObject 权限正常(对象不存在时 COS 亦返回 204)')
-            return 0
-    except urllib.error.HTTPError as e:
-        body = e.read().decode('utf-8', 'replace')[:800]
-        code = ''
-        m = re.search(r'<Code>([^<]+)</Code>', body)
-        if m:
-            code = m.group(1)
-        log('[probe] HTTP %s Code=%s' % (e.code, code or '(无)'))
-        log(body)
-        if e.code == 404 and code in ('NoSuchKey', 'NoSuchObject', ''):
-            log('[probe] PASS 凭据可用, DeleteObject 权限正常')
-            return 0
-        if e.code == 403 and code == 'AccessDenied':
-            log('[probe] FAIL 凭据可用, 但子用户策略缺少 cos:DeleteObject')
-        elif e.code == 403:
-            log('[probe] FAIL 密钥不正确(SignatureDoesNotMatch / InvalidAccessKeyId)')
-        elif e.code == 404:
-            log('[probe] FAIL 桶名或地域不对(NoSuchBucket)')
-        else:
-            log('[probe] FAIL 未预期响应')
+
+    def fail(msg, code=''):
+        log('[probe] FAIL %s%s' % (msg, (' (' + code + ')') if code else ''))
+        try:
+            _cos_send('DELETE', key)     # 尽力清理临时对象
+        except Exception:
+            pass
         return 1
+
+    try:
+        st, body = _cos_send('PUT', key, payload)
     except Exception as e:
         log('[probe] FAIL 请求异常: %s' % e)
         return 1
+    log('[probe] PUT    -> HTTP %s %s' % (st, _cos_code(body)))
+    if st not in (200, 204):
+        return fail('写入失败, 策略可能缺 cos:PutObject', _cos_code(body))
+
+    st, body = _cos_send('HEAD', key)
+    log('[probe] HEAD   -> HTTP %s' % st)
+    if st != 200:
+        return fail('写入后读不到, 策略可能缺 cos:HeadObject', _cos_code(body))
+
+    st, body = _cos_send('DELETE', key)
+    log('[probe] DELETE -> HTTP %s %s' % (st, _cos_code(body)))
+    if st not in (200, 204):
+        return fail('删除失败, 策略可能缺 cos:DeleteObject', _cos_code(body))
+
+    st, body = _cos_send('HEAD', key)
+    log('[probe] HEAD   -> HTTP %s (期望 404)' % st)
+    if st != 404:
+        return fail('删除后仍可读取, COS 侧未真正生效')
+
+    log('[probe] PASS 写入/读取/删除全链路正常, 临时对象已清理')
+    return 0
 
 
 # ---------------------------------------------------------------- GitHub
