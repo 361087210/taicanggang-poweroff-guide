@@ -212,7 +212,7 @@ def cos_probe():
     """自检 COS 凭据/策略/桶连通性: 对一个必然不存在的 key 发 DELETE。
 
     不删除任何真实对象, 只读回 HTTP 状态与 COS 错误码, 用于密钥补全后首次核验:
-      404 NoSuchKey        → 正常(凭据可用 + 有 DeleteObject 权限)
+      204 (或 404 NoSuchKey) → 正常(凭据可用 + 有 DeleteObject 权限)
       403 AccessDenied     → 凭据可用但子用户策略缺 cos:DeleteObject
       403 SignatureDoesNotMatch / InvalidAccessKeyId → 密钥不对
       404 NoSuchBucket     → 桶名或地域不对
@@ -232,8 +232,11 @@ def cos_probe():
     }, method='DELETE')
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
-            log('[probe] HTTP %s (对象本不存在却删除成功, 请检查桶/版本控制)' % r.status)
-            return 1
+            # COS 的 DELETE 是幂等的: 对象不存在也返回 204(部分配置返回 404),
+            # 能拿到 2xx 就说明签名被接受且 DeleteObject 权限通过
+            log('[probe] HTTP %s' % r.status)
+            log('[probe] PASS 凭据可用, DeleteObject 权限正常(对象不存在时 COS 亦返回 204)')
+            return 0
     except urllib.error.HTTPError as e:
         body = e.read().decode('utf-8', 'replace')[:800]
         code = ''
