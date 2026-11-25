@@ -1,7 +1,8 @@
-# V10.28.1 更新提示修复版
+# V10.28.2 更新提示修复版
 
 > 一句话：按飞书《开发文档 V5.3.3》的更新分发章节逐条核对，核心判定没问题，
 > 修掉两处「一旦触发就 404」的直链兜底，并让发版流程真正回写安装包体积。
+> v10.28.1 因 tag 指向工作流语法损坏的提交而未出包，本版重发。
 
 ## 为什么做这一版
 
@@ -30,15 +31,22 @@ L3 只在 `version.json` 同时缺 `downloadUrl` 与 `apkUrl` 时生效（换源
 
 ### 2. 删掉写死的 v5.7 资产地址
 
-`downloadAndInstallApk` 之前带一个写死的
-`.../download/v5.7/tcg_poweroff_v5.7.0.apk` 作为最后兜底——该 Release 资产早已不存在。
-现在解不出直链时明确提示「未取到下载地址，请稍后在「检查更新」重试」，并把按钮恢复为可重试状态。
+`downloadAndInstallApk` 之前带一个写死的 `.../download/v5.7/tcg_poweroff_v5.7.0.apk` 作为最后兜底——
+该 Release 资产早已不存在。现在解不出直链时明确提示「未取到下载地址，请稍后在「检查更新」重试」，
+并把按钮恢复为可重试状态。
 
 ### 3. 发版回写 `apkSize`
 
 更新弹窗会读 `version.json` 的 `apkSize` 决定是否显示「安装包大小：xx」，但发版流程只回写
 `downloadUrl` / `version` / `versionCode`。现在 Android 发版在重写 version.json 的同一步，
-按实际 APK 字节数写入 `"apkSize": "16.7MB"`（字段缺失时自动插入，存在时原地替换）。
+按实际 APK 字节数写入 `"apkSize": "16.7MB"`（字段缺失时插入，存在时原地替换），实现为纯 `sed`，无 heredoc。
+
+## ⚠️ 发版事故：v10.28.1 未出包
+
+- v10.28.1 打 tag 后 Android 工作流立即失败，run 里 0 个 job —— 新增的回写步骤用了顶格书写的 heredoc，
+  把 YAML 块标量打断，整个工作流文件无法解析（GitHub 只能显示文件路径作名字）。
+- 发布 tag 受保护、不可移动，按既定规则不重打 10.28.1，改为升 **10.28.2**。
+- 该步骤改写为纯 `sed`；推送前用 `js-yaml` 本地校验工作流可解析，并单独模拟了「字段缺失 → 插入」分支。
 
 ## 升级与兼容
 
@@ -49,7 +57,7 @@ L3 只在 `version.json` 同时缺 `downloadUrl` 与 `apkUrl` 时生效（换源
 
 - `test:v10285-update-prompt` 19 → **26 断言**全绿：新增 L1/L2/L3 三级回退、V5.3 断链过滤、
   无版本返回 null、`apkSize` 回写接线、写死旧资产已移除
-- `check_version_consistency` / `check_ci_coverage` 通过
+- `check_version_consistency` / `check_ci_coverage` 通过；工作流 YAML 本地解析通过
 
 ## 待办（文档侧，本版未改）
 
