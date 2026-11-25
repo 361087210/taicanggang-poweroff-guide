@@ -551,8 +551,13 @@ function downloadAndInstallApk() {
     if (btn) { btn.disabled = true; btn.textContent = '正在下载…(约15MB)'; }
     showToast('开始下载更新包…');
     // V5.7.1: 旧版硬编码 v5.3.6 资产名, 版本一升即断链; 改为动态解析 version.json 直链
-    var url = (typeof resolveApkUrl === 'function' && resolveApkUrl(latestUpdateInfo)) ||
-               'https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v5.7/tcg_poweroff_v5.7.0.apk';
+    var url = (typeof resolveApkUrl === 'function' && resolveApkUrl(latestUpdateInfo)) || '';
+    if (!url) {
+      // V10.28.1: 删掉写死的 v5.7 兜底(该资产早已不存在), 解不出直链就明确提示并恢复按钮
+      if (btn) { btn.disabled = false; btn.textContent = '应用内下载并安装（推荐）'; }
+      showToast('未取到下载地址，请稍后在「检查更新」重试');
+      return;
+    }
     var filePath = (cordova.file.externalCacheDirectory || cordova.file.cacheDirectory) + 'tcg_update.apk';
     cordova.plugin.http.downloadFile(url, {}, {}, filePath, function(entry) {
         showToast('下载完成，准备安装…');
@@ -697,10 +702,10 @@ function resolveApkUrl(info){
   if(info.downloadUrl&&/^https:\/\//.test(info.downloadUrl))return info.downloadUrl;
   // 2) 兼容旧字段apkUrl: 过滤掉已知断链(V5.3大写tag, 资产实际不存在)
   if(info.apkUrl&&/^https:\/\//.test(info.apkUrl)&&!info.apkUrl.includes('/download/V5.3/'))return info.apkUrl;
-  // 3) 按tag命名规则推导(与CI产物命名约定一致: taicanggang-V{ver}-b{build}.apk)
+  // 3) 按CI实际产物命名推导(V10.28.1 起为 tcg_poweroff_v{ver}.apk;
+  //    旧命名 taicanggang-V{ver}-b{build}.apk 已不再产出, 写旧名字会得到 404)
   if(info.version){
-    const b=info.buildNumber?('b'+info.buildNumber):'';
-    return `https://github.com/${GITHUB_REPO}/releases/download/v${info.version}/taicanggang-V${info.version}${b?('-'+b):''}.apk`;
+    return `https://github.com/${GITHUB_REPO}/releases/download/v${info.version}/tcg_poweroff_v${info.version}.apk`;
   }
   return null;
 }
