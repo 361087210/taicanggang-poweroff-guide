@@ -204,8 +204,11 @@ def cos_delete(key):
             if r.status not in (200, 204):
                 raise RuntimeError('COS 删除返回 HTTP %s' % r.status)
     except urllib.error.HTTPError as e:
-        if e.code != 404:
-            raise RuntimeError('COS 删除返回 HTTP %s' % e.code)
+        if e.code == 404:
+            return
+        body = e.read().decode('utf-8', 'replace')[:400]
+        m = re.search(r'<Code>([^<]+)</Code>', body)
+        raise RuntimeError('COS 删除返回 HTTP %s %s' % (e.code, m.group(1) if m else body[:120]))
 
 
 def cos_probe():
