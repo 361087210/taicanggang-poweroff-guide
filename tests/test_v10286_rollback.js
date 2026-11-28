@@ -116,6 +116,26 @@ check('R4d 脚本接收源目录与输出目录', /SRC=/.test(pp) && /OUT=/.test
 check('R4e 脚本覆盖核心站点文件', ['index.html', 'demo.html', 'sw.js', 'version.json', 'js', 'css', 'vendor'].every((f) => pp.indexOf(f) >= 0));
 check('R4f 脚本包含版本清单', pp.indexOf('releases_index.json') >= 0);
 
+/* 回滚时源目录是 site/, 输出必须落在调用者目录 —— 曾经因为 cd 到源目录后
+ * 用相对路径输出, 把 _publish 建到了 site/ 里面, 部署步骤找不到目录 */
+const os = require('os');
+const { execSync } = require('child_process');
+let r4gOk = false, r4gMsg = '';
+try {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-'));
+  const site = path.join(tmp, 'site');
+  fs.mkdirSync(site);
+  ['index.html', 'demo.html', 'manifest.json', 'sw.js', 'feishu-api.js', 'vehicles_data.js', 'version.json']
+    .forEach((f) => fs.writeFileSync(path.join(site, f), 'x'));
+  ['css', 'js', 'vendor', 'vehicle_images'].forEach((d) => fs.mkdirSync(path.join(site, d)));
+  const out = path.join(tmp, '_publish');
+  execSync('bash "' + path.join(ROOT, 'scripts', 'prepare_pages.sh') + '" "' + site + '" "' + out + '"', { stdio: 'pipe' });
+  r4gOk = fs.existsSync(path.join(out, 'index.html')) && !fs.existsSync(path.join(site, '_publish'));
+  r4gMsg = 'out=' + fs.existsSync(path.join(out, 'index.html')) + ' site/_publish=' + fs.existsSync(path.join(site, '_publish'));
+  fs.rmSync(tmp, { recursive: true, force: true });
+} catch (e) { r4gMsg = String(e.message).slice(0, 160); }
+check('R4g 源目录与输出目录分离时, 输出落在调用者位置', r4gOk, r4gMsg);
+
 /* ---------------- R5 App 历史版本入口 ---------------- */
 section('R5 App 内历史版本');
 const demo = src('demo.html');

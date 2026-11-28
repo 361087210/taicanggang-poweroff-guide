@@ -13,6 +13,13 @@ set -euo pipefail
 SRC="${1:-.}"
 OUT="${2:-_publish}"
 
+# 输出目录先按"调用者当前目录"转成绝对路径, 否则下面 cd 到源目录后
+# 相对路径会落到源目录里(回滚时源目录是 site/, 输出会错位到 site/_publish)
+case "$OUT" in
+  /*) ;;
+  *) OUT="$(pwd)/$OUT" ;;
+esac
+
 cd "$SRC"
 rm -rf "$OUT"
 mkdir -p "$OUT"
