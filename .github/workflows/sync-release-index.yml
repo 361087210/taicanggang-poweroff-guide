@@ -55,7 +55,14 @@ jobs:
           git add releases_index.json
           if git diff --cached --quiet; then
             echo "版本清单无变化, 跳过提交"
-          else
-            git commit -m "chore(release): 刷新版本清单 releases_index.json"
-            git push
+            exit 0
           fi
+          git commit -m "chore(release): 刷新版本清单 releases_index.json"
+          # 发版工作流会在同一时间段提交 version.json, 直接 push 会被拒(fetch first),
+          # 所以先 rebase 再推, 仍失败则再试一次
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main || true
+            if git push; then echo "已推送(第 $i 次)"; exit 0; fi
+            sleep 5
+          done
+          echo "::error::版本清单推送失败(多次重试)"; exit 1
