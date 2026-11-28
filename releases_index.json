@@ -1,16 +1,39 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-28T11:57:44Z",
+  "generatedAt": "2026-11-28T13:06:56Z",
   "repo": "361087210/taicanggang-poweroff-guide",
-  "latest": "10.28.3",
+  "latest": "10.28.4",
   "counts": {
-    "total": 96,
-    "complete": 66,
+    "total": 97,
+    "complete": 67,
     "partial": 24,
     "missing": 0,
     "unreleased": 6
   },
   "releases": [
+    {
+      "version": "10.28.4",
+      "tag": "v10.28.4",
+      "status": "complete",
+      "publishedAt": "2026-11-28T13:06:41Z",
+      "releaseUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/tag/v10.28.4",
+      "apk": {
+        "name": "tcg_poweroff_v10.28.4.apk",
+        "url": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.28.4/tcg_poweroff_v10.28.4.apk",
+        "size": 16690953
+      },
+      "apkSha256": {
+        "name": "tcg_poweroff_v10.28.4.apk.sha256",
+        "url": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.28.4/tcg_poweroff_v10.28.4.apk.sha256",
+        "size": 92
+      },
+      "ipa": {
+        "name": "tcg_poweroff_v10.28.4_ios.ipa",
+        "url": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.28.4/tcg_poweroff_v10.28.4_ios.ipa",
+        "size": 18774359
+      },
+      "rollbackable": true
+    },
     {
       "version": "10.28.3",
       "tag": "v10.28.3",
