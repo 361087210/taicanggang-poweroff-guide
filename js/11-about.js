@@ -8,6 +8,19 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.28.3',
+    date: '2026-11-28',
+    highlight: '回滚能力: 版本清单 + 网页一键回滚 + App 历史版本 + 云端备份恢复',
+    features: [
+      '新增(清单): releases_index.json 逐个标注 95 个版本的完整/缺件/未产出, 随 Pages 与 App 包发布, --check 防漂移',
+      '新增(网页): rollback.yml 可按 tag 把 Pages 重新部署为旧版本; 发布清单抽为 scripts/prepare_pages.sh 单一真源',
+      '新增(App): 我的 → 历史版本, 列出全部版本与 APK/IPA 直链, 明确 Android 降级需先卸载',
+      '新增(数据): 数据页 → 从云端备份恢复, 列出飞书备份并按合并策略恢复, 恢复前二次确认',
+      '清理: 删除 5 个重复 Release 与 2 个空 Release, tag 全部保留',
+      '测试: test:v10286-rollback 钉住清单契约、回滚接线与单一发布清单'
+    ]
+  },
+  {
     version: 'V10.28.2',
     date: '2026-11-25',
     highlight: '更新提示修复: 直链兜底命名 + 写死旧资产 + 安装包体积回写',
@@ -842,7 +855,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.28.2'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.28.3'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

@@ -1,0 +1,122 @@
+name: Rollback (回滚到指定版本)
+
+# ============================================================
+# 回滚通道（V10.28.3）
+# ============================================================
+# scope=pages: 把 GitHub Pages 重新部署为指定 tag 的站点内容（网页端一键回滚）
+# scope=info : 只校验该版本产物并输出直链与校验和（安装包回滚用）
+#
+# 注意：工作流文件总是从默认分支取，站点内容从目标 tag 取，
+# 所以这里分两次 checkout（_ops 拿发布脚本，site 拿旧版本站点文件）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '要回滚到的 tag（如 v10.28.2）'
+        required: true
+        type: string
+      scope:
+        description: 'pages=重新部署网页；info=只输出该版本产物信息'
+        required: true
+        type: choice
+        options: [pages, info]
+        default: pages
+      confirm:
+        description: '再输入一次同样的 tag 以确认（防误操作）'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  rollback:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment_retry.outputs.page_url || steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 校验确认串与目标版本
+        run: |
+          if [ "${{ inputs.confirm }}" != "${{ inputs.version }}" ]; then
+            echo "::error::确认串与目标版本不一致（confirm=${{ inputs.confirm }} version=${{ inputs.version }}），已中止"
+            exit 1
+          fi
+          case "${{ inputs.version }}" in
+            v*) echo "TAG=${{ inputs.version }}" >> $GITHUB_ENV ;;
+            *) echo "::error::版本必须带 v 前缀（如 v10.28.2）"; exit 1 ;;
+          esac
+
+      - name: 校验该版本产物是否存在
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN || secrets.GH_TOKEN || github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/releases/tags/${TAG}" > /tmp/rel.json 2>/dev/null || {
+            echo "::warning::${TAG} 没有 Release（该版本历史上未产出安装包）"; echo '{"assets":[]}' > /tmp/rel.json; }
+          echo "### ${TAG} 产物" >> $GITHUB_STEP_SUMMARY
+          python3 - <<'PY' >> $GITHUB_STEP_SUMMARY
+          import json
+          d = json.load(open('/tmp/rel.json'))
+          assets = d.get('assets') or []
+          if not assets:
+              print('- 无产物（回滚网页仍可用；安装包回滚不可用）')
+          for a in assets:
+              print('- `%s` · %.1fMB · %s' % (a['name'], a['size']/1048576, a['browser_download_url']))
+          PY
+          echo "assets=$(python3 -c "import json;print(len((json.load(open('/tmp/rel.json')).get('assets') or [])))")" >> $GITHUB_ENV
+
+      - name: Checkout 运维脚本（默认分支）
+        if: inputs.scope == 'pages'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: _ops
+
+      - name: Checkout 目标版本站点（tag）
+        if: inputs.scope == 'pages'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.version }}
+          path: site
+
+      - name: 用目标版本的清单组装发布目录
+        if: inputs.scope == 'pages'
+        run: bash _ops/scripts/prepare_pages.sh site _publish
+
+      - name: 发布快照（回滚前的线上状态留档）
+        if: inputs.scope == 'pages'
+        run: |
+          echo "回滚时间: $(date -u '+%Y-%m-%dT%H:%M:%SZ')" > _publish/_rollback_info.txt
+          echo "目标版本: ${TAG}" >> _publish/_rollback_info.txt
+          echo "触发人: ${{ github.actor }}" >> _publish/_rollback_info.txt
+
+      - name: Setup Pages
+        if: inputs.scope == 'pages'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+
+      - name: Upload artifact
+        if: inputs.scope == 'pages'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: './_publish'
+
+      - name: 等待工件元数据可见
+        if: inputs.scope == 'pages'
+        run: sleep 15
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        if: inputs.scope == 'pages'
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+        continue-on-error: true
+
+      - name: Deploy to GitHub Pages (重试一次)
+        id: deployment_retry
+        if: inputs.scope == 'pages' && steps.deployment.outcome != 'success'
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

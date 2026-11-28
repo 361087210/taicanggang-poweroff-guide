@@ -749,6 +749,87 @@ function skipUpdate(){
   showToast('已跳过该版本，可随时手动检查');
 }
 
+/* ===================== 历史版本（回滚）V10.28.3 =====================
+ * 数据源: releases_index.json —— 由 scripts/gen_release_index.js 从 GitHub Releases
+ * 生成, 随 Pages 与 App 包一起发布。字段: version/tag/status/apk/ipa/rollbackable。
+ * 为什么要它: 回滚需要知道"每个版本到底有没有产物、在哪", 而这些信息原本只在
+ * GitHub 页面里, App 内拿不到。
+ * 加载: 本地打包 → 线上 jsDelivr, 全部失败则明确提示。
+ */
+const RELEASE_INDEX_SOURCES=[
+  'releases_index.json',
+  `https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@${GITHUB_BRANCH}/releases_index.json`
+];
+let releaseIndexCache=null;
+
+async function loadReleaseIndex(){
+  if(releaseIndexCache)return releaseIndexCache;
+  for(const url of RELEASE_INDEX_SOURCES){
+    try{
+      const data=await httpFetch(url+'?t='+Date.now());
+      if(data&&Array.isArray(data.releases)){releaseIndexCache=data;return data;}
+    }catch(e){/* 试下一个源 */}
+  }
+  try{
+    const r=await fetch(RELEASE_INDEX_SOURCES[0]+'?t='+Date.now());
+    if(r&&r.ok){
+      const data=await r.json();
+      if(data&&Array.isArray(data.releases)){releaseIndexCache=data;return data;}
+    }
+  }catch(e){}
+  return null;
+}
+
+const VERSION_STATUS_LABEL={
+  complete:'<span class="text-xs px-1.5 py-0.5 rounded bg-green-50 text-green-600">完整</span>',
+  partial:'<span class="text-xs px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-600">缺件</span>',
+  missing:'<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">空发布</span>',
+  unreleased:'<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-400">未产出</span>'
+};
+
+function versionRowHtml(r){
+  const isCur=r.version===APP_VERSION;
+  const links=[];
+  if(r.apk)links.push('<button onclick="downloadVersionAsset(\''+esc(r.version)+'\',\'apk\')" class="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600">APK</button>');
+  if(r.ipa)links.push('<button onclick="downloadVersionAsset(\''+esc(r.version)+'\',\'ipa\')" class="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600">IPA</button>');
+  return '<div class="flex items-center justify-between gap-2 py-2 border-b border-gray-100 last:border-0">'+
+    '<div class="min-w-0"><div class="text-sm text-gray-800 truncate">V'+esc(r.version)+
+      (isCur?'<span class="text-xs text-blue-600 ml-1">当前</span>':'')+'</div>'+
+      '<div class="text-xs text-gray-400 mt-0.5">'+(r.publishedAt?esc(String(r.publishedAt).slice(0,10)):'—')+' · '+
+      (VERSION_STATUS_LABEL[r.status]||'')+'</div></div>'+
+    '<div class="flex items-center gap-1 flex-shrink-0">'+(links.join('')||'<span class="text-xs text-gray-300">无产物</span>')+'</div>'+
+  '</div>';
+}
+
+async function openVersionHistory(){
+  openModal('modal-versions');
+  const list=document.getElementById('versions-list');
+  const meta=document.getElementById('versions-meta');
+  if(list)list.innerHTML='<div class="text-xs text-gray-400 py-6 text-center">加载中…</div>';
+  if(meta)meta.textContent='';
+  const idx=await loadReleaseIndex();
+  if(!idx){
+    if(list)list.innerHTML='<div class="text-xs text-gray-400 py-6 text-center">版本清单加载失败，请检查网络后重试</div>';
+    return;
+  }
+  releaseIndexCache=idx;
+  if(meta)meta.textContent='共 '+(idx.releases||[]).length+' 个版本 · 清单更新于 '+String(idx.generatedAt||'').slice(0,10);
+  if(list)list.innerHTML=(idx.releases||[]).map(versionRowHtml).join('');
+}
+
+function downloadVersionAsset(version,kind){
+  const idx=releaseIndexCache;
+  const r=idx&&(idx.releases||[]).find(x=>x.version===version);
+  const asset=r&&r[kind];
+  if(!asset||!asset.url){showToast('该版本没有可下载的安装包');return;}
+  // Android 不允许 versionCode 变小覆盖安装, 降级必须先卸载
+  if(kind==='apk'&&window.cordova){
+    showToast('Android 降级安装需先卸载当前版本，再安装该 APK');
+  }
+  openExternal(asset.url);
+}
+
+
 // ===================== HARDWARE BACK (V5.3) =====================
 /**
  * Android硬件返回键统一路由 - V5.3核心修复(问题3)
