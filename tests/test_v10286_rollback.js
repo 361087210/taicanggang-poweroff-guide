@@ -90,6 +90,21 @@ check('R3c 按目标 tag checkout 站点内容', /ref:\s*\$\{\{\s*inputs\.versio
 check('R3d 发布前校验该版本产物并写入摘要', rb.indexOf('releases/tags/') >= 0 && rb.indexOf('GITHUB_STEP_SUMMARY') >= 0);
 check('R3e 具备 Pages 部署权限', /pages:\s*write/.test(rb) && /id-token:\s*write/.test(rb));
 
+/* 血泪教训: 在 run: | 块里写 heredoc, 正文一旦顶格就会提前结束 YAML 块标量,
+ * 整份工作流无法解析(run 里 0 个 job, 名字显示为文件路径)。
+ * 这里不粗暴禁 heredoc(正确缩进的 heredoc 是合法的), 而是要求每份工作流都能被解析。 */
+const wfFiles = fs.readdirSync(path.join(ROOT, '.github', 'workflows')).filter((f) => f.endsWith('.yml'));
+let yamlLib = null;
+try { yamlLib = require('js-yaml'); } catch (e) { /* 缺依赖时跳过 */ }
+if (yamlLib) {
+  const bad = [];
+  wfFiles.forEach((f) => {
+    try { yamlLib.load(src(path.join('.github', 'workflows', f))); }
+    catch (e) { bad.push(f + ': ' + String(e.message).split('\n')[0]); }
+  });
+  check('R3f 所有工作流均可被 YAML 解析', bad.length === 0, bad.join(' | '));
+}
+
 /* ---------------- R4 发布清单单一真源 ---------------- */
 section('R4 发布清单单一真源');
 const dp = src('.github/workflows/deploy-pages.yml');
