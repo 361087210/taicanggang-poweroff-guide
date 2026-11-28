@@ -140,8 +140,9 @@ check('R4g 源目录与输出目录分离时, 输出落在调用者位置', r4gO
 section('R5 App 内历史版本');
 const demo = src('demo.html');
 const cache = src('js/07-cache.js');
-check('R5a 入口按钮存在', demo.indexOf('openVersionHistory()') >= 0 && demo.indexOf('历史版本') >= 0);
+check('R5a 入口按钮存在', demo.indexOf('openVersionHistory()') >= 0 && demo.indexOf('安装包回滚') >= 0);
 check('R5b 弹层容器存在', demo.indexOf('id="modal-versions"') >= 0 && demo.indexOf('id="versions-list"') >= 0);
+check('R5b2 标题与「关于」里的版本历史区分开', demo.indexOf('安装包回滚（历史版本）') >= 0);
 check('R5c 读取版本清单', cache.indexOf('releases_index.json') >= 0 && /function loadReleaseIndex/.test(cache));
 check('R5d 直链下载函数', /function downloadVersionAsset/.test(cache) && /function openVersionHistory/.test(cache));
 check('R5e 标注 Android 降级需卸载', cache.indexOf('需先卸载') >= 0);
@@ -153,7 +154,10 @@ check('R6a 数据页入口存在', demo.indexOf('openCloudBackupList()') >= 0 &&
 check('R6b 弹层容器存在', demo.indexOf('id="modal-cloud-backups"') >= 0);
 check('R6c 列出云端备份并支持恢复', /async function openCloudBackupList/.test(sync) && /async function restoreCloudBackup/.test(sync));
 check('R6d 复用本地导入的合并与二次确认', /handleImportBackup\(inputEl,\s*presetData\)/.test(sync) && sync.indexOf('预设') === -1);
-check('R6e 从备份子目录读取', sync.indexOf('downloadJsonFromDataFeishu(token,name,cfg.backupSub)') >= 0);
+check('R6e 恢复按 file token 精确定位(同名多档可区分)',
+  /downloadJsonByFileToken\(token,\s*fileToken\)/.test(sync) && sync.indexOf('esc(f.token)') >= 0);
+check('R6f 列表展示秒级时间, 同名备份可区分', sync.indexOf('slice(0,19)') >= 0);
+check('R6g 按 token 的下载器独立于按名查找', /async function downloadJsonByFileToken/.test(sync) && /return downloadJsonByFileToken\(token,target\.token\)/.test(sync));
 
 /* ---------------- R7 版本一致性 ---------------- */
 section('R7 版本一致性');

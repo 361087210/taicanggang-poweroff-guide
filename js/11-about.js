@@ -8,6 +8,17 @@
 
 const VERSION_HISTORY = [
   {
+    version: 'V10.28.4',
+    date: '2026-11-28',
+    highlight: '回滚流程实测修复: 同名备份可区分 + 入口改名 + 体积显示',
+    features: [
+      '修复(数据回滚): 云端备份恢复改为按 file token 下载, 同名多档(vehicle_backup_2026-10-03.json 两份)可精确选到较早副本; 列表显示秒级时间',
+      '修复(命名): 「我的」入口改名「安装包回滚」, 弹层标题「安装包回滚（历史版本）」, 与「关于 → 版本历史」区分',
+      '修复(显示): 飞书未返回 size 时不再出现空的「· KB」',
+      '验证: 网页端真实回滚到 v10.28.2 并恢复最新, 期间修复两处工作流缺陷(YAML heredoc / 发布目录落点)并补守卫测试'
+    ]
+  },
+  {
     version: 'V10.28.3',
     date: '2026-11-28',
     highlight: '回滚能力: 版本清单 + 网页一键回滚 + App 历史版本 + 云端备份恢复',
@@ -855,7 +866,7 @@ function renderAboutPage() {
              留着旧值等于静默展示过期版本。scripts/check_version_consistency.js
              已把这类 APP_VERSION 兜底字面量纳入强校验, 下版忘了改会直接拦下。
              注意: 本文件是模板字符串, 注释里禁止出现反引号, 否则会截断模板。 -->
-        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.28.3'}</div>
+        <div class="text-xs text-white/60 mt-1">V${APP_VERSION || '10.28.4'}</div>
         <div class="text-xs text-white/50 mt-0.5">商品车断电操作标准化平台</div>
       </div>
 

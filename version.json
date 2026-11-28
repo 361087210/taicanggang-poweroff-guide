@@ -1,9 +1,15 @@
 {
-  "version": "10.28.3",
-  "versionCode": 102803,
+  "version": "10.28.4",
+  "versionCode": 102804,
   "apkSize": "16.7MB",
-  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.28.3/tcg_poweroff_v10.28.3.apk",
+  "downloadUrl": "https://github.com/361087210/taicanggang-poweroff-guide/releases/download/v10.28.4/tcg_poweroff_v10.28.4.apk",
   "releaseNotes": [
+    "V10.28.4 回滚体验修复版。一句话总结: 把回滚流程真实跑了一遍, 修掉同名备份无法区分、入口与「关于」版本历史重名、备份大小显示为空三个问题。",
+    "修复(数据回滚): 云端备份恢复改为按 file token 下载 —— 同名多档(vehicle_backup_2026-10-03.json 两份)此前只能取到最新那份, 选不到较早副本; 列表同时显示秒级时间便于区分",
+    "修复(命名): 「我的」里的入口改名「安装包回滚」, 弹层标题为「安装包回滚（历史版本）」, 与「关于 → 版本历史」彻底区分",
+    "修复(显示): 飞书列表不返回 size 时不再显示空的「· KB」, 改为只显示时间",
+    "验证: 网页端已真实回滚到 v10.28.2 并恢复最新(线上 version.json 10.28.2 → 10.28.3), 期间修复两处工作流缺陷并补守卫测试",
+    "测试: test:v10286-rollback 扩到 43 断言(新增按 token 恢复、秒级时间、标题区分)",
     "V10.28.3 回滚能力版。一句话总结: 每个已发布版本都有据可查、可回滚 —— 新增版本清单 releases_index.json(95 个版本逐个标注完整/缺件/未产出), 网页端可按 tag 一键回滚, App 内新增「历史版本」入口, 数据面新增「从云端备份恢复」, 并清理了重复与空 Release。",
     "新增(清单): scripts/gen_release_index.js 从 GitHub Releases 生成 releases_index.json(随 Pages 与 App 包发布), 并提供 --check 漂移校验",
     "新增(网页回滚): .github/workflows/rollback.yml —— 输入 tag 与二次确认串, 用该 tag 的站点内容重新部署 Pages; 发布清单抽到 scripts/prepare_pages.sh 作为单一真源",
