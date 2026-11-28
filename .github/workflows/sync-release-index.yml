@@ -1,0 +1,53 @@
+name: Sync Release Index
+
+# ============================================================
+# 版本清单刷新（V10.28.3）
+# ============================================================
+# releases_index.json 是 App「历史版本」与回滚判断的真源。
+# 触发点: 新 Release 发布后 / 每天一次 / 手动。
+# 有变化才提交, 避免无意义 commit 触发 Pages 部署。
+
+on:
+  release:
+    types: [published]
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-release-index
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
+
+      - name: Setup Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+
+      - name: 生成版本清单
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN || secrets.GH_TOKEN || github.token }}
+        run: node scripts/gen_release_index.js
+
+      - name: 有变化才提交
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add releases_index.json
+          if git diff --cached --quiet; then
+            echo "版本清单无变化, 跳过提交"
+          else
+            git commit -m "chore(release): 刷新版本清单 releases_index.json"
+            git push
+          fi

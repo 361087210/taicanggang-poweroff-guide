@@ -1958,20 +1958,25 @@ function triggerImportBackup(){
  * 策略: 智能合并——同ID覆盖,新增追加,导入前二次确认(防止误操作覆盖本地数据)
  * @param {HTMLInputElement} inputEl - 文件选择input元素
  */
-async function handleImportBackup(inputEl){
+async function handleImportBackup(inputEl, presetData){
   const file=inputEl.files&&inputEl.files[0];
-  if(!file){return;}
-  if(file.size>50*1024*1024){showToast('备份文件过大(>50MB),请检查文件');return;}
+  if(!file&&!presetData){return;}
+  if(file&&file.size>50*1024*1024){showToast('备份文件过大(>50MB),请检查文件');return;}
   showToast('正在读取备份文件...');
   try{
-    const text=await new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onload=e=>resolve(e.target.result);
-      reader.onerror=()=>reject(new Error('文件读取失败'));
-      reader.readAsText(file);
-    });
     let data;
-    try{data=JSON.parse(text);}catch(e){throw new Error('文件格式错误,不是有效的JSON');}
+    if(presetData){
+      /* V10.28.3: 云端备份恢复直接传已解析的数据, 复用同一套格式解析/合并/二次确认 */
+      data=presetData;
+    }else{
+      const text=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=e=>resolve(e.target.result);
+        reader.onerror=()=>reject(new Error('文件读取失败'));
+        reader.readAsText(file);
+      });
+      try{data=JSON.parse(text);}catch(e){throw new Error('文件格式错误,不是有效的JSON');}
+    }
     
     // 兼容多种格式,提取车辆数组
     let vehicles=null;
@@ -2053,6 +2058,61 @@ async function handleImportBackup(inputEl){
     addSyncLog('备份导入失败: '+e.message,'red');
   }finally{
     inputEl.value='';
+  }
+}
+
+/* ===================== V10.28.3 云端备份恢复（数据回滚） =====================
+ * 备份由 doBackup() 写入「APP数据备份/备份文件/vehicle_backup_*.json」。
+ * 恢复 = 列出云端备份 → 下载 → 复用 handleImportBackup 的格式解析/合并/二次确认。
+ * 合并策略与本地导入完全一致(同 ID 覆盖、新 ID 追加), 不静默清空本地数据。
+ */
+async function openCloudBackupList(){
+  openModal('modal-cloud-backups');
+  const meta=document.getElementById('cloud-backups-meta');
+  const list=document.getElementById('cloud-backups-list');
+  if(list)list.innerHTML='<div class="text-xs text-gray-400 py-6 text-center">读取云端备份列表…</div>';
+  if(meta)meta.textContent='';
+  const cfg=getFeishuCfg();
+  if(!feishuCfgReady(cfg,true)){closeModal('modal-cloud-backups');return;}
+  try{
+    const token=await getFeishuToken(cfg);
+    const folder=await getDataSubFolderToken(token,cfg.backupSub);
+    if(!folder)throw new Error('云端备份目录不可用');
+    const files=((await feishuListFiles(token,folder))||[]).filter(f=>/\.json$/i.test(f.name||''));
+    files.sort((a,b)=>(parseInt(b.modified_time||0,10)||0)-(parseInt(a.modified_time||0,10)||0));
+    if(!files.length){
+      if(list)list.innerHTML='<div class="text-xs text-gray-400 py-6 text-center">云端暂无备份文件</div>';
+      return;
+    }
+    if(meta)meta.textContent='共 '+files.length+' 份备份（按时间倒序）';
+    if(list)list.innerHTML=files.map(f=>{
+      const ms=Number(f.modified_time||0)*1000;
+      const t=ms>0?new Date(ms).toISOString().slice(0,16).replace('T',' '):'—';
+      const kb=f.size?Math.round(Number(f.size)/1024)+'KB':'';
+      return '<div class="flex items-center justify-between gap-2 py-2 border-b border-gray-100">'+
+        '<div class="min-w-0"><div class="text-sm text-gray-800 truncate">'+esc(f.name)+'</div>'+
+        '<div class="text-xs text-gray-400 mt-0.5">'+t+' · '+kb+'</div></div>'+
+        '<button onclick="restoreCloudBackup(\''+esc(f.name)+'\')" class="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 flex-shrink-0">恢复</button></div>';
+    }).join('');
+  }catch(e){
+    if(list)list.innerHTML='<div class="text-xs text-gray-400 py-6 text-center">读取失败：'+esc(e.message)+'</div>';
+  }
+}
+
+async function restoreCloudBackup(name){
+  const cfg=getFeishuCfg();
+  if(!feishuCfgReady(cfg,true))return;
+  showToast('正在下载云端备份…');
+  try{
+    const token=await getFeishuToken(cfg);
+    const data=await downloadJsonFromDataFeishu(token,name,cfg.backupSub);
+    if(!data)throw new Error('备份文件为空或已不存在');
+    closeModal('modal-cloud-backups');
+    await handleImportBackup(document.getElementById('import-backup-input'),data);
+    addSyncLog('云端备份恢复 · '+name,'blue');
+  }catch(e){
+    showToast('恢复失败: '+e.message);
+    addSyncLog('云端备份恢复失败: '+e.message,'red');
   }
 }
 

@@ -17,6 +17,8 @@ on:
       - 'vehicles_data.js'
       - 'version.json'
       - 'media_library.json'
+      - 'releases_index.json'
+      - 'scripts/prepare_pages.sh'
       - 'icon-*.png'
       - 'icon.svg'
       - '.github/workflows/deploy-pages.yml'
@@ -42,33 +44,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Prepare publish directory
-        run: |
-          mkdir -p _publish
-          cp index.html _publish/
-          cp demo.html _publish/
-          cp manifest.json _publish/
-          cp sw.js _publish/
-          cp feishu-api.js _publish/
-          cp vehicles_data.js _publish/
-          cp version.json _publish/
-          # V10.25.8: 资源库索引(docs/ 不在发布白名单, 故索引放根目录)
-          cp media_library.json _publish/ 2>/dev/null || true
-          cp icon-*.png _publish/ 2>/dev/null || true
-          cp icon.svg _publish/ 2>/dev/null || true
-          cp -r css _publish/
-          cp -r js _publish/
-          cp -r vendor _publish/
-          cp -r vehicle_images _publish/
-          # web-data为镜像数据目录(首次同步前可能不存在,容错跳过)
-          if [ -d web-data ]; then
-            cp -r web-data _publish/
-            echo "web-data files:"
-            ls -la _publish/web-data/
-          else
-            echo "WARN: web-data目录不存在(首次同步前属正常,待sync-web-data工作流生成)"
-          fi
-          echo "Publish dir contents:"
-          ls -la _publish/
+        run: bash scripts/prepare_pages.sh . _publish
 
       - name: Setup Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6

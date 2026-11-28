@@ -120,6 +120,7 @@ const TEST_SUITES = [
   'test:v10283-package-photo-budget',
   'test:v10284-media-hard-delete',
   'test:v10285-update-prompt',
+  'test:v10286-rollback',
   'test:media-source-bench',
   'test:cross'
 ];

@@ -2,6 +2,28 @@
 
 本文件记录太仓港商品车断电操作标准化指导平台的所有重要变更。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [10.28.3] - 2026-11-28
+
+### 回滚能力：版本清单 + 网页一键回滚 + App 历史版本 + 云端备份恢复
+
+审计 95 个 `v*` tag 后补齐回滚链路：此前没有任何回滚通道（Pages 只部署最新、App 内无历史入口、Android 不允许覆盖降级安装）。
+
+#### ✨ 新增:
+- **版本清单** `releases_index.json`：`scripts/gen_release_index.js` 从 Tags + Releases 生成，逐版本标注 `complete / partial / missing / unreleased`，支持 `--check` 漂移校验；随 Pages 与 App 包发布
+- **清单自动刷新** `sync-release-index.yml`：Release 发布后 / 每日 / 手动触发，有变化才提交
+- **网页一键回滚** `rollback.yml`：输入 tag + 确认串，用该 tag 的站点内容重新部署 Pages；工作流取自默认分支、站点取自目标 tag
+- **App 历史版本**：我的 → 历史版本，列出全部版本状态与 APK/IPA 直链，明确 Android 降级需先卸载
+- **数据回滚**：数据页 → 从云端备份恢复，列出 `备份文件/` 下备份并复用本地导入的合并与二次确认
+
+#### ♻️ 重构:
+- 发布文件清单抽到 `scripts/prepare_pages.sh` 单一真源，`deploy-pages.yml` 与 `rollback.yml` 共用，避免回滚站点与当时线上不一致
+
+#### 🧹 清理:
+- 删除 5 个重复 Release（保留资产最全的一份）与 2 个空 Release（v10.27.3 / v5.3.2），tag 全部保留
+
+#### ✅ 测试:
+- 新增 `test:v10286-rollback`（38 断言）：清单契约、生成器 `--check`、回滚接线、单一发布清单、App 历史版本入口、云端备份恢复、版本一致性
+
 ## [10.28.2] - 2026-11-25
 
 ### 更新提示修复：直链兜底命名、写死旧资产、安装包体积回写
