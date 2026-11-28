@@ -59,18 +59,17 @@ jobs:
           GH_TOKEN: ${{ secrets.SYNC_TOKEN || secrets.GH_TOKEN || github.token }}
         run: |
           gh api "repos/${{ github.repository }}/releases/tags/${TAG}" > /tmp/rel.json 2>/dev/null || {
-            echo "::warning::${TAG} 没有 Release（该版本历史上未产出安装包）"; echo '{"assets":[]}' > /tmp/rel.json; }
-          echo "### ${TAG} 产物" >> $GITHUB_STEP_SUMMARY
-          python3 - <<'PY' >> $GITHUB_STEP_SUMMARY
-          import json
-          d = json.load(open('/tmp/rel.json'))
-          assets = d.get('assets') or []
-          if not assets:
-              print('- 无产物（回滚网页仍可用；安装包回滚不可用）')
-          for a in assets:
-              print('- `%s` · %.1fMB · %s' % (a['name'], a['size']/1048576, a['browser_download_url']))
-          PY
-          echo "assets=$(python3 -c "import json;print(len((json.load(open('/tmp/rel.json')).get('assets') or [])))")" >> $GITHUB_ENV
+            echo "::warning::${TAG} 没有 Release（该版本历史上未产出安装包）"
+            echo '{"assets":[]}' > /tmp/rel.json
+          }
+          COUNT=$(jq '.assets | length' /tmp/rel.json)
+          echo "assets=$COUNT" >> $GITHUB_ENV
+          echo "### ${TAG} 产物（${COUNT} 件）" >> $GITHUB_STEP_SUMMARY
+          if [ "$COUNT" = "0" ]; then
+            echo "- 无产物：网页回滚仍可用，安装包回滚不可用" >> $GITHUB_STEP_SUMMARY
+          else
+            jq -r '.assets[] | "- `\(.name)` · \(.size) 字节 · \(.browser_download_url)"' /tmp/rel.json >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Checkout 运维脚本（默认分支）
         if: inputs.scope == 'pages'
