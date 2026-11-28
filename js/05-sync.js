@@ -901,6 +901,16 @@ async function downloadJsonFromFolder(token,folderToken,docName){
   const matches=files.filter(f=>f.name===docName);
   if(!matches.length)return null;
   const target=matches.reduce((a,b)=>((parseInt(b.modified_time||0,10)||0)>(parseInt(a.modified_time||0,10)||0)?b:a));
+  return downloadJsonByFileToken(token,target.token);
+}
+
+/**
+ * 按 file token 下载并解析 JSON(V10.28.4)
+ * 为什么需要: 备份目录存在同名多档(如 vehicle_backup_2026-10-03.json 两份),
+ * 按文件名取 modified_time 最新那份会永远命中新的, 恢复不到较早副本;
+ * 云端备份恢复因此按 token 精确定位。
+ */
+async function downloadJsonByFileToken(token,fileToken){
   // 统一的健壮JSON解析: 兼容 原生插件自动解析对象 / 字符串(含UTF-8 BOM) / ArrayBuffer(二进制流按UTF-8解码)
   // 修复: 中文JSON经原生HTTP下载后字符串错乱/解析失败被误报为"云端无数据"
   const robustParse=(raw)=>{
@@ -918,7 +928,7 @@ async function downloadJsonFromFolder(token,folderToken,docName){
   // V10.9.0: 增加timeout:120秒——视频分离上传后JSON虽已轻量化,但弱网下仍需防无限挂起
   if(window.cordova&&window.cordova.plugin&&window.cordova.plugin.http){
     return await new Promise((resolve,reject)=>{
-      window.cordova.plugin.http.sendRequest(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{method:'GET',headers:{Authorization:'Bearer '+token},responseType:'text',timeout:120},res=>{
+      window.cordova.plugin.http.sendRequest(`https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`,{method:'GET',headers:{Authorization:'Bearer '+token},responseType:'text',timeout:120},res=>{
         try{resolve(robustParse(res.data));}catch(e){reject(new Error('数据解析失败(编码异常): '+e.message));}
       },err=>{
         const msg=String(err.error||'下载失败');
@@ -929,7 +939,7 @@ async function downloadJsonFromFolder(token,folderToken,docName){
   // V10.9.0: fetch路径增加AbortController超时——浏览器fetch默认无超时,弱网下可能永久挂起
   // V10.15.10: 改用fetchSignalSafe垫片(signal跨realm兼容,超时语义不变)
   try{
-    const dlRes=await fetchSignalSafe(`https://open.feishu.cn/open-apis/drive/v1/files/${target.token}/download`,{headers:{Authorization:'Bearer '+token}},120000);
+    const dlRes=await fetchSignalSafe(`https://open.feishu.cn/open-apis/drive/v1/files/${fileToken}/download`,{headers:{Authorization:'Bearer '+token}},120000);
     if(!dlRes.ok)throw new Error('下载HTTP '+dlRes.status);
     const dlText=await dlRes.text();
     return robustParse(dlText);
@@ -2087,29 +2097,31 @@ async function openCloudBackupList(){
     if(meta)meta.textContent='共 '+files.length+' 份备份（按时间倒序）';
     if(list)list.innerHTML=files.map(f=>{
       const ms=Number(f.modified_time||0)*1000;
-      const t=ms>0?new Date(ms).toISOString().slice(0,16).replace('T',' '):'—';
-      const kb=f.size?Math.round(Number(f.size)/1024)+'KB':'';
+      const t=ms>0?new Date(ms).toISOString().slice(0,19).replace('T',' '):'时间未知';
+      const kb=Number(f.size)>0?Math.round(Number(f.size)/1024)+'KB':'';
+      const meta2=kb?(t+' · '+kb):t;
+      /* 按 token 恢复: 同名多档(vehicle_backup_2026-10-03.json 两份)必须能选到较早的那份 */
       return '<div class="flex items-center justify-between gap-2 py-2 border-b border-gray-100">'+
         '<div class="min-w-0"><div class="text-sm text-gray-800 truncate">'+esc(f.name)+'</div>'+
-        '<div class="text-xs text-gray-400 mt-0.5">'+t+' · '+kb+'</div></div>'+
-        '<button onclick="restoreCloudBackup(\''+esc(f.name)+'\')" class="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 flex-shrink-0">恢复</button></div>';
+        '<div class="text-xs text-gray-400 mt-0.5">'+meta2+'</div></div>'+
+        '<button onclick="restoreCloudBackup(\''+esc(f.token)+'\',\''+esc(f.name)+'\')" class="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 flex-shrink-0">恢复</button></div>';
     }).join('');
   }catch(e){
     if(list)list.innerHTML='<div class="text-xs text-gray-400 py-6 text-center">读取失败：'+esc(e.message)+'</div>';
   }
 }
 
-async function restoreCloudBackup(name){
+async function restoreCloudBackup(fileToken,name){
   const cfg=getFeishuCfg();
   if(!feishuCfgReady(cfg,true))return;
   showToast('正在下载云端备份…');
   try{
     const token=await getFeishuToken(cfg);
-    const data=await downloadJsonFromDataFeishu(token,name,cfg.backupSub);
+    const data=await downloadJsonByFileToken(token,fileToken);
     if(!data)throw new Error('备份文件为空或已不存在');
     closeModal('modal-cloud-backups');
     await handleImportBackup(document.getElementById('import-backup-input'),data);
-    addSyncLog('云端备份恢复 · '+name,'blue');
+    addSyncLog('云端备份恢复 · '+(name||fileToken),'blue');
   }catch(e){
     showToast('恢复失败: '+e.message);
     addSyncLog('云端备份恢复失败: '+e.message,'red');
