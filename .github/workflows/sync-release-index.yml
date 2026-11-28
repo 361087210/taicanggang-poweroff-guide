@@ -8,6 +8,12 @@ name: Sync Release Index
 # 有变化才提交, 避免无意义 commit 触发 Pages 部署。
 
 on:
+  # 为什么用 workflow_run 而不是 release:published:
+  #   Release 由 android/ios 工作流用 GITHUB_TOKEN 创建, 而 GITHUB_TOKEN 产生的事件
+  #   不会再去触发其它工作流(防递归), 所以 release 事件这条线不会自动生效。
+  workflow_run:
+    workflows: ["Android CI Build & Release", "iOS CI Build & Release"]
+    types: [completed]
   release:
     types: [published]
   schedule:
@@ -23,6 +29,8 @@ concurrency:
 
 jobs:
   sync:
+    # 构建失败不刷新清单, 避免把"没上传成功"的版本写成 complete
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
